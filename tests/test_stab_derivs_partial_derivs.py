@@ -27,8 +27,8 @@ class TestResidualUPartials(unittest.TestCase):
         # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
         # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver.add_constraint("alpha", 25.0)
-        self.avl_solver.add_constraint("beta", 5.0)
+        self.avl_solver.set_constraint("alpha", 25.0)
+        self.avl_solver.set_constraint("beta", 5.0)
         self.avl_solver.execute_run()
 
     def tearDown(self):
@@ -187,8 +187,8 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
         # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
         # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver.add_constraint("alpha", 45.0)
-        self.avl_solver.add_constraint("beta", 45.0)
+        self.avl_solver.set_constraint("alpha", 45.0)
+        self.avl_solver.set_constraint("beta", 45.0)
         self.avl_solver.execute_run()
         self.avl_solver.clear_ad_seeds_fast()
 

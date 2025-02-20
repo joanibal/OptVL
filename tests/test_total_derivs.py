@@ -30,8 +30,8 @@ class TestTotals(unittest.TestCase):
         # self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
         self.avl_solver = AVLSolver(geo_file="aircraft_L1_trans.avl")
         # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver.add_constraint("alpha", 5.0)
-        self.avl_solver.add_constraint("beta", 0.0)
+        self.avl_solver.set_constraint("alpha", 5.0)
+        self.avl_solver.set_constraint("beta", 0.0)
         self.avl_solver.execute_run()
 
     def tearDown(self):
@@ -60,9 +60,9 @@ class TestTotals(unittest.TestCase):
         self.avl_solver.avl.velsum()
         self.avl_solver.avl.aero()
         # self.avl_solver.execute_run()
-        coef_data_peturb = self.avl_solver.get_case_total_data()
-        consurf_derivs_peturb = self.avl_solver.get_case_coef_derivs()
-        stab_deriv_derivs_peturb = self.avl_solver.get_case_stab_derivs()
+        coef_data_peturb = self.avl_solver.get_total_forces()
+        consurf_derivs_peturb = self.avl_solver.get_control_stab_derivs()
+        stab_deriv_derivs_peturb = self.avl_solver.get_stab_derivs()
 
         self.avl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-1*step)
         self.avl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1*step)
@@ -78,9 +78,9 @@ class TestTotals(unittest.TestCase):
         self.avl_solver.avl.aero()
         # self.avl_solver.execute_run()
 
-        coef_data = self.avl_solver.get_case_total_data()
-        consurf_derivs = self.avl_solver.get_case_coef_derivs()
-        stab_deriv_derivs = self.avl_solver.get_case_stab_derivs()
+        coef_data = self.avl_solver.get_total_forces()
+        consurf_derivs = self.avl_solver.get_control_stab_derivs()
+        stab_deriv_derivs = self.avl_solver.get_stab_derivs()
 
 
         func_seeds = {}

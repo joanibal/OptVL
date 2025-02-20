@@ -7,15 +7,15 @@ from optvl import AVLSolver
 avl_solver = AVLSolver(geo_file="aircraft.avl", debug=False)
 
 # setup OptVL 
-avl_solver.set_case_parameter("Mach", 0.0)
+avl_solver.set_parameter("Mach", 0.0)
 
 # Define your custom objective function with outputs from OptVL
 def custom_function(x):
-    avl_solver.add_constraint("Elevator", x[0])
+    avl_solver.set_constraint("Elevator", x[0])
     avl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
     
     avl_solver.execute_run()
-    cd = avl_solver.get_case_total_data()['CD']
+    cd = avl_solver.get_total_forces()['CD']
     print(x, cd)
 
     return cd
@@ -35,13 +35,13 @@ cm_target = 0.0
 
 # Define equality constraint: h(x) = 0
 def eq_constraint(x):
-    avl_solver.add_constraint("Elevator", x[0])
+    avl_solver.set_constraint("Elevator", x[0])
     avl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
 
     avl_solver.execute_run()
 
     # the objective must always be run first
-    coeff = avl_solver.get_case_total_data()
+    coeff = avl_solver.get_total_forces()
     
     cl_con = coeff['CL'] - cl_target
     cm_con = coeff['CM'] - cm_target

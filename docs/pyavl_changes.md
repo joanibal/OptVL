@@ -1,4 +1,4 @@
-
+```
   C1  set level or banked  horizontal flight constraints
   C2  set steady pitch rate (looping) flight constraints
   M odify parameters                                    
@@ -20,7 +20,7 @@
                                HM  hinge moments         
                                VM  strip shear,moment    
   MRF  machine-readable format CPOM OML surface pressures
-
+```
 
 
 
@@ -40,7 +40,7 @@ get_strip_data -> get_strip_forces
 
 
 add_constraint -> set_constraint
-
+add_trim_condition -> set_trim_condition
 add_constraint for variables
 
 con options are
@@ -62,7 +62,7 @@ avl.f:          WRITE(LU,1050) VARNAM(IV), CONNAM(IC), CONVAL(IC,IR)
 ovl.add_variable("alpha", 0.00)
 
 - set_constraint
-ovl.add_constraint("Rudder", "Cn", 0.0)
+ovl.set_constraint("Rudder", "Cn", 0.0)
 
 
 

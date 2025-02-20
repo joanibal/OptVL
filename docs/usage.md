@@ -33,9 +33,9 @@ The commands from the oper and mode menus are available
 
 |action| avl oper command| OptVL api call|
 |-----|--|--|
-|setting the angle of attack|a a 5|ovl.add_constraint("alpha", 5.0)|
+|setting the angle of attack|a a 5|ovl.set_constraint("alpha", 5.0)|
 | add that variable is set such that constraint = val | <variable> <constraint> <val> | 
-| set CL  constraint|  c1; c 1.3| ovl.add_trim_condition("CL", 1.3)|
+| set CL  constraint|  c1; c 1.3| ovl.set_trim_condition("CL", 1.3)|
 | run an analysis | x | ovl.execute_run() |
 | after an analysis | FT |  get_total_forces() |
 | get strip force data | ST | get_strip_forces() |
@@ -65,10 +65,10 @@ ovl = OVLSolver(geo_file="aircraft.avl")
 After initializing, you can set up various constraints and parameters:
 
 ```python
-ovl.add_constraint("alpha", 0.00)
-ovl.add_constraint("Elevator", 0.00, con_var="Cm pitch moment")
-ovl.add_constraint("Rudder", 0.00, con_var="Cn yaw moment")
-ovl.set_case_parameter("Mach", 0.3)
+ovl.set_constraint("alpha", 0.00)
+ovl.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
+ovl.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
+ovl.set_parameter("Mach", 0.3)
 ```
 ## Running Analysis
 

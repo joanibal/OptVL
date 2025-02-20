@@ -25,8 +25,8 @@ class TestAnalysisSweep(unittest.TestCase):
         self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
 
     def test_constrained_alpha_sweep(self):
-        self.avl_solver.add_constraint("Elevator", 0.00, con_var="Cm pitch moment")
-        self.avl_solver.add_constraint("Rudder", 0.00, con_var="Cn yaw moment")
+        self.avl_solver.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
+        self.avl_solver.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
 
         alpha_array = np.arange(0, 10)
         cl_ref_arr = np.array(
@@ -58,10 +58,10 @@ class TestAnalysisSweep(unittest.TestCase):
             ]
         )
         for idx_alpha, alpha in enumerate(alpha_array):
-            self.avl_solver.add_constraint("alpha", alpha)
+            self.avl_solver.set_constraint("alpha", alpha)
 
             self.avl_solver.execute_run()
-            run_data = self.avl_solver.get_case_total_data()
+            run_data = self.avl_solver.get_total_forces()
 
             np.testing.assert_allclose(
                 cl_ref_arr[idx_alpha],
@@ -80,8 +80,8 @@ class TestAnalysisSweep(unittest.TestCase):
             )
 
     def test_constrained_cl_sweep(self):
-        self.avl_solver.add_constraint("Elevator", 0.00, con_var="Cm pitch moment")
-        self.avl_solver.add_constraint("Rudder", 0.00, con_var="Cn yaw moment")
+        self.avl_solver.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
+        self.avl_solver.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
 
         cd_ref_arr = np.array(
             [
@@ -100,10 +100,10 @@ class TestAnalysisSweep(unittest.TestCase):
         )
         cl_arr = np.arange(0.6, 1.7, 0.1)
         for idx_cl, cl in enumerate(cl_arr):
-            self.avl_solver.add_trim_condition("CL", cl)
+            self.avl_solver.set_trim_condition("CL", cl)
             # the tight tolerance here helps catch small issues with the newton solver
             self.avl_solver.execute_run(tol=1e-12)
-            run_data = self.avl_solver.get_case_total_data()
+            run_data = self.avl_solver.get_total_forces()
 
             np.testing.assert_allclose(
                 cl,
@@ -127,9 +127,9 @@ class TestBodyAnalysis(unittest.TestCase):
         self.avl_solver = AVLSolver(geo_file="supra.avl",debug=False)
     
     def test_coefs(self):
-        self.avl_solver.add_constraint("alpha", 5.00)
+        self.avl_solver.set_constraint("alpha", 5.00)
         self.avl_solver.execute_run()
-        coef_data = self.avl_solver.get_case_total_data()
+        coef_data = self.avl_solver.get_total_forces()
 
         # the values are wonky here because of an unrealistic CDCL curve
         np.testing.assert_allclose(coef_data["CL"], 0.636031170179549, rtol=1e-8)
@@ -141,8 +141,8 @@ class TestHingeMom(unittest.TestCase):
         self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
 
     def test_con_surf_mom(self):
-        self.avl_solver.add_constraint("Elevator", 10.00)
-        self.avl_solver.add_constraint("Rudder", 0.00)
+        self.avl_solver.set_constraint("Elevator", 10.00)
+        self.avl_solver.set_constraint("Rudder", 0.00)
         self.avl_solver.execute_run()
 
         mom_data = self.avl_solver.get_hinge_moments()
@@ -150,8 +150,8 @@ class TestHingeMom(unittest.TestCase):
         np.testing.assert_allclose(mom_data["Elevator"], -0.04381216304, rtol=1e-8)
         np.testing.assert_allclose(mom_data["Rudder"], 0.0, atol=1e-8)
 
-        self.avl_solver.add_constraint("Elevator", 0.00)
-        self.avl_solver.add_constraint("Rudder", 10.00)
+        self.avl_solver.set_constraint("Elevator", 0.00)
+        self.avl_solver.set_constraint("Rudder", 10.00)
         self.avl_solver.execute_run()
         mom_data = self.avl_solver.get_hinge_moments()
 
@@ -166,10 +166,10 @@ class TestCaseDerivs(unittest.TestCase):
         self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
 
     def test_coefs_wrt_con_surfs(self):
-        self.avl_solver.add_constraint("alpha", 45.00)
+        self.avl_solver.set_constraint("alpha", 45.00)
         self.avl_solver.execute_run()
-        run_data = self.avl_solver.get_case_total_data()
-        coef_derivs = self.avl_solver.get_case_coef_derivs()
+        run_data = self.avl_solver.get_total_forces()
+        coef_derivs = self.avl_solver.get_control_stab_derivs()
         # TODO: test againast values from AVL
 
 
@@ -182,9 +182,9 @@ class TestVariableSetting(unittest.TestCase):
         Test that setting the alpha works
         """
 
-        self.avl_solver.add_constraint("alpha", 10.00)
+        self.avl_solver.set_constraint("alpha", 10.00)
         self.avl_solver.execute_run()
-        alfa_new = self.avl_solver.get_case_parameter("alpha")
+        alfa_new = self.avl_solver.get_parameter("alpha")
         np.testing.assert_allclose(alfa_new, 10.00, rtol=1e-15)
 
     def test_con_surf_set(self):
@@ -192,10 +192,10 @@ class TestVariableSetting(unittest.TestCase):
         Test that setting the control surface works
         """
 
-        self.avl_solver.add_constraint("Elevator", 10.00)
-        self.avl_solver.add_constraint("alpha", 10.00)
+        self.avl_solver.set_constraint("Elevator", 10.00)
+        self.avl_solver.set_constraint("alpha", 10.00)
         self.avl_solver.execute_run()
-        alfa_new = self.avl_solver.get_case_parameter("alpha")
+        alfa_new = self.avl_solver.get_parameter("alpha")
         np.testing.assert_allclose(alfa_new, 10.00, rtol=1e-15)
         def_dict = self.avl_solver.get_control_deflections()
         np.testing.assert_allclose(def_dict["Elevator"], 10.00, rtol=1e-15)

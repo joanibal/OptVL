@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ovl = AVLSolver(geo_file="aircraft.avl", debug=False)
-ovl.add_constraint('alpha', 5.0)
+ovl.set_constraint('alpha', 5.0)
 ovl.execute_run()
 
-strip_data = ovl.get_strip_data()
+strip_data = ovl.get_strip_forces()
 for surf_key in strip_data:
     span_distance = strip_data[surf_key]['XYZ LE'][:,1]
     plt.plot(span_distance, strip_data[surf_key]['lift dist'], color='blue')

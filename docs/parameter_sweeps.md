@@ -79,7 +79,7 @@ Execute the analysis run:
 
 ```python
 
-avl_solver.add_constraint("alpha", 6.00)
+avl_solver.set_constraint("alpha", 6.00)
 avl_solver.execute_run()
 ```
 

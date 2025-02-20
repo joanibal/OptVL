@@ -30,21 +30,21 @@ class TestConstraints(unittest.TestCase):
     # def test_rates(self):
 
     def test_angles(self):
-        self.avl_solver.add_constraint("alpha", 6.00)
-        self.avl_solver.add_constraint("beta", 2.00)
+        self.avl_solver.set_constraint("alpha", 6.00)
+        self.avl_solver.set_constraint("beta", 2.00)
         self.avl_solver.execute_run()
 
         np.testing.assert_allclose(
-            self.avl_solver.get_case_constraint("alpha"),
+            self.avl_solver.get_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_case_constraint("beta"),
+            self.avl_solver.get_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
-        run_data = self.avl_solver.get_case_total_data()
+        run_data = self.avl_solver.get_total_forces()
         np.testing.assert_allclose(
             run_data["CL"],
             1.83005581269135,
@@ -62,10 +62,10 @@ class TestConstraints(unittest.TestCase):
         )
 
     def test_control_surfaces(self):
-        self.avl_solver.add_constraint("D1", 10.00)
-        self.avl_solver.add_constraint("D2", 5.00)
+        self.avl_solver.set_constraint("D1", 10.00)
+        self.avl_solver.set_constraint("D2", 5.00)
         self.avl_solver.execute_run()
-        run_data = self.avl_solver.get_case_total_data()
+        run_data = self.avl_solver.get_total_forces()
         
         np.testing.assert_allclose(
             run_data["CL"],
@@ -85,10 +85,10 @@ class TestConstraints(unittest.TestCase):
 
     def test_control_surfaces_names(self):
         """test that the control surface names are can be used as well"""
-        self.avl_solver.add_constraint("Elevator", 10.00)
-        self.avl_solver.add_constraint("Rudder", 5.00)
+        self.avl_solver.set_constraint("Elevator", 10.00)
+        self.avl_solver.set_constraint("Rudder", 5.00)
         self.avl_solver.execute_run()
-        run_data = self.avl_solver.get_case_total_data()
+        run_data = self.avl_solver.get_total_forces()
         np.testing.assert_allclose(
             run_data["CL"],
             1.0106168310619361,
@@ -107,20 +107,20 @@ class TestConstraints(unittest.TestCase):
 
     def test_trim(self):
         # TODO: parametrize for the other options
-        self.avl_solver.add_trim_condition("CL", 1.0)
+        self.avl_solver.set_trim_condition("CL", 1.0)
         self.avl_solver.execute_run()
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("alpha"),
+            self.avl_solver.get_parameter("alpha"),
             -1.8615972119506075,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_case_parameter("beta"),
+            self.avl_solver.get_parameter("beta"),
             0.0,
             rtol=1e-8,
         )
 
-        run_data = self.avl_solver.get_case_total_data()
+        run_data = self.avl_solver.get_total_forces()
 
         np.testing.assert_allclose(
             run_data["CL"],

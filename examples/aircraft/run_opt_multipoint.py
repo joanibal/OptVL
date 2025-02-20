@@ -78,10 +78,10 @@ model.add_design_var("flt_cond_dvs.alpha", lower=-10, upper=10)
 model.add_design_var("con_surf_dvs.Elevator", lower=-10, upper=10)
 
 # the outputs of AVL can be used as contraints
-model.add_constraint("cruise_avl.CL", equals=1.5)
-model.add_constraint("cruise_avl.CM", equals=0.0)
+model.set_constraint("cruise_avl.CL", equals=1.5)
+model.set_constraint("cruise_avl.CM", equals=0.0)
 
-model.add_constraint("perturbed_cruise_avl.CM", upper=-1e-3) # make sure that dCM_dAlpha is less than 0 for static stability
+model.set_constraint("perturbed_cruise_avl.CM", upper=-1e-3) # make sure that dCM_dAlpha is less than 0 for static stability
 
 model.add_objective("cruise_avl.CD", ref=1e-2)
 # Some variables (like chord, dihedral, x and z leading edge position) can lead to local minimum. 

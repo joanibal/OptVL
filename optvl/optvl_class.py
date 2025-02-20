@@ -422,7 +422,13 @@ class AVLSolver(object):
                 "gaing": ["SURF_GEOM_R", "GAING", gaing_slices],
             }
 
-    def add_constraint(self, var, val, con_var=None):
+# region -- analysis api
+    def execute_run(self, tol=0.00002):
+        # run the analysis (equivalent to the avl command `x` in the oper menu)
+        self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', tol)
+        self.avl.oper()
+
+    def set_constraint(self, var, val, con_var=None):
         avl_variables = {
             "alpha": "A",
             "beta": "B",
@@ -473,7 +479,7 @@ class AVLSolver(object):
 
         self.avl.conset(avl_var, f"{avl_con_var} {val} \n")
 
-    def add_trim_condition(self, variable, val):
+    def set_trim_condition(self, variable, val):
         options = {
             "bankAng": ["B"],
             "CL": ["C"],
@@ -493,7 +499,7 @@ class AVLSolver(object):
 
         self.avl.trmset("C1", "1 ", options[variable][0], (str(val) + "  \n"))
 
-    def get_case_total_data(self) -> Dict[str, float]:
+    def get_total_forces(self) -> Dict[str, float]:
         """Get the aerodynamic data for the last run case and return it as a dictionary.
 
         Returns:
@@ -511,7 +517,7 @@ class AVLSolver(object):
 
         return total_data
 
-    def get_case_coef_derivs(self) -> Dict[str, Dict[str, float]]:
+    def get_control_stab_derivs(self) -> Dict[str, Dict[str, float]]:
         deriv_data = {}
 
         control_names = self.get_control_names()
@@ -526,7 +532,7 @@ class AVLSolver(object):
 
         return deriv_data
 
-    def get_case_stab_derivs(self) -> Dict[str, Dict[str, float]]:
+    def get_stab_derivs(self) -> Dict[str, Dict[str, float]]:
         deriv_data = {}
 
         for func_key, var_dict in self.case_stab_derivs_to_fort_var.items():
@@ -595,7 +601,7 @@ class AVLSolver(object):
 
         return
 
-    def get_case_surface_data(self) -> Dict[str, Dict[str, float]]:
+    def get_surface_forces(self) -> Dict[str, Dict[str, float]]:
         surf_names = self.get_surface_names()
 
         # add a dictionary for each surface that will be filled later
@@ -612,7 +618,7 @@ class AVLSolver(object):
 
         return surf_data
 
-    def get_case_parameter(self, param_key: str) -> float:
+    def get_parameter(self, param_key: str) -> float:
         """
         analogous to ruinont Modify parameters for the oper menu to view parameters.
         """
@@ -631,7 +637,7 @@ class AVLSolver(object):
 
         return param_val
 
-    def get_case_constraint(self, con_key: str) -> float:
+    def get_constraint(self, con_key: str) -> float:
         """ """
         convals = self.get_avl_fort_arr("CASE_R", "CONVAL")
 
@@ -640,7 +646,7 @@ class AVLSolver(object):
 
         return con_val
 
-    def set_case_parameter(self, param_key: str, param_val: float) -> None:
+    def set_parameter(self, param_key: str, param_val: float) -> None:
         """
         analogous to ruinont Modify parameters for the oper menu to view parameters.
         """
@@ -686,7 +692,7 @@ class AVLSolver(object):
 
         return hinge_moments
 
-    def get_strip_data(self) -> Dict[str, Dict[str, np.ndarray]]:
+    def get_strip_forces(self) -> Dict[str, Dict[str, np.ndarray]]:
         # fmt: off
         var_to_fort_var = {
             # geometric quantities
@@ -757,22 +763,7 @@ class AVLSolver(object):
 
         return idx_srp_beg, idx_srp_end
 
-    def executeRun(self):
-        warnings.warn("executeRun is deprecated, use execute_run instead")
-        self.execute_run()
-
-    def execute_run(self, tol=0.00002):
-        # run the analysis (equivalent to the avl command `x` in the oper menu)
-        self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', tol)
-        self.avl.oper()
-
-    def CLSweep(self, start_CL, end_CL, increment=0.1):
-        CLs = np.arange(start_CL, end_CL + increment, increment)
-
-        for cl in CLs:
-            self.add_trim_condition("CL", cl)
-            self.execute_run()
-            
+# region --- modal analysis api
     def execute_eigen_mode_calc(self):
         self.avl.execute_eigenmode_calc()
     
@@ -816,6 +807,7 @@ class AVLSolver(object):
         
         return asys
 
+# region --- geometry api
     def get_control_names(self) -> List[str]:
         fort_names = self.get_avl_fort_arr("CASE_C", "DNAME")
         control_names = self._convertFortranStringArrayToList(fort_names)
@@ -1015,7 +1007,7 @@ class AVLSolver(object):
         
         return body_data
 
-
+# region --- geometry file writing api
     def write_geom_file(self, filename: str):
         """write the current avl geometry to a file"""
         with open(filename, "w") as fid:
@@ -1094,6 +1086,7 @@ class AVLSolver(object):
         # ======================================================
         # ------------------- Geometry File --------------------
         # ======================================================
+
     def __write_body(self, fid, body_name, data):
         self.__write_banner(fid, body_name)
         fid.write(f"BODY\n")
@@ -1248,7 +1241,7 @@ class AVLSolver(object):
 
         return py_string
 
-    # Utility functions
+# region --- Utility functions
     def get_num_surfaces(self) -> int:
         """Get the number of surfaces in the geometry"""
         return self.get_avl_fort_arr("CASE_I", "NSURF")
@@ -1341,12 +1334,12 @@ class AVLSolver(object):
             elif mode == "FD":
                 # reverse lookup in the con_var_to_fort_var dict
 
-                val = self.get_case_constraint(con)
+                val = self.get_constraint(con)
 
                 val += con_seed_arr * scale
 
                 # use the contraint API to adjust the value
-                self.add_constraint(con, val)
+                self.set_constraint(con, val)
     
     def set_parameter_ad_seeds(self, parm_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
         for param_key in parm_seeds:
@@ -1669,7 +1662,6 @@ class AVLSolver(object):
                         # mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
                         # print(f"    Memory usage: {mb_memory} MB")
 
-
     def print_ad_seeds(self, print_non_zero: bool = False):
         for att in dir(self.avl):
             if att.endswith(self.ad_suffix):
@@ -1780,9 +1772,9 @@ class AVLSolver(object):
             self.avl.velsum()
             self.avl.aero()
 
-            coef_data_peturb = self.get_case_total_data()
-            consurf_derivs_petrub = self.get_case_coef_derivs()
-            stab_deriv_petrub = self.get_case_stab_derivs()
+            coef_data_peturb = self.get_total_forces()
+            consurf_derivs_petrub = self.get_control_stab_derivs()
+            stab_deriv_petrub = self.get_stab_derivs()
 
             res_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
             res_d_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
@@ -1802,9 +1794,9 @@ class AVLSolver(object):
             self.avl.velsum()
             self.avl.aero()
 
-            coef_data = self.get_case_total_data()
-            consurf_derivs = self.get_case_coef_derivs()
-            stab_deriv = self.get_case_stab_derivs()
+            coef_data = self.get_total_forces()
+            consurf_derivs = self.get_control_stab_derivs()
+            stab_deriv = self.get_stab_derivs()
 
             res = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
             res_d = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
@@ -1915,7 +1907,6 @@ class AVLSolver(object):
             time_last = time.time()
 
         return con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
-
 
     def execute_adjoint_solve():
         raise NotImplementedError
@@ -2071,9 +2062,7 @@ class AVLSolver(object):
 
         return sens
 
-
 # --- ploting and vizulaization ---
-
     def add_mesh_plot(self, axis, xaxis='x', yaxis='y', show_mesh=True):
         """ adds a plot of the aircraft mesh to the axis"""
         mesh_size = self.get_mesh_size()
@@ -2182,8 +2171,6 @@ class AVLSolver(object):
                         }
                         axis.plot(pts[xaxis], pts[yaxis], '--', color='grey', linewidth=0.3)
                         
-                
-
     def plot_geom(self, **kwargs):
         import matplotlib.pyplot as plt
         
