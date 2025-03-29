@@ -29,7 +29,7 @@ get_case_total_data -> get_total_forces()
 
 get_case_coef_derivs -> get_control_stab_derivs 
 - the output dictionary is now flat
-- cs_derivs['CL']['Elevator'] = cs_derivs['dCL/dElevator']
+- `cs_derivs['CL']['Elevator'] = cs_derivs['dCL/dElevator']`
     
 get_case_stab_derivs -> get_stab_derivs
 
@@ -62,10 +62,10 @@ avl.f:         IF(INDEX(CONNAM(IC),CONN(1:NCONN)).NE.0) GO TO 25
 avl.f:          WRITE(LU,1050) VARNAM(IV), CONNAM(IC), CONVAL(IC,IR)
 
 - set_variable
-ovl.add_variable("alpha", 0.00)
+`ovl.add_variable("alpha", 0.00)`
 
 - set_constraint
-ovl.set_constraint("Rudder", "Cn", 0.0)
+`ovl.set_constraint("Rudder", "Cn", 0.0)`
 
 
 

@@ -14,7 +14,11 @@ nav:
       - analysis.md
       - parameter_sweeps.md
       - optimization.md
-      
+      - avl_changes.md
+      - dev_docs.md
+      - input.md
+      - limitations.md
+      - pyavl_changes.md  
   # defer to gen-files + literate-nav
   - Code Reference: reference/  
 
