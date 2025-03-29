@@ -82,7 +82,7 @@ class TestOMWrapper(unittest.TestCase):
         prob = self.prob
         cl_star = 1.5
         prob.model.add_design_var("avlsolver.alpha", lower=-10, upper=10)
-        prob.model.set_constraint("avlsolver.CL", equals=cl_star)
+        prob.model.add_constraint("avlsolver.CL", equals=cl_star)
         prob.model.add_objective("avlsolver.CD", scaler=1e3)
         prob.setup(mode='rev')
         prob.driver = om.ScipyOptimizeDriver()
@@ -110,7 +110,7 @@ class TestOMWrapper(unittest.TestCase):
     def test_CM_solve(self):
         prob = self.prob
         prob.model.add_design_var("avlsolver.alpha", lower=-10, upper=10)
-        prob.model.set_constraint("avlsolver.CM", equals=0.0, scaler=1e3)
+        prob.model.add_constraint("avlsolver.CM", equals=0.0, scaler=1e3)
         prob.model.add_objective("avlsolver.CD", scaler=1e3)
         prob.setup(mode='rev')
         prob.driver = om.ScipyOptimizeDriver()
@@ -147,8 +147,8 @@ class TestOMWrapper(unittest.TestCase):
         prob.model.add_design_var("avlsolver.Sref")
         prob.model.add_design_var("avlsolver.Mach")
         prob.model.add_design_var("avlsolver.X cg")
-        prob.model.set_constraint("avlsolver.CL", equals=cl_star)
-        prob.model.set_constraint("avlsolver.dCL_dalpha", equals=-dcl_dalpha_star)
+        prob.model.add_constraint("avlsolver.CL", equals=cl_star)
+        prob.model.add_constraint("avlsolver.dCL/dalpha", equals=-dcl_dalpha_star)
         prob.model.add_objective("avlsolver.CD", scaler=1e3)
         prob.model.add_objective("avlsolver.CM", scaler=1e3)
         prob.setup(mode='rev')

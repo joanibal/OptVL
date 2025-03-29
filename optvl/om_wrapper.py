@@ -366,17 +366,13 @@ class AVLFuncsComp(om.ExplicitComponent):
         self.output_con_surf_derivs = self.options["output_con_surf_derivs"]
         if self.output_con_surf_derivs:
             for func_key in self.avl.case_derivs_to_fort_var:
-                for con_name in self.control_names:
-                    var_name = f"d{func_key}_d{con_name}"
-                    self.add_output(var_name)
+                self.add_output(func_key)
         
         self.output_stabililty_derivs = self.options["output_stabililty_derivs"]
         if self.output_stabililty_derivs:
             deriv_dict = self.avl.case_stab_derivs_to_fort_var
             for func_key in deriv_dict:
-                for var in deriv_dict[func_key]:
-                    var_name = f"d{func_key}_d{var}"
-                    self.add_output(var_name)        
+                self.add_output(func_key)        
         
         # TODO-refactor: push these slices down into the ovl class?                     
         self.res_slice = (slice(0, self.num_states),)
@@ -423,16 +419,13 @@ class AVLFuncsComp(om.ExplicitComponent):
         if self.output_con_surf_derivs:
             consurf_derivs_seeds = self.avl.get_control_stab_derivs()
             for func_key in consurf_derivs_seeds:
-                for con_name in consurf_derivs_seeds[func_key]:
-                    var_name = f"d{func_key}_d{con_name}"
-                    outputs[var_name] = consurf_derivs_seeds[func_key][con_name]
+                    # var_name = f"d{func_key}_d{con_name}"
+                outputs[func_key] = consurf_derivs_seeds[func_key]
 
         if self.output_stabililty_derivs:
             stab_derivs = self.avl.get_stab_derivs()
             for func_key in stab_derivs:
-                for var in stab_derivs[func_key]:
-                    var_name = f"d{func_key}_d{var}"
-                    outputs[var_name] = stab_derivs[func_key][var]
+                outputs[func_key] = stab_derivs[func_key]
                 
         # print("Funcs Compute time: ", time.time() - start_time)
 
@@ -506,38 +499,25 @@ class AVLFuncsComp(om.ExplicitComponent):
             csd_seeds = {}
             con_names = self.avl.get_control_names()
             for func_key in self.avl.case_derivs_to_fort_var:
-                csd_seeds[func_key] = {}
                 for con_name in con_names:
-                    var_name = f"d{func_key}_d{con_name}"
+                    var_name = self.avl.get_deriv_key(con_name, func_key)
 
                     if var_name in d_outputs:
-                        csd_seeds[func_key][con_name] = d_outputs[var_name]
+                        csd_seeds[var_name] = d_outputs[var_name]
                         
-                        if np.abs(csd_seeds[func_key][con_name]) > 0.0:
-                            # print(var_name, csd_seeds[func_key][con_name])
+                        if np.abs(csd_seeds[var_name]) > 0.0:
+                            # print(var_name, csd_seeds[func_key])
                             print(f'  running rev mode derivs for {var_name}')
-            
-            csd_seeds = {}
-            con_names = self.avl.get_control_names()
-            for func_key in self.avl.case_derivs_to_fort_var:
-                csd_seeds[func_key] = {}
-                for con_name in con_names:
-                    var_name = f"d{func_key}_d{con_name}"
-
-                    
-
+                
+ 
             stab_derivs_seeds = {}
-            for func_key, var_dict in self.avl.case_stab_derivs_to_fort_var.items():
-                stab_derivs_seeds[func_key] = {}
-                for var_key in var_dict:
-                    var_name = f"d{func_key}_d{var_key}"
+            for func_key in self.avl.case_stab_derivs_to_fort_var:
+                if func_key in d_outputs:
+                    stab_derivs_seeds[func_key] = d_outputs[func_key]
                     
-                    if var_name in d_outputs:
-                        stab_derivs_seeds[func_key][var_key] = d_outputs[var_name]
-                        
-                        if np.abs(stab_derivs_seeds[func_key][var_key]) > 0.0:
-                            # print(var_name, stab_derivs_seeds[func_key][var_key])
-                            print(f'  running rev mode derivs for {var_name}')
+                    if np.abs(stab_derivs_seeds[func_key]) > 0.0:
+                        # print(var_name, stab_derivs_seeds[func_key])
+                        print(f'  running rev mode derivs for {func_key}')
 
                         
             con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(

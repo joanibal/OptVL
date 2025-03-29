@@ -119,13 +119,13 @@ class TestNewSubroutines(unittest.TestCase):
             )
 
         for func_key in coef_derivs:
-            for consurf_key in coef_derivs[func_key]:
-                np.testing.assert_allclose(
-                    coef_derivs[func_key][consurf_key],
-                    coef_derivs_new[func_key][consurf_key],
-                    err_msg=f"deriv of func_key {func_key} wrt {consurf_key}",
-                    atol=1e-14,
-                )
+            # for consurf_key in coef_derivs[func_key]:
+            np.testing.assert_allclose(
+                coef_derivs[func_key],
+                coef_derivs_new[func_key],
+                err_msg=f"deriv of func_key {func_key}",
+                atol=1e-14,
+            )
                 
 
 if __name__ == "__main__":

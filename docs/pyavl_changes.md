@@ -28,6 +28,9 @@ get_case_total_data -> get_total_forces()
 
 
 get_case_coef_derivs -> get_control_stab_derivs 
+- the output dictionary is now flat
+- cs_derivs['CL']['Elevator'] = cs_derivs['dCL/dElevator']
+    
 get_case_stab_derivs -> get_stab_derivs
 
 get_case_surface_data -> get_surface_forces
@@ -68,3 +71,4 @@ ovl.set_constraint("Rudder", "Cn", 0.0)
 
 removes executeRun. use execute_run instead
 
+- [ ] return stability data as flat array
