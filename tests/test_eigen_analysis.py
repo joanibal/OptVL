@@ -28,13 +28,13 @@ class TestEigenAnalysisSweep(unittest.TestCase):
         
         # for vel in np.linspace(10, 100, 10):
         for vel in [10]:
-            self.avl_solver.set_case_parameter("velocity", vel)
-            dens = self.avl_solver.get_case_parameter("density")
-            g = self.avl_solver.get_case_parameter("grav.acc.")
-            mass = self.avl_solver.get_case_parameter("mass")
+            self.avl_solver.set_parameter("velocity", vel)
+            dens = self.avl_solver.get_parameter("density")
+            g = self.avl_solver.get_parameter("grav.acc.")
+            mass = self.avl_solver.get_parameter("mass")
             weight = mass * g
             cl = weight / (0.5 * dens * vel**2)
-            self.avl_solver.add_trim_condition("CL", cl)
+            self.avl_solver.set_trim_condition("CL", cl)
             
             
             self.avl_solver.execute_eigen_mode_calc()

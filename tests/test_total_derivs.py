@@ -30,8 +30,8 @@ class TestTotals(unittest.TestCase):
         # self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
         self.avl_solver = AVLSolver(geo_file="aircraft_L1_trans.avl")
         # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver.add_constraint("alpha", 5.0)
-        self.avl_solver.add_constraint("beta", 0.0)
+        self.avl_solver.set_constraint("alpha", 5.0)
+        self.avl_solver.set_constraint("beta", 0.0)
         self.avl_solver.execute_run()
 
     def tearDown(self):
@@ -60,9 +60,9 @@ class TestTotals(unittest.TestCase):
         self.avl_solver.avl.velsum()
         self.avl_solver.avl.aero()
         # self.avl_solver.execute_run()
-        coef_data_peturb = self.avl_solver.get_case_total_data()
-        consurf_derivs_peturb = self.avl_solver.get_case_coef_derivs()
-        stab_deriv_derivs_peturb = self.avl_solver.get_case_stab_derivs()
+        coef_data_peturb = self.avl_solver.get_total_forces()
+        consurf_derivs_peturb = self.avl_solver.get_control_stab_derivs()
+        stab_deriv_derivs_peturb = self.avl_solver.get_stab_derivs()
 
         self.avl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-1*step)
         self.avl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1*step)
@@ -78,9 +78,9 @@ class TestTotals(unittest.TestCase):
         self.avl_solver.avl.aero()
         # self.avl_solver.execute_run()
 
-        coef_data = self.avl_solver.get_case_total_data()
-        consurf_derivs = self.avl_solver.get_case_coef_derivs()
-        stab_deriv_derivs = self.avl_solver.get_case_stab_derivs()
+        coef_data = self.avl_solver.get_total_forces()
+        consurf_derivs = self.avl_solver.get_control_stab_derivs()
+        stab_deriv_derivs = self.avl_solver.get_stab_derivs()
 
 
         func_seeds = {}
@@ -89,19 +89,15 @@ class TestTotals(unittest.TestCase):
 
         consurf_derivs_seeds = {}
         for func_key in consurf_derivs:
-            consurf_derivs_seeds[func_key] = {}
-            for surf_key in consurf_derivs[func_key]:
-                consurf_derivs_seeds[func_key][surf_key] = (
-                    consurf_derivs_peturb[func_key][surf_key] - consurf_derivs[func_key][surf_key]
-                ) / step
+            consurf_derivs_seeds[func_key] = (
+                consurf_derivs_peturb[func_key] - consurf_derivs[func_key]
+            ) / step
 
         stab_derivs_seeds = {}
         for func_key in stab_deriv_derivs:
-            stab_derivs_seeds[func_key] = {}
-            for surf_key in stab_deriv_derivs[func_key]:
-                stab_derivs_seeds[func_key][surf_key] = (
-                    stab_deriv_derivs_peturb[func_key][surf_key] - stab_deriv_derivs[func_key][surf_key]
-                ) / step
+            stab_derivs_seeds[func_key] = (
+                stab_deriv_derivs_peturb[func_key] - stab_deriv_derivs[func_key]
+            ) / step
 
         return func_seeds, consurf_derivs_seeds, stab_derivs_seeds
 
@@ -143,14 +139,13 @@ class TestTotals(unittest.TestCase):
                     )
 
             for func_key in stab_derivs_seeds:
-                for var_key in stab_derivs_seeds[func_key]:
-                    ad_dot = sens_sd[func_key][var_key][con_key]
-                    func_dot = stab_derivs_seeds[func_key][var_key]
+                    ad_dot = sens_sd[func_key][con_key]
+                    func_dot = stab_derivs_seeds[func_key]
 
                     rel_err = np.abs(ad_dot - func_dot) / np.abs(func_dot + 1e-20)
 
                     # print(
-                    #     f"{func_key} wrt {var_key:5}  wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                    #     f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                     # )
                     
                     tol = 1e-8
@@ -160,14 +155,14 @@ class TestTotals(unittest.TestCase):
                             ad_dot,
                             func_dot,
                             atol=1e-9,
-                            err_msg=f"{func_key} wrt {var_key:5}  wrt {con_key}",
+                            err_msg=f"{func_key} wrt {con_key}",
                         )
                     else:
                         np.testing.assert_allclose(
                             ad_dot,
                             func_dot,
                             rtol=1e-4,
-                            err_msg=f"{func_key} wrt {var_key:5}  wrt {con_key}",
+                            err_msg=f"{func_key} wrt {con_key}",
                         )
                     
     def test_geom(self):
@@ -178,9 +173,10 @@ class TestTotals(unittest.TestCase):
         geom_vars = self.avl_solver.surf_geom_to_fort_var[surf_key]
         cs_names = self.avl_solver.get_control_names()
 
-        consurf_vars = {}
+        consurf_vars = []
         for func_key in self.avl_solver.case_derivs_to_fort_var:
-            consurf_vars[func_key] = [cs_names[0]]
+            consurf_vars.append(self.avl_solver.get_deriv_key(cs_names[0], func_key))
+   
             
         stab_derivs = self.avl_solver.case_stab_derivs_to_fort_var
         # sens = self.avl_solver.execute_run_sensitivies(func_vars)
@@ -226,37 +222,36 @@ class TestTotals(unittest.TestCase):
                         )
 
                 for func_key in consurf_vars:
-                    for cs_key in consurf_vars[func_key]:
-                        geom_dot = np.sum(sens[func_key][cs_key][surf_key][geom_key] * rand_arr)
-                        func_dot = consurf_deriv_seeds[func_key][cs_key]
+                    # for cs_key in consurf_vars[func_key]:
+                    geom_dot = np.sum(sens[func_key][surf_key][geom_key] * rand_arr)
+                    func_dot = consurf_deriv_seeds[func_key]
 
-                        rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
+                    rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
 
-                        # print(
-                        #     f"{func_key} wrt {cs_key:5}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
-                        # )
-                        
-                        tol = 1e-8
-                        if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
-                            # If either value is basically zero, use an absolute tolerance
-                            np.testing.assert_allclose(
-                                geom_dot,
-                                func_dot,
-                                atol=1e-4,
-                                err_msg=f"{func_key} wrt {cs_key:5}  wrt {surf_key}:{geom_key:10}",
-                            )
-                        else:
-                            np.testing.assert_allclose(
-                                geom_dot,
-                                func_dot,
-                                rtol=1e-4,
-                                err_msg=f"{func_key} wrt {cs_key:5}  wrt {surf_key}:{geom_key:10}",
-                            )
+                    # print(
+                    #     f"{func_key} wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                    # )
+                    
+                    tol = 1e-8
+                    if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
+                        # If either value is basically zero, use an absolute tolerance
+                        np.testing.assert_allclose(
+                            geom_dot,
+                            func_dot,
+                            atol=1e-4,
+                            err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
+                        )
+                    else:
+                        np.testing.assert_allclose(
+                            geom_dot,
+                            func_dot,
+                            rtol=1e-4,
+                            err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
+                        )
                         
                 for func_key in stab_derivs_seeds:
-                    for var_key in stab_derivs_seeds[func_key]:
-                        geom_dot = np.sum(sens[func_key][var_key][surf_key][geom_key] * rand_arr)
-                        func_dot = stab_derivs_seeds[func_key][var_key]
+                        geom_dot = np.sum(sens[func_key][surf_key][geom_key] * rand_arr)
+                        func_dot = stab_derivs_seeds[func_key]
 
 
                         rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
@@ -272,14 +267,14 @@ class TestTotals(unittest.TestCase):
                                 geom_dot,
                                 func_dot,
                                 atol=1e-10,
-                                err_msg=f"{func_key} wrt {var_key:5}  wrt {surf_key}:{geom_key:10}",
+                                err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                             )
                         else:
                             np.testing.assert_allclose(
                                 geom_dot,
                                 func_dot,
                                 rtol=1e-3,
-                                err_msg=f"{func_key} wrt {var_key:5}  wrt {surf_key}:{geom_key:10}",
+                                err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                             )                
 
     def test_params(self):
@@ -320,14 +315,13 @@ class TestTotals(unittest.TestCase):
                     )
 
             for func_key in stab_derivs_seeds:
-                for var_key in stab_derivs_seeds[func_key]:
-                    ad_dot = sens[func_key][var_key][param_key]
-                    func_dot = stab_derivs_seeds[func_key][var_key]
+                    ad_dot = sens[func_key][param_key]
+                    func_dot = stab_derivs_seeds[func_key]
 
                     rel_err = np.abs(ad_dot - func_dot) / np.abs(func_dot + 1e-20)
 
                     # print(
-                    #     f"{func_key} wrt {var_key:5}  wrt {param_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                    #     f"{func_key}   wrt {param_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                     # )
                     
                     tol = 1e-8
@@ -337,14 +331,14 @@ class TestTotals(unittest.TestCase):
                             ad_dot,
                             func_dot,
                             atol=1e-10,
-                            err_msg=f"{func_key} wrt {var_key:5}  wrt {param_key}",
+                            err_msg=f"{func_key}  wrt {param_key}",
                         )
                     else:
                         np.testing.assert_allclose(
                             ad_dot,
                             func_dot,
                             rtol=1e-4,
-                            err_msg=f"{func_key} wrt {var_key:5}  wrt {param_key}",
+                            err_msg=f"{func_key}  wrt {param_key}",
                         )
 
     def test_ref(self):
@@ -386,32 +380,30 @@ class TestTotals(unittest.TestCase):
                     )
             
             for func_key in stab_derivs_seeds:
-                for var_key in stab_derivs_seeds[func_key]:
-                    ad_dot = sens[func_key][var_key][ref_key]
-                    func_dot = stab_derivs_seeds[func_key][var_key]
+                ad_dot = sens[func_key][ref_key]
+                func_dot = stab_derivs_seeds[func_key]
 
-                    # rel_err = np.abs(ad_dot - func_dot) / np.abs(func_dot + 1e-20)
+                # rel_err = np.abs(ad_dot - func_dot) / np.abs(func_dot + 1e-20)
 
-                    # print(
-                    #     f"{func_key} wrt {var_key:5}  wrt {ref_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
-                    # )
-                    
-                    tol = 1e-8
-                    if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
-                        # If either value is basically zero, use an absolute tolerance
-                        np.testing.assert_allclose(
-                            ad_dot,
-                            func_dot,
-                            atol=1e-10,
-                            err_msg=f"{func_key} wrt {var_key:5}  wrt {ref_key}",
-                        )
-                    else:
-                        np.testing.assert_allclose(
-                            ad_dot,
-                            func_dot,
-                            rtol=1e-4,
-                            err_msg=f"{func_key} wrt {var_key:5}  wrt {ref_key}",
-                        )
+                # print(
+                #     f"{func_key} wrt {var_key:5}  wrt {ref_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                # )
+                tol = 1e-8
+                if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
+                    # If either value is basically zero, use an absolute tolerance
+                    np.testing.assert_allclose(
+                        ad_dot,
+                        func_dot,
+                        atol=1e-10,
+                        err_msg=f"{func_key}  wrt {ref_key}",
+                    )
+                else:
+                    np.testing.assert_allclose(
+                        ad_dot,
+                        func_dot,
+                        rtol=1e-4,
+                        err_msg=f"{func_key}  wrt {ref_key}",
+                    )
 
 if __name__ == "__main__":
     unittest.main()

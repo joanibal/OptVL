@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 avl_solver = AVLSolver(geo_file="aircraft.avl", debug=False)
 avl_solver.plot_geom()
 
-avl_solver.add_constraint("alpha", 5.00)
+avl_solver.set_constraint("alpha", 5.00)
 avl_solver.execute_run()
 
 avl_solver.plot_cp()

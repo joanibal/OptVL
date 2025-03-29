@@ -1,4 +1,4 @@
-
+```
   C1  set level or banked  horizontal flight constraints
   C2  set steady pitch rate (looping) flight constraints
   M odify parameters                                    
@@ -20,7 +20,7 @@
                                HM  hinge moments         
                                VM  strip shear,moment    
   MRF  machine-readable format CPOM OML surface pressures
-
+```
 
 
 
@@ -28,6 +28,9 @@ get_case_total_data -> get_total_forces()
 
 
 get_case_coef_derivs -> get_control_stab_derivs 
+- the output dictionary is now flat
+- `cs_derivs['CL']['Elevator'] = cs_derivs['dCL/dElevator']`
+    
 get_case_stab_derivs -> get_stab_derivs
 
 get_case_surface_data -> get_surface_forces
@@ -40,7 +43,7 @@ get_strip_data -> get_strip_forces
 
 
 add_constraint -> set_constraint
-
+add_trim_condition -> set_trim_condition
 add_constraint for variables
 
 con options are
@@ -59,12 +62,13 @@ avl.f:         IF(INDEX(CONNAM(IC),CONN(1:NCONN)).NE.0) GO TO 25
 avl.f:          WRITE(LU,1050) VARNAM(IV), CONNAM(IC), CONVAL(IC,IR)
 
 - set_variable
-ovl.add_variable("alpha", 0.00)
+`ovl.add_variable("alpha", 0.00)`
 
 - set_constraint
-ovl.add_constraint("Rudder", "Cn", 0.0)
+`ovl.set_constraint("Rudder", "Cn", 0.0)`
 
 
 
 removes executeRun. use execute_run instead
 
+- [ ] return stability data as flat array

@@ -29,8 +29,8 @@ class TestStabDerivs(unittest.TestCase):
         # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
         # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver.add_constraint("alpha", 5.0)
-        # self.avl_solver.add_constraint("beta", 0.0)
+        self.avl_solver.set_constraint("alpha", 5.0)
+        # self.avl_solver.set_constraint("beta", 0.0)
         self.avl_solver.execute_run()
 
     def tearDown(self):
@@ -55,16 +55,16 @@ class TestStabDerivs(unittest.TestCase):
         self.avl_solver.avl.velsum()
         self.avl_solver.avl.aero()
         # self.avl_solver.execute_run()
-        coef_data_peturb = self.avl_solver.get_case_total_data()
-        consurf_derivs_peturb = self.avl_solver.get_case_coef_derivs()
+        coef_data_peturb = self.avl_solver.get_total_forces()
+        consurf_derivs_peturb = self.avl_solver.get_control_stab_derivs()
 
         self.avl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-step)
         self.avl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-step)
 
         self.avl_solver.execute_run()
 
-        coef_data = self.avl_solver.get_case_total_data()
-        consurf_derivs = self.avl_solver.get_case_coef_derivs()
+        coef_data = self.avl_solver.get_total_forces()
+        consurf_derivs = self.avl_solver.get_control_stab_derivs()
 
         func_seeds = {}
         for func_key in coef_data:
@@ -82,21 +82,27 @@ class TestStabDerivs(unittest.TestCase):
 
     def test_deriv_values(self):
         # compare the analytical gradients with finite difference for each constraint and function
-        base_data = self.avl_solver.get_case_total_data()
-        stab_derivs = self.avl_solver.get_case_stab_derivs()
+        base_data = self.avl_solver.get_total_forces()
+        stab_derivs = self.avl_solver.get_stab_derivs()
 
         con_keys =  ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"]
+        func_keys = ["CL", "CD", "CY", "CR", "CM", "CN"]
         # con_keys =  ["alpha", "beta", 'roll rate']
         for con_key in con_keys:
             h = 1e-8
-            val = self.avl_solver.get_case_constraint(con_key)
-            self.avl_solver.add_constraint(con_key, val + h)
+            val = self.avl_solver.get_constraint(con_key)
+            self.avl_solver.set_constraint(con_key, val + h)
             self.avl_solver.execute_run()
-            perb_data = self.avl_solver.get_case_total_data()
-            self.avl_solver.add_constraint(con_key, val)
+            perb_data = self.avl_solver.get_total_forces()
+            self.avl_solver.set_constraint(con_key, val)
             
-            for func_key in stab_derivs:
-                ad_dot = stab_derivs[func_key][con_key] 
+            for func_key in func_keys:
+                key = self.avl_solver.get_deriv_key(con_key, func_key)
+                ad_dot = stab_derivs[key] 
+                
+                if func_key in ["CR","CN"]:
+                    func_key += ' SA'
+                
                 fd_dot = (perb_data[func_key] - base_data[func_key]) / h 
                 
                 if con_key in ['alpha', 'beta']:
@@ -104,7 +110,7 @@ class TestStabDerivs(unittest.TestCase):
                    # convert to radians from degrees!
                 
                 rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
-                # print(f"{func_key:5} wrt {con_key:5} | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
+                # print(f"{key:5}  | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
                 tol = 1e-13
                 if np.abs(ad_dot) < tol or np.abs(fd_dot) < tol:
@@ -113,14 +119,14 @@ class TestStabDerivs(unittest.TestCase):
                         ad_dot,
                         fd_dot,
                         atol=1e-10,
-                        err_msg=f"func_key {func_key} w.r.t. {con_key}",
+                        err_msg=f"func_key {key}",
                     )
                 else:
                     np.testing.assert_allclose(
                         ad_dot,
                         fd_dot,
                         rtol=5e-5,
-                        err_msg=f"func_key {func_key} w.r.t. {con_key}",
+                        err_msg=f"func_key {key}",
                     )   
             
             

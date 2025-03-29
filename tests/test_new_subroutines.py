@@ -25,7 +25,7 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 class TestNewSubroutines(unittest.TestCase):
     def setUp(self):
         self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl", debug=False)
-        self.avl_solver.add_constraint("alpha", 25.0)
+        self.avl_solver.set_constraint("alpha", 25.0)
 
     def test_residual(self):
         self.avl_solver.avl.get_res()
@@ -72,9 +72,9 @@ class TestNewSubroutines(unittest.TestCase):
         )
 
     def test_new_solve(self):
-        self.avl_solver.add_constraint("Elevator", 10.00)
-        self.avl_solver.add_constraint("alpha", 10.00)
-        self.avl_solver.add_constraint("beta", 10.00)
+        self.avl_solver.set_constraint("Elevator", 10.00)
+        self.avl_solver.set_constraint("alpha", 10.00)
+        self.avl_solver.set_constraint("beta", 10.00)
         
         self.avl_solver.avl.exec_rhs()
         
@@ -84,16 +84,16 @@ class TestNewSubroutines(unittest.TestCase):
         gam_new   = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM)
         gam_u_new = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM_U)
         print('gam_u_new', np.linalg.norm(gam_u_new))
-        coef_data_new = self.avl_solver.get_case_total_data()
+        coef_data_new = self.avl_solver.get_total_forces()
         
-        coef_derivs_new = self.avl_solver.get_case_coef_derivs()
+        coef_derivs_new = self.avl_solver.get_control_stab_derivs()
 
         self.avl_solver.execute_run()
         gam   = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM)
         wv    = copy.deepcopy(self.avl_solver.avl.SOLV_R.WV)
         gam_u = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM_U)
-        coef_data = self.avl_solver.get_case_total_data()
-        coef_derivs = self.avl_solver.get_case_coef_derivs()
+        coef_data = self.avl_solver.get_total_forces()
+        coef_derivs = self.avl_solver.get_control_stab_derivs()
 
         np.testing.assert_allclose(
             wv,
@@ -119,13 +119,13 @@ class TestNewSubroutines(unittest.TestCase):
             )
 
         for func_key in coef_derivs:
-            for consurf_key in coef_derivs[func_key]:
-                np.testing.assert_allclose(
-                    coef_derivs[func_key][consurf_key],
-                    coef_derivs_new[func_key][consurf_key],
-                    err_msg=f"deriv of func_key {func_key} wrt {consurf_key}",
-                    atol=1e-14,
-                )
+            # for consurf_key in coef_derivs[func_key]:
+            np.testing.assert_allclose(
+                coef_derivs[func_key],
+                coef_derivs_new[func_key],
+                err_msg=f"deriv of func_key {func_key}",
+                atol=1e-14,
+            )
                 
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ class TestParameterAPI(unittest.TestCase):
     def test_get_parameters(self):
 
         for key in self.params_baseline:
-            param = self.avl_solver.get_case_parameter(key)
+            param = self.avl_solver.get_parameter(key)
             self.assertEqual(param, self.params_baseline[key], msg=key)
 
     def test_set_parameters(self):
@@ -53,16 +53,16 @@ class TestParameterAPI(unittest.TestCase):
         for key in self.params_baseline:
             # add each key to the update dict one at a time
 
-            self.avl_solver.set_case_parameter(key, self.params_baseline[key] + 0.1)
+            self.avl_solver.set_parameter(key, self.params_baseline[key] + 0.1)
 
             # check that the parameter was updated
-            param_updated = self.avl_solver.get_case_parameter(key)
+            param_updated = self.avl_solver.get_parameter(key)
             self.assertEqual(param_updated, self.params_baseline[key] + 0.1, msg=key)
 
         # make sure the parameters stay set after an update
         self.avl_solver.execute_run()
         for key in self.params_baseline:
-            param_updated = self.avl_solver.get_case_parameter(key)
+            param_updated = self.avl_solver.get_parameter(key)
             self.assertEqual(param_updated, self.params_baseline[key] + 0.1, msg=key)
 
     def test_set_fort_var(self):
@@ -73,7 +73,7 @@ class TestParameterAPI(unittest.TestCase):
         for key in self.params_baseline:
             # add each key to the update dict one at a time
 
-            self.avl_solver.set_case_parameter(key, self.params_baseline[key] + 0.1)
+            self.avl_solver.set_parameter(key, self.params_baseline[key] + 0.1)
 
         # other parameters only get updated in exec subroutine
         self.avl_solver.execute_run()

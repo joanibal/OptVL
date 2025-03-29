@@ -134,53 +134,7 @@ class AVLSolver(object):
         "CM": ["CASE_R", "CMTOT_D"],
         "CN": ["CASE_R", "CNTOT_D"],
     }
-    
-    case_stab_derivs_to_fort_var = {
-        # derivative of coefficents wrt alpha
-        "CL": {
-            "alpha": ["CASE_R", "CLTOT_AL"],
-            "beta": ["CASE_R", "CLTOT_BE"],
-            "roll rate": ["CASE_R", "CLTOT_RX"],
-            "pitch rate": ["CASE_R", "CLTOT_RY"],
-            "yaw rate": ["CASE_R", "CLTOT_RZ"],
-            },
-        "CD": {
-            "alpha": ["CASE_R", "CDTOT_AL"],
-            "beta": ["CASE_R", "CDTOT_BE"],
-            "roll rate": ["CASE_R", "CDTOT_RX"],
-            "pitch rate": ["CASE_R", "CDTOT_RY"],
-            "yaw rate": ["CASE_R", "CDTOT_RZ"],
-            },
-        "CY": {
-            "alpha": ["CASE_R", "CYTOT_AL"],
-            "beta": ["CASE_R", "CYTOT_BE"],
-            "roll rate": ["CASE_R", "CYTOT_RX"],
-            "pitch rate": ["CASE_R", "CYTOT_RY"],
-            "yaw rate": ["CASE_R", "CYTOT_RZ"],
-            },
-        "CR SA": {
-            "alpha": ["CASE_R", "CRTOT_AL"],
-            "beta": ["CASE_R", "CRTOT_BE"],
-            "roll rate": ["CASE_R", "CRTOT_RX"],
-            "pitch rate": ["CASE_R", "CRTOT_RY"],
-            "yaw rate": ["CASE_R", "CRTOT_RZ"],
-            },
-        "CM": {
-            "alpha": ["CASE_R", "CMTOT_AL"],
-            "beta": ["CASE_R", "CMTOT_BE"],
-            "roll rate": ["CASE_R", "CMTOT_RX"],
-            "pitch rate": ["CASE_R", "CMTOT_RY"],
-            "yaw rate": ["CASE_R", "CMTOT_RZ"],
-            },
-        "CN SA": {
-            "alpha": ["CASE_R", "CNTOT_AL"],
-            "beta": ["CASE_R", "CNTOT_BE"],
-            "roll rate": ["CASE_R", "CNTOT_RX"],
-            "pitch rate": ["CASE_R", "CNTOT_RY"],
-            "yaw rate": ["CASE_R", "CNTOT_RZ"],
-            },
-    }
-    
+  
     # This dict has the following structure:
     # python key: [common block name, fortran varaiable name]
     case_surf_var_to_fort_var = {
@@ -318,7 +272,18 @@ class AVLSolver(object):
             self.conval_idx_dict[c_name] = idx_control_start + idx_c_var
             self.con_var_to_fort_var[c_name] = ["CASE_R", "DELCON"]
             
-
+        var_to_suffix = {
+            "alpha": "AL",
+            "beta": "BE",
+            "roll rate": "RX",
+            "pitch rate": "RY",
+            "yaw rate": "RZ",
+            }
+        self.case_stab_derivs_to_fort_var = {}
+        for func in ["CL", "CD", "CY", "CR", "CM", "CN"]:
+            for var in var_to_suffix:
+                self.case_stab_derivs_to_fort_var[self.get_deriv_key(var, func)] = ["CASE_R", f"{func}TOT_{var_to_suffix[var]}"]
+                
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
         self._init_surf_data()
@@ -422,7 +387,13 @@ class AVLSolver(object):
                 "gaing": ["SURF_GEOM_R", "GAING", gaing_slices],
             }
 
-    def add_constraint(self, var, val, con_var=None):
+# region -- analysis api
+    def execute_run(self, tol=0.00002):
+        # run the analysis (equivalent to the avl command `x` in the oper menu)
+        self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', tol)
+        self.avl.oper()
+
+    def set_constraint(self, var, val, con_var=None):
         avl_variables = {
             "alpha": "A",
             "beta": "B",
@@ -473,7 +444,7 @@ class AVLSolver(object):
 
         self.avl.conset(avl_var, f"{avl_con_var} {val} \n")
 
-    def add_trim_condition(self, variable, val):
+    def set_trim_condition(self, variable, val):
         options = {
             "bankAng": ["B"],
             "CL": ["C"],
@@ -493,7 +464,7 @@ class AVLSolver(object):
 
         self.avl.trmset("C1", "1 ", options[variable][0], (str(val) + "  \n"))
 
-    def get_case_total_data(self) -> Dict[str, float]:
+    def get_total_forces(self) -> Dict[str, float]:
         """Get the aerodynamic data for the last run case and return it as a dictionary.
 
         Returns:
@@ -511,7 +482,7 @@ class AVLSolver(object):
 
         return total_data
 
-    def get_case_coef_derivs(self) -> Dict[str, Dict[str, float]]:
+    def get_control_stab_derivs(self) -> Dict[str, Dict[str, float]]:
         deriv_data = {}
 
         control_names = self.get_control_names()
@@ -519,22 +490,19 @@ class AVLSolver(object):
         for key, avl_key in self.case_derivs_to_fort_var.items():
             slicer = slice(0, len(control_names))
             val_arr = self.get_avl_fort_arr(*avl_key, slicer=slicer)
-            deriv_data[key] = {}
             for idx_control, val in enumerate(val_arr):
                 control = control_names[idx_control]
-                deriv_data[key][control] = val[()]
+                deriv_data[self.get_deriv_key(control, key)] = val[()]
 
         return deriv_data
 
-    def get_case_stab_derivs(self) -> Dict[str, Dict[str, float]]:
+    def get_stab_derivs(self) -> Dict[str, Dict[str, float]]:
         deriv_data = {}
 
-        for func_key, var_dict in self.case_stab_derivs_to_fort_var.items():
-            deriv_data[func_key] = {}
+        for func_key, avl_key in self.case_stab_derivs_to_fort_var.items():
 
-            for var_key, avl_key in var_dict.items():
-                val_arr = self.get_avl_fort_arr(*avl_key)
-                deriv_data[func_key][var_key] = val_arr[()]
+            val_arr = self.get_avl_fort_arr(*avl_key)
+            deriv_data[func_key] = val_arr[()]
 
         return deriv_data
     
@@ -595,7 +563,7 @@ class AVLSolver(object):
 
         return
 
-    def get_case_surface_data(self) -> Dict[str, Dict[str, float]]:
+    def get_surface_forces(self) -> Dict[str, Dict[str, float]]:
         surf_names = self.get_surface_names()
 
         # add a dictionary for each surface that will be filled later
@@ -612,7 +580,7 @@ class AVLSolver(object):
 
         return surf_data
 
-    def get_case_parameter(self, param_key: str) -> float:
+    def get_parameter(self, param_key: str) -> float:
         """
         analogous to ruinont Modify parameters for the oper menu to view parameters.
         """
@@ -631,7 +599,7 @@ class AVLSolver(object):
 
         return param_val
 
-    def get_case_constraint(self, con_key: str) -> float:
+    def get_constraint(self, con_key: str) -> float:
         """ """
         convals = self.get_avl_fort_arr("CASE_R", "CONVAL")
 
@@ -640,7 +608,7 @@ class AVLSolver(object):
 
         return con_val
 
-    def set_case_parameter(self, param_key: str, param_val: float) -> None:
+    def set_parameter(self, param_key: str, param_val: float) -> None:
         """
         analogous to ruinont Modify parameters for the oper menu to view parameters.
         """
@@ -686,7 +654,7 @@ class AVLSolver(object):
 
         return hinge_moments
 
-    def get_strip_data(self) -> Dict[str, Dict[str, np.ndarray]]:
+    def get_strip_forces(self) -> Dict[str, Dict[str, np.ndarray]]:
         # fmt: off
         var_to_fort_var = {
             # geometric quantities
@@ -757,22 +725,7 @@ class AVLSolver(object):
 
         return idx_srp_beg, idx_srp_end
 
-    def executeRun(self):
-        warnings.warn("executeRun is deprecated, use execute_run instead")
-        self.execute_run()
-
-    def execute_run(self, tol=0.00002):
-        # run the analysis (equivalent to the avl command `x` in the oper menu)
-        self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', tol)
-        self.avl.oper()
-
-    def CLSweep(self, start_CL, end_CL, increment=0.1):
-        CLs = np.arange(start_CL, end_CL + increment, increment)
-
-        for cl in CLs:
-            self.add_trim_condition("CL", cl)
-            self.execute_run()
-            
+# region --- modal analysis api
     def execute_eigen_mode_calc(self):
         self.avl.execute_eigenmode_calc()
     
@@ -816,6 +769,7 @@ class AVLSolver(object):
         
         return asys
 
+# region --- geometry api
     def get_control_names(self) -> List[str]:
         fort_names = self.get_avl_fort_arr("CASE_C", "DNAME")
         control_names = self._convertFortranStringArrayToList(fort_names)
@@ -1015,7 +969,7 @@ class AVLSolver(object):
         
         return body_data
 
-
+# region --- geometry file writing api
     def write_geom_file(self, filename: str):
         """write the current avl geometry to a file"""
         with open(filename, "w") as fid:
@@ -1094,6 +1048,7 @@ class AVLSolver(object):
         # ======================================================
         # ------------------- Geometry File --------------------
         # ======================================================
+
     def __write_body(self, fid, body_name, data):
         self.__write_banner(fid, body_name)
         fid.write(f"BODY\n")
@@ -1248,7 +1203,7 @@ class AVLSolver(object):
 
         return py_string
 
-    # Utility functions
+# region --- Utility functions
     def get_num_surfaces(self) -> int:
         """Get the number of surfaces in the geometry"""
         return self.get_avl_fort_arr("CASE_I", "NSURF")
@@ -1301,7 +1256,22 @@ class AVLSolver(object):
                 strList.append(py_string)
 
         return strList
-
+    
+    def split_deriv_key(self, key):
+        try:
+            var, func = key.split('/')
+        except Exception as e :
+            print(key)
+            import pdb; pdb.set_trace()
+            raise e
+        # remove leading 'd's
+        var = var[1:]
+        func = func[1:]
+        return var, func
+    
+    def get_deriv_key(self, var: str, func : str) -> str:
+        return f'd{func}/d{var}'
+    
 # ---------------------------
 # --- Derivative routines ---
 # ---------------------------
@@ -1341,12 +1311,12 @@ class AVLSolver(object):
             elif mode == "FD":
                 # reverse lookup in the con_var_to_fort_var dict
 
-                val = self.get_case_constraint(con)
+                val = self.get_constraint(con)
 
                 val += con_seed_arr * scale
 
                 # use the contraint API to adjust the value
-                self.add_constraint(con, val)
+                self.set_constraint(con, val)
     
     def set_parameter_ad_seeds(self, parm_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
         for param_key in parm_seeds:
@@ -1573,11 +1543,10 @@ class AVLSolver(object):
             blk += self.ad_suffix
             var += self.ad_suffix
             val_arr = self.get_avl_fort_arr(blk, var, slicer=slicer)
-            cs_deriv_seeds[_var] = {}
 
             for idx_control, val in enumerate(val_arr):
                 control = consurf_names[idx_control]
-                cs_deriv_seeds[_var][control] = val[()]
+                cs_deriv_seeds[self.get_deriv_key(control,_var)] = val[()]
 
         return cs_deriv_seeds
 
@@ -1585,13 +1554,15 @@ class AVLSolver(object):
         consurf_names = self.get_control_names()
         num_consurf = len(consurf_names)
 
-        for _var in cs_deriv_seeds:
+        for deriv_func in cs_deriv_seeds:
             val_arr = np.zeros((num_consurf))
-            for cs_name in cs_deriv_seeds[_var]:
-                idx_cs = consurf_names.index(cs_name)
-                val_arr[idx_cs] = cs_deriv_seeds[_var][cs_name] * scale
+            
+            var, cs_name = self.split_deriv_key(deriv_func)
+            
+            idx_cs = consurf_names.index(cs_name)
+            val_arr[idx_cs] = cs_deriv_seeds[deriv_func] * scale
 
-            blk, var = self.case_derivs_to_fort_var[_var]
+            blk, var = self.case_derivs_to_fort_var[var]
             slicer = (slice(0, num_consurf),)
 
             blk += self.ad_suffix
@@ -1603,29 +1574,27 @@ class AVLSolver(object):
         
         deriv_data = {}
 
-        for func_key, var_dict in self.case_stab_derivs_to_fort_var.items():
+        for func_key, avl_vars in self.case_stab_derivs_to_fort_var.items():
             deriv_data[func_key] = {}
 
-            for var_key in var_dict:
-                blk, var = var_dict[var_key]
-                blk += self.ad_suffix
-                var += self.ad_suffix    
-                val_arr = self.get_avl_fort_arr(blk, var)
-                deriv_data[func_key][var_key] = val_arr[()]
+            blk, var = avl_vars
+            blk += self.ad_suffix
+            var += self.ad_suffix    
+            val_arr = self.get_avl_fort_arr(blk, var)
+            deriv_data[func_key] = val_arr[()]
 
         return deriv_data
 
     def set_stab_derivs_ad_seeds(self, stab_deriv_seeds: Dict[str, Dict[str, float]], scale=1.0):
         for func_key in stab_deriv_seeds:
-            for var_key in stab_deriv_seeds[func_key]:
-                blk, var  = self.case_stab_derivs_to_fort_var[func_key][var_key]
+            blk, var  = self.case_stab_derivs_to_fort_var[func_key]
 
-                blk += self.ad_suffix
-                var += self.ad_suffix
-                
-                val = stab_deriv_seeds[func_key][var_key] * scale
-                
-                self.set_avl_fort_arr(blk, var, val)
+            blk += self.ad_suffix
+            var += self.ad_suffix
+            
+            val = stab_deriv_seeds[func_key] * scale
+            
+            self.set_avl_fort_arr(blk, var, val)
 
 # --- derivative utils
     def clear_ad_seeds(self):
@@ -1668,7 +1637,6 @@ class AVLSolver(object):
                         # print(diff_blk, _var, val.shape, slicer)
                         # mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
                         # print(f"    Memory usage: {mb_memory} MB")
-
 
     def print_ad_seeds(self, print_non_zero: bool = False):
         for att in dir(self.avl):
@@ -1780,9 +1748,9 @@ class AVLSolver(object):
             self.avl.velsum()
             self.avl.aero()
 
-            coef_data_peturb = self.get_case_total_data()
-            consurf_derivs_petrub = self.get_case_coef_derivs()
-            stab_deriv_petrub = self.get_case_stab_derivs()
+            coef_data_peturb = self.get_total_forces()
+            consurf_derivs_petrub = self.get_control_stab_derivs()
+            stab_deriv_petrub = self.get_stab_derivs()
 
             res_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
             res_d_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
@@ -1802,9 +1770,9 @@ class AVLSolver(object):
             self.avl.velsum()
             self.avl.aero()
 
-            coef_data = self.get_case_total_data()
-            consurf_derivs = self.get_case_coef_derivs()
-            stab_deriv = self.get_case_stab_derivs()
+            coef_data = self.get_total_forces()
+            consurf_derivs = self.get_control_stab_derivs()
+            stab_deriv = self.get_stab_derivs()
 
             res = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
             res_d = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
@@ -1815,20 +1783,16 @@ class AVLSolver(object):
                 func_seeds[func_key] = (coef_data_peturb[func_key] - coef_data[func_key]) / step
 
             consurf_derivs_seeds = {}
-            for func_key in consurf_derivs:
-                consurf_derivs_seeds[func_key] = {}
-                for surf_key in consurf_derivs[func_key]:
-                    consurf_derivs_seeds[func_key][surf_key] = (
-                        consurf_derivs_petrub[func_key][surf_key] - consurf_derivs[func_key][surf_key]
-                    ) / step
+            for deriv_func in consurf_derivs:
+                consurf_derivs_seeds[deriv_func] = (
+                    consurf_derivs_petrub[deriv_func] - consurf_derivs[deriv_func]
+                ) / step
                     
             stab_derivs_seeds = {}
-            for func_key in stab_deriv:
-                stab_derivs_seeds[func_key] = {}
-                for var_key in stab_deriv[func_key]:
-                    stab_derivs_seeds[func_key][var_key] = (
-                        stab_deriv_petrub[func_key][var_key] - stab_deriv[func_key][var_key]
-                    ) / step
+            for deriv_func in stab_deriv:
+                stab_derivs_seeds[deriv_func] = (
+                    stab_deriv_petrub[deriv_func] - stab_deriv[deriv_func]
+                ) / step
 
             res_seeds = (res_peturbed - res) / step
             res_d_seeds = (res_d_peturbed - res_d) / step
@@ -1841,8 +1805,8 @@ class AVLSolver(object):
         self,
         func_seeds: Optional[Dict[str, float]] = None,
         res_seeds: Optional[np.ndarray] = None,
-        consurf_derivs_seeds: Optional[Dict[str, Dict[str, float]]] = None,
-        stab_derivs_seeds: Optional[Dict[str, Dict[str, float]]] = None,
+        consurf_derivs_seeds: Optional[Dict[str, float]] = None,
+        stab_derivs_seeds: Optional[Dict[str, float]] = None,
         res_d_seeds: Optional[np.ndarray] = None,
         res_u_seeds: Optional[np.ndarray] = None,
         print_timings=False,
@@ -1916,7 +1880,6 @@ class AVLSolver(object):
 
         return con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
 
-
     def execute_adjoint_solve():
         raise NotImplementedError
 
@@ -1937,7 +1900,7 @@ class AVLSolver(object):
         # set up and solve the adjoint for each function
         for func in funcs:
             sens[func] = {}
-            # get the RHS of the adjiont equation (pFpU)
+            # get the RHS of the adjoint equation (pFpU)
             # TODO: remove seeds if it doesn't effect accuracy
             # self.clear_ad_seeds()
             time_last = time.time()
@@ -1975,105 +1938,98 @@ class AVLSolver(object):
                 print("Running consurf derivs")
                 time_last = time.time()
 
-            cs_deriv_seeds = {}
             for func_key in consurf_derivs:
-                cs_deriv_seeds[func_key] = {}
                 if func_key not in sens:
                     sens[func_key] = {}
-                for cs_key in consurf_derivs[func_key]:
-                    cs_deriv_seeds[func_key][cs_key] = 1.0
-                    sens[func_key][cs_key] = {}
 
-                    # get the RHS of the adjoint equation (pFpU)
-                    # TODO: remove seeds if it doesn't effect accuracy
-                    _, _, pfpU, pf_pU_d, _, _, _ = self.execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)
-                    if print_timings:
-                        print(f"Time to get RHS: {time.time() - time_last}")
-                        time_last = time.time()
+                # get the RHS of the adjoint equation (pFpU)
+                # TODO: remove seeds if it doesn't effect accuracy
+                _, _, pfpU, pf_pU_d, _, _, _ = self.execute_jac_vec_prod_rev(consurf_derivs_seeds={func_key: 1.0})
+                if print_timings:
+                    print(f"Time to get RHS: {time.time() - time_last}")
+                    time_last = time.time()
 
-                    # self.clear_ad_seeds()
-                    # u solver adjoint equation with RHS
-                    self.set_gamma_ad_seeds(-1 * pfpU)
-                    self.set_gamma_d_ad_seeds(-1 * pf_pU_d)
-                    solve_stab_deriv_adj=False
-                    solve_con_surf_adj=True
-                    self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
-                    if print_timings:
-                        print(f"Time to solve adjoint: {time.time() - time_last}")
-                        time_last = time.time()
+                # self.clear_ad_seeds()
+                # u solver adjoint equation with RHS
+                self.set_gamma_ad_seeds(-1 * pfpU)
+                self.set_gamma_d_ad_seeds(-1 * pf_pU_d)
+                solve_stab_deriv_adj=False
+                solve_con_surf_adj=True
+                self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
+                if print_timings:
+                    print(f"Time to solve adjoint: {time.time() - time_last}")
+                    time_last = time.time()
 
-                    # get the resulting adjoint vector (dfunc/dRes) from fortran
-                    dfdR = self.get_residual_ad_seeds()
-                    dfdR_d = self.get_residual_d_ad_seeds()
-                    # self.clear_ad_seeds()
-                    con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
-                        consurf_derivs_seeds=cs_deriv_seeds, res_seeds=dfdR, res_d_seeds=dfdR_d
-                    )
-                    if print_timings:
-                        print(f"Time to combine : {time.time() - time_last}")
-                        time_last = time.time()
+                # get the resulting adjoint vector (dfunc/dRes) from fortran
+                dfdR = self.get_residual_ad_seeds()
+                dfdR_d = self.get_residual_d_ad_seeds()
+                # self.clear_ad_seeds()
+                con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
+                    consurf_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d
+                )
+                if print_timings:
+                    print(f"Time to combine : {time.time() - time_last}")
+                    time_last = time.time()
 
-                    sens[func_key][cs_key].update(con_seeds)
-                    sens[func_key][cs_key].update(geom_seeds)
-                    sens[func_key][cs_key].update(param_seeds)
-                    sens[func_key][cs_key].update(ref_seeds)
-                    cs_deriv_seeds[func_key][cs_key] = 0.0
+                sens[func_key].update(con_seeds)
+                sens[func_key].update(geom_seeds)
+                sens[func_key].update(param_seeds)
+                sens[func_key].update(ref_seeds)
 
         if stab_derivs is not None:
             if print_timings:
                 print("Running stab derivs")
                 time_last = time.time()
 
-            sd_deriv_seeds = {}
+            # sd_deriv_seeds = {}
             for func_key in stab_derivs:
-                sd_deriv_seeds[func_key] = {}
+                # sd_deriv_seeds[func_key] = {}
                 if func_key not in sens:
                     sens[func_key] = {}
 
-                for var_key in stab_derivs[func_key]:
-                    sd_deriv_seeds[func_key][var_key] = 1.0
-                    sens[func_key][var_key] = {}
+                # for var_key in stab_derivs[func_key]:
+                #     sd_deriv_seeds[func_key][var_key] = 1.0
+                #     sens[func_key][var_key] = {}
 
-                    # get the RHS of the adjoint equation (pFpU)
-                    # TODO: remove seeds if it doesn't effect accuracy
-                    _, _, pfpU, _, pf_pU_u, _, _ = self.execute_jac_vec_prod_rev(stab_derivs_seeds=sd_deriv_seeds)
-                    if print_timings:
-                        print(f"Time to get RHS: {time.time() - time_last}")
-                        time_last = time.time()
+                # get the RHS of the adjoint equation (pFpU)
+                # TODO: remove seeds if it doesn't effect accuracy
+                _, _, pfpU, _, pf_pU_u, _, _ = self.execute_jac_vec_prod_rev(stab_derivs_seeds={func_key : 1.0})
+                if print_timings:
+                    print(f"Time to get RHS: {time.time() - time_last}")
+                    time_last = time.time()
 
-                    # self.clear_ad_seeds()
-                    # u solver adjoint equation with RHS
-                    self.set_gamma_ad_seeds(-1 * pfpU)
-                    self.set_gamma_u_ad_seeds(-1 * pf_pU_u)
-                    solve_stab_deriv_adj=True
-                    solve_con_surf_adj=False
-                    self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
-                    if print_timings:
-                        print(f"Time to solve adjoint: {time.time() - time_last}")
-                        time_last = time.time()
+                # self.clear_ad_seeds()
+                # u solver adjoint equation with RHS
+                self.set_gamma_ad_seeds(-1 * pfpU)
+                self.set_gamma_u_ad_seeds(-1 * pf_pU_u)
+                solve_stab_deriv_adj=True
+                solve_con_surf_adj=False
+                self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
+                if print_timings:
+                    print(f"Time to solve adjoint: {time.time() - time_last}")
+                    time_last = time.time()
 
-                    # get the resulting adjoint vector (dfunc/dRes) from fortran
-                    dfdR = self.get_residual_ad_seeds()
-                    dfdR_u = self.get_residual_u_ad_seeds()
-                    # self.clear_ad_seeds()
-                    con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
-                        stab_derivs_seeds=sd_deriv_seeds, res_seeds=dfdR, res_u_seeds=dfdR_u
-                    )
-                    if print_timings:
-                        print(f"Time to combine : {time.time() - time_last}")
-                        time_last = time.time()
+                # get the resulting adjoint vector (dfunc/dRes) from fortran
+                dfdR = self.get_residual_ad_seeds()
+                dfdR_u = self.get_residual_u_ad_seeds()
+                # self.clear_ad_seeds()
+                con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self.execute_jac_vec_prod_rev(
+                    stab_derivs_seeds={func_key : 1.0}, res_seeds=dfdR, res_u_seeds=dfdR_u
+                )
 
-                    sens[func_key][var_key].update(con_seeds)
-                    sens[func_key][var_key].update(geom_seeds)
-                    sens[func_key][var_key].update(param_seeds)
-                    sens[func_key][var_key].update(ref_seeds)
-                    sd_deriv_seeds[func_key][var_key] = 0.0
+                if print_timings:
+                    print(f"Time to combine : {time.time() - time_last}")
+                    time_last = time.time()
+
+                sens[func_key].update(con_seeds)
+                sens[func_key].update(geom_seeds)
+                sens[func_key].update(param_seeds)
+                sens[func_key].update(ref_seeds)
+                # sd_deriv_seeds[func_key] = 0.0
 
         return sens
 
-
 # --- ploting and vizulaization ---
-
     def add_mesh_plot(self, axis, xaxis='x', yaxis='y', show_mesh=True):
         """ adds a plot of the aircraft mesh to the axis"""
         mesh_size = self.get_mesh_size()
@@ -2182,8 +2138,6 @@ class AVLSolver(object):
                         }
                         axis.plot(pts[xaxis], pts[yaxis], '--', color='grey', linewidth=0.3)
                         
-                
-
     def plot_geom(self, **kwargs):
         import matplotlib.pyplot as plt
         

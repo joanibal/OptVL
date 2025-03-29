@@ -80,7 +80,7 @@ def add_avl_params_as_inputs(sys, avl):
     
     # only adding the ones people would use for now
     for param in ["CD0", "Mach", "X cg", "Y cg", "Z cg"]:
-        val = avl.get_case_parameter(param)
+        val = avl.get_parameter(param)
         sys.add_input(param, val=val, tags="param")
 
 def add_avl_refs_as_inputs(sys, avl):
@@ -124,16 +124,16 @@ def om_surf_dict_to_input(surf_dict):
 
 def om_set_avl_inputs(sys, inputs):
     for c_name in sys.control_names:
-        sys.avl.add_constraint(c_name, inputs[c_name][0])
+        sys.avl.set_constraint(c_name, inputs[c_name][0])
 
-    sys.avl.add_constraint("alpha", inputs["alpha"][0])
-    sys.avl.add_constraint("beta", inputs["beta"][0])
+    sys.avl.set_constraint("alpha", inputs["alpha"][0])
+    sys.avl.set_constraint("beta", inputs["beta"][0])
 
     # add the parameters to the run
     for param in sys.avl.param_idx_dict:
         if param in inputs:
             val = inputs[param][0]
-            sys.avl.set_case_parameter(param, val)
+            sys.avl.set_parameter(param, val)
     
     # add the parameters to the run
     for ref in sys.avl.ref_var_to_fort_var:
@@ -236,7 +236,7 @@ class AVLSolverComp(om.ImplicitComponent):
         gam_u_arr = self.avl.get_avl_fort_arr("VRTX_R", "GAM_U", slicer=self.res_u_slice)
         outputs["gamma_u"] = copy.deepcopy(gam_u_arr)
 
-        # run_data = self.avl.get_case_total_data()
+        # run_data = self.avl.get_total_forces()
         # for func_key in run_data:
         #     print(func_key, run_data[func_key])
         # func_key = "CL"
@@ -366,17 +366,13 @@ class AVLFuncsComp(om.ExplicitComponent):
         self.output_con_surf_derivs = self.options["output_con_surf_derivs"]
         if self.output_con_surf_derivs:
             for func_key in self.avl.case_derivs_to_fort_var:
-                for con_name in self.control_names:
-                    var_name = f"d{func_key}_d{con_name}"
-                    self.add_output(var_name)
+                self.add_output(func_key)
         
         self.output_stabililty_derivs = self.options["output_stabililty_derivs"]
         if self.output_stabililty_derivs:
             deriv_dict = self.avl.case_stab_derivs_to_fort_var
             for func_key in deriv_dict:
-                for var in deriv_dict[func_key]:
-                    var_name = f"d{func_key}_d{var}"
-                    self.add_output(var_name)        
+                self.add_output(func_key)        
         
         # TODO-refactor: push these slices down into the ovl class?                     
         self.res_slice = (slice(0, self.num_states),)
@@ -386,10 +382,10 @@ class AVLFuncsComp(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         # self.avl.set_gamma(inputs['gamma'])
         # for c_name in self.control_names:
-        #     self.avl.add_constraint(c_name, inputs[c_name][0])
+        #     self.avl.set_constraint(c_name, inputs[c_name][0])
         # def_dict = self.avl.get_control_deflections()
 
-        # TODO: add_constraint does not correctly do derives yet
+        # TODO: set_constraint does not correctly do derives yet
         start_time = time.time()
         om_set_avl_inputs(self, inputs)
 
@@ -413,7 +409,7 @@ class AVLFuncsComp(om.ExplicitComponent):
         self.avl.avl.velsum()
         self.avl.avl.aero()
 
-        run_data = self.avl.get_case_total_data()
+        run_data = self.avl.get_total_forces()
 
         for func_key in run_data:
             # print(f' {func_key} {run_data[func_key]}')
@@ -421,18 +417,15 @@ class AVLFuncsComp(om.ExplicitComponent):
         # print(f" CD {run_data['CD']} CL {run_data['CL']}")
 
         if self.output_con_surf_derivs:
-            consurf_derivs_seeds = self.avl.get_case_coef_derivs()
+            consurf_derivs_seeds = self.avl.get_control_stab_derivs()
             for func_key in consurf_derivs_seeds:
-                for con_name in consurf_derivs_seeds[func_key]:
-                    var_name = f"d{func_key}_d{con_name}"
-                    outputs[var_name] = consurf_derivs_seeds[func_key][con_name]
+                    # var_name = f"d{func_key}_d{con_name}"
+                outputs[func_key] = consurf_derivs_seeds[func_key]
 
         if self.output_stabililty_derivs:
-            stab_derivs = self.avl.get_case_stab_derivs()
+            stab_derivs = self.avl.get_stab_derivs()
             for func_key in stab_derivs:
-                for var in stab_derivs[func_key]:
-                    var_name = f"d{func_key}_d{var}"
-                    outputs[var_name] = stab_derivs[func_key][var]
+                outputs[func_key] = stab_derivs[func_key]
                 
         # print("Funcs Compute time: ", time.time() - start_time)
 
@@ -506,38 +499,25 @@ class AVLFuncsComp(om.ExplicitComponent):
             csd_seeds = {}
             con_names = self.avl.get_control_names()
             for func_key in self.avl.case_derivs_to_fort_var:
-                csd_seeds[func_key] = {}
                 for con_name in con_names:
-                    var_name = f"d{func_key}_d{con_name}"
+                    var_name = self.avl.get_deriv_key(con_name, func_key)
 
                     if var_name in d_outputs:
-                        csd_seeds[func_key][con_name] = d_outputs[var_name]
+                        csd_seeds[var_name] = d_outputs[var_name]
                         
-                        if np.abs(csd_seeds[func_key][con_name]) > 0.0:
-                            # print(var_name, csd_seeds[func_key][con_name])
+                        if np.abs(csd_seeds[var_name]) > 0.0:
+                            # print(var_name, csd_seeds[func_key])
                             print(f'  running rev mode derivs for {var_name}')
-            
-            csd_seeds = {}
-            con_names = self.avl.get_control_names()
-            for func_key in self.avl.case_derivs_to_fort_var:
-                csd_seeds[func_key] = {}
-                for con_name in con_names:
-                    var_name = f"d{func_key}_d{con_name}"
-
-                    
-
+                
+ 
             stab_derivs_seeds = {}
-            for func_key, var_dict in self.avl.case_stab_derivs_to_fort_var.items():
-                stab_derivs_seeds[func_key] = {}
-                for var_key in var_dict:
-                    var_name = f"d{func_key}_d{var_key}"
+            for func_key in self.avl.case_stab_derivs_to_fort_var:
+                if func_key in d_outputs:
+                    stab_derivs_seeds[func_key] = d_outputs[func_key]
                     
-                    if var_name in d_outputs:
-                        stab_derivs_seeds[func_key][var_key] = d_outputs[var_name]
-                        
-                        if np.abs(stab_derivs_seeds[func_key][var_key]) > 0.0:
-                            # print(var_name, stab_derivs_seeds[func_key][var_key])
-                            print(f'  running rev mode derivs for {var_name}')
+                    if np.abs(stab_derivs_seeds[func_key]) > 0.0:
+                        # print(var_name, stab_derivs_seeds[func_key])
+                        print(f'  running rev mode derivs for {func_key}')
 
                         
             con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(
@@ -607,7 +587,7 @@ class AVLPostProcessComp(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         # self.avl.set_gamma(inputs['gamma'])
         # for c_name in self.control_names:
-        #     self.avl.add_constraint(c_name, inputs[c_name][0])
+        #     self.avl.set_constraint(c_name, inputs[c_name][0])
         # def_dict = self.avl.get_control_deflections()
 
         om_set_avl_inputs(self, inputs)

@@ -29,8 +29,8 @@ class TestFunctionPartials(unittest.TestCase):
         # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
         # self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
         self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver.add_constraint("alpha", 25.0)
-        self.avl_solver.add_constraint("beta", 5.0)
+        self.avl_solver.set_constraint("alpha", 25.0)
+        self.avl_solver.set_constraint("beta", 5.0)
         self.avl_solver.execute_run()
         
     def tearDown(self):
@@ -349,8 +349,8 @@ class TestResidualPartials(unittest.TestCase):
         # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
         # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver.add_constraint("alpha", 25.0)
-        self.avl_solver.add_constraint("beta", 5.0)
+        self.avl_solver.set_constraint("alpha", 25.0)
+        self.avl_solver.set_constraint("beta", 5.0)
         self.avl_solver.execute_run()
         process = psutil.Process()
         mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB

@@ -64,18 +64,19 @@ The AVL wrapper is implemented in the `OVLSolver` class.
 To use this wrapper, first one must initialize the `AVLSolver` object with a geometry file and optionally a mass file. 
 After, the user can add constraints and then execute the run to generate data. 
 Below is a basic example of this workflow. 
+
 ```python
 from optvl import AVLSolver
 import numpy as np
 
 ovl = OVLSolver(geo_file="aircraft.avl")
-ovl.add_constraint("alpha", 0.00)
+ovl.set_constraint("alpha", 0.00)
 
 # control surface names from geometry file
-ovl.add_constraint("Elevator", 0.00, con_var="Cm pitch moment")
-ovl.add_constraint("Rudder", 0.00, con_var="Cn yaw moment")
+ovl.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
+ovl.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
 
-ovl.set_case_parameter("Mach", 0.3)
+ovl.set_parameter("Mach", 0.3)
 
 # This is the method that acutally runs the analysis
 ovl.execute_run()
@@ -83,9 +84,9 @@ ovl.execute_run()
 print("----------------- alpha sweep ----------------")
 print("   Angle        Cl           Cd          Cdi          Cdv          Cm")
 for alpha in range(10):
-    ovl.add_constraint("alpha", alpha)
+    ovl.set_constraint("alpha", alpha)
     ovl.execute_run()
-    run_data = ovl.get_case_total_data()
+    run_data = ovl.get_total_forces()
     print(
         f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
     )
@@ -93,10 +94,10 @@ for alpha in range(10):
 print("----------------- CL sweep ----------------")
 print("   Angle        Cl           Cd          Cdff          Cdv          Cm")
 for cl in np.arange(0.6,1.6,0.1):
-    ovl.add_trim_condition("CL", cl)
+    ovl.set_trim_condition("CL", cl)
     ovl.execute_run()
-    run_data = ovl.get_case_total_data()
-    alpha = ovl.get_case_parameter("alpha")
+    run_data = ovl.get_total_forces()
+    alpha = ovl.get_parameter("alpha")
     print(
         f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
     )

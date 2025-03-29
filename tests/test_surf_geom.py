@@ -55,8 +55,8 @@ class TestGeom(unittest.TestCase):
                     err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
                 )
 
-        self.avl_solver.add_constraint("alpha", 6.00)
-        self.avl_solver.add_constraint("beta", 2.00)
+        self.avl_solver.set_constraint("alpha", 6.00)
+        self.avl_solver.set_constraint("beta", 2.00)
         self.avl_solver.execute_run()
         
         assert self.avl_solver.get_num_surfaces() == 5
@@ -64,17 +64,17 @@ class TestGeom(unittest.TestCase):
         assert self.avl_solver.get_mesh_size() == 780
 
         np.testing.assert_allclose(
-            self.avl_solver.get_case_constraint("alpha"),
+            self.avl_solver.get_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_case_constraint("beta"),
+            self.avl_solver.get_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
         
-        coefs = self.avl_solver.get_case_total_data()
+        coefs = self.avl_solver.get_total_forces()
         np.testing.assert_allclose(
             coefs["CL"],
             5.407351081559913,
@@ -88,22 +88,22 @@ class TestGeom(unittest.TestCase):
         assert self.avl_solver.get_num_strips() == 90
         assert self.avl_solver.get_mesh_size() == 780
 
-        self.avl_solver.add_constraint("alpha", 6.00)
-        self.avl_solver.add_constraint("beta", 2.00)
+        self.avl_solver.set_constraint("alpha", 6.00)
+        self.avl_solver.set_constraint("beta", 2.00)
         self.avl_solver.execute_run()
 
         np.testing.assert_allclose(
-            self.avl_solver.get_case_constraint("alpha"),
+            self.avl_solver.get_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_case_constraint("beta"),
+            self.avl_solver.get_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
         
-        coefs = self.avl_solver.get_case_total_data()
+        coefs = self.avl_solver.get_total_forces()
         np.testing.assert_allclose(
             coefs["CL"],
             5.407351081559913,
@@ -119,12 +119,12 @@ class TestGeom(unittest.TestCase):
             },
         }
         
-        self.avl_solver.add_constraint("alpha", 10.00)
+        self.avl_solver.set_constraint("alpha", 10.00)
         self.avl_solver.set_surface_params(new_data)
         
         self.avl_solver.execute_run()
         
-        run_data = self.avl_solver.get_case_total_data()
+        run_data = self.avl_solver.get_total_forces()
         
         # if only one wing was updated then will have unbalanced yaw and roll moments
         np.testing.assert_allclose(

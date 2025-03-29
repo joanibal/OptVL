@@ -42,7 +42,7 @@ class TestOMWrapper(unittest.TestCase):
     def test_aero_coef(self):
         
         self.avl_solver.execute_run()
-        run_data = self.avl_solver.get_case_total_data()
+        run_data = self.avl_solver.get_total_forces()
 
         prob = self.prob
         prob.setup(mode='rev')
@@ -69,7 +69,7 @@ class TestOMWrapper(unittest.TestCase):
                 self.avl_solver.set_surface_param(surf_key, geom_key, arr)
                 self.avl_solver.avl.update_surfaces()
                 self.avl_solver.execute_run()
-                run_data = self.avl_solver.get_case_total_data()
+                run_data = self.avl_solver.get_total_forces()
                 # set om surface data
                 prob.set_val(f"avlsolver.{surf_key}:{geom_key}", arr)
                 prob.run_model()
@@ -97,9 +97,9 @@ class TestOMWrapper(unittest.TestCase):
         om_val = prob.get_val(f"avlsolver.alpha")
         
         
-        self.avl_solver.add_trim_condition("CL", cl_star)
+        self.avl_solver.set_trim_condition("CL", cl_star)
         self.avl_solver.execute_run()
-        alpha = self.avl_solver.get_case_parameter("alpha")
+        alpha = self.avl_solver.get_parameter("alpha")
         
         np.testing.assert_allclose(om_val,
                             alpha,
@@ -125,9 +125,9 @@ class TestOMWrapper(unittest.TestCase):
         om_val = prob.get_val(f"avlsolver.alpha")
         
         
-        self.avl_solver.add_constraint("alpha", 0.00, con_var="Cm pitch moment")
+        self.avl_solver.set_constraint("alpha", 0.00, con_var="Cm pitch moment")
         self.avl_solver.execute_run()
-        alpha = self.avl_solver.get_case_parameter("alpha")
+        alpha = self.avl_solver.get_parameter("alpha")
         
         np.testing.assert_allclose(om_val,
                             alpha,
@@ -148,7 +148,7 @@ class TestOMWrapper(unittest.TestCase):
         prob.model.add_design_var("avlsolver.Mach")
         prob.model.add_design_var("avlsolver.X cg")
         prob.model.add_constraint("avlsolver.CL", equals=cl_star)
-        prob.model.add_constraint("avlsolver.dCL_dalpha", equals=-dcl_dalpha_star)
+        prob.model.add_constraint("avlsolver.dCL/dalpha", equals=-dcl_dalpha_star)
         prob.model.add_objective("avlsolver.CD", scaler=1e3)
         prob.model.add_objective("avlsolver.CM", scaler=1e3)
         prob.setup(mode='rev')
