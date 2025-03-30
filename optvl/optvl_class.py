@@ -2153,7 +2153,6 @@ class AVLSolver(object):
                         
     def plot_geom(self, axes=None):
         
-        
         if axes == None:
             import matplotlib.pyplot as plt
             
@@ -2163,7 +2162,7 @@ class AVLSolver(object):
             ax2.set_ylabel('Z', rotation=0)
             ax2.set_xlabel('Y')
             ax1.set_ylabel('X', rotation=0)
-        
+
         else:
             ax1, ax2 = axes
         
