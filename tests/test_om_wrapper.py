@@ -139,7 +139,9 @@ class TestOMWrapper(unittest.TestCase):
         prob = self.prob
         cl_star = 1.5
         dcl_dalpha_star = -0.1
-        prob.model.add_design_var("avlsolver.Wing:xyzles")
+        prob.model.add_design_var("avlsolver.Wing:xles")
+        prob.model.add_design_var("avlsolver.Wing:yles")
+        prob.model.add_design_var("avlsolver.Wing:zles")
         prob.model.add_design_var("avlsolver.Wing:chords")
         prob.model.add_design_var("avlsolver.Wing:aincs")
         prob.model.add_design_var("avlsolver.Elevator", lower=-10, upper=10)

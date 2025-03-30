@@ -42,9 +42,9 @@ class AVLGroup(om.Group):
                                     promotes=["*"])
         if self.options["write_grid"]:
             self.add_subsystem(
-                "postprocess", AVLPostProcessComp(avl=avl, output_dir=self.options["output_dir"]),
+                "postprocess", AVLPostProcessComp(avl=avl, output_dir=self.options["output_dir"],
                                                     input_param_vals=input_param_vals,
-                                                    input_ref_vals=input_ref_vals,
+                                                    input_ref_vals=input_ref_vals),
                                                     promotes=["*"]
                                                 )
 
@@ -578,10 +578,13 @@ class AVLPostProcessComp(om.ExplicitComponent):
         add_avl_controls_as_inputs(self, self.avl)
         add_avl_geom_vars(self, self.avl, add_as="inputs")
 
-        self.iter_count = 0
         self.res_slice = (slice(0, self.num_states),)
         self.res_d_slice = (slice(0, self.num_cs), slice(0, self.num_states))
         self.res_u_slice = (slice(0, self.num_vel), slice(0, self.num_states))
+        
+        # check to make sure the output dir exists
+        if not os.path.exists(self.options["output_dir"]):
+            os.mkdir(self.options["output_dir"])
 
 
     def compute(self, inputs, outputs):
@@ -608,8 +611,10 @@ class AVLPostProcessComp(om.ExplicitComponent):
         file_name = f"vlm_{self.iter_count:03d}.avl"
         output_dir = self.options["output_dir"]
         self.avl.write_geom_file(os.path.join(output_dir, file_name))
-
-        self.iter_count += 1
+        
+        file_name = f"vlm_{self.iter_count:03d}"
+        self.avl.write_tecplot(os.path.join(output_dir, file_name), solution_time=self.iter_count)
+        
 
 class AVLMeshReader(om.ExplicitComponent):
     """
@@ -626,3 +631,20 @@ class AVLMeshReader(om.ExplicitComponent):
 
         avl = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
         add_avl_geom_vars(self, avl, add_as="outputs")
+
+
+class Differencer(om.ExplicitComponent):
+    def setup(self):
+        self.add_input('input_vec', shape_by_conn=True)
+        # self.add_output('diff_vec',copy_shape='input_vec')
+        def compute_shape(shapes):
+            # import pdb; pdb.set_trace()
+            return (shapes['input_vec'][0]-1,)
+        
+        self.add_output('diff_vec', compute_shape=compute_shape)
+        self.declare_partials("*", "*", method="cs")
+        
+    def compute(self, inputs, outputs):
+        vec = inputs['input_vec']
+        diff_vec = vec[1:] - vec[:-1] 
+        outputs['diff_vec'] = diff_vec
