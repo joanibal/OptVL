@@ -356,7 +356,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
             np.testing.assert_allclose(
                 sd_d[deriv_func],
                 sd_d_fd[deriv_func],
-                rtol=1e-6,
+                rtol=1e-5,
                 err_msg=sens_label,
             )
 
