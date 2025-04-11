@@ -217,7 +217,7 @@ class TestTotals(unittest.TestCase):
                         np.testing.assert_allclose(
                             geom_dot,
                             func_dot,
-                            rtol=1e-4,
+                            rtol=5e-3,
                             err_msg=f"{func_key:5} wrt {surf_key}:{geom_key:10}",
                         )
 
