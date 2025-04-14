@@ -1,4 +1,4 @@
-# Installation Guide for optvl
+# Installation Guide for OptVL
 
 ## Installing with pip
 The recommended method to install `optvl` is via pip:
@@ -6,25 +6,28 @@ The recommended method to install `optvl` is via pip:
 ```shell
 pip install optvl
 ```
-This package is optimized with OpenBLAS for quicker analysis.
+This package comes packaged with an OpenBLAS linear solver for quicker analysis.
 
 ### Supported Platforms
-Currently, `optvl` supports:
-- Linux
-- macOS (Apple Silicon and Intel)
-
-!!! Note
-    Windows support is under development. For now, Windows users can use `optvl` through the Windows Subsystem for Linux (WSL).
+Currently, `optvl` supports Linux, macOS (Apple Silicon and Intel), and Windows!
 
 ## Building Locally
-If you'd like to build `optvl` manually, follow the steps below:
+If you would like to build `optvl` manually, follow the steps below:
 
 1. Clone the repository to your local machine.
-2. Install OpenBlas and make sure its libraries can be seen by the compiler. The following script should be able to install OpenBlas for you.
-   ```shell
-   sh -c 'bash /path/to/optvl/tools/wheels/cibw_before_build_linux.sh /path/to/optvl
-   '```
-3. Navigate to the root directory and run:
+2. Navigate to the root directory and run:
    ```
    pip install .
    ```
+You will need the following dependencies
+1. meson
+2. meson-python
+3. ninja
+
+## Post-processing
+You can use `matplotlib` for viewing the geometry and 3D surface CP data. 
+You can also install with `pip`. 
+You can also write out 3D data in the ASCII tecplot format that can be opened in either tecplot or paraview. 
+
+See the section on post-processing for more details about how each of these are used. 
+

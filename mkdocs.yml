@@ -7,14 +7,14 @@ edit_uri: https://github.com/joanibal/OptVL/edit/main/docs
 
 nav:
   - Home: index.md
-  - Installation:
-      - installation.md
-  - Usage:
-      - usage.md
+  - Installation: installation.md
+  - Overview: overview.md
+  - Analyisis:
       - analysis.md
       - parameter_sweeps.md
+  - Optmization:
       - optimization.md
-      - avl_changes.md
+  - Developement:
       - dev_docs.md
       - input.md
       - limitations.md

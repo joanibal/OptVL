@@ -2227,7 +2227,8 @@ class AVLSolver(object):
         plt.axis('off')
 
         plt.grid(b=None)
-        fig.colorbar(m, ax=ax)
+        colorbar = fig.colorbar(m, ax=ax)
+        colorbar.set_label('Cp', rotation=0, labelpad=20)
         # Set an equal aspect ratio
         ax.set_aspect('equal')
 
