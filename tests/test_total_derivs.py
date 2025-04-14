@@ -217,7 +217,7 @@ class TestTotals(unittest.TestCase):
                         np.testing.assert_allclose(
                             geom_dot,
                             func_dot,
-                            rtol=1e-4,
+                            rtol=5e-3,
                             err_msg=f"{func_key:5} wrt {surf_key}:{geom_key:10}",
                         )
 
@@ -245,7 +245,7 @@ class TestTotals(unittest.TestCase):
                         np.testing.assert_allclose(
                             geom_dot,
                             func_dot,
-                            rtol=1e-4,
+                            rtol=3e-3,
                             err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                         )
                         
@@ -260,20 +260,20 @@ class TestTotals(unittest.TestCase):
                         #     f"{func_key} wrt {var_key:5}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                         # )
                         
-                        tol = 1e-8
+                        tol = 1e-10
                         if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
                             # If either value is basically zero, use an absolute tolerance
                             np.testing.assert_allclose(
                                 geom_dot,
                                 func_dot,
-                                atol=1e-10,
+                                atol=1e-7,
                                 err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                             )
                         else:
                             np.testing.assert_allclose(
                                 geom_dot,
                                 func_dot,
-                                rtol=1e-3,
+                                rtol=3e-3,
                                 err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                             )                
 

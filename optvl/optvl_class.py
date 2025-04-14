@@ -315,6 +315,9 @@ class AVLSolver(object):
 
             slice_surf_secs = (idx_surf, slice(None, num_sec))
             slice_surf_secs_all = slice_surf_secs + (slice(None),)
+            slice_surf_secs_x = slice_surf_secs + (0,)
+            slice_surf_secs_y = slice_surf_secs + (1,)
+            slice_surf_secs_z = slice_surf_secs + (2,)
 
             nasec = self.get_avl_fort_arr("SURF_GEOM_I", "NASEC", slicer=slice_surf_secs)
             # I don't see a case in the code where nasec is not the same for all sections
@@ -330,7 +333,10 @@ class AVLSolver(object):
                 "scale": ["SURF_GEOM_R", "XYZSCAL", slice_surf_all],
                 "translate": ["SURF_GEOM_R", "XYZTRAN", slice_surf_all],
                 "angle": ["SURF_GEOM_R", "ADDINC", slice_idx_surf],
-                "xyzles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_all],
+                # "xyzles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_all],
+                "xles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_x],
+                "yles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_y],
+                "zles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_z],
                 "chords": ["SURF_GEOM_R", "CHORDS", slice_surf_secs],
                 "aincs": ["SURF_GEOM_R", "AINCS", slice_surf_secs],
                 "xasec": ["SURF_GEOM_R", "XASEC", slice_surf_secs_nasec],
@@ -825,7 +831,7 @@ class AVLSolver(object):
         param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2][idx_slice])
         return param
 
-    def set_con_surf_param(self, surf_name, idx_slice, param, val):
+    def set_con_surf_param(self, surf_name, idx_slice, param, val, update_geom=True):
         # the control surface and design variables need to be handeled differently because the number at each section is variable
         if param in self.con_surf_to_fort_var[surf_name].keys():
             fort_var = self.con_surf_to_fort_var[surf_name][param]
@@ -835,6 +841,9 @@ class AVLSolver(object):
             )
         # param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2][idx_slice])
         self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2][idx_slice])
+        
+        if update_geom:
+            self.avl.update_surfaces()
 
     def get_surface_param(self, surf_name, param):
         # check that param is in self.surf_geom_to_fort_var
@@ -848,9 +857,9 @@ class AVLSolver(object):
             )
 
         param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2])
-        return param
+        return copy.deepcopy(param) # return the value of the array, but not a reference to avoid sideffects
 
-    def set_surface_param(self, surf_name, param, val):
+    def set_surface_param(self, surf_name, param, val, update_geom=True):
         if param in self.surf_geom_to_fort_var[surf_name].keys():
             fort_var = self.surf_geom_to_fort_var[surf_name][param]
         elif param in self.surf_pannel_to_fort_var[surf_name].keys():
@@ -865,6 +874,9 @@ class AVLSolver(object):
             )
 
         self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
+        
+        if update_geom:
+            self.avl.update_surfaces()
 
     def get_surface_params(
         self,
@@ -940,14 +952,15 @@ class AVLSolver(object):
             for var in surf_data[surf_name]:
                 # do not set the data this way if it is a control surface
                 if var not in self.con_surf_to_fort_var[surf_name]:
-                    self.set_surface_param(surf_name, var, surf_data[surf_name][var])
+                    self.set_surface_param(surf_name, var, surf_data[surf_name][var], update_geom=False)
                 else:
                     idx_surf = surf_names.index(surf_name)
                     num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
                     slice_data = []
                     for idx_sec in range(num_sec):
-                        self.set_con_surf_param(surf_name, idx_sec, var, surf_data[surf_name][var][idx_sec])
+                        self.set_con_surf_param(surf_name, idx_sec, var, surf_data[surf_name][var][idx_sec], update_geom=False)
 
+        # update the geometry once at the end
         self.avl.update_surfaces()
     
     def get_body_params(self) ->  Dict[str, Dict[str, Any]]:
@@ -1127,9 +1140,9 @@ class AVLSolver(object):
             fid.write("SECTION\n")
             fid.write("#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace\n")
             fid.write(
-                f" {data['xyzles'][idx_sec, 0]:.6f} "
-                f"{data['xyzles'][idx_sec, 1]:.6f} "
-                f"{data['xyzles'][idx_sec, 2]:.6f}   "
+                f" {data['xles'][idx_sec]:.6f} "
+                f"{data['yles'][idx_sec]:.6f} "
+                f"{data['zles'][idx_sec]:.6f}   "
                 f"{data['chords'][idx_sec]:.6f} "
                 f"{data['aincs'][idx_sec]:.6f} "
             )
@@ -2138,19 +2151,29 @@ class AVLSolver(object):
                         }
                         axis.plot(pts[xaxis], pts[yaxis], '--', color='grey', linewidth=0.3)
                         
-    def plot_geom(self, **kwargs):
-        import matplotlib.pyplot as plt
+    def plot_geom(self, axes=None):
         
-        ax = plt.subplot(2,1,1)
-        self.add_mesh_plot(ax, xaxis='y', yaxis='x')
-        ax.set_ylabel('X', rotation=0)
-        ax = plt.subplot(2,1,2)
-        self.add_mesh_plot(ax, xaxis='y', yaxis='z')
-        ax.set_ylabel('Z', rotation=0)
-        ax.set_xlabel('Y')
-    
-        plt.axis('equal')
-        plt.show()        
+        if axes == None:
+            import matplotlib.pyplot as plt
+            
+            ax1 = plt.subplot(2,1,1)
+            ax2 = plt.subplot(2,1,2)
+
+            ax2.set_ylabel('Z', rotation=0)
+            ax2.set_xlabel('Y')
+            ax1.set_ylabel('X', rotation=0)
+
+        else:
+            ax1, ax2 = axes
+        
+        self.add_mesh_plot(ax1, xaxis='y', yaxis='x')
+
+        self.add_mesh_plot(ax2, xaxis='y', yaxis='z')
+
+        if axes == None:
+            # assume that if we don't provide axes that we want to see the plot
+            plt.axis('equal')
+            plt.show()        
 
     def get_cp_data(self):
         nvort = self.get_mesh_size()
