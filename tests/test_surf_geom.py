@@ -37,7 +37,9 @@ class TestGeom(unittest.TestCase):
                 "sspaces": np.array([-1.0, 0.0, 1.0, 2.0, 3.0]),
                 "aincs": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
                 "chords": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
-                "xyzles": np.array([[0, 0, 0], [0.1, 1.0, 0.01], [0.2, 2.0, 0.02], [0.3, 3.0, 0.03], [0.4, 4.0, 0.04]]),
+                "xles" : np.array([0, 0.1, 0.2, 0.3, 0.4]),
+                "yles" : np.array([0, 1.0, 2.0, 3.0, 4.0]),
+                "zles" : np.array([0, 0.01, 0.02, 0.03, 0.04])
             },
         }
 
@@ -115,7 +117,7 @@ class TestGeom(unittest.TestCase):
         # Take the one wing and streach out the tip
         new_data = {
             "Wing": {
-                "xyzles": np.array([[0, 0, 0], [0.1, 1.0, 0.01], [0.2, 2.0, 0.02], [0.3, 3.0, 0.03], [0.4, 10.0, 0.04]]),
+                "yles" : np.array([0, 1.0, 2.0, 3.0, 10.0]),
             },
         }
         
@@ -142,8 +144,8 @@ class TestGeom(unittest.TestCase):
         updated_data = self.avl_solver.get_surface_params(include_geom=True)
         
         np.testing.assert_allclose(
-            updated_data["Wing"]["xyzles"],
-            new_data["Wing"]["xyzles"],
+            updated_data["Wing"]["yles"],
+            new_data["Wing"]["yles"],
             atol=1e-16
         )
 
