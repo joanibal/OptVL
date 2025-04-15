@@ -1,25 +1,9 @@
 # Modifying Geometry for Parameter Sweeps in OptVL
 
-OptVL not only offers aerodynamic analysis capabilities but also provides tools to access and modify geometric parameters of your aircraft models. This documentation illustrates how users can retrieve and set geometry parameters for parameter sweeps.
+OptVL not only offers aerodynamic analysis capabilities but also provides tools to access and modify geometric parameters of your aircraft models.
+This documentation shows how users can retrieve and set geometry parameters for parameter sweeps.
 
 
-## Setting geometry parameters
-
-To apply geometry changes to the AVLSolver object, use the `set_surface_params` method.
-```python
-avl_solver.set_surface_params(data)
-```
-This method sets the surface parameters of the AVL model based on the provided dictionary, data.
-The data pasted to this method must be a dictionary of surface names whos values are a dictionary of surface and section keywords.
-An example of such a dictionary is
-```python
-data = {
-    'Wing': {
-        'angle': 3.5,  # a surface keyword example
-        "chords": np.array([0.5, 0.4, 0.3, 0.2, 0.1]) #section keyword example
-    }
-}
-```
 
 ## Getting geometry parameters
 
@@ -45,13 +29,32 @@ For most use cases, it is probable that you will only need to interact with the 
 | chords      | Array of chord lengths.           |
 | xyzles      | Array of leading edge coordinates.|
 
+
+## Setting geometry parameters
+
+To apply geometry changes to the OVLSolver object, use the `set_surface_params` method.
+```python
+avl_solver.set_surface_params(data)
+```
+This method sets the surface parameters of the AVL model based on the provided dictionary data.
+The data pasted to this method must be a dictionary of surface names whos values are a dictionary of surface and section keywords.
+An example of such a dictionary is
+```python
+data = {
+    'Wing': {
+        'angle': 3.5,  # a surface keyword example
+        "chords": np.array([0.5, 0.4, 0.3, 0.2, 0.1]) #section keyword example
+    }
+}
+```
+
 <!-- ## Parameter sweep example
 
 
-Initialize the AVLSolver:
+Initialize the OVLSolver:
 
 ```python
-avl_solver = AVLSolver(geo_file="aircraft_mod.avl")
+avl_solver = OVLSolver(geo_file="aircraft_mod.avl")
 ```
 Retrieve the current geometry parameters:
 

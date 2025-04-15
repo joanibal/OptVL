@@ -10,7 +10,8 @@ nav:
   - Installation: installation.md
   - Overview: overview.md
   - Analyisis:
-      - analysis.md
+      - making_a_script.md
+      - alpha_cl_sweep.md
       - parameter_sweeps.md
   - Optmization:
       - optimization.md
@@ -43,6 +44,8 @@ plugins:
             show_source: false
   - literate-nav:
       nav_file: SUMMARY.md
+
+  - include-markdown
       
 markdown_extensions:
   - attr_list
