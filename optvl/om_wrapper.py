@@ -10,6 +10,7 @@ class AVLGroup(om.Group):
         self.options.declare("geom_file", types=str)
         self.options.declare("mass_file", default=None)
         self.options.declare("write_grid", types=bool, default=False)
+        self.options.declare("write_grid_sol_time", types=bool, default=False)
         self.options.declare("output_dir", types=str, recordable=False, default=".")
 
         self.options.declare("input_param_vals", types=bool, default=False)
@@ -42,7 +43,9 @@ class AVLGroup(om.Group):
                                     promotes=["*"])
         if self.options["write_grid"]:
             self.add_subsystem(
-                "postprocess", AVLPostProcessComp(avl=avl, output_dir=self.options["output_dir"],
+                "postprocess", AVLPostProcessComp(avl=avl, 
+                                                    output_dir=self.options["output_dir"],
+                                                    write_grid_sol_time=self.options["write_grid_sol_time"],
                                                     input_param_vals=input_param_vals,
                                                     input_ref_vals=input_ref_vals),
                                                     promotes=["*"]
@@ -553,6 +556,7 @@ class AVLPostProcessComp(om.ExplicitComponent):
         self.options.declare("output_dir", types=str, recordable=False, default=".")
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
+        self.options.declare("write_grid_sol_time", types=bool, default=False)
         
     def setup(self):
         self.avl = self.options["avl"]
@@ -613,8 +617,11 @@ class AVLPostProcessComp(om.ExplicitComponent):
         self.avl.write_geom_file(os.path.join(output_dir, file_name))
         
         file_name = f"vlm_{self.iter_count:03d}"
-        self.avl.write_tecplot(os.path.join(output_dir, file_name), solution_time=self.iter_count)
-        
+        if self.options["write_grid_sol_time"]:
+            self.avl.write_tecplot(os.path.join(output_dir, file_name), solution_time=self.iter_count)
+        else:
+            self.avl.write_tecplot(os.path.join(output_dir, file_name))
+            
 
 class AVLMeshReader(om.ExplicitComponent):
     """

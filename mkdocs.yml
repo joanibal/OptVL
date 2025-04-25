@@ -12,13 +12,19 @@ nav:
   - Analyisis:
       - making_a_script.md
       - alpha_cl_sweep.md
+      - modal_analysis.md
       - parameter_sweeps.md
   - Optmization:
-      - optimization.md
+      - optimization_overview.md
+      - optimization_setup_scipy.md
+      - optimization_setup_om.md
+      - planform_optimization.md
+  - Vizulization:
+    - viz_overview.md
+    - sectional_data_viz.md
   - Developement:
       - dev_docs.md
-      - input.md
-      - limitations.md
+      - building_optvl_locally.md
       - pyavl_changes.md  
   # defer to gen-files + literate-nav
   - Code Reference: reference/  

@@ -1,4 +1,4 @@
-# Modifying Geometry for Parameter Sweeps in OptVL
+# Modifying Geometry for Parameter Sweeps
 
 OptVL not only offers aerodynamic analysis capabilities but also provides tools to access and modify geometric parameters of your aircraft models.
 This documentation shows how users can retrieve and set geometry parameters for parameter sweeps.
@@ -10,7 +10,7 @@ This documentation shows how users can retrieve and set geometry parameters for 
 To retrieve surface parameters from your AVL model, use the `get_surface_params` method.
 By default, this method only returns data about the geometry of the surface, but information about the paneling and control surfaces can also be included by passing the corresponding flags like so. 
 ```python
-surf_data = avl_solver.get_surface_params(
+surf_data = ovl.get_surface_params(
     include_geom=True,
     include_panneling=True,
     include_con_surf=True
@@ -18,7 +18,11 @@ surf_data = avl_solver.get_surface_params(
 ```
 The data from `get_surface_params` come directly from the geometry file used by AVL.
 See the [AVL user guide](https://web.mit.edu/drela/Public/web/avl/avl_doc.txt) for more information about all the possible variables.
-For most use cases, it is probable that you will only need to interact with the geometric variables below. 
+If you only want to get a specific design variable than you can instead use
+```python
+ovl.get_surface_param( <surf_name>, <param>)
+```
+For most use cases, you will only need to interact with the geometric variables below. 
 
 | Variable    | Description                       |
 |-------------|-----------------------------------|
@@ -37,7 +41,7 @@ To apply geometry changes to the OVLSolver object, use the `set_surface_params` 
 avl_solver.set_surface_params(data)
 ```
 This method sets the surface parameters of the AVL model based on the provided dictionary data.
-The data pasted to this method must be a dictionary of surface names whos values are a dictionary of surface and section keywords.
+The data pasted to this method must be a dictionary of surface names who's values are a dictionary of surface and section keywords.
 An example of such a dictionary is
 ```python
 data = {
@@ -47,43 +51,30 @@ data = {
     }
 }
 ```
-
-<!-- ## Parameter sweep example
-
-
-Initialize the OVLSolver:
-
+The structure of the data dictionary must be the same as that returned by the `get_surface_params` method, so I recommend calling `get_surface_params` and looking at the output if you get confused.
+Similar to the getting methods, you can also set values one at a time like so
 ```python
-avl_solver = OVLSolver(geo_file="aircraft_mod.avl")
-```
-Retrieve the current geometry parameters:
-
-```python
-
-data = avl_solver.get_surface_params(
-    include_geom=True,
-    include_panneling=True,
-    include_con_surf=True
-)
-```
-Modify the desired parameters, e.g., scale the wing by a factor of 1.2:
-
-```python
-
-data["Wing"]["scale"] = np.array([1.2, 1.2, 1.2])
-```
-Set the modified parameters back to the AVL model:
-
-```python
-
-avl_solver.set_surface_params(data)
-```
-Execute the analysis run:
-
-```python
-
-avl_solver.set_constraint("alpha", 6.00)
-avl_solver.execute_run()
+ovl.set_surface_param( <surf_name>, <param>, <value>)
 ```
 
-Fetch the results and proceed with the next step in your parameter sweep. -->
+## Example modifying y scale
+To increase the span of our wing we can stretch it in the y direction by adjusting the y scale. 
+
+```python 
+{% include "../examples/aircraft/run_param_sweep.py" %}
+```
+
+
+## Example modifying the leading edge coordinates
+The example below modifies the array of leading edge points to modify the planform. 
+
+```python 
+{% include "../examples/aircraft/run_param_sweep_planform.py" %}
+```
+
+Running the script generates the following plots showing the modifications to the geometry.
+
+![](figures/xles_sweep.png)
+![](figures/yles_sweep.png)
+![](figures/zles_sweep.png)
+

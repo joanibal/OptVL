@@ -666,7 +666,9 @@ class AVLSolver(object):
             # geometric quantities
             "chord": ["STRP_R", "CHORD"],
             "width": ["STRP_R", "WSTRIP"],
-            "XYZ LE": ["STRP_R", "RLE"],  # control point leading edge coordinates
+            "X LE": ["STRP_R", "RLE", (slice(None), 0)],  # control point leading edge coordinates
+            "Y LE": ["STRP_R", "RLE", (slice(None), 1)],  # control point leading edge coordinates
+            "Z LE": ["STRP_R", "RLE", (slice(None), 2)],  # control point leading edge coordinates
             "twist": ["STRP_R", "AINC"],
             
             # strip contributions to total lift and drag from strip integration
@@ -715,12 +717,17 @@ class AVLSolver(object):
             for idx_surf, surf_name in enumerate(surf_names):
                 idx_srp_beg, idx_srp_end = self.get_surface_strip_indices(idx_surf)
                 strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
-
-        cref = self.get_avl_fort_arr("CASE_R", "CREF")
+        
+        ref_data = self.get_reference_data()
+        cref = ref_data['Cref']
+        bref = ref_data['Bref']
+        
         for surf_key in strip_data:
             # add sectional lift and drag
             strip_data[surf_key]["lift dist"] = strip_data[surf_key]["CL"] * strip_data[surf_key]["chord"] / cref
             strip_data[surf_key]["drag dist"] = strip_data[surf_key]["CD"] * strip_data[surf_key]["chord"] / cref
+            strip_data[surf_key]["roll dist"] = strip_data[surf_key]["CN"] * (strip_data[surf_key]["chord"] / cref)**2
+            strip_data[surf_key]["yaw dist"] = strip_data[surf_key]["CY"] * strip_data[surf_key]["chord"]**2 / (bref*cref)
 
         return strip_data
 
@@ -2162,6 +2169,8 @@ class AVLSolver(object):
             ax2.set_ylabel('Z', rotation=0)
             ax2.set_xlabel('Y')
             ax1.set_ylabel('X', rotation=0)
+            ax1.set_aspect('equal')
+            ax2.set_aspect('equal')
 
         else:
             ax1, ax2 = axes
