@@ -61,7 +61,7 @@ ovl.set_surface_param( <surf_name>, <param>, <value>)
 To increase the span of our wing we can stretch it in the y direction by adjusting the y scale. 
 
 ```python 
-{% include "../examples/aircraft/run_param_sweep.py" %}
+{% include "../examples/run_param_sweep.py" %}
 ```
 
 
@@ -69,7 +69,7 @@ To increase the span of our wing we can stretch it in the y direction by adjusti
 The example below modifies the array of leading edge points to modify the planform. 
 
 ```python 
-{% include "../examples/aircraft/run_param_sweep_planform.py" %}
+{% include "../examples/run_param_sweep_planform.py" %}
 ```
 
 Running the script generates the following plots showing the modifications to the geometry.

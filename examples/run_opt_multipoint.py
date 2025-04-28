@@ -1,6 +1,6 @@
 """A openmdao based optimization for an aicraft using optvl"""
 import openmdao.api as om
-from optvl import AVLSolver, AVLGroup
+from optvl import OVLSolver, AVLGroup
 import argparse
 import numpy as np
 

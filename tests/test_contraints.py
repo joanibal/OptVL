@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver
+from optvl import OVLSolver
 
 # =============================================================================
 # Standard Python Modules
@@ -24,7 +24,7 @@ class TestConstraints(unittest.TestCase):
     # TODO: add reference values for comparison by running avl binnary by hand or with wrappper
 
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
 
     # TODO: add test for roll, pitch, and yaw rate
     # def test_rates(self):

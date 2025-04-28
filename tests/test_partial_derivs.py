@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver
+from optvl import OVLSolver
 import copy
 import platform
 
@@ -26,9 +26,9 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 class TestFunctionPartials(unittest.TestCase):
     def setUp(self):
-        # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
-        # self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
-        self.avl_solver = AVLSolver(geo_file="rect.avl")
+        # self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        # self.avl_solver = OVLSolver(geo_file="aircraft_L1.avl")
+        self.avl_solver = OVLSolver(geo_file="rect.avl")
         self.avl_solver.set_constraint("alpha", 25.0)
         self.avl_solver.set_constraint("beta", 5.0)
         self.avl_solver.execute_run()
@@ -346,9 +346,9 @@ class TestFunctionPartials(unittest.TestCase):
 
 class TestResidualPartials(unittest.TestCase):
     def setUp(self):
-        # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
-        # self.avl_solver = AVLSolver(geo_file="rect.avl")
+        # self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = OVLSolver(geo_file="aircraft_L1.avl")
+        # self.avl_solver = OVLSolver(geo_file="rect.avl")
         self.avl_solver.set_constraint("alpha", 25.0)
         self.avl_solver.set_constraint("beta", 5.0)
         self.avl_solver.execute_run()

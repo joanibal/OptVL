@@ -1,8 +1,8 @@
-from optvl import AVLSolver
+from optvl import OVLSolver
 import numpy as np
 import matplotlib.pyplot as plt
 
-ovl = AVLSolver(geo_file="aircraft.avl", debug=False)
+ovl = OVLSolver(geo_file="aircraft.avl", debug=False)
 ovl.set_constraint('alpha', 5.0)
 ovl.set_constraint('beta', 10.0)
 ovl.execute_run()

@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver, AVLGroup
+from optvl import OVLSolver, AVLGroup
 
 # =============================================================================
 # Standard Python Modules
@@ -30,10 +30,10 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestOMWrapper(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
     
         model = om.Group()
-        model.add_subsystem("avlsolver", AVLGroup(geom_file=geom_file, mass_file=mass_file, 
+        model.add_subsystem("ovlsolver", AVLGroup(geom_file=geom_file, mass_file=mass_file, 
                                                   output_stabililty_derivs=True,
                                                   input_param_vals=True, input_ref_vals=True))
 
@@ -49,7 +49,7 @@ class TestOMWrapper(unittest.TestCase):
         prob.run_model()
         
         for func in run_data:        
-            om_val = prob.get_val(f"avlsolver.{func}")
+            om_val = prob.get_val(f"ovlsolver.{func}")
             assert om_val == run_data[func]
     
     def test_surface_param_setting(self):
@@ -71,19 +71,19 @@ class TestOMWrapper(unittest.TestCase):
                 self.avl_solver.execute_run()
                 run_data = self.avl_solver.get_total_forces()
                 # set om surface data
-                prob.set_val(f"avlsolver.{surf_key}:{geom_key}", arr)
+                prob.set_val(f"ovlsolver.{surf_key}:{geom_key}", arr)
                 prob.run_model()
                 
                 for func in run_data:        
-                    om_val = prob.get_val(f"avlsolver.{func}")
+                    om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == run_data[func]
         
     def test_CL_solve(self):
         prob = self.prob
         cl_star = 1.5
-        prob.model.add_design_var("avlsolver.alpha", lower=-10, upper=10)
-        prob.model.add_constraint("avlsolver.CL", equals=cl_star)
-        prob.model.add_objective("avlsolver.CD", scaler=1e3)
+        prob.model.add_design_var("ovlsolver.alpha", lower=-10, upper=10)
+        prob.model.add_constraint("ovlsolver.CL", equals=cl_star)
+        prob.model.add_objective("ovlsolver.CD", scaler=1e3)
         prob.setup(mode='rev')
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['optimizer'] = 'SLSQP'
@@ -94,7 +94,7 @@ class TestOMWrapper(unittest.TestCase):
         prob.setup(mode='rev')
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_driver()
-        om_val = prob.get_val(f"avlsolver.alpha")
+        om_val = prob.get_val(f"ovlsolver.alpha")
         
         
         self.avl_solver.set_trim_condition("CL", cl_star)
@@ -109,9 +109,9 @@ class TestOMWrapper(unittest.TestCase):
         
     def test_CM_solve(self):
         prob = self.prob
-        prob.model.add_design_var("avlsolver.alpha", lower=-10, upper=10)
-        prob.model.add_constraint("avlsolver.CM", equals=0.0, scaler=1e3)
-        prob.model.add_objective("avlsolver.CD", scaler=1e3)
+        prob.model.add_design_var("ovlsolver.alpha", lower=-10, upper=10)
+        prob.model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
+        prob.model.add_objective("ovlsolver.CD", scaler=1e3)
         prob.setup(mode='rev')
         prob.driver = om.ScipyOptimizeDriver()
         prob.driver.options['optimizer'] = 'SLSQP'
@@ -122,7 +122,7 @@ class TestOMWrapper(unittest.TestCase):
         prob.setup(mode='rev')
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_driver()
-        om_val = prob.get_val(f"avlsolver.alpha")
+        om_val = prob.get_val(f"ovlsolver.alpha")
         
         
         self.avl_solver.set_constraint("alpha", 0.00, con_var="Cm pitch moment")
@@ -139,20 +139,20 @@ class TestOMWrapper(unittest.TestCase):
         prob = self.prob
         cl_star = 1.5
         dcl_dalpha_star = -0.1
-        prob.model.add_design_var("avlsolver.Wing:xles")
-        prob.model.add_design_var("avlsolver.Wing:yles")
-        prob.model.add_design_var("avlsolver.Wing:zles")
-        prob.model.add_design_var("avlsolver.Wing:chords")
-        prob.model.add_design_var("avlsolver.Wing:aincs")
-        prob.model.add_design_var("avlsolver.Elevator", lower=-10, upper=10)
-        prob.model.add_design_var("avlsolver.alpha", lower=-10, upper=10)
-        prob.model.add_design_var("avlsolver.Sref")
-        prob.model.add_design_var("avlsolver.Mach")
-        prob.model.add_design_var("avlsolver.X cg")
-        prob.model.add_constraint("avlsolver.CL", equals=cl_star)
-        prob.model.add_constraint("avlsolver.dCL/dalpha", equals=-dcl_dalpha_star)
-        prob.model.add_objective("avlsolver.CD", scaler=1e3)
-        prob.model.add_objective("avlsolver.CM", scaler=1e3)
+        prob.model.add_design_var("ovlsolver.Wing:xles")
+        prob.model.add_design_var("ovlsolver.Wing:yles")
+        prob.model.add_design_var("ovlsolver.Wing:zles")
+        prob.model.add_design_var("ovlsolver.Wing:chords")
+        prob.model.add_design_var("ovlsolver.Wing:aincs")
+        prob.model.add_design_var("ovlsolver.Elevator", lower=-10, upper=10)
+        prob.model.add_design_var("ovlsolver.alpha", lower=-10, upper=10)
+        prob.model.add_design_var("ovlsolver.Sref")
+        prob.model.add_design_var("ovlsolver.Mach")
+        prob.model.add_design_var("ovlsolver.X cg")
+        prob.model.add_constraint("ovlsolver.CL", equals=cl_star)
+        prob.model.add_constraint("ovlsolver.dCL/dalpha", equals=-dcl_dalpha_star)
+        prob.model.add_objective("ovlsolver.CD", scaler=1e3)
+        prob.model.add_objective("ovlsolver.CM", scaler=1e3)
         prob.setup(mode='rev')
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_model()

@@ -169,7 +169,7 @@ model = om.Group()
 geom_dvs = model.add_subsystem("geom_dvs", om.IndepVarComp())
 
 geom_dvs.add_output('aincs', shape_by_conn=True)
-model.connect('geom_dvs.aincs', "avlsolver.Wing:aincs")
+model.connect('geom_dvs.aincs', "ovlsolver.Wing:aincs")
 
 model.add_subsystem("mesh", AVLMeshReader(geom_file="rectangle.avl"))
 model.add_subsystem('geom_param', GeometryParametrizationComp())
@@ -183,17 +183,17 @@ model.connect("mesh.Wing:yles",['mass_props.yles'] )
 model.connect("geom_param.chords_out",['mass_props.chords'] )
 
 
-model.add_subsystem("avlsolver", AVLGroup(geom_file="rectangle.avl", output_stabililty_derivs=True, write_grid=True, input_param_vals=True, input_ref_vals=True, output_dir='opt_output_sweep'))
-model.connect("geom_param.xles_out",['avlsolver.Wing:xles'] )
-model.connect("geom_param.chords_out",['avlsolver.Wing:chords'] )
-model.connect('mass_props.x_cg', ['avlsolver.X cg'])
-model.connect('mass_props.area', ['avlsolver.Sref'])
+model.add_subsystem("ovlsolver", AVLGroup(geom_file="rectangle.avl", output_stabililty_derivs=True, write_grid=True, input_param_vals=True, input_ref_vals=True, output_dir='opt_output_sweep'))
+model.connect("geom_param.xles_out",['ovlsolver.Wing:xles'] )
+model.connect("geom_param.chords_out",['ovlsolver.Wing:chords'] )
+model.connect('mass_props.x_cg', ['ovlsolver.X cg'])
+model.connect('mass_props.area', ['ovlsolver.Sref'])
 
 model.add_subsystem("glide", GlidingFlight())
 model.connect('mass_props.weight', ['glide.weight'])
 model.connect('mass_props.area', ['glide.Sref'])
-model.connect("avlsolver.CL",['glide.CL'] )
-model.connect("avlsolver.CD",['glide.CD'] )
+model.connect("ovlsolver.CL",['glide.CL'] )
+model.connect("ovlsolver.CD",['glide.CD'] )
 
 model.add_subsystem("differ_aincs", Differencer())
 model.connect("geom_dvs.aincs", "differ_aincs.input_vec")
@@ -202,13 +202,13 @@ model.connect("geom_dvs.aincs", "differ_aincs.input_vec")
 model.add_design_var("geom_param.c/4_sweep", lower=0.0, upper=3.0)
 model.add_design_var("geom_param.taper_ratio", lower=0.1, upper=1.0)
 model.add_design_var("geom_param.root_chord", lower=0.25, upper=4.0)
-model.add_design_var("avlsolver.Wing:aincs", lower=-15, upper=15)
+model.add_design_var("ovlsolver.Wing:aincs", lower=-15, upper=15)
 
-model.add_constraint("avlsolver.CM", equals=0.0, scaler=1e3)
-model.add_constraint("avlsolver.dCM/dalpha", upper=0.0, lower=-0.5, scaler=1e3)
+model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
+model.add_constraint("ovlsolver.dCM/dalpha", upper=0.0, lower=-0.5, scaler=1e3)
 
 # make sure CL stays slightly positive to avoid 
-model.add_constraint("avlsolver.CL", lower=0.1, scaler=1)
+model.add_constraint("ovlsolver.CL", lower=0.1, scaler=1)
 
 
 # Some variables (like chord, dihedral, x and z leading edge position) can lead to local minimum. 

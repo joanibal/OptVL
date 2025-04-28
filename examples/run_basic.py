@@ -1,6 +1,6 @@
-from optvl import AVLSolver
+from optvl import OVLSolver
 
-ovl = AVLSolver(geo_file="aircraft.avl", debug=False)
+ovl = OVLSolver(geo_file="aircraft.avl", debug=False)
 
 # look at the geometry to see that everything is right
 ovl.plot_geom()

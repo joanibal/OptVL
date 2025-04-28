@@ -1,0 +1,108 @@
+Rectangle
+#======================================================
+#------------------- Geometry File --------------------
+#======================================================
+# AVL Conventions
+# SI Used: m, kg, etc
+
+#Mach
+0.1
+#IYsym   IZsym   Zsym
+ 0       0       0
+#Sref    Cref    b_wing
+2.0       0.4      2.0
+#Xref    Yref    Zref
+0.33    0.0    0.0
+# CDp
+0.01
+
+#======================================================
+#--------------------- Main Wing ----------------------
+#======================================================
+SURFACE
+Wing
+#Nchordwise  Cspace   [Nspan   Sspace]
+     11        1.0      32      -2.0
+YDUPLICATE
+0.0
+SCALE
+1.0  1.0  1.0
+TRANSLATE
+0.0  0.0  0.0
+ANGLE
+0.0
+
+#------------------------------------------------------
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    0.0    0   0.5     0.0   
+NACA
+0012
+CONTROL
+#surface gain xhinge hvec SgnDup
+Elevator -1.00 0.0 0 1 0 1.00
+
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    0.25    0    0.5     0.0   
+NACA
+0012
+
+CONTROL
+#surface gain xhinge hvec SgnDup
+Elevator -1.00 0.0 0 1 0 1.00
+
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    0.5   0   0.5     0.0   
+NACA
+0012
+
+CONTROL
+#surface gain xhinge hvec SgnDup
+Elevator -1.00 0.0 0 1 0 1.00
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    0.75    0    0.5     0.0   
+NACA
+0012
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0   1.0   0.0    0.5     0.0   
+NACA
+0012
+
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    1.25    0   0.5     0.0   
+NACA
+0012
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    1.5    0    0.5     0.0   
+NACA
+0012
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    1.75    0   0.5     0.0   
+NACA
+0012
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    2.0    0    0.5     0.0   
+NACA
+0012
+
+
+
+
+# -- END OF FILE --

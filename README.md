@@ -60,12 +60,12 @@ The API of OptVL was made to mirror the usage of AVL through its text interface.
 The user loads in a geometry file, adds constraints, and then executes analysis runs.
 
 The AVL wrapper is implemented in the `OVLSolver` class. 
-To use this wrapper, first one must initialize the `AVLSolver` object with a geometry file and optionally a mass file. 
+To use this wrapper, first one must initialize the `OVLSolver` object with a geometry file and optionally a mass file. 
 After, the user can add constraints and then execute the run to generate data. 
 Below is a basic example of this workflow. 
 
 ```python
-from optvl import AVLSolver
+from optvl import OVLSolver
 import numpy as np
 
 ovl = OVLSolver(geo_file="aircraft.avl")

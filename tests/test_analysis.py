@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver
+from optvl import OVLSolver
 
 # =============================================================================
 # Standard Python Modules
@@ -22,7 +22,7 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestAnalysisSweep(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
+        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
 
     def test_constrained_alpha_sweep(self):
         self.avl_solver.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
@@ -124,7 +124,7 @@ class TestAnalysisSweep(unittest.TestCase):
 
 class TestBodyAnalysis(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file="supra.avl",debug=False)
+        self.avl_solver = OVLSolver(geo_file="supra.avl",debug=False)
     
     def test_coefs(self):
         self.avl_solver.set_constraint("alpha", 5.00)
@@ -138,7 +138,7 @@ class TestBodyAnalysis(unittest.TestCase):
 
 class TestHingeMom(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
 
     def test_con_surf_mom(self):
         self.avl_solver.set_constraint("Elevator", 10.00)
@@ -161,9 +161,9 @@ class TestHingeMom(unittest.TestCase):
 
 class TestCaseDerivs(unittest.TestCase):
     def setUp(self) -> None:
-        # self.avl_solver = AVLSolver(geo_file=geom_file)
-        # self.avl_solver = AVLSolver(geo_file="rect.avl")
-        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
+        # self.avl_solver = OVLSolver(geo_file=geom_file)
+        # self.avl_solver = OVLSolver(geo_file="rect.avl")
+        self.avl_solver = OVLSolver(geo_file="aircraft_L1.avl")
 
     def test_coefs_wrt_con_surfs(self):
         self.avl_solver.set_constraint("alpha", 45.00)
@@ -175,7 +175,7 @@ class TestCaseDerivs(unittest.TestCase):
 
 class TestVariableSetting(unittest.TestCase):
     def setUp(self) -> None:
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
 
     def test_alpha_set(self):
         """

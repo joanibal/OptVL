@@ -41,7 +41,7 @@ import numpy as np
 from . import MExt
 
 
-class AVLSolver(object):
+class OVLSolver(object):
 
     # these at technically parameters, but they are also specified as contraints
     # These are not included in the derivatives but you can set and get them still
@@ -202,7 +202,7 @@ class AVLSolver(object):
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
         self.avl = MExt.MExt("libavl", module_name, "optvl", lib_so_file=avl_lib_so_file, debug=debug)._module
 
-        # this way doesn't work with mulitple isntances fo AVLSolver
+        # this way doesn't work with mulitple isntances fo OVLSolver
         # from . import libavl
         # self.avl = libavl
 

@@ -2,9 +2,9 @@
 import openmdao.api as om
 import numpy as np
 from scipy.optimize import minimize
-from optvl import AVLSolver
+from optvl import OVLSolver
 
-avl_solver = AVLSolver(geo_file="aircraft.avl", debug=False)
+avl_solver = OVLSolver(geo_file="aircraft.avl", debug=False)
 
 # setup OptVL 
 avl_solver.set_parameter("Mach", 0.0)

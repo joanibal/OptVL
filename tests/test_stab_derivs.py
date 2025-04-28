@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver
+from optvl import OVLSolver
 import copy
 import psutil
 # =============================================================================
@@ -26,9 +26,9 @@ class TestStabDerivs(unittest.TestCase):
     # TODO: beta derivatives likely wrong
 
     def setUp(self):
-        # self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl")
-        # self.avl_solver = AVLSolver(geo_file="rect.avl")
+        # self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = OVLSolver(geo_file="aircraft_L1.avl")
+        # self.avl_solver = OVLSolver(geo_file="rect.avl")
         self.avl_solver.set_constraint("alpha", 5.0)
         # self.avl_solver.set_constraint("beta", 0.0)
         self.avl_solver.execute_run()

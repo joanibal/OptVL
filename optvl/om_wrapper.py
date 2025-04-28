@@ -1,6 +1,6 @@
 import os
 import openmdao.api as om
-from optvl import AVLSolver
+from optvl import OVLSolver
 import numpy as np
 import copy
 import time
@@ -29,7 +29,7 @@ class AVLGroup(om.Group):
         output_stabililty_derivs = self.options["output_stabililty_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
 
-        avl = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
+        avl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
 
         self.add_subsystem("solver", AVLSolverComp(avl=avl, 
                                     input_param_vals=input_param_vals,
@@ -152,7 +152,7 @@ class AVLSolverComp(om.ImplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare("avl", types=AVLSolver, recordable=False)
+        self.options.declare("avl", types=OVLSolver, recordable=False)
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
         
@@ -332,7 +332,7 @@ class AVLSolverComp(om.ImplicitComponent):
 
 class AVLFuncsComp(om.ExplicitComponent):
     def initialize(self):
-        self.options.declare("avl", types=AVLSolver, recordable=False)
+        self.options.declare("avl", types=OVLSolver, recordable=False)
         self.options.declare("output_stabililty_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
         self.options.declare("input_param_vals", types=bool, default=False)
@@ -552,7 +552,7 @@ class AVLFuncsComp(om.ExplicitComponent):
 # Optional components
 class AVLPostProcessComp(om.ExplicitComponent):
     def initialize(self):
-        self.options.declare("avl", types=AVLSolver, recordable=False)
+        self.options.declare("avl", types=OVLSolver, recordable=False)
         self.options.declare("output_dir", types=str, recordable=False, default=".")
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
@@ -636,7 +636,7 @@ class AVLMeshReader(om.ExplicitComponent):
         geom_file = self.options["geom_file"]
         mass_file = self.options["mass_file"]
 
-        avl = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
+        avl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
         add_avl_geom_vars(self, avl, add_as="outputs")
 
 

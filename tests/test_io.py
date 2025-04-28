@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver
+from optvl import OVLSolver
 
 # =============================================================================
 # Standard Python Modules
@@ -29,26 +29,26 @@ rect_geom_output_file = os.path.join(base_dir, "rect_out.avl")
 
 class TestInput(unittest.TestCase):
     def test_read_geom(self):
-        avl_solver = AVLSolver(geo_file=geom_file)
+        avl_solver = OVLSolver(geo_file=geom_file)
         assert avl_solver.get_num_surfaces() == 5
         assert avl_solver.get_num_strips() == 90
         assert avl_solver.get_mesh_size() == 780
 
     def test_read_geom_and_mass(self):
-        avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
         assert avl_solver.get_avl_fort_arr("CASE_L", "LMASS")
 
 
 class TestOutput(unittest.TestCase):
     def test_write_geom(self):
         """check that the file written by OptVL is the same as the original file"""
-        avl_solver = AVLSolver(geo_file='supra.avl')
+        avl_solver = OVLSolver(geo_file='supra.avl')
         avl_solver.write_geom_file(geom_output_file)
         baseline_data = avl_solver.get_surface_params()
         baseline_data_body = avl_solver.get_body_params()
 
         del avl_solver
-        avl_solver = AVLSolver(geo_file=geom_output_file)
+        avl_solver = OVLSolver(geo_file=geom_output_file)
         new_data = avl_solver.get_surface_params()
         new_data_body = avl_solver.get_body_params()
 
@@ -84,13 +84,13 @@ class TestOutput(unittest.TestCase):
     def test_write_panneling_params(self):
         # test that the surface is output correctly when only section or surface
         # panneling is given
-        avl_solver = AVLSolver(geo_file=rect_geom_file)
+        avl_solver = OVLSolver(geo_file=rect_geom_file)
         avl_solver.write_geom_file(rect_geom_output_file)   
         baseline_data = avl_solver.get_surface_params(include_panneling=True, include_geom=False)
         assert baseline_data['Wing']['use surface spacing'] == True
         
         del avl_solver
-        avl_solver = AVLSolver(geo_file=rect_geom_output_file)
+        avl_solver = OVLSolver(geo_file=rect_geom_output_file)
         new_data = baseline_data = avl_solver.get_surface_params()
 
         for surf in baseline_data:
@@ -111,7 +111,7 @@ class TestOutput(unittest.TestCase):
 
 class TestFortranLevelAPI(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_mod_file, mass_file=mass_file)
+        self.avl_solver = OVLSolver(geo_file=geom_mod_file, mass_file=mass_file)
 
     def test_get_scalar(self):
         avl_version = 3.40

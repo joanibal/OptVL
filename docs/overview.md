@@ -7,7 +7,7 @@ In addition to this though, OptVL also offers unique optimization functionality.
 Below is an example of a basic analysis run to give you an idea of the workflow. 
 
 ```python 
-{% include "../examples/aircraft/run_basic.py" %}
+{% include "../examples/run_basic.py" %}
 ```
 
 The script will plot the geometry, set parameters, run an analysis and then show a CP surface plot.

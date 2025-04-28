@@ -1,6 +1,6 @@
 """This script is intended to demonstrate how to use a custom geometry component with optvl"""
 import openmdao.api as om
-from optvl import AVLSolver, AVLGroup, AVLMeshReader
+from optvl import OVLSolver, AVLGroup, AVLMeshReader
 import numpy as np
 import copy
 
@@ -51,19 +51,19 @@ model = om.Group()
 model.add_subsystem("mesh", AVLMeshReader(geom_file="aircraft.avl"))
 model.add_subsystem('wing_param', GeometryParametrizationComp())
 model.connect("mesh.Wing:xyzles",['wing_param.xyzles_in'] )
-model.connect("wing_param.xyzles_out",['avlsolver.Wing:xyzles'] )
+model.connect("wing_param.xyzles_out",['ovlsolver.Wing:xyzles'] )
 
-model.add_subsystem("avlsolver", AVLGroup(geom_file="aircraft.avl"))
-model.add_design_var("avlsolver.Wing:aincs", lower=-10, upper=10)
+model.add_subsystem("ovlsolver", AVLGroup(geom_file="aircraft.avl"))
+model.add_design_var("ovlsolver.Wing:aincs", lower=-10, upper=10)
 model.add_design_var("wing_param.added_sweep", lower=-10, upper=10)
 
 # the outputs of AVL can be used as contraints
-model.add_constraint("avlsolver.CL", equals=1.5)
-model.add_constraint("avlsolver.CM", equals=0.0, scaler=1e3)
+model.add_constraint("ovlsolver.CL", equals=1.5)
+model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
 # Some variables (like chord, dihedral, x and z leading edge position) can lead to local minimum. 
 # To help fix this add a contraint that keeps the variable monotonic
 
-model.add_objective("avlsolver.CD", scaler=1e2)
+model.add_objective("ovlsolver.CD", scaler=1e2)
 
 prob = om.Problem(model)
 
@@ -82,4 +82,4 @@ prob.run_driver()
 # prob.check_totals()
 
 
-prob.model.avlsolver.solver.avl.write_geom_file('opt_airplane.avl')
+prob.model.ovlsolver.solver.avl.write_geom_file('opt_airplane.avl')

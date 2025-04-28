@@ -1,10 +1,10 @@
-from optvl import AVLSolver
+from optvl import OVLSolver
 import numpy as np
 from pprint import pprint
 import matplotlib.pyplot as plt
 
 
-avl_solver = AVLSolver(geo_file="rectangle.avl", debug=False, timing=False)
+avl_solver = OVLSolver(geo_file="rectangle.avl", debug=False, timing=False)
 
 # set the angle of attack
 # avl_solver.set_constraint("alpha", 5.00)

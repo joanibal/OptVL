@@ -24,11 +24,11 @@ class TestImport(unittest.TestCase):
     # TODO: add test for expected input output errors
     def test_instances(self):
 
-        from optvl import AVLSolver
+        from optvl import OVLSolver
 
-        avl_solver1 = AVLSolver(geo_file=geom_file)
+        avl_solver1 = OVLSolver(geo_file=geom_file)
 
-        avl_solver2 = AVLSolver(geo_file=geom_file)
+        avl_solver2 = OVLSolver(geo_file=geom_file)
 
         assert avl_solver1.avl is not avl_solver2.avl
 

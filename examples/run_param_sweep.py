@@ -1,9 +1,9 @@
-from optvl import AVLSolver
+from optvl import OVLSolver
 import numpy as np
 
 write_tecplot_files = True
 
-avl_solver = AVLSolver(geo_file="aircraft.avl", debug=False, timing=False)
+avl_solver = OVLSolver(geo_file="aircraft.avl", debug=False, timing=False)
 
 # set the angle of attack
 avl_solver.set_constraint("alpha", 5.00)

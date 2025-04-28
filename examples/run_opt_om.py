@@ -3,18 +3,18 @@ import openmdao.api as om
 from optvl import AVLGroup
 
 model = om.Group()
-model.add_subsystem("avlsolver", AVLGroup(geom_file="aircraft.avl"))
+model.add_subsystem("ovlsolver", AVLGroup(geom_file="aircraft.avl"))
 
 # look at vlm_opt.html to see all the design variables and add them here
-model.add_design_var("avlsolver.Wing:aincs", lower=-15, upper=15)
-model.add_design_var("avlsolver.Elevator", lower=-10, upper=10)
+model.add_design_var("ovlsolver.Wing:aincs", lower=-15, upper=15)
+model.add_design_var("ovlsolver.Elevator", lower=-10, upper=10)
 
 # the outputs of OptVL can be used as contraints
-model.add_constraint("avlsolver.CL", equals=1.5)
-model.add_constraint("avlsolver.CM", equals=0.0, scaler=1e3)
+model.add_constraint("ovlsolver.CL", equals=1.5)
+model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
 
 # the scaler values bring the objective functinon to ~ order 1 for the optimizer
-model.add_objective("avlsolver.CD", scaler=1e3)
+model.add_objective("ovlsolver.CD", scaler=1e3)
 
 prob = om.Problem(model)
 
@@ -28,12 +28,12 @@ prob.setup(mode='rev')
 om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 prob.run_driver()
 
-del_ele = prob.get_val('avlsolver.Elevator')
-print(f'avlsolver.Elevator {del_ele}')
-aincs = prob.get_val('avlsolver.Wing:aincs')
-print(f'avlsolver.Wing:aincs {aincs}')
-cd = prob.get_val('avlsolver.CD')
-print(f'avlsolver.CD {cd}')
+del_ele = prob.get_val('ovlsolver.Elevator')
+print(f'ovlsolver.Elevator {del_ele}')
+aincs = prob.get_val('ovlsolver.Wing:aincs')
+print(f'ovlsolver.Wing:aincs {aincs}')
+cd = prob.get_val('ovlsolver.CD')
+print(f'ovlsolver.CD {cd}')
 # do this instead if you want to check derivatives
 # prob.run_model()
 # prob.check_totals()
