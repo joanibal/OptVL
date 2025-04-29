@@ -6,54 +6,24 @@
 OptVL is a modified version of Mark Drela and Harold Youngren's famous AVL code with a python-wrapper and AD derivative routines for gradient-based optimization.
 The python wrapper allows one to easily conduct large parameter sweeps with a vortex lattice method or to include a vortex lattice method into a larger model. 
 Together with the additional derivative routines, OptVL can be added to an optimzation loop for design refinement by a  gradient-free or gradient-based optimizer. 
-On top of this OptVL also has the ability to view the geometry and pressure distribution in python, Paraview, or Tecplot, which provides portable post-processing. 
+<!-- On top of this OptVL also has the ability to  -->
 <!-- Additionally, this wrapper provides access to more data than is available through traditional file output.  -->
 <!-- Unlike in the output files which is limit to about 4 digits, the user has access to the full double precision data.  -->
 
-## key features
+## Key features
 
-- specify and modify the geometry from python 
-- compute derivatives of total forces with respect to geometric variables
-- derivatives of stability derivatives 
-    - needed for neutral point constraint
-    
+- Specify and modify the geometry from python 
+- Compute derivatives of total forces, control surface derivatives, and stability derivatives with respect to geometric and aerodynamic variables
+- View the geometry and pressure distribution in python, Paraview, or Tecplot, which provides portable post-processing. 
 
 
 # Installation
-The best way to get OptVL is to install it through pip
+The best way to install OptVL is through pip
 ```
 pip install optvl
 ```
 Windows, macOS, and Linux are all supported!
-
-
-## Building locally
-If you want to make OptVL locally then you have to clone the repository and use the following process.
-
-In the root directory run
-```
-pip install . 
-```
-
-<!-- ## building step by step
-
-To compile the avl library use 
-```
-make
-```
-This code has only been tested with gfortran and gnu95 compilers. 
-If you want to use something besides gfortran you will have to modify the Makefile
-
-
-and to install the optv package on your python path use 
-```
-pip install . 
-```
-or 
-```
-pip install . -e 
-```
-to install in development mode  -->
+For information on building locally see the [developer docs](https://joanibal.github.io/OptVL/building_optvl_locally/)
 
 # Basic usage
 The API of OptVL was made to mirror the usage of AVL through its text interface. 
@@ -62,54 +32,43 @@ The user loads in a geometry file, adds constraints, and then executes analysis 
 The AVL wrapper is implemented in the `OVLSolver` class. 
 To use this wrapper, first one must initialize the `OVLSolver` object with a geometry file and optionally a mass file. 
 After, the user can add constraints and then execute the run to generate data. 
-Below is a basic example of this workflow. 
+Below is a basic example of this workflow and [this page](https://joanibal.github.io/OptVL/making_a_script/) provides more information on building run scripts. 
 
 ```python
 from optvl import OVLSolver
-import numpy as np
 
-ovl = OVLSolver(geo_file="aircraft.avl")
+ovl = OVLSolver(geo_file="aircraft.avl", debug=False)
+
+# look at the geometry to see that everything is right
+ovl.plot_geom()
+
+# set the angle of attack
 ovl.set_constraint("alpha", 0.00)
 
-# control surface names from geometry file
+# set the deflection of the elevator to trim the pitching moment
 ovl.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
-ovl.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
 
 ovl.set_parameter("Mach", 0.3)
 
 # This is the method that acutally runs the analysis
 ovl.execute_run()
 
-print("----------------- alpha sweep ----------------")
-print("   Angle        Cl           Cd          Cdi          Cdv          Cm")
-for alpha in range(10):
-    ovl.set_constraint("alpha", alpha)
-    ovl.execute_run()
-    run_data = ovl.get_total_forces()
-    print(
-        f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
-    )
+# print data about the run 
+force_data = ovl.get_total_forces()
+print(
+    f'CL:{force_data["CL"]:10.6f}   CD:{force_data["CD"]:10.6f}   CM:{force_data["CM"]:10.6f}'
+)
 
-print("----------------- CL sweep ----------------")
-print("   Angle        Cl           Cd          Cdff          Cdv          Cm")
-for cl in np.arange(0.6,1.6,0.1):
-    ovl.set_trim_condition("CL", cl)
-    ovl.execute_run()
-    run_data = ovl.get_total_forces()
-    alpha = ovl.get_parameter("alpha")
-    print(
-        f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
-    )
+# lets look at the cp countours 
+ovl.plot_cp()
 ```
 
-# Parameter sweep example
-
-## taper ratio sweep
-
-
-# Optimization example
-
-## optimize twist distribution
+# Examples
+- [Eigen value analysis](https://joanibal.github.io/OptVL/modal_analysis/)
+- [Modify leading edge position](https://joanibal.github.io/OptVL/parameter_sweeps/)
+- [Twist optimization with Scipy](https://joanibal.github.io/OptVL/optimization_setup_scipy/)
+- [Twist optimization with OpenMDAO](https://joanibal.github.io/OptVL/optimization_setup_om/)
+- [Planform optimization with OpenMDAO](https://joanibal.github.io/OptVL/planform_optimization/)
 
 # License
 
