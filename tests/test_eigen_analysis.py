@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver
+from optvl import OVLSolver
 
 # =============================================================================
 # Standard Python Modules
@@ -22,7 +22,7 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestEigenAnalysisSweep(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
+        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
 
     def test_vel_sweep(self):
         

@@ -7,17 +7,24 @@ edit_uri: https://github.com/joanibal/OptVL/edit/main/docs
 
 nav:
   - Home: index.md
-  - Installation:
-      - installation.md
-  - Usage:
-      - usage.md
-      - analysis.md
+  - Installation: installation.md
+  - Overview: overview.md
+  - Analyisis:
+      - making_a_script.md
+      - alpha_cl_sweep.md
+      - modal_analysis.md
       - parameter_sweeps.md
-      - optimization.md
-      - avl_changes.md
+  - Optmization:
+      - optimization_overview.md
+      - optimization_setup_scipy.md
+      - optimization_setup_om.md
+      - planform_optimization.md
+  - Vizulization:
+    - viz_overview.md
+    - sectional_data_viz.md
+  - Developement:
       - dev_docs.md
-      - input.md
-      - limitations.md
+      - building_optvl_locally.md
       - pyavl_changes.md  
   # defer to gen-files + literate-nav
   - Code Reference: reference/  
@@ -43,6 +50,8 @@ plugins:
             show_source: false
   - literate-nav:
       nav_file: SUMMARY.md
+
+  - include-markdown
       
 markdown_extensions:
   - attr_list

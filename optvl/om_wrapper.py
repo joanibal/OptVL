@@ -1,6 +1,6 @@
 import os
 import openmdao.api as om
-from optvl import AVLSolver
+from optvl import OVLSolver
 import numpy as np
 import copy
 import time
@@ -10,6 +10,7 @@ class AVLGroup(om.Group):
         self.options.declare("geom_file", types=str)
         self.options.declare("mass_file", default=None)
         self.options.declare("write_grid", types=bool, default=False)
+        self.options.declare("write_grid_sol_time", types=bool, default=False)
         self.options.declare("output_dir", types=str, recordable=False, default=".")
 
         self.options.declare("input_param_vals", types=bool, default=False)
@@ -28,7 +29,7 @@ class AVLGroup(om.Group):
         output_stabililty_derivs = self.options["output_stabililty_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
 
-        avl = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
+        avl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
 
         self.add_subsystem("solver", AVLSolverComp(avl=avl, 
                                     input_param_vals=input_param_vals,
@@ -42,7 +43,9 @@ class AVLGroup(om.Group):
                                     promotes=["*"])
         if self.options["write_grid"]:
             self.add_subsystem(
-                "postprocess", AVLPostProcessComp(avl=avl, output_dir=self.options["output_dir"],
+                "postprocess", AVLPostProcessComp(avl=avl, 
+                                                    output_dir=self.options["output_dir"],
+                                                    write_grid_sol_time=self.options["write_grid_sol_time"],
                                                     input_param_vals=input_param_vals,
                                                     input_ref_vals=input_ref_vals),
                                                     promotes=["*"]
@@ -149,7 +152,7 @@ class AVLSolverComp(om.ImplicitComponent):
     """
 
     def initialize(self):
-        self.options.declare("avl", types=AVLSolver, recordable=False)
+        self.options.declare("avl", types=OVLSolver, recordable=False)
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
         
@@ -329,7 +332,7 @@ class AVLSolverComp(om.ImplicitComponent):
 
 class AVLFuncsComp(om.ExplicitComponent):
     def initialize(self):
-        self.options.declare("avl", types=AVLSolver, recordable=False)
+        self.options.declare("avl", types=OVLSolver, recordable=False)
         self.options.declare("output_stabililty_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
         self.options.declare("input_param_vals", types=bool, default=False)
@@ -549,10 +552,11 @@ class AVLFuncsComp(om.ExplicitComponent):
 # Optional components
 class AVLPostProcessComp(om.ExplicitComponent):
     def initialize(self):
-        self.options.declare("avl", types=AVLSolver, recordable=False)
+        self.options.declare("avl", types=OVLSolver, recordable=False)
         self.options.declare("output_dir", types=str, recordable=False, default=".")
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
+        self.options.declare("write_grid_sol_time", types=bool, default=False)
         
     def setup(self):
         self.avl = self.options["avl"]
@@ -613,8 +617,11 @@ class AVLPostProcessComp(om.ExplicitComponent):
         self.avl.write_geom_file(os.path.join(output_dir, file_name))
         
         file_name = f"vlm_{self.iter_count:03d}"
-        self.avl.write_tecplot(os.path.join(output_dir, file_name), solution_time=self.iter_count)
-        
+        if self.options["write_grid_sol_time"]:
+            self.avl.write_tecplot(os.path.join(output_dir, file_name), solution_time=self.iter_count)
+        else:
+            self.avl.write_tecplot(os.path.join(output_dir, file_name))
+            
 
 class AVLMeshReader(om.ExplicitComponent):
     """
@@ -629,7 +636,7 @@ class AVLMeshReader(om.ExplicitComponent):
         geom_file = self.options["geom_file"]
         mass_file = self.options["mass_file"]
 
-        avl = AVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
+        avl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
         add_avl_geom_vars(self, avl, add_as="outputs")
 
 

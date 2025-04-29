@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver
+from optvl import OVLSolver
 
 # =============================================================================
 # Standard Python Modules
@@ -24,7 +24,7 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestParameterAPI(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.params_baseline = {
             # "bank": 0.0,
             # "elevation": 0,
@@ -90,7 +90,7 @@ class TestParameterAPI(unittest.TestCase):
 
 class TestReferenceAPI(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.ref_data_baseline = {
             # "bank": 0.0,
             # "elevation": 0,

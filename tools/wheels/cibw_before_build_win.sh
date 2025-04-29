@@ -13,7 +13,7 @@ cat $PROJECT_DIR/tools/wheels/LICENSE_win32.txt >> $PROJECT_DIR/LICENSE.txt
 # mkdir -p /c/opt/64/lib/pkgconfig
 
 # # delvewheel is the equivalent of delocate/auditwheel for windows.
-python -m pip install delvewheel
+python -m pip install delvewheel wheel
 
 # # make the DLL available for tools/wheels/repair_windows.sh. If you change
 # # this location you need to alter that script.

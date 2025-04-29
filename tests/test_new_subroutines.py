@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver
+from optvl import OVLSolver
 import copy
 
 # =============================================================================
@@ -24,7 +24,7 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 class TestNewSubroutines(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = AVLSolver(geo_file="aircraft_L1.avl", debug=False)
+        self.avl_solver = OVLSolver(geo_file="aircraft_L1.avl", debug=False)
         self.avl_solver.set_constraint("alpha", 25.0)
 
     def test_residual(self):

@@ -1,13 +1,12 @@
-# OptAVL
+# AVL + python + optimization = OptVL
+![iso cp view](docs/figures/aircraft_cp_iso.png)
 <!-- [![Downloads](https://static.pepy.tech/badge/optvl)](https://pepy.tech/project/optvl) -->
 [Documentation](https://joanibal.github.io/OptVL/)
 
-# AVL + python + optimization = OptVL
-
 OptVL is a modified version of Mark Drela and Harold Youngren's famous AVL code with a python-wrapper and AD derivative routines for gradient-based optimization.
-The python wrapper allows one to more easily conduct large parameter sweeps with AVL or to include AVL into a larger model. 
-Together with the additionaly derivive routines, OptVL can be added to an optimzation loop for design refinement by a gradient-based optimizer. 
-On top of this OptVL also has the ability to view the geometry and pressure distribution in python, Paraview, or Tecplot. 
+The python wrapper allows one to easily conduct large parameter sweeps with a vortex lattice method or to include a vortex lattice method into a larger model. 
+Together with the additional derivative routines, OptVL can be added to an optimzation loop for design refinement by a  gradient-free or gradient-based optimizer. 
+On top of this OptVL also has the ability to view the geometry and pressure distribution in python, Paraview, or Tecplot, which provides portable post-processing. 
 <!-- Additionally, this wrapper provides access to more data than is available through traditional file output.  -->
 <!-- Unlike in the output files which is limit to about 4 digits, the user has access to the full double precision data.  -->
 
@@ -61,12 +60,12 @@ The API of OptVL was made to mirror the usage of AVL through its text interface.
 The user loads in a geometry file, adds constraints, and then executes analysis runs.
 
 The AVL wrapper is implemented in the `OVLSolver` class. 
-To use this wrapper, first one must initialize the `AVLSolver` object with a geometry file and optionally a mass file. 
+To use this wrapper, first one must initialize the `OVLSolver` object with a geometry file and optionally a mass file. 
 After, the user can add constraints and then execute the run to generate data. 
 Below is a basic example of this workflow. 
 
 ```python
-from optvl import AVLSolver
+from optvl import OVLSolver
 import numpy as np
 
 ovl = OVLSolver(geo_file="aircraft.avl")

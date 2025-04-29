@@ -1,6 +1,6 @@
 # Analysis with OptVL
 
-After initializing and setting up your `AVLSolver`, you can perform analysis tasks such as alpha sweeps and CL sweeps.
+After initializing and setting up your `OVLSolver`, you can perform analysis tasks such as alpha sweeps and CL sweeps.
 
 ## Alpha Sweep
 

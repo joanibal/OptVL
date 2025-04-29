@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import AVLSolver
+from optvl import OVLSolver
 import copy
 
 # =============================================================================
@@ -25,7 +25,7 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 class TestCaseDerivs(unittest.TestCase):
     def setUp(self) -> None:
-        self.avl_solver = AVLSolver(geo_file=geom_file)
+        self.avl_solver = OVLSolver(geo_file=geom_file)
     
     def tearDown(self):
         # Get the memory usage of the current process using psutil
