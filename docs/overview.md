@@ -24,3 +24,4 @@ You can rotate, zoom, and pan in the window to look at different parts for the a
 <!-- 2. There is no single precision version (8 digit output instead of 16 digits) of OptVL available for download
    - You could compile one yourself if you really need this -->
 2. No support for the DESIGN keyword for setting twist in the avl geometry file since we use a different system for modifying all aspects of the geometry.
+3. The windows can only use a maximum of 5400 vortices compared to the default of 6000. 
