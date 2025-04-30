@@ -2,20 +2,13 @@
 ![iso cp view](docs/figures/aircraft_cp_iso.png)
 <!-- [![Downloads](https://static.pepy.tech/badge/optvl)](https://pepy.tech/project/optvl) -->
 [Documentation](https://joanibal.github.io/OptVL/)
+[OptVL for AVL users](https://joanibal.github.io/OptVL/optvl_api)
 
 OptVL is a modified version of Mark Drela and Harold Youngren's famous AVL code with a python-wrapper and AD derivative routines for gradient-based optimization.
-The python wrapper allows one to easily conduct large parameter sweeps with a vortex lattice method or to include a vortex lattice method into a larger model. 
-Together with the additional derivative routines, OptVL can be added to an optimzation loop for design refinement by a  gradient-free or gradient-based optimizer. 
-<!-- On top of this OptVL also has the ability to  -->
-<!-- Additionally, this wrapper provides access to more data than is available through traditional file output.  -->
-<!-- Unlike in the output files which is limit to about 4 digits, the user has access to the full double precision data.  -->
-
-## Key features
-
-- Specify and modify the geometry from python 
-- Compute derivatives of total forces, control surface derivatives, and stability derivatives with respect to geometric and aerodynamic variables
-- View the geometry and pressure distribution in python, Paraview, or Tecplot, which provides portable post-processing. 
-
+Its key features are
+- Python wrapper to easily conduct large parameter sweeps from an existing AVL geometry file or include a vortex lattice method in a larger model.
+- Total derivatives of total forces, control surface derivatives, and stability derivatives with respect to geometric and aerodynamic variables for use with gradient-based optimization.
+- Post-processing directly through Python or Paraview and Tecplot for flexibility. 
 
 # Installation
 The best way to install OptVL is through pip
