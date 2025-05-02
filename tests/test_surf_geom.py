@@ -20,7 +20,7 @@ geom_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 class TestGeom(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = OVLSolver(geo_file=geom_file)
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
 
     def test_surface_params(self):
         reference_data = {
@@ -43,7 +43,7 @@ class TestGeom(unittest.TestCase):
             },
         }
 
-        data = self.avl_solver.get_surface_params(include_geom=True, include_panneling=True, include_con_surf=True)
+        data = self.ovl_solver.get_surface_params(include_geom=True, include_panneling=True, include_con_surf=True)
         
         from pprint import pprint
         
@@ -57,55 +57,55 @@ class TestGeom(unittest.TestCase):
                     err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
                 )
 
-        self.avl_solver.set_constraint("alpha", 6.00)
-        self.avl_solver.set_constraint("beta", 2.00)
-        self.avl_solver.execute_run()
+        self.ovl_solver.set_constraint("alpha", 6.00)
+        self.ovl_solver.set_constraint("beta", 2.00)
+        self.ovl_solver.execute_run()
         
-        assert self.avl_solver.get_num_surfaces() == 5
-        assert self.avl_solver.get_num_strips() == 90
-        assert self.avl_solver.get_mesh_size() == 780
+        assert self.ovl_solver.get_num_surfaces() == 5
+        assert self.ovl_solver.get_num_strips() == 90
+        assert self.ovl_solver.get_mesh_size() == 780
 
         np.testing.assert_allclose(
-            self.avl_solver.get_constraint("alpha"),
+            self.ovl_solver.get_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_constraint("beta"),
+            self.ovl_solver.get_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
         
-        coefs = self.avl_solver.get_total_forces()
+        coefs = self.ovl_solver.get_total_forces()
         np.testing.assert_allclose(
             coefs["CL"],
             5.407351081559913,
             rtol=1e-8,
         )
 
-        self.avl_solver.set_surface_params(data)
+        self.ovl_solver.set_surface_params(data)
         
 
-        assert self.avl_solver.get_num_surfaces() == 5
-        assert self.avl_solver.get_num_strips() == 90
-        assert self.avl_solver.get_mesh_size() == 780
+        assert self.ovl_solver.get_num_surfaces() == 5
+        assert self.ovl_solver.get_num_strips() == 90
+        assert self.ovl_solver.get_mesh_size() == 780
 
-        self.avl_solver.set_constraint("alpha", 6.00)
-        self.avl_solver.set_constraint("beta", 2.00)
-        self.avl_solver.execute_run()
+        self.ovl_solver.set_constraint("alpha", 6.00)
+        self.ovl_solver.set_constraint("beta", 2.00)
+        self.ovl_solver.execute_run()
 
         np.testing.assert_allclose(
-            self.avl_solver.get_constraint("alpha"),
+            self.ovl_solver.get_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_constraint("beta"),
+            self.ovl_solver.get_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
         
-        coefs = self.avl_solver.get_total_forces()
+        coefs = self.ovl_solver.get_total_forces()
         np.testing.assert_allclose(
             coefs["CL"],
             5.407351081559913,
@@ -121,12 +121,12 @@ class TestGeom(unittest.TestCase):
             },
         }
         
-        self.avl_solver.set_constraint("alpha", 10.00)
-        self.avl_solver.set_surface_params(new_data)
+        self.ovl_solver.set_constraint("alpha", 10.00)
+        self.ovl_solver.set_surface_params(new_data)
         
-        self.avl_solver.execute_run()
+        self.ovl_solver.execute_run()
         
-        run_data = self.avl_solver.get_total_forces()
+        run_data = self.ovl_solver.get_total_forces()
         
         # if only one wing was updated then will have unbalanced yaw and roll moments
         np.testing.assert_allclose(
@@ -141,7 +141,7 @@ class TestGeom(unittest.TestCase):
             atol=1e-12
         )
         
-        updated_data = self.avl_solver.get_surface_params(include_geom=True)
+        updated_data = self.ovl_solver.get_surface_params(include_geom=True)
         
         np.testing.assert_allclose(
             updated_data["Wing"]["yles"],

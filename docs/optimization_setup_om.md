@@ -14,21 +14,21 @@ All the hard/tedious work of specifying how the gradient functions should be cal
 Simply import the group and add it to your model. 
 ```python
 import openmdao.api as om
-from optvl import AVLGroup
+from optvl import OVLGroup
 
 model = om.Group()
-model.add_subsystem("ovlsolver", AVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass"))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass"))
 ```
 All the geometric variables, and `alpha` and `beta` are automatically exposed as inputs to the group. 
 The geometric variables of each surface are added as inputs of the form `<surface name>:<geo variable>`.
 To turn on other inputs such as the reference values and case parameters use the "input_param_vals" and "input_ref_vals" keywords to the group respectively.
 ```python 
-model.add_subsystem("ovlsolver", AVLGroup(geom_file="aircraft.avl",input_param_vals=True, input_ref_vals=True))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl",input_param_vals=True, input_ref_vals=True))
 ```
 The force coefficients such as `CL`, `CD`, and `CM` are automatically added as outputs.
 To add stability derivatives or control surface derivatives as out just use the `output_stabililty_derivs` and `output_con_surf_derivs` keyword arguments to the group to turn them on. 
 ```python
-model.add_subsystem("ovlsolver", AVLGroup(geom_file="aircraft.avl", output_stabililty_derivs=True, output_con_surf_derivs=True))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl", output_stabililty_derivs=True, output_con_surf_derivs=True))
 ```
 
 ## Output options 
@@ -37,9 +37,9 @@ To write out the AVL geometry and the Tecplot surface CP file at every time step
 Additionally, if you are not interested in viewing the files in Paraview and instead only want to use Tecplot 360 then I also recommend adding `write_grid_sol_time=True`.
 
 ```python
-model.add_subsystem("ovlsolver", AVLGroup(geom_file="aircraft.avl", write_grid=True))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl", write_grid=True))
 # for easier postprocessing in tecplot 360 (not compatible with paraview)
-model.add_subsystem("ovlsolver", AVLGroup(geom_file="aircraft.avl", write_grid=True, write_grid_sol_time=True ))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl", write_grid=True, write_grid_sol_time=True ))
 
 ```
 

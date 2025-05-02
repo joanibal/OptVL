@@ -29,7 +29,7 @@ jobs:
         pip install pymdown-extensions
         pip install Pygments 
         pip install mkdocstrings
-        pip install mkdocstrings-python
+        pip install 'mkdocstrings[python]'
         pip install mkdocs-gen-files
         pip install mkdocs-literate-nav
         pip install mkdocs-include-markdown-plugin

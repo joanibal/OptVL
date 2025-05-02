@@ -1,6 +1,6 @@
 """This script is intended to demonstrate how to use a custom geometry component with optvl"""
 import openmdao.api as om
-from optvl import OVLSolver, AVLGroup, AVLMeshReader
+from optvl import OVLSolver, OVLGroup, OVLMeshReader
 import numpy as np
 import copy
 
@@ -48,12 +48,12 @@ class GeometryParametrizationComp(om.ExplicitComponent):
 
 
 model = om.Group()
-model.add_subsystem("mesh", AVLMeshReader(geom_file="aircraft.avl"))
+model.add_subsystem("mesh", OVLMeshReader(geom_file="aircraft.avl"))
 model.add_subsystem('wing_param', GeometryParametrizationComp())
 model.connect("mesh.Wing:xyzles",['wing_param.xyzles_in'] )
 model.connect("wing_param.xyzles_out",['ovlsolver.Wing:xyzles'] )
 
-model.add_subsystem("ovlsolver", AVLGroup(geom_file="aircraft.avl"))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl"))
 model.add_design_var("ovlsolver.Wing:aincs", lower=-10, upper=10)
 model.add_design_var("wing_param.added_sweep", lower=-10, upper=10)
 

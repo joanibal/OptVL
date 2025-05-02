@@ -30,7 +30,7 @@ This section describes how to produce data that ca be used with either tecplot o
 To generate a tecplot ascii file (which can be read by both tecplot and paraview). 
 After and analysis use the command 
 ```python
-avl_solver.write_tecplot('test')
+ovl_solver.write_tecplot('test')
 ```
 . This command will write a file called `test.dat`.
 
@@ -48,7 +48,7 @@ You can also plot the mesh and the coefficient of pressure on the surface.
 When writing out the tecplot file you can also specify a solution time with the optional keyword argument. 
 This makes it easier to flip through different data files in tecplot but makes the output incompatible with paraview.
 ```python 
-avl_solver.write_tecplot('test', solution_time=1)
+ovl_solver.write_tecplot('test', solution_time=1)
 ```
 
 ## Paraview

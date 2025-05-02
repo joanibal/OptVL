@@ -24,27 +24,27 @@ class TestConstraints(unittest.TestCase):
     # TODO: add reference values for comparison by running avl binnary by hand or with wrappper
 
     def setUp(self):
-        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
 
     # TODO: add test for roll, pitch, and yaw rate
     # def test_rates(self):
 
     def test_angles(self):
-        self.avl_solver.set_constraint("alpha", 6.00)
-        self.avl_solver.set_constraint("beta", 2.00)
-        self.avl_solver.execute_run()
+        self.ovl_solver.set_constraint("alpha", 6.00)
+        self.ovl_solver.set_constraint("beta", 2.00)
+        self.ovl_solver.execute_run()
 
         np.testing.assert_allclose(
-            self.avl_solver.get_constraint("alpha"),
+            self.ovl_solver.get_constraint("alpha"),
             6.0,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_constraint("beta"),
+            self.ovl_solver.get_constraint("beta"),
             2.0,
             rtol=1e-8,
         )
-        run_data = self.avl_solver.get_total_forces()
+        run_data = self.ovl_solver.get_total_forces()
         np.testing.assert_allclose(
             run_data["CL"],
             1.83005581269135,
@@ -62,10 +62,10 @@ class TestConstraints(unittest.TestCase):
         )
 
     def test_control_surfaces(self):
-        self.avl_solver.set_constraint("D1", 10.00)
-        self.avl_solver.set_constraint("D2", 5.00)
-        self.avl_solver.execute_run()
-        run_data = self.avl_solver.get_total_forces()
+        self.ovl_solver.set_constraint("D1", 10.00)
+        self.ovl_solver.set_constraint("D2", 5.00)
+        self.ovl_solver.execute_run()
+        run_data = self.ovl_solver.get_total_forces()
         
         np.testing.assert_allclose(
             run_data["CL"],
@@ -85,10 +85,10 @@ class TestConstraints(unittest.TestCase):
 
     def test_control_surfaces_names(self):
         """test that the control surface names are can be used as well"""
-        self.avl_solver.set_constraint("Elevator", 10.00)
-        self.avl_solver.set_constraint("Rudder", 5.00)
-        self.avl_solver.execute_run()
-        run_data = self.avl_solver.get_total_forces()
+        self.ovl_solver.set_constraint("Elevator", 10.00)
+        self.ovl_solver.set_constraint("Rudder", 5.00)
+        self.ovl_solver.execute_run()
+        run_data = self.ovl_solver.get_total_forces()
         np.testing.assert_allclose(
             run_data["CL"],
             1.0106168310619361,
@@ -107,20 +107,20 @@ class TestConstraints(unittest.TestCase):
 
     def test_trim(self):
         # TODO: parametrize for the other options
-        self.avl_solver.set_trim_condition("CL", 1.0)
-        self.avl_solver.execute_run()
+        self.ovl_solver.set_trim_condition("CL", 1.0)
+        self.ovl_solver.execute_run()
         np.testing.assert_allclose(
-            self.avl_solver.get_parameter("alpha"),
+            self.ovl_solver.get_parameter("alpha"),
             -1.8615972119506075,
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            self.avl_solver.get_parameter("beta"),
+            self.ovl_solver.get_parameter("beta"),
             0.0,
             rtol=1e-8,
         )
 
-        run_data = self.avl_solver.get_total_forces()
+        run_data = self.ovl_solver.get_total_forces()
 
         np.testing.assert_allclose(
             run_data["CL"],

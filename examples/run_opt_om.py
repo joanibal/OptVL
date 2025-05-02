@@ -1,9 +1,9 @@
 """A openmdao based optimization for an aicraft using optvl"""
 import openmdao.api as om
-from optvl import AVLGroup
+from optvl import OVLGroup
 
 model = om.Group()
-model.add_subsystem("ovlsolver", AVLGroup(geom_file="aircraft.avl"))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl"))
 
 # look at vlm_opt.html to see all the design variables and add them here
 model.add_design_var("ovlsolver.Wing:aincs", lower=-15, upper=15)

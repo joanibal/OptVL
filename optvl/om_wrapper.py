@@ -5,7 +5,20 @@ import numpy as np
 import copy
 import time
 
-class AVLGroup(om.Group):
+class OVLGroup(om.Group):
+    """This is the main the top level group for interacting with OptVL. 
+
+    Args:
+        geom_file: the input geometry file
+        mass_file: the optional mass file  
+        write_grid: should the grid be written after avery analysis 
+        write_grid_sol_time: add the iteration count as the solution time for easier postprocessing in tecplot
+        output_dir: the output directory for the files generated
+        input_param_vals: flag to turn on the flght parameters (Mach, Velocity, etc.) as inputs
+        input_ref_val: flag to turn on the geometric reference values (Sref, Cref, Bref) as inputs
+        output_stabililty_derivs: flag to turn on the output of stability derivatives
+        output_con_surf_derivs: flag to turn on the output of control surface deflections 
+    """
     def initialize(self):
         self.options.declare("geom_file", types=str)
         self.options.declare("mass_file", default=None)
@@ -31,11 +44,11 @@ class AVLGroup(om.Group):
 
         avl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
 
-        self.add_subsystem("solver", AVLSolverComp(avl=avl, 
+        self.add_subsystem("solver", OVLSolverComp(avl=avl, 
                                     input_param_vals=input_param_vals,
                                     input_ref_vals=input_ref_vals),
                                     promotes=["*"])
-        self.add_subsystem("funcs", AVLFuncsComp(avl=avl,
+        self.add_subsystem("funcs", OVLFuncsComp(avl=avl,
                                     input_param_vals=input_param_vals,
                                     input_ref_vals=input_ref_vals,
                                     output_stabililty_derivs=output_stabililty_derivs,
@@ -43,7 +56,7 @@ class AVLGroup(om.Group):
                                     promotes=["*"])
         if self.options["write_grid"]:
             self.add_subsystem(
-                "postprocess", AVLPostProcessComp(avl=avl, 
+                "postprocess", OVLPostProcessComp(avl=avl, 
                                                     output_dir=self.options["output_dir"],
                                                     write_grid_sol_time=self.options["write_grid_sol_time"],
                                                     input_param_vals=input_param_vals,
@@ -146,9 +159,9 @@ def om_set_avl_inputs(sys, inputs):
     
 
 
-class AVLSolverComp(om.ImplicitComponent):
+class OVLSolverComp(om.ImplicitComponent):
     """
-    OpenMDAO component that wraps optvl
+    OpenMDAO component that wraps optvl solver. This is added as part of the OVLgroup
     """
 
     def initialize(self):
@@ -269,7 +282,7 @@ class AVLSolverComp(om.ImplicitComponent):
                 if ref in d_inputs:
                     ref_seeds[ref] = d_inputs[ref]
 
-            _, res_seeds, _, _, res_d_seeds, res_u_seeds = self.avl.execute_jac_vec_prod_fwd(con_seeds=con_seeds, geom_seeds=geom_seeds,
+            _, res_seeds, _, _, res_d_seeds, res_u_seeds = self.avl._execute_jac_vec_prod_fwd(con_seeds=con_seeds, geom_seeds=geom_seeds,
                                                                            param_seeds=param_seeds, ref_seeds=ref_seeds)
 
             d_residuals["gamma"] += res_seeds
@@ -283,7 +296,7 @@ class AVLSolverComp(om.ImplicitComponent):
                 res_d_seeds = d_residuals["gamma_d"]
                 res_u_seeds = d_residuals["gamma_u"]
 
-                con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = self.avl._execute_jac_vec_prod_rev(
                     res_seeds=res_seeds, res_d_seeds=res_d_seeds, res_u_seeds=res_u_seeds
                 )
 
@@ -330,7 +343,12 @@ class AVLSolverComp(om.ImplicitComponent):
             raise NotImplementedError("only reverse mode derivaties implemented. Use prob.setup(mode='rev')")
 
 
-class AVLFuncsComp(om.ExplicitComponent):
+class OVLFuncsComp(om.ExplicitComponent):
+    """This component uses OptVL to compute functionals given a circulation solution. This is added as part of the OVL group
+
+    Args:
+        om: _description_
+    """
     def initialize(self):
         self.options.declare("avl", types=OVLSolver, recordable=False)
         self.options.declare("output_stabililty_derivs", types=bool, default=False)
@@ -470,7 +488,7 @@ class AVLFuncsComp(om.ExplicitComponent):
 
             geom_seeds = self.om_input_to_surf_dict(self, d_inputs)
 
-            func_seeds, _, csd_seeds, stab_derivs_seeds, _, _ = self.avl.execute_jac_vec_prod_fwd(
+            func_seeds, _, csd_seeds, stab_derivs_seeds, _, _ = self.avl._execute_jac_vec_prod_fwd(
                 con_seeds=con_seeds, geom_seeds=geom_seeds, gamma_seeds=gamma_seeds, gamma_d_seeds=gamma_d_seeds, gamma_u_seeds=gamma_u_seeds,
                 param_seeds=param_seeds, ref_seeds=ref_seeds
             )
@@ -523,7 +541,7 @@ class AVLFuncsComp(om.ExplicitComponent):
                         print(f'  running rev mode derivs for {func_key}')
 
                         
-            con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = self.avl.execute_jac_vec_prod_rev(
+            con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = self.avl._execute_jac_vec_prod_rev(
                 func_seeds=func_seeds, consurf_derivs_seeds=csd_seeds, stab_derivs_seeds=stab_derivs_seeds
             )
 
@@ -550,7 +568,9 @@ class AVLFuncsComp(om.ExplicitComponent):
 
 
 # Optional components
-class AVLPostProcessComp(om.ExplicitComponent):
+class OVLPostProcessComp(om.ExplicitComponent):
+    """This component writes out data files for postprocessing. It is optionally added as part of the OVLGroup
+    """
     def initialize(self):
         self.options.declare("avl", types=OVLSolver, recordable=False)
         self.options.declare("output_dir", types=str, recordable=False, default=".")
@@ -623,9 +643,9 @@ class AVLPostProcessComp(om.ExplicitComponent):
             self.avl.write_tecplot(os.path.join(output_dir, file_name))
             
 
-class AVLMeshReader(om.ExplicitComponent):
+class OVLMeshReader(om.ExplicitComponent):
     """
-        This class is moslty used to provide an initial set of coordinates for custom paramerization components
+        This class is moslty used to provide an initial set of coordinates for custom paramerization components. It is NOT part of the OVL group
     """
     
     def initialize(self):
