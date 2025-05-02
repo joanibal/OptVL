@@ -57,7 +57,7 @@ class TestOMWrapper(unittest.TestCase):
         prob.setup(mode='rev')
                 
        
-        surf_data = self.ovl_solver.get_surface_params(include_geom=True, include_panneling=True, include_con_surf=True)
+        surf_data = self.ovl_solver.get_surface_params(include_geom=True, include_paneling=True, include_con_surf=True)
         np.random.seed(111)
 
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
@@ -92,8 +92,9 @@ class TestOMWrapper(unittest.TestCase):
         prob.driver.options['disp'] = True
     
         prob.setup(mode='rev')
-        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_driver()
+        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
+
         om_val = prob.get_val(f"ovlsolver.alpha")
         
         
@@ -120,8 +121,9 @@ class TestOMWrapper(unittest.TestCase):
         prob.driver.options['disp'] = True
     
         prob.setup(mode='rev')
-        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_driver()
+        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
+        
         om_val = prob.get_val(f"ovlsolver.alpha")
         
         
@@ -154,8 +156,9 @@ class TestOMWrapper(unittest.TestCase):
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
         prob.model.add_objective("ovlsolver.CM", scaler=1e3)
         prob.setup(mode='rev')
-        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_model()
+        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
+        
         deriv_err = prob.check_totals()
         rtol = 5e-4
         for key, data in deriv_err.items():

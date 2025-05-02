@@ -175,7 +175,7 @@ class TestTotals(unittest.TestCase):
 
         consurf_vars = []
         for func_key in self.ovl_solver.case_derivs_to_fort_var:
-            consurf_vars.append(self.ovl_solver.get_deriv_key(cs_names[0], func_key))
+            consurf_vars.append(self.ovl_solver._get_deriv_key(cs_names[0], func_key))
    
             
         stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var

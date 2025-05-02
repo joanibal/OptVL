@@ -12,7 +12,7 @@ By default, this method only returns data about the geometry of the surface, but
 ```python
 surf_data = ovl.get_surface_params(
     include_geom=True,
-    include_panneling=True,
+    include_paneling=True,
     include_con_surf=True
 )
 ```

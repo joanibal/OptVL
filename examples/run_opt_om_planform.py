@@ -240,6 +240,7 @@ prob.driver.recording_options['record_desvars'] = True
 
 
 prob.setup(mode='rev')
-om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 prob.run_driver()
+om.n2(prob, show_browser=False, outfile="vlm_opt.html")
+
 # prob.check_totals()

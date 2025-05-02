@@ -86,7 +86,7 @@ class TestOutput(unittest.TestCase):
         # panneling is given
         ovl_solver = OVLSolver(geo_file=rect_geom_file)
         ovl_solver.write_geom_file(rect_geom_output_file)   
-        baseline_data = ovl_solver.get_surface_params(include_panneling=True, include_geom=False)
+        baseline_data = ovl_solver.get_surface_params(include_paneling=True, include_geom=False)
         assert baseline_data['Wing']['use surface spacing'] == True
         
         del ovl_solver

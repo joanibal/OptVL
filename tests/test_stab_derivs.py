@@ -97,7 +97,7 @@ class TestStabDerivs(unittest.TestCase):
             self.ovl_solver.set_constraint(con_key, val)
             
             for func_key in func_keys:
-                key = self.ovl_solver.get_deriv_key(con_key, func_key)
+                key = self.ovl_solver._get_deriv_key(con_key, func_key)
                 ad_dot = stab_derivs[key] 
                 
                 if func_key in ["CR","CN"]:

@@ -25,8 +25,10 @@ prob.driver.options['tol'] = 1e-10
 prob.driver.options['disp'] = True
 
 prob.setup(mode='rev')
-om.n2(prob, show_browser=False, outfile="vlm_opt.html")
+# this causes and error with OpenMDAO 3.38 (https://github.com/OpenMDAO/OpenMDAO/issues/3521)
+# om.n2(prob, show_browser=False, outfile="vlm_opt.html") 
 prob.run_driver()
+om.n2(prob, show_browser=False, outfile="vlm_opt.html") 
 
 del_ele = prob.get_val('ovlsolver.Elevator')
 print(f'ovlsolver.Elevator {del_ele}')

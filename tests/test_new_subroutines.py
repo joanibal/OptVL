@@ -83,7 +83,6 @@ class TestNewSubroutines(unittest.TestCase):
         wv_new    = copy.deepcopy(self.ovl_solver.avl.SOLV_R.WV)
         gam_new   = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM)
         gam_u_new = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM_U)
-        print('gam_u_new', np.linalg.norm(gam_u_new))
         coef_data_new = self.ovl_solver.get_total_forces()
         
         coef_derivs_new = self.ovl_solver.get_control_stab_derivs()

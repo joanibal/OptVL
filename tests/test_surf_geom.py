@@ -43,7 +43,7 @@ class TestGeom(unittest.TestCase):
             },
         }
 
-        data = self.ovl_solver.get_surface_params(include_geom=True, include_panneling=True, include_con_surf=True)
+        data = self.ovl_solver.get_surface_params(include_geom=True, include_paneling=True, include_con_surf=True)
         
         from pprint import pprint
         
