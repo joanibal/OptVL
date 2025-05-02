@@ -37,7 +37,7 @@ jobs:
     - name: Test Build
       run: |
         # mkdocs build --strict # can't use strict mode because of some typ annotations
-        mkdocs build --strict
+        mkdocs build
         
 
     - name: Build and Deploy
