@@ -36,7 +36,9 @@ jobs:
         
     - name: Test Build
       run: |
+        # mkdocs build --strict # can't use strict mode because of some typ annotations
         mkdocs build --strict
+        
 
     - name: Build and Deploy
       if: github.event_name == 'push'
