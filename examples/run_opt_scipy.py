@@ -1,21 +1,20 @@
 """A scipy based optimization to trim an aircraft for an aicraft using optvl"""
-import openmdao.api as om
 import numpy as np
 from scipy.optimize import minimize
 from optvl import OVLSolver
 
-avl_solver = OVLSolver(geo_file="aircraft.avl", debug=False)
+ovl_solver = OVLSolver(geo_file="aircraft.avl", debug=False)
 
 # setup OptVL 
-avl_solver.set_parameter("Mach", 0.0)
+ovl_solver.set_parameter("Mach", 0.0)
 
 # Define your custom objective function with outputs from OptVL
 def objective_function(x):
-    avl_solver.set_constraint("Elevator", x[0])
-    avl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
+    ovl_solver.set_constraint("Elevator", x[0])
+    ovl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
     
-    avl_solver.execute_run()
-    cd = avl_solver.get_total_forces()['CD']
+    ovl_solver.execute_run()
+    cd = ovl_solver.get_total_forces()['CD']
     print(x, cd)
 
     return cd
@@ -26,12 +25,12 @@ def objective_gradient(x):
     # we are trusting that the design variables have already been applied 
     # and propogated through by the objective_function. 
     
-    avl_solver.set_constraint("Elevator", x[0])
-    avl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
+    ovl_solver.set_constraint("Elevator", x[0])
+    ovl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
     
-    avl_solver.execute_run()
+    ovl_solver.execute_run()
     
-    sens = avl_solver.execute_run_sensitivies(['CD'])
+    sens = ovl_solver.execute_run_sensitivies(['CD'])
     dcd_dele = sens['CD']['Elevator']
     dcd_daincs = sens['CD']['Wing']['aincs']
 
@@ -41,13 +40,13 @@ def objective_gradient(x):
 
 # Define equality constraint: h(x) = 0
 def eq_constraint(x):
-    avl_solver.set_constraint("Elevator", x[0])
-    avl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
+    ovl_solver.set_constraint("Elevator", x[0])
+    ovl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
 
-    avl_solver.execute_run()
+    ovl_solver.execute_run()
 
     # the objective must always be run first
-    coeff = avl_solver.get_total_forces()
+    coeff = ovl_solver.get_total_forces()
     
     cl_target = 1.5
     cm_target = 0.0
@@ -59,7 +58,7 @@ def eq_constraint(x):
 
 # Define the gradient of the equality constraint
 def eq_constraint_jac(x):
-    sens = avl_solver.execute_run_sensitivies(['CL', 'CM'])
+    sens = ovl_solver.execute_run_sensitivies(['CL', 'CM'])
     dcl_dele = sens['CL']['Elevator']
     dcl_daincs = sens['CL']['Wing']['aincs']
     dcl_dx = np.concatenate(([dcl_dele], dcl_daincs))

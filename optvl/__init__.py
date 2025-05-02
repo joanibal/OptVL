@@ -9,7 +9,7 @@ except importlib.metadata.PackageNotFoundError:
 from .optvl_class import OVLSolver
 
 try:
-    from .om_wrapper import AVLGroup, AVLMeshReader, Differencer
+    from .om_wrapper import OVLGroup, OVLMeshReader, Differencer
 except ImportError:
     # if openmdao is not installed, then we can't use the wrapper
     pass

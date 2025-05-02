@@ -24,20 +24,20 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 class TestNewSubroutines(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = OVLSolver(geo_file="aircraft_L1.avl", debug=False)
-        self.avl_solver.set_constraint("alpha", 25.0)
+        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl", debug=False)
+        self.ovl_solver.set_constraint("alpha", 25.0)
 
     def test_residual(self):
-        self.avl_solver.avl.get_res()
-        res = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES)
-        rhs = copy.deepcopy(self.avl_solver.avl.VRTX_R.RHS)
+        self.ovl_solver.avl.get_res()
+        res = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES)
+        rhs = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RHS)
         np.testing.assert_allclose(
             res,
             -1 * rhs,
             atol=1e-15,
         )
-        res_u = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES_U)
-        rhs_u = copy.deepcopy(self.avl_solver.avl.VRTX_R.RHS_U)
+        res_u = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES_U)
+        rhs_u = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RHS_U)
         
         # print('rhs_u', np.linalg.norm(rhs_u))
         # print('res_u', np.linalg.norm(res_u))
@@ -47,11 +47,11 @@ class TestNewSubroutines(unittest.TestCase):
             atol=1e-15,
         )
 
-        self.avl_solver.avl.exec_rhs()
-        self.avl_solver.avl.get_res()
-        res   = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES)
-        res_d = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES_D)
-        res_u = copy.deepcopy(self.avl_solver.avl.VRTX_R.RES_U)
+        self.ovl_solver.avl.exec_rhs()
+        self.ovl_solver.avl.get_res()
+        res   = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES)
+        res_d = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES_D)
+        res_u = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES_U)
 
         np.testing.assert_allclose(
             res,
@@ -72,28 +72,27 @@ class TestNewSubroutines(unittest.TestCase):
         )
 
     def test_new_solve(self):
-        self.avl_solver.set_constraint("Elevator", 10.00)
-        self.avl_solver.set_constraint("alpha", 10.00)
-        self.avl_solver.set_constraint("beta", 10.00)
+        self.ovl_solver.set_constraint("Elevator", 10.00)
+        self.ovl_solver.set_constraint("alpha", 10.00)
+        self.ovl_solver.set_constraint("beta", 10.00)
         
-        self.avl_solver.avl.exec_rhs()
+        self.ovl_solver.avl.exec_rhs()
         
-        self.avl_solver.avl.velsum()
-        self.avl_solver.avl.aero()
-        wv_new    = copy.deepcopy(self.avl_solver.avl.SOLV_R.WV)
-        gam_new   = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM)
-        gam_u_new = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM_U)
-        print('gam_u_new', np.linalg.norm(gam_u_new))
-        coef_data_new = self.avl_solver.get_total_forces()
+        self.ovl_solver.avl.velsum()
+        self.ovl_solver.avl.aero()
+        wv_new    = copy.deepcopy(self.ovl_solver.avl.SOLV_R.WV)
+        gam_new   = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM)
+        gam_u_new = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM_U)
+        coef_data_new = self.ovl_solver.get_total_forces()
         
-        coef_derivs_new = self.avl_solver.get_control_stab_derivs()
+        coef_derivs_new = self.ovl_solver.get_control_stab_derivs()
 
-        self.avl_solver.execute_run()
-        gam   = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM)
-        wv    = copy.deepcopy(self.avl_solver.avl.SOLV_R.WV)
-        gam_u = copy.deepcopy(self.avl_solver.avl.VRTX_R.GAM_U)
-        coef_data = self.avl_solver.get_total_forces()
-        coef_derivs = self.avl_solver.get_control_stab_derivs()
+        self.ovl_solver.execute_run()
+        gam   = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM)
+        wv    = copy.deepcopy(self.ovl_solver.avl.SOLV_R.WV)
+        gam_u = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM_U)
+        coef_data = self.ovl_solver.get_total_forces()
+        coef_derivs = self.ovl_solver.get_control_stab_derivs()
 
         np.testing.assert_allclose(
             wv,

@@ -4,13 +4,13 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 
 
-avl_solver = OVLSolver(geo_file="rectangle.avl", debug=False, timing=False)
+ovl_solver = OVLSolver(geo_file="rectangle.avl", debug=False, timing=False)
 
 # set the angle of attack
-# avl_solver.set_constraint("alpha", 5.00)
-yles = avl_solver.get_surface_param('Wing', 'yles')
-xles = avl_solver.get_surface_param('Wing', 'xles')
-zles = avl_solver.get_surface_param('Wing', 'zles')
+# ovl_solver.set_constraint("alpha", 5.00)
+yles = ovl_solver.get_surface_param('Wing', 'yles')
+xles = ovl_solver.get_surface_param('Wing', 'xles')
+zles = ovl_solver.get_surface_param('Wing', 'zles')
 span = yles[-1]
 relative_span = yles/span
 
@@ -33,11 +33,11 @@ for param, value in  values.items():
     # Perform parameter sweep
     for d in np.linspace(-0.33 * span, 0.33 * span, 3):
         new_value = value + d * relative_span
-        avl_solver.set_surface_param('Wing', param, new_value)
-        avl_solver.plot_geom(axes=[ax1, ax2])
+        ovl_solver.set_surface_param('Wing', param, new_value)
+        ovl_solver.plot_geom(axes=[ax1, ax2])
 
     # Reset to baseline
-    avl_solver.set_surface_param('Wing', param, value)
+    ovl_solver.set_surface_param('Wing', param, value)
 
     # Show plot
     plt.show()

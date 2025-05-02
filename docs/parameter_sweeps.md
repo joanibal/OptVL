@@ -12,7 +12,7 @@ By default, this method only returns data about the geometry of the surface, but
 ```python
 surf_data = ovl.get_surface_params(
     include_geom=True,
-    include_panneling=True,
+    include_paneling=True,
     include_con_surf=True
 )
 ```
@@ -38,7 +38,7 @@ For most use cases, you will only need to interact with the geometric variables 
 
 To apply geometry changes to the OVLSolver object, use the `set_surface_params` method.
 ```python
-avl_solver.set_surface_params(data)
+ovl_solver.set_surface_params(data)
 ```
 This method sets the surface parameters of the AVL model based on the provided dictionary data.
 The data pasted to this method must be a dictionary of surface names who's values are a dictionary of surface and section keywords.

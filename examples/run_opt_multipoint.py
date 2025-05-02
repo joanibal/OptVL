@@ -1,6 +1,6 @@
 """A openmdao based optimization for an aicraft using optvl"""
 import openmdao.api as om
-from optvl import OVLSolver, AVLGroup
+from optvl import OVLSolver, OVLGroup
 import argparse
 import numpy as np
 
@@ -19,8 +19,8 @@ class Top(om.Group):
         
         self.add_subsystem("perturbed_flt_cond", om.ExecComp(['ptb_alpha=alpha+0.1'], units='deg'))
         
-        self.add_subsystem("cruise_avl", AVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass", output_stabililty_derivs=True))
-        self.add_subsystem("perturbed_cruise_avl", AVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass"))
+        self.add_subsystem("cruise_avl", OVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass", output_stabililty_derivs=True))
+        self.add_subsystem("perturbed_cruise_avl", OVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass"))
         
     def configure(self):
         # add the flight flt_condition inputs as possible design variables

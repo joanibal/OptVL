@@ -1,7 +1,7 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-from optvl import OVLSolver, AVLGroup
+from optvl import OVLSolver, OVLGroup
 
 # =============================================================================
 # Standard Python Modules
@@ -30,10 +30,10 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestOMWrapper(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
     
         model = om.Group()
-        model.add_subsystem("ovlsolver", AVLGroup(geom_file=geom_file, mass_file=mass_file, 
+        model.add_subsystem("ovlsolver", OVLGroup(geom_file=geom_file, mass_file=mass_file, 
                                                   output_stabililty_derivs=True,
                                                   input_param_vals=True, input_ref_vals=True))
 
@@ -41,8 +41,8 @@ class TestOMWrapper(unittest.TestCase):
 
     def test_aero_coef(self):
         
-        self.avl_solver.execute_run()
-        run_data = self.avl_solver.get_total_forces()
+        self.ovl_solver.execute_run()
+        run_data = self.ovl_solver.get_total_forces()
 
         prob = self.prob
         prob.setup(mode='rev')
@@ -57,19 +57,19 @@ class TestOMWrapper(unittest.TestCase):
         prob.setup(mode='rev')
                 
        
-        surf_data = self.avl_solver.get_surface_params(include_geom=True, include_panneling=True, include_con_surf=True)
+        surf_data = self.ovl_solver.get_surface_params(include_geom=True, include_paneling=True, include_con_surf=True)
         np.random.seed(111)
 
-        for surf_key in self.avl_solver.surf_geom_to_fort_var:
-            for geom_key in self.avl_solver.surf_geom_to_fort_var[surf_key]:
-                arr = self.avl_solver.get_surface_param(surf_key, geom_key)
+        for surf_key in self.ovl_solver.surf_geom_to_fort_var:
+            for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
+                arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
                 arr += np.random.rand(*arr.shape)*0.1
                 print(f'setting {surf_key}:{geom_key} to {arr}')
                 # #set surface data
-                self.avl_solver.set_surface_param(surf_key, geom_key, arr)
-                self.avl_solver.avl.update_surfaces()
-                self.avl_solver.execute_run()
-                run_data = self.avl_solver.get_total_forces()
+                self.ovl_solver.set_surface_param(surf_key, geom_key, arr)
+                self.ovl_solver.avl.update_surfaces()
+                self.ovl_solver.execute_run()
+                run_data = self.ovl_solver.get_total_forces()
                 # set om surface data
                 prob.set_val(f"ovlsolver.{surf_key}:{geom_key}", arr)
                 prob.run_model()
@@ -92,14 +92,15 @@ class TestOMWrapper(unittest.TestCase):
         prob.driver.options['disp'] = True
     
         prob.setup(mode='rev')
-        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_driver()
+        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
+
         om_val = prob.get_val(f"ovlsolver.alpha")
         
         
-        self.avl_solver.set_trim_condition("CL", cl_star)
-        self.avl_solver.execute_run()
-        alpha = self.avl_solver.get_parameter("alpha")
+        self.ovl_solver.set_trim_condition("CL", cl_star)
+        self.ovl_solver.execute_run()
+        alpha = self.ovl_solver.get_parameter("alpha")
         
         np.testing.assert_allclose(om_val,
                             alpha,
@@ -120,14 +121,15 @@ class TestOMWrapper(unittest.TestCase):
         prob.driver.options['disp'] = True
     
         prob.setup(mode='rev')
-        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_driver()
+        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
+        
         om_val = prob.get_val(f"ovlsolver.alpha")
         
         
-        self.avl_solver.set_constraint("alpha", 0.00, con_var="Cm pitch moment")
-        self.avl_solver.execute_run()
-        alpha = self.avl_solver.get_parameter("alpha")
+        self.ovl_solver.set_constraint("alpha", 0.00, con_var="Cm pitch moment")
+        self.ovl_solver.execute_run()
+        alpha = self.ovl_solver.get_parameter("alpha")
         
         np.testing.assert_allclose(om_val,
                             alpha,
@@ -154,8 +156,9 @@ class TestOMWrapper(unittest.TestCase):
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
         prob.model.add_objective("ovlsolver.CM", scaler=1e3)
         prob.setup(mode='rev')
-        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         prob.run_model()
+        om.n2(prob, show_browser=False, outfile="vlm_opt.html")
+        
         deriv_err = prob.check_totals()
         rtol = 5e-4
         for key, data in deriv_err.items():

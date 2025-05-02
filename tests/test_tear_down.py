@@ -25,7 +25,7 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 class TestCaseDerivs(unittest.TestCase):
     def setUp(self) -> None:
-        self.avl_solver = OVLSolver(geo_file=geom_file)
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
     
     def tearDown(self):
         # Get the memory usage of the current process using psutil
@@ -35,10 +35,10 @@ class TestCaseDerivs(unittest.TestCase):
 
 
     def test_1(self):
-        self.avl_solver.execute_run()
+        self.ovl_solver.execute_run()
 
     def test_2(self):
-        self.avl_solver.execute_run()
+        self.ovl_solver.execute_run()
 
 
 

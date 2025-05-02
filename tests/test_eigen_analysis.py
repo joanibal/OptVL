@@ -22,28 +22,28 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestEigenAnalysisSweep(unittest.TestCase):
     def setUp(self):
-        self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
+        self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
 
     def test_vel_sweep(self):
         
         # for vel in np.linspace(10, 100, 10):
         for vel in [10]:
-            self.avl_solver.set_parameter("velocity", vel)
-            dens = self.avl_solver.get_parameter("density")
-            g = self.avl_solver.get_parameter("grav.acc.")
-            mass = self.avl_solver.get_parameter("mass")
+            self.ovl_solver.set_parameter("velocity", vel)
+            dens = self.ovl_solver.get_parameter("density")
+            g = self.ovl_solver.get_parameter("grav.acc.")
+            mass = self.ovl_solver.get_parameter("mass")
             weight = mass * g
             cl = weight / (0.5 * dens * vel**2)
-            self.avl_solver.set_trim_condition("CL", cl)
+            self.ovl_solver.set_trim_condition("CL", cl)
             
             
-            self.avl_solver.execute_eigen_mode_calc()
-            vecs_avl = self.avl_solver.get_eigenvectors()
-            vals_avl = self.avl_solver.get_eigenvalues()
+            self.ovl_solver.execute_eigen_mode_calc()
+            vecs_avl = self.ovl_solver.get_eigenvectors()
+            vals_avl = self.ovl_solver.get_eigenvalues()
             num_eigs =  len(vals_avl)
             
             # use the numpy eig function to get the eigenvalues and eigenvectors
-            A = self.avl_solver.get_system_matrix()
+            A = self.ovl_solver.get_system_matrix()
             vals_np, vecs_np = np.linalg.eig(A)
             vecs_np = vecs_np.T
             

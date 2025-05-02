@@ -26,16 +26,16 @@ class TestImport(unittest.TestCase):
 
         from optvl import OVLSolver
 
-        avl_solver1 = OVLSolver(geo_file=geom_file)
+        ovl_solver1 = OVLSolver(geo_file=geom_file)
 
-        avl_solver2 = OVLSolver(geo_file=geom_file)
+        ovl_solver2 = OVLSolver(geo_file=geom_file)
 
-        assert avl_solver1.avl is not avl_solver2.avl
+        assert ovl_solver1.avl is not ovl_solver2.avl
 
-        avl_solver1.set_avl_fort_arr("CASE_R", "ALFA", 1.1)
-        avl_solver2.set_avl_fort_arr("CASE_R", "ALFA", 2.0)
+        ovl_solver1.set_avl_fort_arr("CASE_R", "ALFA", 1.1)
+        ovl_solver2.set_avl_fort_arr("CASE_R", "ALFA", 2.0)
 
-        assert avl_solver1.get_avl_fort_arr("CASE_R", "ALFA") != avl_solver2.get_avl_fort_arr("CASE_R", "ALFA")
+        assert ovl_solver1.get_avl_fort_arr("CASE_R", "ALFA") != ovl_solver2.get_avl_fort_arr("CASE_R", "ALFA")
 
 
 if __name__ == "__main__":

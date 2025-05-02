@@ -24,12 +24,12 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 class TestResidualUPartials(unittest.TestCase):
     def setUp(self):
-        # self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.avl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.avl_solver = OVLSolver(geo_file="rect.avl")
-        self.avl_solver.set_constraint("alpha", 25.0)
-        self.avl_solver.set_constraint("beta", 5.0)
-        self.avl_solver.execute_run()
+        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
+        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver.set_constraint("alpha", 25.0)
+        self.ovl_solver.set_constraint("beta", 5.0)
+        self.ovl_solver.execute_run()
 
     def tearDown(self):
         # Get the memory usage of the current process using psutil
@@ -39,10 +39,10 @@ class TestResidualUPartials(unittest.TestCase):
 
 
     def test_fwd_aero_constraint(self):
-        for con_key in self.avl_solver.con_var_to_fort_var:
-            res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
+        for con_key in self.ovl_solver.con_var_to_fort_var:
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
-            res_u_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
+            res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, mode="FD", step=1e-5
             )[5]
 
@@ -53,18 +53,18 @@ class TestResidualUPartials(unittest.TestCase):
             )
 
     def test_rev_aero_constraint(self):
-        for con_key in self.avl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_to_fort_var:
         # for con_key in ["beta", "beta"]:
-            res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
-            num_gamma = self.avl_solver.get_mesh_size()
+            num_gamma = self.ovl_solver.get_mesh_size()
             np.random.seed(111)
-            res_u_seeds_rev = np.random.rand(self.avl_solver.NUMAX, num_gamma)
+            res_u_seeds_rev = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
-            self.avl_solver.clear_ad_seeds_fast()
+            self.ovl_solver.clear_ad_seeds_fast()
 
-            con_seeds = self.avl_solver.execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[0]
-            self.avl_solver.clear_ad_seeds_fast()
+            con_seeds = self.ovl_solver._execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[0]
+            self.ovl_solver.clear_ad_seeds_fast()
 
             # do dot product
             res_sum = np.sum(res_u_seeds_rev * res_u_seeds)
@@ -80,16 +80,16 @@ class TestResidualUPartials(unittest.TestCase):
 
     def test_fwd_geom(self):
         np.random.seed(111)
-        for surf_key in self.avl_solver.surf_geom_to_fort_var:
-            for geom_key in self.avl_solver.surf_geom_to_fort_var[surf_key]:
-                arr = self.avl_solver.get_surface_param(surf_key, geom_key)
+        for surf_key in self.ovl_solver.surf_geom_to_fort_var:
+            for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
+                arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds = np.random.rand(*arr.shape)
 
-                res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(
+                res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
                 )[5]
 
-                res_u_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
+                res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
                 )[5]
 
@@ -110,20 +110,20 @@ class TestResidualUPartials(unittest.TestCase):
 
     def test_rev_geom(self):
         np.random.seed(111)
-        num_gamma = self.avl_solver.get_mesh_size()
-        res_u_seeds_rev = np.random.rand(self.avl_solver.NUMAX, num_gamma)
+        num_gamma = self.ovl_solver.get_mesh_size()
+        res_u_seeds_rev = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
-        self.avl_solver.clear_ad_seeds_fast()
+        self.ovl_solver.clear_ad_seeds_fast()
 
-        geom_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[1]
-        self.avl_solver.clear_ad_seeds_fast()
+        geom_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[1]
+        self.ovl_solver.clear_ad_seeds_fast()
 
-        for surf_key in self.avl_solver.surf_geom_to_fort_var:
-            for geom_key in self.avl_solver.surf_geom_to_fort_var[surf_key]:
-                arr = self.avl_solver.get_surface_param(surf_key, geom_key)
+        for surf_key in self.ovl_solver.surf_geom_to_fort_var:
+            for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
+                arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds = np.random.rand(*arr.shape)
 
-                res_u_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(
+                res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
                 )[5]
 
@@ -139,17 +139,17 @@ class TestResidualUPartials(unittest.TestCase):
                     atol=1e-14,
                     err_msg=f"res_u w.r.t. {surf_key}:{geom_key}",
                 )
-        self.avl_solver.clear_ad_seeds_fast()
+        self.ovl_solver.clear_ad_seeds_fast()
 
     def test_fwd_gamma_u(self):
         # stoped here for the night
-        num_gamma = self.avl_solver.get_mesh_size()
-        gamma_u_seeds = np.random.rand(self.avl_solver.NUMAX, num_gamma)
+        num_gamma = self.ovl_solver.get_mesh_size()
+        gamma_u_seeds = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
         # gamma_u_seeds = np.array([[1],[0]])
 
-        res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[5]
+        res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[5]
 
-        res_u_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
+        res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
             gamma_u_seeds=gamma_u_seeds, mode="FD", step=1e-0
         )[5]
 
@@ -160,15 +160,15 @@ class TestResidualUPartials(unittest.TestCase):
         )
 
     def test_rev_gamma_u(self):
-        num_gamma = self.avl_solver.get_mesh_size()
-        gamma_u_seeds_fwd = np.random.rand(self.avl_solver.NUMAX, num_gamma)
+        num_gamma = self.ovl_solver.get_mesh_size()
+        gamma_u_seeds_fwd = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
-        res_u_seeds_rev = np.random.rand(self.avl_solver.NUMAX, num_gamma)
+        res_u_seeds_rev = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
-        res_u_seeds_fwd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[5]
-        self.avl_solver.clear_ad_seeds_fast()
+        res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[5]
+        self.ovl_solver.clear_ad_seeds_fast()
 
-        gamma_u_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[4]
+        gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[4]
 
         gamma_sum = np.sum(gamma_u_seeds_rev * gamma_u_seeds_fwd)
         res_sum = np.sum(res_u_seeds_rev * res_u_seeds_fwd)
@@ -182,10 +182,10 @@ class TestResidualUPartials(unittest.TestCase):
         )
     
     def test_fwd_ref(self):
-        for ref_key in self.avl_solver.ref_var_to_fort_var:
-            res_u_seeds = self.avl_solver.execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[5]
+        for ref_key in self.ovl_solver.ref_var_to_fort_var:
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[5]
 
-            res_u_seeds_FD = self.avl_solver.execute_jac_vec_prod_fwd(
+            res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 ref_seeds={ref_key: 1.0}, mode="FD", step=1e-5
             )[5]
             
@@ -201,13 +201,13 @@ class TestResidualUPartials(unittest.TestCase):
 
 class TestStabDerivDerivsPartials(unittest.TestCase):
     def setUp(self):
-        # self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.avl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.avl_solver = OVLSolver(geo_file="rect.avl")
-        self.avl_solver.set_constraint("alpha", 45.0)
-        self.avl_solver.set_constraint("beta", 45.0)
-        self.avl_solver.execute_run()
-        self.avl_solver.clear_ad_seeds_fast()
+        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
+        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver.set_constraint("alpha", 45.0)
+        self.ovl_solver.set_constraint("beta", 45.0)
+        self.ovl_solver.execute_run()
+        self.ovl_solver.clear_ad_seeds_fast()
 
     def tearDown(self):
         # Get the memory usage of the current process using psutil
@@ -216,10 +216,10 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
         print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
 
     def test_fwd_aero_constraint(self):
-        for con_key in self.avl_solver.con_var_to_fort_var:
-            sd_d = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[3]
+        for con_key in self.ovl_solver.con_var_to_fort_var:
+            sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[3]
 
-            sd_d_fd = self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-6)[3]
+            sd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-6)[3]
 
             for deriv_func in sd_d:
                 sens_label = f"{deriv_func} wrt {con_key}"
@@ -234,15 +234,15 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
     def test_rev_aero_constraint(self):
         
         stab_deriv_seeds_rev = {}
-        for deriv_func, var_dict in self.avl_solver.case_stab_derivs_to_fort_var.items():
+        for deriv_func, var_dict in self.ovl_solver.case_stab_derivs_to_fort_var.items():
             stab_deriv_seeds_rev[deriv_func] = np.random.rand(1)[0]
 
-        con_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(stab_derivs_seeds=stab_deriv_seeds_rev)[0]
+        con_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(stab_derivs_seeds=stab_deriv_seeds_rev)[0]
 
-        self.avl_solver.clear_ad_seeds_fast()
+        self.ovl_solver.clear_ad_seeds_fast()
 
-        for con_key in self.avl_solver.con_var_to_fort_var:
-            stab_deriv_seeds_fwd= self.avl_solver.execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[3]
+        for con_key in self.ovl_solver.con_var_to_fort_var:
+            stab_deriv_seeds_fwd= self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[3]
 
             stab_deriv_sum = 0.0
             for deriv_func in stab_deriv_seeds_fwd:
@@ -263,14 +263,14 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
     def test_fwd_geom(self):
         # this one is broken start here
         np.random.seed(111)
-        for surf_key in self.avl_solver.surf_geom_to_fort_var:
-            for geom_key in self.avl_solver.surf_geom_to_fort_var[surf_key]:
-                arr = self.avl_solver.get_surface_param(surf_key, geom_key)
+        for surf_key in self.ovl_solver.surf_geom_to_fort_var:
+            for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
+                arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds = np.random.rand(*arr.shape)
 
-                sd_d = self.avl_solver.execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[3]
+                sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[3]
 
-                sd_d_fd = self.avl_solver.execute_jac_vec_prod_fwd(
+                sd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=5e-8
                 )[3]
 
@@ -300,23 +300,23 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
     def test_rev_geom(self):
         np.random.seed(111)
         sd_d_rev = {}
-        for deriv_func in self.avl_solver.case_stab_derivs_to_fort_var:
+        for deriv_func in self.ovl_solver.case_stab_derivs_to_fort_var:
             sd_d_rev[deriv_func] = np.random.rand(1)[0]
 
 
-        geom_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(stab_derivs_seeds=sd_d_rev)[1]
-        self.avl_solver.clear_ad_seeds_fast()
+        geom_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(stab_derivs_seeds=sd_d_rev)[1]
+        self.ovl_solver.clear_ad_seeds_fast()
 
-        for surf_key in self.avl_solver.surf_geom_to_fort_var:
-            for geom_key in self.avl_solver.surf_geom_to_fort_var[surf_key]:
-                arr = self.avl_solver.get_surface_param(surf_key, geom_key)
+        for surf_key in self.ovl_solver.surf_geom_to_fort_var:
+            for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
+                arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds_fwd = np.random.rand(*arr.shape)
 
-                sd_d_fwd = self.avl_solver.execute_jac_vec_prod_fwd(
+                sd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds_fwd}}
                 )[3]
 
-                for deriv_func in self.avl_solver.case_stab_derivs_to_fort_var:
+                for deriv_func in self.ovl_solver.case_stab_derivs_to_fort_var:
                     # use dot product test as design variables maybe arrays
                     rev_sum = np.sum(geom_seeds_rev[surf_key][geom_key] * geom_seeds_fwd)
 
@@ -345,11 +345,11 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
                         )
 
     def test_fwd_gamma_u(self):
-        num_gamma = self.avl_solver.get_mesh_size()
-        gamma_u_seeds = np.random.rand(self.avl_solver.NUMAX, num_gamma)
+        num_gamma = self.ovl_solver.get_mesh_size()
+        gamma_u_seeds = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
-        sd_d = self.avl_solver.execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[3]
-        sd_d_fd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds, mode="FD", step=1e-7)[3]
+        sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[3]
+        sd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds, mode="FD", step=1e-7)[3]
 
         for deriv_func in sd_d:
             sens_label = f"{deriv_func} wrt gamma_u"
@@ -361,19 +361,19 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
             )
 
     def test_rev_gamma_u(self):
-        num_gamma = self.avl_solver.get_mesh_size()
-        num_consurf = self.avl_solver.get_num_control_surfs()
+        num_gamma = self.ovl_solver.get_mesh_size()
+        num_consurf = self.ovl_solver.get_num_control_surfs()
         gamma_u_seeds_fwd = np.random.rand(num_consurf, num_gamma)
 
-        sd_d_fwd = self.avl_solver.execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[3]
-        self.avl_solver.clear_ad_seeds_fast()
+        sd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[3]
+        self.ovl_solver.clear_ad_seeds_fast()
 
 
         for deriv_func in sd_d_fwd:
             # for var_key in sd_d_fwd[deriv_func]:
             sd_d_rev = {deriv_func: 1.0}
 
-            gamma_u_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(stab_derivs_seeds=sd_d_rev)[4]
+            gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(stab_derivs_seeds=sd_d_rev)[4]
 
             rev_sum = np.sum(gamma_u_seeds_rev * gamma_u_seeds_fwd)
 
@@ -389,10 +389,10 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
 
 
     def test_fwd_ref(self):
-        for ref_key in self.avl_solver.ref_var_to_fort_var:
-            sd_d = self.avl_solver.execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[3]
+        for ref_key in self.ovl_solver.ref_var_to_fort_var:
+            sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[3]
 
-            sd_d_fd = self.avl_solver.execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0}, mode="FD", step=1e-6)[3]
+            sd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0}, mode="FD", step=1e-6)[3]
 
             for deriv_func in sd_d:
                 sens_label = f"{deriv_func} wrt {ref_key}"
@@ -407,15 +407,15 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
     def test_rev_ref(self):
         
         stab_deriv_seeds_rev = {}
-        for deriv_func, var_dict in self.avl_solver.case_stab_derivs_to_fort_var.items():
+        for deriv_func, var_dict in self.ovl_solver.case_stab_derivs_to_fort_var.items():
             stab_deriv_seeds_rev[deriv_func] = np.random.rand(1)[0]
 
-        ref_seeds_rev = self.avl_solver.execute_jac_vec_prod_rev(stab_derivs_seeds=stab_deriv_seeds_rev)[6]
+        ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(stab_derivs_seeds=stab_deriv_seeds_rev)[6]
 
-        self.avl_solver.clear_ad_seeds_fast()
+        self.ovl_solver.clear_ad_seeds_fast()
 
-        for ref_key in self.avl_solver.ref_var_to_fort_var:
-            stab_deriv_seeds_fwd= self.avl_solver.execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[3]
+        for ref_key in self.ovl_solver.ref_var_to_fort_var:
+            stab_deriv_seeds_fwd= self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[3]
 
             stab_deriv_sum = 0.0
             for deriv_func in stab_deriv_seeds_fwd:

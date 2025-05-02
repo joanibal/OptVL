@@ -26,12 +26,12 @@ class TestStabDerivs(unittest.TestCase):
     # TODO: beta derivatives likely wrong
 
     def setUp(self):
-        # self.avl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.avl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.avl_solver = OVLSolver(geo_file="rect.avl")
-        self.avl_solver.set_constraint("alpha", 5.0)
-        # self.avl_solver.set_constraint("beta", 0.0)
-        self.avl_solver.execute_run()
+        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
+        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver.set_constraint("alpha", 5.0)
+        # self.ovl_solver.set_constraint("beta", 0.0)
+        self.ovl_solver.execute_run()
 
     def tearDown(self):
         # Get the memory usage of the current process using psutil
@@ -45,26 +45,26 @@ class TestStabDerivs(unittest.TestCase):
         for con in con_list:
             con_seeds[con] = 1.0
 
-        self.avl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
-        self.avl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
+        self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
+        self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
 
-        self.avl_solver.avl.update_surfaces()
-        self.avl_solver.avl.get_res()
-        self.avl_solver.avl.exec_rhs()
-        self.avl_solver.avl.get_res()
-        self.avl_solver.avl.velsum()
-        self.avl_solver.avl.aero()
-        # self.avl_solver.execute_run()
-        coef_data_peturb = self.avl_solver.get_total_forces()
-        consurf_derivs_peturb = self.avl_solver.get_control_stab_derivs()
+        self.ovl_solver.avl.update_surfaces()
+        self.ovl_solver.avl.get_res()
+        self.ovl_solver.avl.exec_rhs()
+        self.ovl_solver.avl.get_res()
+        self.ovl_solver.avl.velsum()
+        self.ovl_solver.avl.aero()
+        # self.ovl_solver.execute_run()
+        coef_data_peturb = self.ovl_solver.get_total_forces()
+        consurf_derivs_peturb = self.ovl_solver.get_control_stab_derivs()
 
-        self.avl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-step)
-        self.avl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-step)
+        self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-step)
+        self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-step)
 
-        self.avl_solver.execute_run()
+        self.ovl_solver.execute_run()
 
-        coef_data = self.avl_solver.get_total_forces()
-        consurf_derivs = self.avl_solver.get_control_stab_derivs()
+        coef_data = self.ovl_solver.get_total_forces()
+        consurf_derivs = self.ovl_solver.get_control_stab_derivs()
 
         func_seeds = {}
         for func_key in coef_data:
@@ -82,22 +82,22 @@ class TestStabDerivs(unittest.TestCase):
 
     def test_deriv_values(self):
         # compare the analytical gradients with finite difference for each constraint and function
-        base_data = self.avl_solver.get_total_forces()
-        stab_derivs = self.avl_solver.get_stab_derivs()
+        base_data = self.ovl_solver.get_total_forces()
+        stab_derivs = self.ovl_solver.get_stab_derivs()
 
         con_keys =  ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"]
         func_keys = ["CL", "CD", "CY", "CR", "CM", "CN"]
         # con_keys =  ["alpha", "beta", 'roll rate']
         for con_key in con_keys:
             h = 1e-8
-            val = self.avl_solver.get_constraint(con_key)
-            self.avl_solver.set_constraint(con_key, val + h)
-            self.avl_solver.execute_run()
-            perb_data = self.avl_solver.get_total_forces()
-            self.avl_solver.set_constraint(con_key, val)
+            val = self.ovl_solver.get_constraint(con_key)
+            self.ovl_solver.set_constraint(con_key, val + h)
+            self.ovl_solver.execute_run()
+            perb_data = self.ovl_solver.get_total_forces()
+            self.ovl_solver.set_constraint(con_key, val)
             
             for func_key in func_keys:
-                key = self.avl_solver.get_deriv_key(con_key, func_key)
+                key = self.ovl_solver._get_deriv_key(con_key, func_key)
                 ad_dot = stab_derivs[key] 
                 
                 if func_key in ["CR","CN"]:
