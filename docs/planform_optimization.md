@@ -63,7 +63,7 @@ Combining all these components into the OpenMDAO model we get the following scri
 
 ## Results
 
-The Optimized design has a glide duration of over 3000 seconds.
+The Optimized design has a glide duration of over 1400 seconds.
 We can plot the objective function over the iterations using OpenMDAO's `CaseReader` class with the recorder we made. 
 Additionally, we can load in the last `.avl` file written during the optimization to view the geometry of the optimized design. 
 ```python
@@ -72,7 +72,7 @@ Additionally, we can load in the last `.avl` file written during the optimizatio
 %}
 ```
 
-The objective function quickly rises to about 3000 seconds and then levels off. 
+The objective function quickly rises to about 1400 seconds and then levels off. 
 
 ![](figures/obj_hist_planform.png)
 
@@ -80,6 +80,11 @@ However, if we zoom in we can see that some slight improvements are still being 
 
 ![](figures/obj_hist_planform_zoomed.png)
 
-From the geometry we can see that the aspect ratio of the wing has increased dramatically and now has a slight sweep.
+From the geometry we can see that the aspect ratio of the wing has increased dramatically and now has a sweep.
 
 ![](figures/planform_geom_opt.png)
+
+Looking at the twist and cord distribution we can see a linear chord distribution because of the taper ratio and the wash-out in the sweep. 
+The lift distribution does not look elliptical, which makes sense as maximizing glide duration is not equivalent to minimizing drag. 
+
+![](figures/planform_opt_dists.png)

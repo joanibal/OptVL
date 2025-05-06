@@ -244,6 +244,19 @@ C
       DO ii1=1,3
         wrot_a_diff(ii1) = 0.D0
       ENDDO
+      
+      IF (CLTOT_AL .NE. 0.0) then 
+              SM = CMTOT_AL/CLTOT_AL
+
+              XYZREF_DIFF(1) = XYZREF_DIFF(1) + XNP_DIFF
+              CREF_DIFF = CREF_DIFF - SM*XNP_DIFF
+              SM_DIFF = SM_DIFF - XNP_DIFF*CREF
+
+              CMTOT_AL_DIFF = CMTOT_AL_DIFF - SM_diff/CLTOT_AL
+              CLTOT_AL_DIFF = CLTOT_AL_DIFF 
+     &                      + CMTOT_AL/CLTOT_AL**2 * SM_DIFF
+        endif
+      
       vinf_a_diff(1) = vinf_a_diff(1) + cnsax_u(1)*cntot_al_diff + 
      +  cmsax_u(1)*cmtot_al_diff + crsax_u(1)*crtot_al_diff + cytot_u(1)
      +  *cytot_al_diff + cdtot_u(1)*cdtot_al_diff + cltot_u(1)*

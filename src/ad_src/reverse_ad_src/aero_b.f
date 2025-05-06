@@ -312,6 +312,8 @@ C
       crtot_rz_diff = 0.D0
       cmtot_rz_diff = 0.D0
       cntot_rz_diff = 0.D0
+      xnp_diff = 0.D0
+      SM_DIFF = 0.D0
       END
 
 C  Differentiation of sfforc in reverse (adjoint) mode (with options i4 dr8 r8):
@@ -3864,9 +3866,9 @@ C
         ENDDO
         CALL PUSHINTEGER4(ilseg - 1)
       ENDDO
-      DO ii1=1,3
-        xyzref_diff(ii1) = 0.D0
-      ENDDO
+      ! DO ii1=1,3
+      !   xyzref_diff(ii1) = 0.D0
+      ! ENDDO
       DO ii1=1,nbmax
         cdbdy_diff(ii1) = 0.D0
       ENDDO

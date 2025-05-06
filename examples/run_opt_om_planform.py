@@ -201,11 +201,11 @@ model.connect("geom_dvs.aincs", "differ_aincs.input_vec")
 # design variables modify the planform and twist distribution
 model.add_design_var("geom_param.c/4_sweep", lower=0.0, upper=3.0)
 model.add_design_var("geom_param.taper_ratio", lower=0.1, upper=1.0)
-model.add_design_var("geom_param.root_chord", lower=0.25, upper=4.0)
+model.add_design_var("geom_param.root_chord", lower=0.5, upper=4.0)
 model.add_design_var("ovlsolver.Wing:aincs", lower=-15, upper=15)
 
 model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
-model.add_constraint("ovlsolver.dCM/dalpha", upper=0.0, lower=-0.5, scaler=1e3)
+model.add_constraint("ovlsolver.static margin", upper=0.3, lower=0.1, scaler=1e1)
 
 # make sure CL stays slightly positive to avoid 
 model.add_constraint("ovlsolver.CL", lower=0.1, scaler=1)
@@ -240,7 +240,7 @@ prob.driver.recording_options['record_desvars'] = True
 
 
 prob.setup(mode='rev')
-prob.run_driver()
 om.n2(prob, show_browser=False, outfile="vlm_opt.html")
+prob.run_driver()
 
 # prob.check_totals()

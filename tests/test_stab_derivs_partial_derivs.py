@@ -245,7 +245,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
             stab_deriv_seeds_fwd= self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[3]
 
             stab_deriv_sum = 0.0
-            for deriv_func in stab_deriv_seeds_fwd:
+            for deriv_func in stab_deriv_seeds_rev:
                     stab_deriv_sum += stab_deriv_seeds_rev[deriv_func] * stab_deriv_seeds_fwd[deriv_func]
 
             # do dot product
@@ -397,12 +397,25 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
             for deriv_func in sd_d:
                 sens_label = f"{deriv_func} wrt {ref_key}"
                 print(sens_label, sd_d[deriv_func], sd_d_fd[deriv_func])
-                np.testing.assert_allclose(
-                    sd_d[deriv_func],
-                    sd_d_fd[deriv_func],
-                    rtol=1e-5,
-                    err_msg=sens_label,
-                )
+                
+                tol = 1e-8
+                if np.abs( sd_d[deriv_func]) < tol or np.abs(sd_d_fd[deriv_func]) < tol:
+                    # If either value is basically zero, use an absolute tolerance
+                    np.testing.assert_allclose(
+                        sd_d[deriv_func],
+                        sd_d_fd[deriv_func],
+                        atol=1e-5,
+                        err_msg=sens_label,
+                    )
+                else:
+                    np.testing.assert_allclose(
+                        sd_d[deriv_func],
+                        sd_d_fd[deriv_func],
+                        rtol=1e-5,
+                        err_msg=sens_label,
+                    )
+                        
+
 
     def test_rev_ref(self):
         

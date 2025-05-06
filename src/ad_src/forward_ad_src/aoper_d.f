@@ -317,7 +317,14 @@ C
 C
 C        
 C
-      IF (cl_al .NE. 0.0) xnp = xyzref(1) - cref*cm_al/cl_al
+      IF (CLTOT_AL .NE. 0.0) then 
+             SM = -CMTOT_AL/CLTOT_AL
+             SM_diff = -CMTOT_AL_DIFF/CLTOT_AL + 
+     &                 CMTOT_AL/CLTOT_AL**2 * CLTOT_AL_DIFF
+             XNP = XYZREF(1) - CREF*SM
+             XNP_DIFF = XYZREF_DIFF(1) - (CREF_DIFF*SM + CREF*SM_DIFF)
+
+      endif
       IF (cr_rz*cn_be .GE. 0.) THEN
         abs0 = cr_rz*cn_be
       ELSE
