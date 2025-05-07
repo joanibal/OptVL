@@ -803,6 +803,13 @@ class OVLSolver(object):
                 idx_srp_beg, idx_srp_end = self._get_surface_strip_indices(idx_surf)
                 strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
         
+        
+        # convert the twist to degrees
+        for surf_key in strip_data:
+            # add sectional lift and drag
+            strip_data[surf_key]["twist"] = 180/np.pi *strip_data[surf_key]["twist"]
+
+        
         ref_data = self.get_reference_data()
         cref = ref_data['Cref']
         bref = ref_data['Bref']
@@ -2303,13 +2310,16 @@ class OVLSolver(object):
         return sens
 
 # --- ploting and vizulaization ---
-    def add_mesh_plot(self, axis, xaxis:str='x', yaxis:str='y', show_mesh:bool=True):
+    def add_mesh_plot(self, axis, xaxis:str='x', yaxis:str='y', color:str='black', mesh_style='--', mesh_linewidth=0.3, show_mesh:bool=True):
         """adds a plot of the aircraft mesh to the axis
 
         Args:
             axis: axis to add the plot to
             xaxis: what variable should be plotted on the x axis. Options are ['x', 'y', 'z']
             yaxis: what variable should be plotted on the y-axis. Options are ['x', 'y', 'z']
+            color: what color should the mesh be
+            mesh_style: line style of the interior mesh, e.g. '-' or '--'
+            mesh_linewidth: width of the interior mesh, 1.0 will match the surface outline
             show_mesh: flag to show the interior mesh of the geometry
         """
         mesh_size = self.get_mesh_size()
@@ -2360,7 +2370,7 @@ class OVLSolver(object):
                 'z': [rle1[j1, 2], rle1[j1, 2]]         
             }
             # # chord-wise grid
-            axis.plot(pts[xaxis], pts[yaxis], color='black')
+            axis.plot(pts[xaxis], pts[yaxis], color=color)
             
                 
             pts = {
@@ -2370,7 +2380,7 @@ class OVLSolver(object):
             }
             
             # # chord-wise grid
-            axis.plot(pts[xaxis], pts[yaxis], color='black')
+            axis.plot(pts[xaxis], pts[yaxis], color=color)
             
             # # --- outline of surface ---
             # front 
@@ -2379,7 +2389,7 @@ class OVLSolver(object):
                 'y': np.append(rle1[j1:jn:dj, 1], rle2[jn, 1]),
                 'z': np.append(rle1[j1:jn:dj, 2], rle2[jn, 2])
             }
-            axis.plot(pts[xaxis], pts[yaxis], '-', color='black')
+            axis.plot(pts[xaxis], pts[yaxis], '-', color=color)
             
             # aft
             
@@ -2388,7 +2398,7 @@ class OVLSolver(object):
                 'y':  np.append(rle1[j1:jn:dj, 1], rle2[jn, 1]),
                 'z':  np.append(rle1[j1:jn:dj, 2], rle2[jn, 2]),
             }
-            axis.plot(pts[xaxis], pts[yaxis], '-', color='black')
+            axis.plot(pts[xaxis], pts[yaxis], '-', color=color)
             
             
             if show_mesh:
@@ -2402,7 +2412,7 @@ class OVLSolver(object):
                         }         
                         
                         # # chord-wise grid
-                        axis.plot(pts[xaxis], pts[yaxis], '--', color='grey', linewidth=0.3)
+                        axis.plot(pts[xaxis], pts[yaxis], mesh_style, color=color, alpha=0.7, linewidth=mesh_linewidth)
                         
                     
                     
@@ -2416,7 +2426,7 @@ class OVLSolver(object):
                             'y': [rv1[idx_vor, 1], rv2[idx_vor, 1]],
                             'z': [rv1[idx_vor, 2], rv2[idx_vor, 2]],
                         }
-                        axis.plot(pts[xaxis], pts[yaxis], '--', color='grey', linewidth=0.3)
+                        axis.plot(pts[xaxis], pts[yaxis], mesh_style, color=color, alpha=0.7, linewidth=mesh_linewidth)
                         
     def plot_geom(self, axes=None):
         """generate a matplotlib plot of geometry

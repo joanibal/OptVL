@@ -42,13 +42,13 @@ class OVLGroup(om.Group):
         output_stabililty_derivs = self.options["output_stabililty_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
 
-        ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
+        self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
 
-        self.add_subsystem("solver", OVLSolverComp(ovl=ovl, 
+        self.add_subsystem("solver", OVLSolverComp(ovl=self.ovl, 
                                     input_param_vals=input_param_vals,
                                     input_ref_vals=input_ref_vals),
                                     promotes=["*"])
-        self.add_subsystem("funcs", OVLFuncsComp(ovl=ovl,
+        self.add_subsystem("funcs", OVLFuncsComp(ovl=self.ovl,
                                     input_param_vals=input_param_vals,
                                     input_ref_vals=input_ref_vals,
                                     output_stabililty_derivs=output_stabililty_derivs,
@@ -56,7 +56,7 @@ class OVLGroup(om.Group):
                                     promotes=["*"])
         if self.options["write_grid"]:
             self.add_subsystem(
-                "postprocess", OVLPostProcessComp(ovl=ovl, 
+                "postprocess", OVLPostProcessComp(ovl=self.ovl, 
                                                     output_dir=self.options["output_dir"],
                                                     write_grid_sol_time=self.options["write_grid_sol_time"],
                                                     input_param_vals=input_param_vals,

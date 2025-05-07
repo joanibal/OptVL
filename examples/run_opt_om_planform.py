@@ -4,7 +4,6 @@
 import openmdao.api as om
 from optvl import OVLGroup, Differencer, OVLMeshReader
 import numpy as np
-import copy
 
 
 # geom-start
