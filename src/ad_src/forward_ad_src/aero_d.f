@@ -10,7 +10,7 @@ C                crtot_al cmtot_al cntot_al cdtot_be cltot_be cytot_be
 C                crtot_be cmtot_be cntot_be cdtot_rx cltot_rx cytot_rx
 C                crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry cytot_ry
 C                crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz cytot_rz
-C                crtot_rz cmtot_rz cntot_rz
+C                crtot_rz cmtot_rz cntot_rz xnp sm
 C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
 C                sref cref bref xyzref mach cdref rle chord rle1
 C                chord1 rle2 chord2 wstrip ensy ensz xsref ysref
@@ -29,11 +29,11 @@ C                cntot_be:out cdtot_rx:out cltot_rx:out cytot_rx:out
 C                crtot_rx:out cmtot_rx:out cntot_rx:out cdtot_ry:out
 C                cltot_ry:out cytot_ry:out crtot_ry:out cmtot_ry:out
 C                cntot_ry:out cdtot_rz:out cltot_rz:out cytot_rz:out
-C                crtot_rz:out cmtot_rz:out cntot_rz:out rle:in
-C                chord:in rle1:in chord1:in rle2:in chord2:in wstrip:in
-C                ensy:in ensz:in xsref:in ysref:in zsref:in rv1:in
-C                rv2:in rv:in rc:in gam:in gam_u:in gam_d:in wv:in
-C                wv_u:in
+C                crtot_rz:out cmtot_rz:out cntot_rz:out xnp:out
+C                sm:out rle:in chord:in rle1:in chord1:in rle2:in
+C                chord2:in wstrip:in ensy:in ensz:in xsref:in ysref:in
+C                zsref:in rv1:in rv2:in rv:in rc:in gam:in gam_u:in
+C                gam_d:in wv:in wv_u:in
 C***********************************************************************
 C    Module:  aero.f
 C 
