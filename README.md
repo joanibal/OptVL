@@ -1,5 +1,7 @@
 # AVL + python + optimization = OptVL
-![iso cp view](docs/figures/aircraft_cp_iso.png)
+<!-- ![iso cp view](docs/figures/aircraft_cp_iso.png) -->
+![aircraft iso cp](figures/opt_planform_animation.gif)
+
 <!-- [![Downloads](https://static.pepy.tech/badge/optvl)](https://pepy.tech/project/optvl) -->
 [Documentation](https://joanibal.github.io/OptVL/)
 [OptVL for AVL users](https://joanibal.github.io/OptVL/optvl_api)
