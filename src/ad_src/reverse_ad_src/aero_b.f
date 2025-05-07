@@ -10,7 +10,7 @@ C                crtot_al cmtot_al cntot_al cdtot_be cltot_be cytot_be
 C                crtot_be cmtot_be cntot_be cdtot_rx cltot_rx cytot_rx
 C                crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry cytot_ry
 C                crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz cytot_rz
-C                crtot_rz cmtot_rz cntot_rz
+C                crtot_rz cmtot_rz cntot_rz xnp sm
 C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
 C                sref cref bref xyzref mach cdref clff cyff cdff
 C                spanef cdtot cltot cxtot cytot cztot crtot cmtot
@@ -20,10 +20,10 @@ C                cltot_al cytot_al crtot_al cmtot_al cntot_al cdtot_be
 C                cltot_be cytot_be crtot_be cmtot_be cntot_be cdtot_rx
 C                cltot_rx cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry
 C                cltot_ry cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz
-C                cltot_rz cytot_rz crtot_rz cmtot_rz cntot_rz rle
-C                chord rle1 chord1 rle2 chord2 wstrip ensy ensz
-C                xsref ysref zsref rv1 rv2 rv rc gam gam_u gam_d
-C                wv wv_u
+C                cltot_rz cytot_rz crtot_rz cmtot_rz cntot_rz xnp
+C                sm rle chord rle1 chord1 rle2 chord2 wstrip ensy
+C                ensz xsref ysref zsref rv1 rv2 rv rc gam gam_u
+C                gam_d wv wv_u
 C   RW status of diff variables: alfa:out vinf:out vinf_a:out vinf_b:out
 C                wrot:out sref:out cref:out bref:out xyzref:out
 C                mach:out cdref:out clff:in-zero cyff:in-zero cdff:in-zero
@@ -42,10 +42,11 @@ C                cdtot_ry:in-zero cltot_ry:in-zero cytot_ry:in-zero
 C                crtot_ry:in-zero cmtot_ry:in-zero cntot_ry:in-zero
 C                cdtot_rz:in-zero cltot_rz:in-zero cytot_rz:in-zero
 C                crtot_rz:in-zero cmtot_rz:in-zero cntot_rz:in-zero
-C                rle:out chord:out rle1:out chord1:out rle2:out
-C                chord2:out wstrip:out ensy:out ensz:out xsref:out
-C                ysref:out zsref:out rv1:out rv2:out rv:out rc:out
-C                gam:out gam_u:out gam_d:out wv:out wv_u:out
+C                xnp:in-out sm:in-out rle:out chord:out rle1:out
+C                chord1:out rle2:out chord2:out wstrip:out ensy:out
+C                ensz:out xsref:out ysref:out zsref:out rv1:out
+C                rv2:out rv:out rc:out gam:out gam_u:out gam_d:out
+C                wv:out wv_u:out
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -3680,8 +3681,9 @@ C$BWD-OF II-LOOP
 
 C  Differentiation of bdforc in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: alfa vinf wrot sref cref bref
-C                cdtot cltot cxtot cytot cztot crtot cmtot cntot
-C                cdtot_u cltot_u cytot_u crtot_u cmtot_u cntot_u
+C                xyzref cdtot cltot cxtot cytot cztot crtot cmtot
+C                cntot cdtot_u cltot_u cytot_u crtot_u cmtot_u
+C                cntot_u
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref mach cdtot cltot cxtot cytot cztot crtot
 C                cmtot cntot cdtot_u cltot_u cytot_u crtot_u cmtot_u
@@ -3863,9 +3865,6 @@ C
           ENDDO
         ENDDO
         CALL PUSHINTEGER4(ilseg - 1)
-      ENDDO
-      DO ii1=1,3
-        xyzref_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,nbmax
         cdbdy_diff(ii1) = 0.D0

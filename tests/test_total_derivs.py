@@ -138,7 +138,7 @@ class TestTotals(unittest.TestCase):
                         err_msg=f"func_key {func_key} w.r.t. {con_key}",
                     )
 
-            for func_key in stab_derivs_seeds:
+            for func_key in stab_derivs:
                     ad_dot = sens_sd[func_key][con_key]
                     func_dot = stab_derivs_seeds[func_key]
 

@@ -401,9 +401,8 @@ C----- set spanwise spacing using spacing parameters for each section interval
             nvs(isurf) = nvs(isurf) + nspans(isec, isurf)
           ENDDO
           IF (nvs(isurf) .GT. ksmax) THEN
-            WRITE(*, *) 
-     +            '*** MAKESURF: Array overflow. Increase KSMAX to', nvs
-     +            (isurf)
+            WRITE(*, *) '*** MAKESURF: Array overflow. Increase', 
+     +            'KSMAX to', nvs(isurf)
             STOP
           ELSE
 C

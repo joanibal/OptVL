@@ -7,10 +7,11 @@ C                cltot_al cytot_al crtot_al cmtot_al cntot_al cdtot_be
 C                cltot_be cytot_be crtot_be cmtot_be cntot_be cdtot_rx
 C                cltot_rx cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry
 C                cltot_ry cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz
-C                cltot_rz cytot_rz crtot_rz cmtot_rz cntot_rz
+C                cltot_rz cytot_rz crtot_rz cmtot_rz cntot_rz xnp
+C                sm
 C   with respect to varying inputs: alfa vinf_a vinf_b wrot cref
-C                bref crtot cntot cdtot_a cltot_a cdtot_u cltot_u
-C                cytot_u crtot_u cmtot_u cntot_u
+C                bref xyzref crtot cntot cdtot_a cltot_a cdtot_u
+C                cltot_u cytot_u crtot_u cmtot_u cntot_u xnp sm
 C GETFILE
 C
 C
@@ -45,18 +46,13 @@ C
       REAL cnsax_a
       REAL cnsax_a_diff
       INTEGER k
-      REAL cl_al
-      REAL cm_al
-      REAL cr_rz
-      REAL cn_be
       INTRINSIC ABS
       REAL bb
-      REAL cr_be
-      REAL cn_rz
-      REAL abs0
+      REAL(kind=avl_real) abs0
       REAL(kind=8) temp_diff
       INTEGER ii1
       REAL(kind=avl_real) temp_diff0
+      INTEGER branch
 C
       CALL GETSA(lnasa_sa, satype, dir)
 C CALL VINFAB
@@ -102,6 +98,9 @@ C
 C
 C
 C---- set force derivatives in stability axes
+      cltot_al = cltot_u(1)*vinf_a(1) + cltot_u(4)*wrot_a(1) + cltot_u(2
+     +  )*vinf_a(2) + cltot_u(5)*wrot_a(2) + cltot_u(3)*vinf_a(3) + 
+     +  cltot_u(6)*wrot_a(3) + cltot_a
       cltot_rx = cltot_u(4)*wrot_rx(1) + cltot_u(6)*wrot_rx(3)
       cltot_ry = cltot_u(5)
       cltot_rz = cltot_u(6)*wrot_rz(3) + cltot_u(4)*wrot_rz(1)
@@ -118,6 +117,9 @@ C
       crtot_ry = crsax_u(5)
       crtot_rz = crsax_u(6)*wrot_rz(3) + crsax_u(4)*wrot_rz(1)
 C
+      cmtot_al = cmsax_u(1)*vinf_a(1) + cmsax_u(4)*wrot_a(1) + cmsax_u(2
+     +  )*vinf_a(2) + cmsax_u(5)*wrot_a(2) + cmsax_u(3)*vinf_a(3) + 
+     +  cmsax_u(6)*wrot_a(3)
       cmtot_rx = cmsax_u(4)*wrot_rx(1) + cmsax_u(6)*wrot_rx(3)
       cmtot_ry = cmsax_u(5)
       cmtot_rz = cmsax_u(6)*wrot_rz(3) + cmsax_u(4)*wrot_rz(1)
@@ -128,6 +130,14 @@ C
 C
 C        
 C
+      IF (cltot_al .NE. 0.0) THEN
+C  XNP = XYZREF(1) - CREF*CMTOT_AL/CLTOT_AL
+C  SM = (XNP - XYZREF(1))/CREF This is the same as below
+        sm = -(cmtot_al/cltot_al)
+        CALL PUSHCONTROL1B(1)
+      ELSE
+        CALL PUSHCONTROL1B(0)
+      END IF
       temp_diff0 = dir*2.0*cntot_rz_diff/bref
       cntot_rz_diff = temp_diff0
       bref_diff = -(cntot_rz*temp_diff0/bref)
@@ -186,6 +196,23 @@ C
       cntot_al_diff = dir*cntot_al_diff
       crtot_be_diff = dir*crtot_be_diff
       crtot_al_diff = dir*crtot_al_diff
+      CALL POPCONTROL1B(branch)
+      IF (branch .EQ. 0) THEN
+        DO ii1=1,3
+          xyzref_diff(ii1) = 0.D0
+        ENDDO
+      ELSE
+        DO ii1=1,3
+          xyzref_diff(ii1) = 0.D0
+        ENDDO
+        xyzref_diff(1) = xyzref_diff(1) + xnp_diff
+        cref_diff = cref_diff - sm*xnp_diff
+        sm_diff = sm_diff - cref*xnp_diff
+        cmtot_al_diff = cmtot_al_diff - sm_diff/cltot_al
+        cltot_al_diff = cltot_al_diff + cmtot_al*sm_diff/cltot_al**2
+        xnp_diff = 0.D0
+        sm_diff = 0.D0
+      END IF
       DO ii1=1,numax
         cnsax_u_diff(ii1) = 0.D0
       ENDDO
@@ -410,6 +437,7 @@ C
       wrot_diff(3) = wrot_diff(3) + sa*temp_diff
       sa_diff = sa_diff + wrot(3)*temp_diff
       alfa_diff = COS(alfa)*sa_diff - SIN(alfa)*ca_diff
+C
 C
 C        WRITE(*,8401) XNP
  8401 FORMAT(/'Neutral point  Xnp =',f11.6)
