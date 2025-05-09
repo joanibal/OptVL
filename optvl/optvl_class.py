@@ -293,20 +293,27 @@ class OVLSolver(object):
         """Used in the __init__ method to allocate the slice data for the surfaces
         """
         self.surf_geom_to_fort_var = {}
-        surf_names = self.get_surface_names()
 
         self.surf_pannel_to_fort_var = {}
         self.con_surf_to_fort_var = {}
+        
+        self.surface_names = self.get_surface_names()
+        self.unique_surface_names = self.get_surface_names(remove_dublicated=True)
 
-        for idx_surf, surf_name in enumerate(surf_names):
-            idx_surf = surf_names.index(surf_name)
+
+        # we have to loop over the unique surfaces because those are the 
+        # only ones that have geometric data from the input file
+        # AVL only mirror the mesh data it doesn't infer the input data
+        # for the mirrored surface
+        for surf_name in self.unique_surface_names:
+            idx_surf = self.get_surface_index(surf_name)
             slice_idx_surf = (idx_surf,)
             slice_surf_all = (idx_surf, slice(None))
 
             # only set unduplicated sufaces
             if self.get_avl_fort_arr("SURF_I", "IMAGS", slicer=slice_idx_surf) < 0:
                 # this is a duplicated surface, skip it
-                continue
+                raise ValueError('this should not happen')
 
             num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC", slicer=slice_idx_surf)
 
@@ -623,18 +630,17 @@ class OVLSolver(object):
         Returns:
             surf_data_dict: a dictionary of surface data where the first key is the surface and the second is the force coefficient
         """        
-        surf_names = self.get_surface_names()
 
         # add a dictionary for each surface that will be filled later
         surf_data = {}
-        for surf in surf_names:
+        for surf in self.surf_names:
             surf_data[surf] = {}
 
         for key, avl_key in self.case_surf_var_to_fort_var.items():
             vals = self.get_avl_fort_arr(*avl_key)
 
             # add the values to corresponding surface dict
-            for idx_surf, surf_name in enumerate(surf_names):
+            for idx_surf, surf_name in enumerate(self.surf_names):
                 surf_data[surf_name][key] = vals[idx_surf]
 
         return surf_data
@@ -788,18 +794,17 @@ class OVLSolver(object):
             
         }    
         # fmt: on
-        surf_names = self.get_surface_names()
 
         # add a dictionary for each surface that will be filled later
         strip_data = {}
-        for surf in surf_names:
+        for surf in self.surface_names:
             strip_data[surf] = {}
 
         for key, avl_key in var_to_fort_var.items():
             vals = self.get_avl_fort_arr(*avl_key)
 
             # add the values to corresponding surface dict
-            for idx_surf, surf_name in enumerate(surf_names):
+            for idx_surf, surf_name in enumerate(self.surface_names):
                 idx_srp_beg, idx_srp_end = self._get_surface_strip_indices(idx_surf)
                 strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
         
@@ -808,7 +813,25 @@ class OVLSolver(object):
         for surf_key in strip_data:
             # add sectional lift and drag
             strip_data[surf_key]["twist"] = 180/np.pi *strip_data[surf_key]["twist"]
-
+        
+        # get length of along the surface of each strip
+        for idx_surf, surf_key in enumerate(strip_data):
+            xles = strip_data[surf_key]["X LE"]
+            yles = strip_data[surf_key]["Y LE"] 
+            zles = strip_data[surf_key]["Z LE"]
+            
+            n_strips = len(yles)
+            sles = np.zeros(n_strips)
+            
+            sles[0] = 0
+            for idx_strip in range(1,n_strips):
+                dx = xles[idx_strip] - xles[idx_strip-1]
+                dy = yles[idx_strip] - yles[idx_strip-1]
+                dz = zles[idx_strip] - zles[idx_strip-1]
+                
+                sles[idx_strip] = sles[idx_strip-1] + np.sqrt(dx**2 + dy**2 + dz**2)
+            
+            strip_data[surf_key]["S LE"] = sles
         
         ref_data = self.get_reference_data()
         cref = ref_data['Cref']
@@ -1032,6 +1055,10 @@ class OVLSolver(object):
             update_geom: flag to update the geometry after setting
         """        
         
+        # check that the surface is in the set of unique surfaces and not duplicated
+        if not surf_name in self.unique_surface_names:
+            raise ValueError(f'Only non-duplicates surface parameters can be set, {surf_name} not found in {self.unique_surface_names}')
+        
         if param in self.surf_geom_to_fort_var[surf_name].keys():
             fort_var = self.surf_geom_to_fort_var[surf_name][param]
         elif param in self.surf_pannel_to_fort_var[surf_name].keys():
@@ -1068,17 +1095,15 @@ class OVLSolver(object):
         Return:
             surf_data: Nested dictionary where the 1st key is the surface name and the 2nd key is the parameter.
         """
-        surf_names = self.get_surface_names()
-        unique_surf_names = self.get_surface_names(remove_dublicated=True)
         surf_data = {}
 
-        for surf_name in unique_surf_names:
+        for surf_name in self.unique_surface_names:
             surf_data[surf_name] = {}
             if include_geom:
                 for var in self.surf_geom_to_fort_var[surf_name]:
                     surf_data[surf_name][var] = self.get_surface_param(surf_name, var)
 
-            idx_surf = surf_names.index(surf_name)
+            idx_surf = self.surface_names.index(surf_name)
             if include_paneling:
                 # add paneling parameters if requested
                 for var in self.surf_pannel_to_fort_var[surf_name]:
@@ -1119,16 +1144,13 @@ class OVLSolver(object):
             surf_data: Nested dictionary where the 1st key is the surface name and the 2nd key is the parameter.
 
         """        
-        surf_names = self.get_surface_names()
-        unique_surf_names = self.get_surface_names(remove_dublicated=True)
-
         for surf_name in surf_data:
-            if surf_name not in unique_surf_names:
+            if surf_name not in self.unique_surface_names:
                 raise ValueError(
                     f"""surface name, {surf_name}, not found in the current avl object."
                         Note duplicated surfaces can not be set directly.
-                        Surface in file {unique_surf_names}
-                        {surf_names}"""
+                        Surface in file {self.unique_surface_names}
+                        {self.surface_names}"""
                 )
 
             for var in surf_data[surf_name]:
@@ -1136,7 +1158,7 @@ class OVLSolver(object):
                 if var not in self.con_surf_to_fort_var[surf_name]:
                     self.set_surface_param(surf_name, var, surf_data[surf_name][var], update_geom=False)
                 else:
-                    idx_surf = surf_names.index(surf_name)
+                    idx_surf = self.surface_names.index(surf_name)
                     num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
                     slice_data = []
                     for idx_sec in range(num_sec):
@@ -1426,7 +1448,7 @@ class OVLSolver(object):
         Returns:
             idx_surf: index of the surface
         """        
-        surf_names = self.get_surface_names()
+        surf_names = self.surface_names
         idx_surf = surf_names.index(surf_name)
         return idx_surf
 
@@ -1621,7 +1643,7 @@ class OVLSolver(object):
         
     def get_geom_ad_seeds(self) -> Dict[str, Dict[str, float]]:
         geom_seeds = {}
-        for surf_key in self.surf_geom_to_fort_var:
+        for surf_key in self.unique_surface_names:
             geom_seeds[surf_key] = {}
             for geom_key in self.surf_geom_to_fort_var[surf_key]:
                 blk, var, slicer = self.surf_geom_to_fort_var[surf_key][geom_key]
