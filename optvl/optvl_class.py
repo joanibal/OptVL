@@ -313,7 +313,7 @@ class OVLSolver(object):
             # only set unduplicated sufaces
             if self.get_avl_fort_arr("SURF_I", "IMAGS", slicer=slice_idx_surf) < 0:
                 # this is a duplicated surface, skip it
-                raise ValueError('this should not happen')
+                raise ValueError('Only non-duplicated surfaces have geom data. Internal list of unique surfaces wrong')
 
             num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC", slicer=slice_idx_surf)
 
