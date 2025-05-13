@@ -3,7 +3,7 @@
 OptVL is an ongoing project done entirely in my free time. 
 Pull requests are welcome if you have something that you would like to contribute.  
 Suggestions are also welcome, but I can't promise that I will ever have time to address them. 
-I'm using Github to track issues/bugs so open a new issue there with any concerns.
+I'm using Github to track issues and bugs so open a new issue there with any concerns.
 
 # Common things you might want to modify
 Below is some information on a few development tasks that you may be interested in. 

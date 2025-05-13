@@ -1,9 +1,9 @@
 # Optimizing with SciPy
 
 Before we can use SciPy we have to install it. 
-Thankfully, SciPy is one of the best supported python packages in the world so to install it once can just use `pip install scipy`
+Thankfully, SciPy is one of the best supported python packages in the world so to install it once can just use `pip install scipy`.
 
-SciPy has many optimizers available, but I'm going to focus on using SLSQP since can use the gradient information from OptVL and supports constraints. 
+SciPy has many optimizers available, but I'm going to focus on using SLSQP since it can use the gradient information from OptVL and supports constraints. 
 To use SciPy's SLSQP we will need to supply it with custom objective and constraint functions as well as the derivatives for each. 
 These functions need to take in the design variables and apply them to our OptVL solver. 
 The snippet below provides an example of an objective function.

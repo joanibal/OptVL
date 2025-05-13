@@ -11,7 +11,7 @@ This is the power of OpenMDAO!
 ## Custom parameterization
 AVL defines the geometry at each section, however wing planforms are generally defined with parameters that affect all sections such as sweep and taper ratio. 
 To modify the geometry according to traditional planform variables we need to define a custom geometry component. 
-The Openmdao Component below takes in the root chord, quarter chord sweep angle, and taper ratio and produces the sectional geometry needed by OptVL
+The OpenMDAO Component below takes in the root chord, quarter chord sweep angle, and taper ratio and produces the sectional geometry needed by OptVL
 ```python
 {%
     include-markdown "../examples/run_opt_om_planform.py"
@@ -63,7 +63,7 @@ Combining all these components into the OpenMDAO model we get the following scri
 
 ## Results
 
-The Optimized design has a glide duration of over 1400 seconds.
+The optimized design has a glide duration of over 1400 seconds.
 We can plot the objective function over the iterations using OpenMDAO's `CaseReader` class with the recorder we made. 
 Additionally, we can load in the last `.avl` file written during the optimization to view the geometry of the optimized design. 
 ```python
@@ -84,7 +84,7 @@ From the geometry we can see that the aspect ratio of the wing has increased dra
 
 ![](figures/planform_geom_opt.png)
 
-Looking at the twist and cord distribution we can see a linear chord distribution because of the taper ratio and the wash-out in the sweep. 
+Looking at the twist and chord distribution we can see a linear chord distribution because of the taper ratio and the wash-out in the sweep. 
 The lift distribution does not look elliptical, which makes sense as maximizing glide duration is not equivalent to minimizing drag. 
 
 ![](figures/planform_opt_dists.png)

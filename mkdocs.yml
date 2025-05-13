@@ -9,7 +9,7 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Overview: overview.md
-  - Analyisis:
+  - Analysis:
       - making_a_script.md
       - optvl_api.md
       - alpha_cl_sweep.md
@@ -20,11 +20,11 @@ nav:
       - optimization_setup_scipy.md
       - optimization_setup_om.md
       - planform_optimization.md
-  - Vizulization:
+  - Visualization:
       - viz_overview.md
       - sectional_data_viz.md
       - making_a_movie.md
-  - Developement:
+  - Development:
       - dev_docs.md
       - building_optvl_locally.md
       - pyavl_changes.md  

@@ -12,6 +12,6 @@ You can retrieve the eigenvalues and vectors after the analysis with `get_eigenv
 %}
 ```
 
-The Eigen values should look like this 
+The eigenvalues should look like this 
 
 ![eigen values](figures/eigen_vals.png)

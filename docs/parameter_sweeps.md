@@ -1,8 +1,7 @@
 # Modifying Geometry for Parameter Sweeps
 
 OptVL not only offers aerodynamic analysis capabilities but also provides tools to access and modify geometric parameters of your aircraft models.
-This documentation shows how users can retrieve and set geometry parameters for parameter sweeps.
-
+This page shows how users can retrieve and set geometry parameters for parameter sweeps.
 
 
 ## Getting geometry parameters
@@ -41,7 +40,7 @@ To apply geometry changes to the OVLSolver object, use the `set_surface_params` 
 ovl_solver.set_surface_params(data)
 ```
 This method sets the surface parameters of the AVL model based on the provided dictionary data.
-The data pasted to this method must be a dictionary of surface names who's values are a dictionary of surface and section keywords.
+The data pasted to this method must be a dictionary of surface names whose values are a dictionary of surface and section keywords.
 An example of such a dictionary is
 ```python
 data = {

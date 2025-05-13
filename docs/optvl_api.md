@@ -1,11 +1,11 @@
 # Comparison of Interface with AVL
 
-The API was mad to mirror that of AVL.
+The API was made to mirror that of AVL.
 However, instead of using nested layers of options, users call the methods for getting/setting options and running analysis on `OVLSolver` objects.
 The tables below relate AVL commands and the corresponding method in OptVL.
 See the limitations sections for more information about commands that are not available in OptVL.
 
-|action| avl  avl level command| OptVL api call|
+|action| AVL's  "AVL" level command| OptVL api call|
 |-----|--|--|
 |load a geometry |LOAD <geo file>|OVLSolver(geo_file=<geo file>)|
 |load a mass file |MASS <mass file> |OVLSolver(geo_file=<geo file>, mass_file=<mass file>) |
@@ -39,7 +39,7 @@ The commands from the oper and mode menus are available
 ``` -->
 
 
-|action| avl oper command| OptVL api call|
+|action| AVL's "OPER" command| OptVL api call|
 |-----|--|--|
 |setting the angle of attack|a a <angle>| ovl.set_constraint("alpha", <angle>)|
 | set variable such that constraint = val | <variable> <constraint> <val> | ovl.set_constraint(<variable>, <val>, con_var=<constraint>) |
@@ -60,7 +60,7 @@ The commands from the oper and mode menus are available
 | get high moments| HM | ovl.get_hinge_moments() |
 
 
-|action| avl mode level command| OptVL api call|
+|action| AVL's mode level command| OptVL api call|
 |-----|--|--|
 | get/set case parameters |M <var> <value>| ovl.get_reference_data(<var>)/set_reference_data(<var>, <value>)|
 | get sytem matrix | S | ovl.get_system_matrix()|
@@ -70,6 +70,5 @@ The commands from the oper and mode menus are available
 
 ## Limitations
 1. OptVL does not support multiple run cases since this would make the wrapping and derivative code more complex. Instead, create multiple solver instances and apply different parameters to each to replicate this functionality. 
-2. There is no single precision version of OptVL available for download. 
-   - You could compile one yourself if you really need this
-3. No support for working with design variables set in the avl geometry file since we use a different system for modifying the geometry that allow the user to change any geometric parameter
+2. There is no single precision version of OptVL available for download. You could compile one yourself if you really need this
+1. No support for working with design variables set in the AVL geometry file since we use a different system for modifying the geometry that allow the user to change any geometric parameter
