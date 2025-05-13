@@ -1,4 +1,5 @@
 # How to make a movie
+
 There are many methods to do this, the one that I cover here will use Paraview. 
 
 ## Getting the data files
@@ -12,8 +13,11 @@ If you are using OptVL via the OpenMDAO group simply set the `write_grid` option
 ## Load the data 
 When importing data into Paraview if you named your files file_001, file_0002, ... you will see them displayed as a stack. 
 Load the stack of data to bring all the iterations of your data into Paraview. 
+
 ![](figures/load_stack.png)
+
 While loading that data be sure that the Tecplot reader is used. 
+
 ![](figures/tecplot_reader.png)
 
 ## Setting up the view
@@ -38,6 +42,7 @@ If you loaded in the data as a stack you will be able to flip through it by step
 ## Exporting the data as a movie/animation.
 The final step is to export the data as a movie or animation. 
 From the file menu, simply select 'save animation'.
+
 ![](figures/export_movie.png) 
 
 I had some trouble exporting the data as a .avi file from Paraview 12.0, but version 13.4 worked well. 
