@@ -23,6 +23,7 @@ nav:
   - Vizulization:
     - viz_overview.md
     - sectional_data_viz.md
+    - making_a_movie.md
   - Developement:
       - dev_docs.md
       - building_optvl_locally.md

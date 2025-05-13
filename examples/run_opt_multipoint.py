@@ -68,11 +68,8 @@ class Top(om.Group):
 model = Top()
 
 # look at vlm_mp_opt.html to see all the design variables and add them here
-# tip dihedral  
 idx_sec = 4  # idx of the last section
-idx_xyz = 2  # z values are in the third place
-flat_idx = 3*idx_sec + idx_xyz
-model.add_design_var("geom_dvs.Wing:xyzles", indices=[flat_idx], flat_indices=True,  lower=0, upper=1)
+model.add_design_var("geom_dvs.Wing:zles", indices=[idx_sec],  lower=0, upper=1) # tip dihedral
 model.add_design_var("geom_dvs.Wing:aincs", lower=-10, upper=10)
 model.add_design_var("flt_cond_dvs.alpha", lower=-10, upper=10)
 model.add_design_var("con_surf_dvs.Elevator", lower=-10, upper=10)
@@ -114,7 +111,7 @@ prob.run_driver()
 # prob.run_model()
 # prob.check_totals()
 
-prob.model.cruise_avl.solver.avl.write_geom_file('opt_airplane_mp.avl')
+prob.model.cruise_avl.solver.ovl.write_geom_file('opt_airplane_mp.avl')
 
 if args.plot_opt_hist and args.record:
     import matplotlib.pyplot as plt
