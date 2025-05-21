@@ -4,6 +4,7 @@ from optvl import OVLSolver
 import numpy as np
 import copy
 import time
+import warnings # Added for sanitization warnings
 
 class OVLGroup(om.Group):
     """This is the main the top level group for interacting with OptVL. 
@@ -142,7 +143,21 @@ def om_set_avl_inputs(sys, inputs):
     for c_name in sys.control_names:
         sys.ovl.set_constraint(c_name, inputs[c_name][0])
 
-    sys.ovl.set_constraint("alpha", inputs["alpha"][0])
+    # Sanitize and set alpha
+    alpha_val = inputs["alpha"][0]
+    safe_alpha_min = -30.0
+    safe_alpha_max = 30.0
+    if alpha_val < safe_alpha_min or alpha_val > safe_alpha_max:
+        clipped_alpha = np.clip(alpha_val, safe_alpha_min, safe_alpha_max)
+        warnings.warn(
+            f"Input 'alpha' ({alpha_val} deg) is outside the safe range ({safe_alpha_min} to {safe_alpha_max} deg). "
+            f"Clipping to {clipped_alpha} deg.",
+            UserWarning
+        )
+        sys.ovl.set_constraint("alpha", clipped_alpha)
+    else:
+        sys.ovl.set_constraint("alpha", alpha_val)
+
     sys.ovl.set_constraint("beta", inputs["beta"][0])
 
     # add the parameters to the run

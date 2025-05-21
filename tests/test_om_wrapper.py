@@ -110,26 +110,40 @@ class TestOMWrapper(unittest.TestCase):
         
     def test_CM_solve(self):
         prob = self.prob
+        print("Design variable definition: prob.model.add_design_var(\"ovlsolver.alpha\", lower=-10, upper=10)")
         prob.model.add_design_var("ovlsolver.alpha", lower=-10, upper=10)
+        print("Constraint definition: prob.model.add_constraint(\"ovlsolver.CM\", equals=0.0, scaler=1e3)")
         prob.model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
+        print("Objective definition: prob.model.add_objective(\"ovlsolver.CD\", scaler=1e3)")
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
         prob.setup(mode='rev')
         prob.driver = om.ScipyOptimizeDriver()
+        print(f"ScipyOptimizeDriver options: {prob.driver.options}")
         prob.driver.options['optimizer'] = 'SLSQP'
         prob.driver.options['debug_print'] = ["desvars", "ln_cons", "nl_cons", "objs"]
         prob.driver.options['tol'] = 1e-6
         prob.driver.options['disp'] = True
     
         prob.setup(mode='rev')
+        # It's not guaranteed that alpha has a value before run_driver without setting an initial value or running the model once.
+        # So we will skip printing initial alpha to avoid potential errors.
+        print(f"ScipyOptimizeDriver options before run_driver: {prob.driver.options}")
+        print("Starting prob.run_driver() for CM solve...")
         prob.run_driver()
+        print("prob.run_driver() for CM solve completed.")
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         
         om_val = prob.get_val(f"ovlsolver.alpha")
+        print(f"Optimized 'ovlsolver.alpha' after run_driver: {om_val}")
         
         
+        print("Constraint being set: self.ovl_solver.set_constraint(\"alpha\", 0.00, con_var=\"Cm pitch moment\")")
         self.ovl_solver.set_constraint("alpha", 0.00, con_var="Cm pitch moment")
+        print("Starting self.ovl_solver.execute_run() for CM solve...")
         self.ovl_solver.execute_run()
+        print("self.ovl_solver.execute_run() for CM solve completed.")
         alpha = self.ovl_solver.get_parameter("alpha")
+        print(f"alpha after ovl_solver.execute_run: {alpha}")
         
         np.testing.assert_allclose(om_val,
                             alpha,

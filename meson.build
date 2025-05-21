@@ -114,7 +114,12 @@ ff_args += [
   '-fdefault-real-8',
   '-fdefault-double-8',
   '-fPIC',
-  '-O2'
+  '-O2',
+  # Added debugging flags
+  '-g',
+  '-fbounds-check',
+  '-finit-real=snan',
+  '-finit-integer=-999999'
 ]
 
 numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
