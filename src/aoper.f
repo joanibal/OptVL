@@ -935,7 +935,7 @@ C---- set new constraint index for selected variable IV
 C
 C---- see if constraint value was already specified in command argument
       NINP = 1
-      CALL GETFLT(COMARG(KCLEN+1:80),RINP,NINP,ERROR)
+      CALL GETFLT(COMARG(KCLEN+1:LEN(COMARG)),RINP,NINP,ERROR)
       IF(ERROR) NINP = 0
 C
       IF(NINP.GE.1) THEN
