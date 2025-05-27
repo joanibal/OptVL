@@ -417,21 +417,21 @@ class OVLSolver(object):
 
         """        
         avl_variables = {
-            "alpha": "A",
-            "beta": "B",
-            "roll rate": "R",
-            "pitch rate": "P",
-            "yaw rate": "Y",
+            "alpha":      "A ",
+            "beta":       "B ",
+            "roll rate":  "R ",
+            "pitch rate": "P ",
+            "yaw rate":   "Y ",
         }
 
         avl_con_variables = copy.deepcopy(avl_variables)
         avl_con_variables.update(
             {
-                "CL": "C",
-                "CY": "S",
+                "CL":             "C ",
+                "CY":             "S ",
                 "Cl roll moment": "RM",
-                "Cm pitch moment": "PM",
-                "Cn yaw moment": "YM",
+                "Cm pitch moment":"PM",
+                "Cn yaw moment":  "YM",
             }
         )
 
