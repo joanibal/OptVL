@@ -486,7 +486,7 @@ C
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB()
       DO ii1=1,ndmax
-        DO ii2=1,nvmax
+        DO ii2=1,nvor
           DO ii3=1,3
             enc_d_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
@@ -530,7 +530,7 @@ C$BWD-OF II-LOOP
       ENDDO
       CALL SET_VEL_RHS_B()
       DO ii1=1,numax
-        DO ii2=1,nvmax
+        DO ii2=1,nvor
           rhs_u_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
