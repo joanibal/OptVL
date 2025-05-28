@@ -746,7 +746,6 @@ C-------- set total effective velocity = freestream + rotation + induced
           veff(1) = vinf(1) + vrot(1) + wv(1, i)
           veff_diff(2) = vinf_diff(2) + vrot_diff(2) + wv_diff(2, i)
           veff(2) = vinf(2) + vrot(2) + wv(2, i)
-C$AD II-LOOP
           veff_diff(3) = vinf_diff(3) + vrot_diff(3) + wv_diff(3, i)
           veff(3) = vinf(3) + vrot(3) + wv(3, i)
 C
@@ -795,7 +794,6 @@ C
           fgam(1) = 2.0*gam(i)*f(1)
           fgam_diff(2) = 2.0*(f(2)*gam_diff(i)+gam(i)*f_diff(2))
           fgam(2) = 2.0*gam(i)*f(2)
-C$AD II-LOOP
           fgam_diff(3) = 2.0*(f(3)*gam_diff(i)+gam(i)*f_diff(3))
           fgam(3) = 2.0*gam(i)*f(3)
           DO n=1,numax
@@ -832,7 +830,6 @@ C
 C
 C-------- Delta Cp (loading across lifting surface) from vortex 
           fnv = DOT(env(1, i), fgam)
-C$AD II-LOOP
           dcp(i) = fnv/(dxv(i)*wstrip(j))
 C
           DO n=1,numax
@@ -888,7 +885,6 @@ C-------- moments referred to strip c/4 pt., normalized by strip chord and area
           cmz = cmz + temp
 C
 C-------- accumulate strip spanloading = c*CN
-C$AD II-LOOP
           cnc(j) = cnc(j) + cr*(ensy(j)*dcfy+ensz(j)*dcfz)
 C
 C-------- freestream and rotation derivatives
@@ -1084,7 +1080,6 @@ C---------- set total effective velocity = freestream + rotation
               veff(1) = vinf(1) + vrot(1)
               veff_diff(2) = vinf_diff(2) + vrot_diff(2)
               veff(2) = vinf(2) + vrot(2)
-C$AD II-LOOP
               veff_diff(3) = vinf_diff(3) + vrot_diff(3)
               veff(3) = vinf(3) + vrot(3)
 C
@@ -1129,7 +1124,6 @@ C
               fgam(1) = 2.0*gam(i)*f(1)
               fgam_diff(2) = 2.0*(f(2)*gam_diff(i)+gam(i)*f_diff(2))
               fgam(2) = 2.0*gam(i)*f(2)
-C$AD II-LOOP
               fgam_diff(3) = 2.0*(f(3)*gam_diff(i)+gam(i)*f_diff(3))
               fgam(3) = 2.0*gam(i)*f(3)
               DO n=1,numax
@@ -1472,7 +1466,6 @@ C         CMX = CMX + (DCVFZ*R(2) - DCVFY*R(3))/CR
 C         CMY = CMY + (DCVFX*R(3) - DCVFZ*R(1))/CR
 C         CMZ = CMZ + (DCVFY*R(1) - DCVFX*R(2))/CR
 C
-C$AD II-LOOP
           cdv_lstrp_diff(j) = dcvfx*udrag_diff(1) + udrag(1)*dcvfx_diff 
      +      + dcvfy*udrag_diff(2) + udrag(2)*dcvfy_diff + dcvfz*
      +      udrag_diff(3) + udrag(3)*dcvfz_diff
