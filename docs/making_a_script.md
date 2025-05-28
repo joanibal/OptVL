@@ -40,7 +40,7 @@ ovl.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
 ```
 
 You can also set parameters of the run case. 
-The list of parameters you can set are `CD0`, `bank`, `elevation`, `heading`, `Mach`, `velocity`, `density`, `grav. acc.`, `turn rad.`, `load fac.`, `X cg`, `Y cg`, `Z cg`, `mass`, `Ixx`, `Iyy`, `Izz`, `Ixy`, `Iyz`, `Izx`, `visc CL_a`, `visc CL_u`, `visc CM_a`, `visc CM_u`,
+The list of parameters you can set are `CD0`, `bank`, `elevation`, `heading`, `Mach`, `velocity`, `density`, `grav.acc.`, `turn rad.`, `load fac.`, `X cg`, `Y cg`, `Z cg`, `mass`, `Ixx`, `Iyy`, `Izz`, `Ixy`, `Iyz`, `Izx`, `visc CL_a`, `visc CL_u`, `visc CM_a`, `visc CM_u`,
 ```python 
 # set the flow parameters like mach numbers
 ovl.set_parameter("Mach", 0.3)
