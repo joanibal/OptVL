@@ -5,8 +5,8 @@ There are many methods to do this, the one that I cover here will use ParaView.
 ## Getting the data files
 The 0-th step to making a movie/animation is to save the data that you want to visualize. 
 This data could come from a parameter sweep or optimization run for example. 
-The data read in by TecPlot and ParaView can be output using `ovl_solver.write_tecplot()`. 
-That is not a typo, ParaView can read in the TecPlot file format too, but unlike TecPlot is Free. 
+The data read in by Tecplot and ParaView can be output using `ovl_solver.write_tecplot()`. 
+That is not a typo, ParaView can read in the Tecplot file format too, but unlike Tecplot is Free. 
 To make your life much easier in ParaView you should name your files with numbered suffix like `f'wing_{idx_iter}'`. 
 If you are using OptVL via the OpenMDAO group simply set the `write_grid` option to `True` when creating the group to write out these files, i.e. `OVLGroup(geom_file="rectangle.avl", write_grid=True)`.
 
@@ -16,7 +16,7 @@ Load the stack of data to bring all the iterations of your data into ParaView.
 
 ![](figures/load_stack.png)
 
-While loading that data be sure that the TecPlot reader is used. 
+While loading that data be sure that the Tecplot reader is used. 
 
 ![](figures/tecplot_reader.png)
 
