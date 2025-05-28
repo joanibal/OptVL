@@ -513,6 +513,38 @@ C
       ! It should be equivalent to the new code, but test coverage is low.
       ! I am leaving it hear as a reminder of the original code.
 
+!       DO I = 1, NVOR
+!         DO K = 1, 3
+!     !       WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
+!     !  &            + WCSRD_U(K,I,2)*VINF(2)
+!     !  &            + WCSRD_U(K,I,3)*VINF(3)
+!     !  &            + WCSRD_U(K,I,4)*WROT(1)
+!     !  &            + WCSRD_U(K,I,5)*WROT(2)
+!     !  &            + WCSRD_U(K,I,6)*WROT(3)
+!          WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
+!      &            + WVSRD_U(K,I,2)*VINF(2)
+!      &            + WVSRD_U(K,I,3)*VINF(3)
+!      &            + WVSRD_U(K,I,4)*WROT(1)
+!      &            + WVSRD_U(K,I,5)*WROT(2)
+!      &            + WVSRD_U(K,I,6)*WROT(3)
+!           DO J = 1, NVOR
+!             ! WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
+!             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
+!           ENDDO
+! C
+!           DO N = 1, NUMAX
+!             ! WC_U(K,I,N) = WCSRD_U(K,I,N)
+!             WV_U(K,I,N) = WVSRD_U(K,I,N)
+!             DO J = 1, NVOR
+!               ! WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
+!               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
+!             ENDDO
+!           ENDDO
+! C
+!         ENDDO
+!       ENDDO
+
+      !$AD-II-loop
       DO I = 1, NVOR
         DO K = 1, 3
     !       WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
@@ -521,77 +553,47 @@ C
     !  &            + WCSRD_U(K,I,4)*WROT(1)
     !  &            + WCSRD_U(K,I,5)*WROT(2)
     !  &            + WCSRD_U(K,I,6)*WROT(3)
-         WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
+          WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
      &            + WVSRD_U(K,I,2)*VINF(2)
      &            + WVSRD_U(K,I,3)*VINF(3)
      &            + WVSRD_U(K,I,4)*WROT(1)
      &            + WVSRD_U(K,I,5)*WROT(2)
      &            + WVSRD_U(K,I,6)*WROT(3)
-          DO J = 1, NVOR
+        enddo 
+      enddo 
+      
+      !$AD-II-loop
+      DO J = 1, NVOR
+        DO I = 1, NVOR
+          DO K = 1, 3
             ! WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
           ENDDO
-C
-          DO N = 1, NUMAX
-            ! WC_U(K,I,N) = WCSRD_U(K,I,N)
+        ENDDO
+      ENDDO
+      
+      !$AD-II-loop
+      DO N = 1, NUMAX
+        DO I = 1, NVOR
+          DO K = 1, 3
+            WC_U(K,I,N) = WCSRD_U(K,I,N)
             WV_U(K,I,N) = WVSRD_U(K,I,N)
-            DO J = 1, NVOR
+          enddo
+        enddo
+      enddo
+      
+      !$AD-II-loop
+      DO N = 1, NUMAX
+        DO J = 1, NVOR
+          DO I = 1, NVOR
+            DO K = 1, 3
               ! WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
             ENDDO
           ENDDO
+        enddo 
+      enddo
 C
-        ENDDO
-      ENDDO
-!       DO I = 1, NVOR
-!         DO K = 1, 3
-!           WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
-!      &            + WCSRD_U(K,I,2)*VINF(2)
-!      &            + WCSRD_U(K,I,3)*VINF(3)
-!      &            + WCSRD_U(K,I,4)*WROT(1)
-!      &            + WCSRD_U(K,I,5)*WROT(2)
-!      &            + WCSRD_U(K,I,6)*WROT(3)
-!           WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
-!      &            + WVSRD_U(K,I,2)*VINF(2)
-!      &            + WVSRD_U(K,I,3)*VINF(3)
-!      &            + WVSRD_U(K,I,4)*WROT(1)
-!      &            + WVSRD_U(K,I,5)*WROT(2)
-!      &            + WVSRD_U(K,I,6)*WROT(3)
-!         enddo 
-!       enddo 
-      
-      
-!       DO J = 1, NVOR
-!         DO I = 1, NVOR
-!           DO K = 1, 3
-!             WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
-!             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
-!           ENDDO
-!         ENDDO
-!       ENDDO
-      
-      
-!       DO N = 1, NUMAX
-!         DO I = 1, NVOR
-!           DO K = 1, 3
-!             WC_U(K,I,N) = WCSRD_U(K,I,N)
-!             WV_U(K,I,N) = WVSRD_U(K,I,N)
-!           enddo
-!         enddo
-!       enddo
-      
-            
-!       DO N = 1, NUMAX
-!         DO J = 1, NVOR
-!           DO I = 1, NVOR
-!             DO K = 1, 3
-!               WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
-!               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
-!             ENDDO
-!           ENDDO
-!         enddo 
-!       enddo
-! C
 C
       RETURN
       END ! VELSUM
@@ -674,6 +676,7 @@ C----- might as well directly set operating variables if they are known
       include 'AVL.INC'
       real rrot(3), vunit(3), VUNIT_W_term(3),  wunit(3)
       
+      !$AD-II-loop
       DO I = 1, NVOR
         IF(LVNC(I)) THEN
           VUNIT(1) = 0.
@@ -720,6 +723,7 @@ C----- might as well directly set operating variables if they are known
         include 'AVL.INC'
         real rrot(3), vunit(3), VUNIT_W_term(3),  wunit(3)
         
+        !$AD-II-loop
         DO I = 1, NVOR
           IF(LVNC(I)) THEN
             VUNIT(1) = 0.
@@ -768,6 +772,7 @@ C--------- always add on indirect freestream influence via BODY sources and doub
       REAL ENC_Q(3,NVMAX,*), rhs_vec(NVMAX)
       REAL RROT(3), VROT(3), VC(3)
 C
+      !$AD-II-loop
       DO I = 1, NVOR
         IF(LVNC(I)) THEN
           IF(LVALBE(I)) THEN
