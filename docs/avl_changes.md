@@ -1,5 +1,5 @@
 OptVL is double precision by default whereas AVL is single precision
 
-add mach number reading
+Add mach number reading
 
-control surface deflection derivative fix
+Control surface deflection derivative fix

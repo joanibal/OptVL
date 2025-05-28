@@ -1,7 +1,7 @@
 
 # Building a run script
 Here we will go over the elements of setting up and running a basic analysis in OptVL in more detail. 
-To see a complete example of a run script see the one in the [overview page](overview.md) or the [examples on github]()
+To see a complete example of a run script see the one in the [overview page](overview.md) or the [examples on GitHub]()
 
 
 ## Initializing and Setting up AVL Solver
@@ -20,7 +20,7 @@ ovl = OVLSolver(geo_file="aircraft.avl", mass_file="aircraft.mass")
 
 ## Constraints
 After initializing, you can set up various constraints directly.
-You can set `alpha`, `beta`, `roll rate`, `pitch rate`,and `yaw rate` as well any control surface in this way. 
+You can set `alpha`, `beta`, `roll rate`, `pitch rate`, and `yaw rate` as well as any control surface in this way. 
 
 ```python
 ovl.set_constraint("alpha", 0.00)
@@ -30,7 +30,7 @@ You can also set a variable in order to meet a specific constraint value.
 The valid constraint options are `CL`, `CY`, `Cl roll moment`, `Cm pitch moment`, `Cn yaw moment`.
 
 !!! Warning
-    Be careful to state a constraint variable, `con_var`, that is effected by the input. For example if you accidentally specific that the pitching moment should be trimmed by the rudder the analysis will not converge. 
+    Be careful to state a constraint variable, `con_var`, that is affected by the input. For example if you accidentally specify that the pitching moment should be trimmed by the rudder the analysis will not converge. 
 
 ```python
 # set the Elevator to trim Cm to zero
@@ -40,7 +40,7 @@ ovl.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
 ```
 
 You can also set parameters of the run case. 
-The list of parameters you can set are `CD0`, `bank`, `elevation`, `heading`, `Mach`, `velocity`, `density`, `grav.acc.`, `turn rad.`, `load fac.`, `X cg`, `Y cg`, `Z cg`, `mass`, `Ixx`, `Iyy`, `Izz`, `Ixy`, `Iyz`, `Izx`, `visc CL_a`, `visc CL_u`, `visc CM_a`, `visc CM_u`,
+The list of parameters you can set are `CD0`, `bank`, `elevation`, `heading`, `Mach`, `velocity`, `density`, `grav. acc.`, `turn rad.`, `load fac.`, `X cg`, `Y cg`, `Z cg`, `mass`, `Ixx`, `Iyy`, `Izz`, `Ixy`, `Iyz`, `Izx`, `visc CL_a`, `visc CL_u`, `visc CM_a`, `visc CM_u`,
 ```python 
 # set the flow parameters like mach numbers
 ovl.set_parameter("Mach", 0.3)
@@ -57,10 +57,10 @@ ovl.execute_run()
 For a more detailed example and advanced use cases, see the analysis guide.
 
 ## Looking at Data
-After executing the run then you can extract various output data from the solver.
+After executing the run, then you can extract various output data from the solver.
 The methods for extracting data return a dictionary of data. 
 
-To get things like CL, CD, CM, etc. use 
+To get things like CL, CD, CM, etc., use 
 ```python 
 force_data = ovl.get_total_forces()
 ```

@@ -5,7 +5,7 @@ However, instead of using nested layers of options, users call the methods for g
 The tables below relate AVL commands and the corresponding method in OptVL.
 See the limitations sections for more information about commands that are not available in OptVL.
 
-|action| AVL's  "AVL" level command| OptVL api call|
+|action| AVL's  "AVL" level command| OptVL API call|
 |-----|--|--|
 |load a geometry |LOAD <geo file>|OVLSolver(geo_file=<geo file>)|
 |load a mass file |MASS <mass file> |OVLSolver(geo_file=<geo file>, mass_file=<mass file>) |
@@ -39,7 +39,7 @@ The commands from the oper and mode menus are available
 ``` -->
 
 
-|action| AVL's "OPER" command| OptVL api call|
+|action| AVL's "OPER" command| OptVL API call|
 |-----|--|--|
 |setting the angle of attack|a a <angle>| ovl.set_constraint("alpha", <angle>)|
 | set variable such that constraint = val | <variable> <constraint> <val> | ovl.set_constraint(<variable>, <val>, con_var=<constraint>) |
@@ -47,8 +47,8 @@ The commands from the oper and mode menus are available
 | run an analysis | x | ovl.execute_run() |
 | after an analysis | FT |  ovl.get_total_forces() |
 | get strip force data | ST | ovl.get_strip_forces() |
-| get shear mommen distribution | VM | ovl.get_strip_forces() |
-| get control surfaces derivatives (e.g. dCL/dElevator)| ST | ovl.get_control_derivs |
+| get shear moment distribution | VM | ovl.get_strip_forces() |
+| get control surface derivatives (e.g. dCL/dElevator)| ST | ovl.get_control_derivs() |
 | get stability derivatives | ST | ovl.get_stab_derivs()|
 | get stability derivatives in the body axis| SB | - |
 | get/set reference data | RE | ovl.get_reference_data/set_reference_data()|
@@ -60,15 +60,15 @@ The commands from the oper and mode menus are available
 | get high moments| HM | ovl.get_hinge_moments() |
 
 
-|action| AVL's mode level command| OptVL api call|
+|action| AVL's mode level command| OptVL API call|
 |-----|--|--|
 | get/set case parameters |M <var> <value>| ovl.get_reference_data(<var>)/set_reference_data(<var>, <value>)|
-| get sytem matrix | S | ovl.get_system_matrix()|
+| get system matrix | S | ovl.get_system_matrix()|
 | get eigenvalues| W | ovl.get_eigen_values()|
-| get eigenvalues| not supported | ovl.get_eigen_vectors()|
+| get eigenvectors| not supported | ovl.get_eigen_vectors()|
 | execute eigenmode calculation | N | ovl.execute_eigen_mode_calc() |
 
 ## Limitations
 1. OptVL does not support multiple run cases since this would make the wrapping and derivative code more complex. Instead, create multiple solver instances and apply different parameters to each to replicate this functionality. 
-2. There is no single precision version of OptVL available for download. You could compile one yourself if you really need this
-1. No support for working with design variables set in the AVL geometry file since we use a different system for modifying the geometry that allow the user to change any geometric parameter
+2. There is no single precision version of OptVL available for download. You could compile one yourself if you really need this.
+3. No support for working with design variables set in the AVL geometry file since we use a different system for modifying the geometry that allows the user to change any geometric parameter.
