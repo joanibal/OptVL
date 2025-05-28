@@ -19,7 +19,7 @@ class Top(om.Group):
         
         self.add_subsystem("perturbed_flt_cond", om.ExecComp(['ptb_alpha=alpha+0.1'], units='deg'))
         
-        self.add_subsystem("cruise_avl", OVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass", output_stabililty_derivs=True))
+        self.add_subsystem("cruise_avl", OVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass", output_stability_derivs=True))
         self.add_subsystem("perturbed_cruise_avl", OVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass"))
         
     def configure(self):

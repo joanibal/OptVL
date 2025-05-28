@@ -182,7 +182,7 @@ model.connect("mesh.Wing:yles",['mass_props.yles'] )
 model.connect("geom_param.chords_out",['mass_props.chords'] )
 
 
-model.add_subsystem("ovlsolver", OVLGroup(geom_file="rectangle.avl", output_stabililty_derivs=True, write_grid=True, input_param_vals=True, input_ref_vals=True, output_dir='opt_output_sweep'))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="rectangle.avl", output_stability_derivs=True, write_grid=True, input_param_vals=True, input_ref_vals=True, output_dir='opt_output_sweep'))
 model.connect("geom_param.xles_out",['ovlsolver.Wing:xles'] )
 model.connect("geom_param.chords_out",['ovlsolver.Wing:chords'] )
 model.connect('mass_props.x_cg', ['ovlsolver.X cg'])

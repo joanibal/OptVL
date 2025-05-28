@@ -34,7 +34,7 @@ class TestOMWrapper(unittest.TestCase):
     
         model = om.Group()
         model.add_subsystem("ovlsolver", OVLGroup(geom_file=geom_file, mass_file=mass_file, 
-                                                  output_stabililty_derivs=True,
+                                                  output_stability_derivs=True,
                                                   input_param_vals=True, input_ref_vals=True))
 
         self.prob = om.Problem(model)

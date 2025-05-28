@@ -30,7 +30,7 @@ def objective_gradient(x):
     
     ovl_solver.execute_run()
     
-    sens = ovl_solver.execute_run_sensitivies(['CD'])
+    sens = ovl_solver.execute_run_sensitivities(['CD'])
     dcd_dele = sens['CD']['Elevator']
     dcd_daincs = sens['CD']['Wing']['aincs']
 
@@ -58,7 +58,7 @@ def eq_constraint(x):
 
 # Define the gradient of the equality constraint
 def eq_constraint_jac(x):
-    sens = ovl_solver.execute_run_sensitivies(['CL', 'CM'])
+    sens = ovl_solver.execute_run_sensitivities(['CL', 'CM'])
     dcl_dele = sens['CL']['Elevator']
     dcl_daincs = sens['CL']['Wing']['aincs']
     dcl_dx = np.concatenate(([dcl_dele], dcl_daincs))

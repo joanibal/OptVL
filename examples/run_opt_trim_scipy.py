@@ -21,7 +21,7 @@ def custom_function(x):
 # Define the gradient (Jacobian) of the objective function
 def custom_gradient(x):
     # Partial derivatives of the custom_function
-    sens = ovl_solver.execute_run_sensitivies(['CD'])
+    sens = ovl_solver.execute_run_sensitivities(['CD'])
     dcd_dele = sens['CD']['Elevator']
     dcd_dalpha = sens['CD']['alpha']
     # concatinate the two and return the derivs
@@ -44,7 +44,7 @@ def eq_constraint(x):
 
 # Define the gradient of the equality constraint
 def eq_constraint_jac(x):
-    sens = ovl_solver.execute_run_sensitivies(['CL', 'CM'])
+    sens = ovl_solver.execute_run_sensitivities(['CL', 'CM'])
     dcl_dele = sens['CL']['Elevator']
     dcl_dalpha = sens['CL']['alpha']
     

@@ -24,20 +24,20 @@ Which will produce a plot like this:
 You can rotate, zoom, and pan in the window to look at different parts for the aircraft.
 ![aircraft cp view 2](figures/aircraft_cp_view2.png)
 
-## ParaView or TecPlot
-This section describes how to produce data that can be used with either TecPlot or ParaView.
+## ParaView or Tecplot
+This section describes how to produce data that can be used with either Tecplot or ParaView.
 
-To generate a TecPlot ASCII file (which can be read by both TecPlot and ParaView). 
+To generate a Tecplot ASCII file (which can be read by both Tecplot and ParaView). 
 After an analysis, use the command: 
 ```python
 ovl_solver.write_tecplot('test')
 ```
 This command will write a file called `test.dat`.
 
-### TecPlot 360
+### Tecplot 360
 
-If you load the file with TecPlot 360 it will automatically be detected as a TecPlot ASCII file and will be loaded accordingly. 
-By default, TecPlot tends to plot the data with a 2D Cartesian plot, but you will have to switch it to 3D Cartesian to see the full geometry. 
+If you load the file with Tecplot 360 it will automatically be detected as a Tecplot ASCII file and will be loaded accordingly. 
+By default, Tecplot tends to plot the data with a 2D Cartesian plot, but you will have to switch it to 3D Cartesian to see the full geometry. 
 
 ![](figures/tecplot_geom.png)
 
@@ -45,19 +45,19 @@ You can also plot the mesh and the coefficient of pressure on the surface:
 
 ![](figures/tecplot_cp.png)
 
-When writing out the TecPlot file you can also specify a solution time with the optional keyword argument. 
-This makes it easier to flip through different data files in TecPlot but makes the output incompatible with ParaView.
+When writing out the Tecplot file you can also specify a solution time with the optional keyword argument. 
+This makes it easier to flip through different data files in Tecplot but makes the output incompatible with ParaView.
 ```python 
 ovl_solver.write_tecplot('test', solution_time=1)
 ```
 
 ## ParaView
 
-When loading your data into ParaView, be sure to use the TecPlot data loader. 
+When loading your data into ParaView, be sure to use the Tecplot data loader. 
 
 ![](figures/paraview_loader.png)
 
-With the data loaded you can view the 3D shape, Coefficient of Pressure, and mesh just like with TecPlot. 
+With the data loaded you can view the 3D shape, Coefficient of Pressure, and mesh just like with Tecplot. 
 
 ![](figures/paraview_cp.png)
 

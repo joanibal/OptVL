@@ -105,8 +105,8 @@ class TestTotals(unittest.TestCase):
         # compare the analytical gradients with finite difference for each constraint and function
         func_vars = self.ovl_solver.case_var_to_fort_var
         stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
-        sens_funcs = self.ovl_solver.execute_run_sensitivies(func_vars)
-        sens_sd = self.ovl_solver.execute_run_sensitivies([], stab_derivs=stab_derivs, print_timings=False)
+        sens_funcs = self.ovl_solver.execute_run_sensitivities(func_vars)
+        sens_sd = self.ovl_solver.execute_run_sensitivities([], stab_derivs=stab_derivs, print_timings=False)
 
         for con_key in self.ovl_solver.con_var_to_fort_var:
             # for con_key in ['beta']:
@@ -179,9 +179,9 @@ class TestTotals(unittest.TestCase):
    
             
         stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
-        # sens = self.ovl_solver.execute_run_sensitivies(func_vars)
+        # sens = self.ovl_solver.execute_run_sensitivities(func_vars)
         func_vars = self.ovl_solver.case_var_to_fort_var
-        sens = self.ovl_solver.execute_run_sensitivies(func_vars, consurf_derivs=consurf_vars, stab_derivs=stab_derivs, print_timings=False)
+        sens = self.ovl_solver.execute_run_sensitivities(func_vars, consurf_derivs=consurf_vars, stab_derivs=stab_derivs, print_timings=False)
 
         # for con_key in self.ovl_solver.con_var_to_fort_var:
         sens_FD = {}
@@ -282,7 +282,7 @@ class TestTotals(unittest.TestCase):
         func_vars = self.ovl_solver.case_var_to_fort_var
         stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
 
-        sens = self.ovl_solver.execute_run_sensitivies(func_vars, stab_derivs=stab_derivs)
+        sens = self.ovl_solver.execute_run_sensitivities(func_vars, stab_derivs=stab_derivs)
 
         for param_key in self.ovl_solver.param_idx_dict:
             # for con_key in ['beta']:
@@ -346,7 +346,7 @@ class TestTotals(unittest.TestCase):
         func_vars = self.ovl_solver.case_var_to_fort_var
         stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
 
-        sens = self.ovl_solver.execute_run_sensitivies(func_vars, stab_derivs=stab_derivs)
+        sens = self.ovl_solver.execute_run_sensitivities(func_vars, stab_derivs=stab_derivs)
 
 
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
