@@ -1,10 +1,10 @@
 # Optimizing with SciPy
 
-Before we can use SciPy we have to install it. 
-Thankfully, SciPy is one of the best supported python packages in the world so to install it once can just use `pip install scipy`.
+Before we can use SciPy, we have to install it. 
+Thankfully, SciPy is one of the best supported python packages in the world, so to install it one can just use `pip install scipy`.
 
 SciPy has many optimizers available, but I'm going to focus on using SLSQP since it can use the gradient information from OptVL and supports constraints. 
-To use SciPy's SLSQP we will need to supply it with custom objective and constraint functions as well as the derivatives for each. 
+To use SciPy's SLSQP, we will need to supply it with custom objective and constraint functions as well as the derivatives for each. 
 These functions need to take in the design variables and apply them to our OptVL solver. 
 The snippet below provides an example of an objective function.
 ```python
@@ -18,9 +18,9 @@ The snippet below provides an example of an objective function.
 
     return cd
 ```
-Note, the objective function is specified by the return value of the function. 
-If you wanted to save data about each iteration or write output the objective function would be a good place add that functionality. 
-To supply the gradient information to SLSQP we have to define another function that returns the gradients for a given design variable vector.
+Note: the objective function is specified by the return value of the function. 
+If you wanted to save data about each iteration or write output, the objective function would be a good place to add that functionality. 
+To supply the gradient information to SLSQP, we have to define another function that returns the gradients for a given design variable vector.
 ```python
 def objective_gradient(x):
     # Partial derivatives of the objective_function
@@ -29,20 +29,20 @@ def objective_gradient(x):
     
     ovl.execute_run()
     
-    sens = ovl.execute_run_sensitivies(['CD'])
+    sens = ovl.execute_run_sensitivities(['CD'])
     dcd_dele = sens['CD']['Elevator']
     dcd_daincs = sens['CD']['Wing']['aincs']
     
     # concatinate the two and return the derivs
     return np.concatenate(([dcd_dele], dcd_daincs))
 ```
-The function `ovl.execute_run_sensitivies(['CD'])` does all the necessary work to compute the derivatives for the given list of functions. 
+The function `ovl.execute_run_sensitivities(['CD'])` does all the necessary work to compute the derivatives for the given list of functions. 
 We just need to parse the `sens` dictionary for the derivatives with respect to the design variables we are interested in.
 
-One also needs to repeat the process to create functions for the value and gradients of the constraints.
+One also needs to repeat the process for the constraints. This involves creating functions for both the constraint values and their corresponding gradients.
 
 ## Example script
-The script below shows the full optimization script for minimizing the drag of the example aircraft in trim with respect to the wing twist and elevator position. 
+The script below shows the full optimization script for minimizing the drag of the example aircraft in trim, with respect to the wing twist and elevator position. 
 
 ```python 
 {% include "../examples/run_opt_scipy.py" %}

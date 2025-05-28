@@ -11,6 +11,6 @@ Dive in to learn about installation, analysis, and optimization with `OptVL`.
 
 Get started with [installation](installation.md) or an [overview](overview.md)
 
-Before working with OptVL it is useful to familiarize yourself with AVL.
+Before working with OptVL, it is useful to familiarize yourself with AVL.
 More information about AVL can be found at its [website](https://web.mit.edu/drela/Public/web/avl/). 
 If you already know AVL well, then I'd advise starting with a comparison of the interfaces [here](optvl_api.md).

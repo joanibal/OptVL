@@ -2,10 +2,10 @@
 
 When I first started working on this project, I called it pyAVL. 
 I changed the name to OptVL for two reasons
-1. There were many other pyAVL's and people who were looking for it had trouble finding it
-2. I added lots of optimization features and wanted the name to reflect this development
+1. There were many other pyAVLs and people who were looking for it had trouble finding it
+2. I added lots of optimization features and wanted the name to reflect this development.
 While I changed the name, I decided to also make some changes to the API to better match AVL's interface. 
-The table below lists the changes. 
+The table below lists the changes.
 
 
 | pyAVL Method              | OptVL Equivalent Method   |
@@ -23,4 +23,4 @@ The table below lists the changes.
 | `executeRun`                  | use `execute_run` instead     |
 
 The output dictionaries for stability and control surface derivatives are also now flat. 
-For example instead of `cs_derivs['CL']['Elevator']` the key is now `cs_derivs['dCL/dElevator']`
+For example, instead of `cs_derivs['CL']['Elevator']` the key is now `cs_derivs['dCL/dElevator']`.

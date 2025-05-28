@@ -16,7 +16,7 @@ class OVLGroup(om.Group):
         output_dir: the output directory for the files generated
         input_param_vals: flag to turn on the flght parameters (Mach, Velocity, etc.) as inputs
         input_ref_val: flag to turn on the geometric reference values (Sref, Cref, Bref) as inputs
-        output_stabililty_derivs: flag to turn on the output of stability derivatives
+        output_stability_derivs: flag to turn on the output of stability derivatives
         output_con_surf_derivs: flag to turn on the output of control surface deflections 
     """
     def initialize(self):
@@ -29,7 +29,7 @@ class OVLGroup(om.Group):
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
         
-        self.options.declare("output_stabililty_derivs", types=bool, default=False)
+        self.options.declare("output_stability_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
 
     def setup(self):
@@ -39,7 +39,7 @@ class OVLGroup(om.Group):
         input_param_vals = self.options["input_param_vals"]
         input_ref_vals = self.options["input_ref_vals"]
         
-        output_stabililty_derivs = self.options["output_stabililty_derivs"]
+        output_stability_derivs = self.options["output_stability_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
 
         self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
@@ -51,7 +51,7 @@ class OVLGroup(om.Group):
         self.add_subsystem("funcs", OVLFuncsComp(ovl=self.ovl,
                                     input_param_vals=input_param_vals,
                                     input_ref_vals=input_ref_vals,
-                                    output_stabililty_derivs=output_stabililty_derivs,
+                                    output_stability_derivs=output_stability_derivs,
                                     output_con_surf_derivs=output_con_surf_derivs),
                                     promotes=["*"])
         if self.options["write_grid"]:
@@ -351,7 +351,7 @@ class OVLFuncsComp(om.ExplicitComponent):
     """
     def initialize(self):
         self.options.declare("ovl", types=OVLSolver, recordable=False)
-        self.options.declare("output_stabililty_derivs", types=bool, default=False)
+        self.options.declare("output_stability_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
@@ -389,8 +389,8 @@ class OVLFuncsComp(om.ExplicitComponent):
             for func_key in self.ovl.case_derivs_to_fort_var:
                 self.add_output(func_key)
         
-        self.output_stabililty_derivs = self.options["output_stabililty_derivs"]
-        if self.output_stabililty_derivs:
+        self.output_stability_derivs = self.options["output_stability_derivs"]
+        if self.output_stability_derivs:
             deriv_dict = self.ovl.case_stab_derivs_to_fort_var
             for func_key in deriv_dict:
                 self.add_output(func_key)        
@@ -443,7 +443,7 @@ class OVLFuncsComp(om.ExplicitComponent):
                     # var_name = f"d{func_key}_d{con_name}"
                 outputs[func_key] = consurf_derivs_seeds[func_key]
 
-        if self.output_stabililty_derivs:
+        if self.output_stability_derivs:
             stab_derivs = self.ovl.get_stab_derivs()
             for func_key in stab_derivs:
                 outputs[func_key] = stab_derivs[func_key]

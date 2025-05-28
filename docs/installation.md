@@ -6,7 +6,7 @@ The recommended method to install `optvl` is via pip:
 ```shell
 pip install optvl
 ```
-This package comes packaged with an OpenBLAS linear solver for quicker analysis.
+This package is packaged with an OpenBLAS linear solver for quicker analysis.
 
 ### Supported Platforms
 Currently, `optvl` supports Linux, macOS (Apple Silicon and Intel), and Windows!
@@ -26,8 +26,8 @@ You will need the following dependencies
 
 ## Post-processing
 You can use `matplotlib` for viewing the geometry and 3D surface CP data. 
-You can also install with `pip`. 
-You can also write out 3D data in the ASCII tecplot format that can be opened in either tecplot or paraview. 
+You can also install it with `pip`. 
+You can also write out 3D data in the ASCII tecplot format that can be opened in either Tecplot or Paraview. 
 
 See the section on post-processing for more details about how each of these are used. 
 

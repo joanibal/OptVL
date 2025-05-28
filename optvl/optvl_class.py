@@ -2195,7 +2195,7 @@ class OVLSolver(object):
 
         return con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
 
-    def execute_run_sensitivies(self, funcs : List[str],
+    def execute_run_sensitivities(self, funcs : List[str],
                                 stab_derivs: Optional[List[str]] = None,
                                 consurf_derivs:Optional[List[str]] = None,
                                 print_timings: Optional[bool]=False) ->  Dict[str, Dict[str, float]]:
