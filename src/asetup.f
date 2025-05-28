@@ -138,9 +138,9 @@ C
      &           NVOR,RV1,RV2,NSURFV,CHORDV,
      &           NVOR,RC ,    NSURFV,.FALSE.,
      &           WC_GAM,NVOR)
-      !$AD II-LOOP
+C$AD II-LOOP
       DO J = 1, NVOR
-        !$AD II-LOOP
+C$AD II-LOOP
         DO I = 1, NVOR
            AICN(I,J) = WC_GAM(1,I,J)*ENC(1,I)
      &               + WC_GAM(2,I,J)*ENC(2,I)
@@ -158,7 +158,6 @@ C------- go over TE control points on this surface
          J1 = JFRST(N)
          JN = JFRST(N) + NJ(N)-1
 C 
-         !$AD II-LOOP
 C$AD II-LOOP
          DO J = J1, JN
            I1 = IJFRST(J)
@@ -172,7 +171,7 @@ C$AD II-LOOP
            LVNC(IV) = .FALSE.
 
 C--------- set  sum_strip(Gamma) = 0  for this strip
-           !$AD II-LOOP
+C$AD II-LOOP
            DO JV = I1, IV
              AICN(IV,JV) = 1.0
            ENDDO
@@ -544,7 +543,7 @@ C
 !         ENDDO
 !       ENDDO
 
-      !$AD-II-loop
+C$AD II-LOOP
       DO I = 1, NVOR
         DO K = 1, 3
     !       WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
@@ -562,7 +561,7 @@ C
         enddo 
       enddo 
       
-      !$AD-II-loop
+C$AD II-LOOP
       DO J = 1, NVOR
         DO I = 1, NVOR
           DO K = 1, 3
@@ -572,7 +571,7 @@ C
         ENDDO
       ENDDO
       
-      !$AD-II-loop
+C$AD II-LOOP
       DO N = 1, NUMAX
         DO I = 1, NVOR
           DO K = 1, 3
@@ -582,7 +581,7 @@ C
         enddo
       enddo
       
-      !$AD-II-loop
+C$AD II-LOOP
       DO N = 1, NUMAX
         DO J = 1, NVOR
           DO I = 1, NVOR
@@ -662,8 +661,8 @@ C----- might as well directly set operating variables if they are known
        IF(ICON(IVROTY,IR).EQ.ICROTY) WROT(2) = CONVAL(ICROTY,IR)*2./CREF
        IF(ICON(IVROTZ,IR).EQ.ICROTZ) WROT(3) = CONVAL(ICROTZ,IR)*2./BREF
       
-       !$AD-II-loop
-       DO N = 1, NDMAX
+C$AD II-LOOP
+      DO N = 1, NDMAX
         IV = IVTOT + N
         IC = ICTOT + N
         IF(ICON(IV,IR) .eq. IC) DELCON(N) = CONVAL(IC,IR)
@@ -676,7 +675,7 @@ C----- might as well directly set operating variables if they are known
       include 'AVL.INC'
       real rrot(3), vunit(3), VUNIT_W_term(3),  wunit(3)
       
-      !$AD-II-loop
+C$AD II-LOOP
       DO I = 1, NVOR
         IF(LVNC(I)) THEN
           VUNIT(1) = 0.
@@ -707,7 +706,8 @@ C----- might as well directly set operating variables if they are known
            RHS(I) = -DOT(ENC(1,I),VUNIT)
             
            ! Add contribution from control surfaces
-           DO N = 1, NCONTROL
+C$AD II-LOOP
+          DO N = 1, NCONTROL
             RHS(I) = RHS(I) -DOT(ENC_D(1,I,N),VUNIT)*DELCON(N)
           ENDDO
         ELSE
@@ -723,7 +723,7 @@ C----- might as well directly set operating variables if they are known
         include 'AVL.INC'
         real rrot(3), vunit(3), VUNIT_W_term(3),  wunit(3)
         
-        !$AD-II-loop
+C$AD II-LOOP
         DO I = 1, NVOR
           IF(LVNC(I)) THEN
             VUNIT(1) = 0.
@@ -756,6 +756,7 @@ C--------- always add on indirect freestream influence via BODY sources and doub
              RHS_U(I,IU) = -DOT(ENC(1,I),VUNIT)
               
              ! Add contribution from control surfaces
+C$AD II-LOOP
              DO N = 1, NCONTROL
               RHS_U(I,IU) = RHS_U(I,IU) 
      &                      - DOT(ENC_D(1,I,N),VUNIT)*DELCON(N)
@@ -772,7 +773,7 @@ C--------- always add on indirect freestream influence via BODY sources and doub
       REAL ENC_Q(3,NVMAX,*), rhs_vec(NVMAX)
       REAL RROT(3), VROT(3), VC(3)
 C
-      !$AD-II-loop
+C$AD II-LOOP
       DO I = 1, NVOR
         IF(LVNC(I)) THEN
           IF(LVALBE(I)) THEN
@@ -780,6 +781,7 @@ C
           RROT(2) = RC(2,I) - XYZREF(2)
           RROT(3) = RC(3,I) - XYZREF(3)
           CALL CROSS(RROT,WROT,VROT)
+C$AD II-LOOP
           DO K = 1, 3
             VC(K) = VINF(K)
      &              + VROT(K)
@@ -789,7 +791,7 @@ C
           VC(2) = 0.
           VC(3) = 0.
           ENDIF
-
+C$AD II-LOOP
           DO K = 1, 3
             VC(K) = VC(K)
      &             + WCSRD_U(K,I,1)*VINF(1)
@@ -815,9 +817,9 @@ C
         real mat(NVMAX,NVMAX), vec(NVMAX), out_vec(NVMAX)
         
         out_vec = 0.
-        !$AD II-LOOP
+C$AD II-LOOP
         DO J = 1, n
-          !$AD II-LOOP
+C$AD II-LOOP
           DO I = 1, n
             out_vec(I) = out_vec(I) +  mat(I,J)*vec(J)
           enddo 

@@ -31,51 +31,16 @@ C
      +                  , rv2_diff, nsurfv, chordv, chordv_diff, nc, rc
      +                  , rc_diff, nsurfc, lvtest, wc_gam, wc_gam_diff, 
      +                  ncdim)
+      INCLUDE 'AVL_kinds.INC'
       INTEGER nv
-C--------------------------------------------------------------------
-C     Calculates the velocity influence matrix for a collection 
-C     of horseshoe vortices and control points
-C     
-C Input
-C -----
-C     BETM      SQRT(1-MACH*MACH)
-C     IYSYM     Plane of symmetry XZ 
-C                = 0 no symmetry
-C                = 1 regular symmetry
-C                =-1 free-surface symmetry
-C     YSYM      Y coordinate of symmetry plane
-C     IZSYM     Second plane of symmetry XY 
-C                = 0 no second plane
-C                = 1 regular symmetry
-C                =-1 free-surface symmetry
-C     ZSYM      Z coordinate of symmetry plane
 C
-C     VRCORE    vortex-line core radius / max(semichord,vortex width)
-C
-C     NV        number of vortices
-C     RV1(3,v)  coordinates of endpoint #1 of the vortices
-C     RV2(3,v)  coordinates of endpoint #2 of the vortices
-C     NSURFV(v) index of surface containing h.v.
-C     CHORDV(v) chord of strip containing h.v.
-C
-C     NC        number of control points
-C     RC(3,c)   coordinates of the control points
-C     NSURFC(c) index of surface containing c.p.
-C     LVTEST    T if core-radius test is to be applied
-C
-C     NCDIM     declared size of WC_GAM matrix
-C     
-C Output
-C ------
-C     WC_GAM(3..)   Induced-velocity/gamma influence matrix
-C     
-C--------------------------------------------------------------------
-      REAL rv1(3, nv), rv2(3, nv), chordv(nv)
-      REAL rv1_diff(3, nv), rv2_diff(3, nv), chordv_diff(nv)
+      REAL(kind=avl_real) rv1(3, nv), rv2(3, nv), chordv(nv)
+      REAL(kind=avl_real) rv1_diff(3, nv), rv2_diff(3, nv), chordv_diff
+     +                     (nv)
       INTEGER nc
       INTEGER ncdim
-      REAL rc(3, nc), wc_gam(3, ncdim, ncdim)
-      REAL rc_diff(3, nc), wc_gam_diff(3, ncdim, ncdim)
+      REAL(kind=avl_real) rc(3, nc), wc_gam(3, ncdim, ncdim)
+      REAL(kind=avl_real) rc_diff(3, nc), wc_gam_diff(3, ncdim, ncdim)
       INTEGER nsurfv(nv), nsurfc(nc)
       LOGICAL lvtest
 C     
@@ -128,19 +93,19 @@ C
       REAL vs_diff
       REAL ws
       REAL ws_diff
-      REAL arg1
-      REAL arg1_diff
-      REAL arg2
-      REAL arg2_diff
-      REAL arg3
-      REAL arg3_diff
-      REAL arg4
-      REAL arg4_diff
-      REAL temp
-      REAL temp0
-      REAL temp_diff
-      REAL temp_diff0
-      REAL temp_diff1
+      REAL(kind=8) arg1
+      REAL(kind=8) arg1_diff
+      REAL(kind=8) arg2
+      REAL(kind=8) arg2_diff
+      REAL(kind=8) arg3
+      REAL(kind=8) arg3_diff
+      REAL(kind=8) arg4
+      REAL(kind=8) arg4_diff
+      REAL(kind=avl_real) temp
+      REAL(kind=avl_real) temp0
+      REAL(kind=avl_real) temp_diff
+      REAL(kind=avl_real) temp_diff0
+      REAL(kind=avl_real) temp_diff1
       INTEGER branch
       INTEGER ii1
       REAL vrcore
