@@ -61,10 +61,12 @@ C ------
 C     WC_GAM(3..)   Induced-velocity/gamma influence matrix
 C     
 C--------------------------------------------------------------------
-      REAL RV1(3,NV),
+      INCLUDE 'AVL_kinds.INC'
+
+      REAL(kind=avl_real) RV1(3,NV),
      &     RV2(3,NV),
      &     CHORDV(NV)
-      REAL RC(3,NC),
+      REAL(kind=avl_real) RC(3,NC),
      &     WC_GAM(3,NCDIM,NCDIM)
       INTEGER NSURFV(NV), NSURFC(NC)
       LOGICAL LVTEST

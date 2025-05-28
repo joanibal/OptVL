@@ -417,21 +417,21 @@ class OVLSolver(object):
 
         """        
         avl_variables = {
-            "alpha": "A",
-            "beta": "B",
-            "roll rate": "R",
-            "pitch rate": "P",
-            "yaw rate": "Y",
+            "alpha":      "A ",
+            "beta":       "B ",
+            "roll rate":  "R ",
+            "pitch rate": "P ",
+            "yaw rate":   "Y ",
         }
 
         avl_con_variables = copy.deepcopy(avl_variables)
         avl_con_variables.update(
             {
-                "CL": "C",
-                "CY": "S",
+                "CL":             "C ",
+                "CY":             "S ",
                 "Cl roll moment": "RM",
-                "Cm pitch moment": "PM",
-                "Cn yaw moment": "YM",
+                "Cm pitch moment":"PM",
+                "Cn yaw moment":  "YM",
             }
         )
 
@@ -2111,6 +2111,10 @@ class OVLSolver(object):
             ref_seeds: Reference condition AD seeds
         """      
         # extract derivatives seeds and set the output dict of functions
+        
+        if print_timings:
+            time_start = time.time()
+        
         mesh_size = self.get_mesh_size()
         num_surf = self.get_num_control_surfs()
 
@@ -2148,11 +2152,20 @@ class OVLSolver(object):
 
         # propogate the seeds through without resolveing
         self.avl.aero_b()
+        if print_timings:
+            print(f"    Time to propogate seeds:aero_b: {time.time() - time_last}")
+            time_last = time.time()
         self.avl.velsum_b()
+        if print_timings:
+            print(f"    Time to propogate seeds:velsum_b: {time.time() - time_last}")
+            time_last = time.time()
         self.avl.get_res_b()
+        if print_timings:
+            print(f"    Time to propogate seeds:get_res_b: {time.time() - time_last}")
+            time_last = time.time()
         self.avl.update_surfaces_b()
         if print_timings:
-            print(f"    Time to propogate seeds: {time.time() - time_last}")
+            print(f"    Time to propogate seeds:update_surfaces_b: {time.time() - time_last}")
             time_last = time.time()
 
         # extract derivatives seeds and set the output dict of functions
@@ -2176,6 +2189,9 @@ class OVLSolver(object):
         if print_timings:
             print(f"    Time to clear seeds: {time.time() - time_last}")
             time_last = time.time()
+
+        if print_timings:
+            print(f"   Total Time: {time.time() - time_start}")
 
         return con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
 

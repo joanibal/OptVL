@@ -935,7 +935,7 @@ C---- set new constraint index for selected variable IV
 C
 C---- see if constraint value was already specified in command argument
       NINP = 1
-      CALL GETFLT(COMARG(KCLEN+1:80),RINP,NINP,ERROR)
+      CALL GETFLT(COMARG(KCLEN+1:LEN(COMARG)),RINP,NINP,ERROR)
       IF(ERROR) NINP = 0
 C
       IF(NINP.GE.1) THEN
@@ -975,7 +975,7 @@ C---------------------------------------------------
       REAL VSYS(IVMAX,IVMAX), VRES(IVMAX), DDC(NDMAX), WORK(IVMAX)
       INTEGER IVSYS(IVMAX)
       real t0, t1, t2, t3, t4, t5, t6, t7, t8, t9
-      real t10, t11, t12, t13, t14, t15, t16, t17, t18, t19
+      real t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t99
 
 C
 C---- convergence epsilon, max angle limit (radians)
@@ -998,13 +998,17 @@ C
 C
 C---- set, factor AIC matrix and induced-velocity matrix (if they don't exist)
       CALL SETUP
+      if (ltiming) then 
+            call cpu_time(t1)
+            write(*,*) ' SETUP time: ', t1 - t0
+      end if
       IF(.NOT.LAIC) THEN
             call factor_AIC
       ENDIF
       
       if (ltiming) then 
-            call cpu_time(t1)
-            write(*,*) ' SETUP time: ', t1 - t0
+            call cpu_time(t2)
+            write(*,*) ' factorize time: ', t2 - t1
       end if
 C
 
@@ -1015,8 +1019,8 @@ C----- set GAM_U
       endif
       CALL GUCALC
       if (ltiming) then 
-            call cpu_time(t2)
-            write(*,*) ' GUCALC time: ',  t2 - t1
+            call cpu_time(t3)
+            write(*,*) ' GUCALC time: ',  t3 - t2
       end if
 C
 C-------------------------------------------------------------
@@ -1025,8 +1029,8 @@ C
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
       if (ltiming) then 
-            call cpu_time(t3)
-            write(*,*) ' VINFAB time: ', t3 - t2
+            call cpu_time(t4)
+            write(*,*) ' VINFAB time: ', t4 - t3
       end if
 C
       IF(NCONTROL.GT.0) THEN
@@ -1037,8 +1041,8 @@ C----- set GAM_D
        CALL GDCALC(NCONTROL,LCONDEF,ENC_D,GAM_D)
       ENDIF
       if (ltiming) then 
-            call cpu_time(t4)  
-            write(*,*) ' GDCALC time: ', t4 - t3
+            call cpu_time(t5)  
+            write(*,*) ' GDCALC time: ', t5 - t4
       end if
       
 C
@@ -1050,29 +1054,29 @@ C----- set GAM_G
        CALL GDCALC(NDESIGN ,LDESDEF,ENC_G,GAM_G)
       ENDIF
       if (ltiming) then 
-            call cpu_time(t5)  
-            write(*,*) ' GDCALC time: ', t5 - t4
+            call cpu_time(t6)  
+            write(*,*) ' GDCALC time: ', t6 - t5
       end if
 C
 C---- sum AIC matrices to get GAM,SRC,DBL
       CALL GAMSUM
       if (ltiming) then 
-            call cpu_time(t6)  
-            write(*,*) ' GAMSUM time: ', t6 - t5   
+            call cpu_time(t7)  
+            write(*,*) ' GAMSUM time: ', t7 - t6   
       end if
 C
 C---- sum AIC matrices to get WC,WV
       CALL VELSUM
       if (ltiming) then 
-            call cpu_time(t7)  
-            write(*,*) ' VELSUM time: ', t7 - t6
+            call cpu_time(t8)  
+            write(*,*) ' VELSUM time: ', t8 - t7
       end if
 C
 C---- compute forces
       CALL AERO
       if (ltiming) then 
-            call cpu_time(t8)  
-            write(*,*) ' AERO time: ', t8 - t7
+            call cpu_time(t9)  
+            write(*,*) ' AERO time: ', t9 - t8
       end if
 C
 C---- Newton loop for operating variables
@@ -1270,14 +1274,14 @@ C
 C------ LU-factor,  and back-substitute RHS
         CALL LUDCMP(IVMAX,NVTOT,VSYS,IVSYS,WORK)
         if (ltiming) then 
-            call cpu_time(t9)  
-            write(*,*) ITER, ' LUDCMP time: ', t9 - t8
+            call cpu_time(t10)  
+            write(*,*) ITER, ' LUDCMP time: ', t10 - t9
         end if
 
         CALL BAKSUB(IVMAX,NVTOT,VSYS,IVSYS,VRES)
         if (ltiming) then 
-            call cpu_time(t10)  
-            write(*,*) ITER, ' BAKSUB time: ', t10 - t9
+            call cpu_time(t11)  
+            write(*,*) ITER, ' BAKSUB time: ', t11 - t10
         end if
 
 
@@ -1377,24 +1381,24 @@ C
 C------ sum AIC matrices to get GAM,SRC,DBL
         CALL GAMSUM
         if (ltiming) then 
-            call cpu_time(t11)  
-            write(*,*) ITER, ' other1 time: ', t11 - t10
+            call cpu_time(t12)  
+            write(*,*) ITER, ' other1 time: ', t12 - t11
         end if
 
 C
 C------ sum AIC matrices to get WC,WV
         CALL VELSUM
         if (ltiming) then 
-            call cpu_time(t12)  
-            write(*,*) ITER, ' VELSUM time: ', t12 - t11
+            call cpu_time(t13)  
+            write(*,*) ITER, ' VELSUM time: ', t13 - t12
         end if
 C
 C
 C------ compute forces
         CALL AERO
         if (ltiming) then 
-            call cpu_time(t13)  
-            write(*,*) ITER, ' other2 time: ', t13 - t12
+            call cpu_time(t14)  
+            write(*,*) ITER, ' other2 time: ', t14 - t13
         end if
 C
 C
@@ -1432,8 +1436,8 @@ C
 C
       LSEN = .TRUE.
       if (ltiming) then 
-            call cpu_time(t19)
-            write(*,*) ' TOTAL time: ', t19 - t0
+            call cpu_time(t99)
+            write(*,*) ' TOTAL time: ', t99 - t0
       end if
 
       RETURN

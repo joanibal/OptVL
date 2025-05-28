@@ -69,7 +69,6 @@ C----- process each surface which does not shed a wake
 C
 C------- go over TE control points on this surface
           j1 = jfrst(n)
-C$AD II-LOOP
           jn = jfrst(n) + nj(n) - 1
 C 
           DO j=j1,jn
@@ -81,7 +80,6 @@ C--------- clear system row for TE control point
               aicn_diff(iv, jv) = 0.D0
               aicn(iv, jv) = 0.
             ENDDO
-C$AD II-LOOP
             lvnc(iv) = .false.
 C
 C--------- set  sum_strip(Gamma) = 0  for this strip
@@ -119,9 +117,9 @@ C
       REAL(kind=8) arg1
       REAL(kind=8) arg1_diff
       REAL(kind=avl_real) temp
-      INTEGER ii3
       INTEGER ii2
       INTEGER ii1
+      INTEGER ii3
       amach_diff = mach_diff
       amach = mach
       arg1_diff = -(2*amach*amach_diff)
@@ -144,13 +142,6 @@ C
           wv_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,numax
-        DO ii2=1,nvmax
-          DO ii3=1,3
-            wv_u_diff(ii3, ii2, ii1) = 0.D0
-          ENDDO
-        ENDDO
-      ENDDO
 C I (josh) changed the loop order for speed. 
 C It should be equivalent to the new code, but test coverage is low.
 C I am leaving it hear as a reminder of the original code.
@@ -158,6 +149,37 @@ C--------------------------------------------------
 C     Sums AIC components to get WC, WV
 C--------------------------------------------------
 C
+C
+C       DO I = 1, NVOR
+C         DO K = 1, 3
+C     !       WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
+C     !  &            + WCSRD_U(K,I,2)*VINF(2)
+C     !  &            + WCSRD_U(K,I,3)*VINF(3)
+C     !  &            + WCSRD_U(K,I,4)*WROT(1)
+C     !  &            + WCSRD_U(K,I,5)*WROT(2)
+C     !  &            + WCSRD_U(K,I,6)*WROT(3)
+C          WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
+C      &            + WVSRD_U(K,I,2)*VINF(2)
+C      &            + WVSRD_U(K,I,3)*VINF(3)
+C      &            + WVSRD_U(K,I,4)*WROT(1)
+C      &            + WVSRD_U(K,I,5)*WROT(2)
+C      &            + WVSRD_U(K,I,6)*WROT(3)
+C           DO J = 1, NVOR
+C             ! WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
+C             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
+C           ENDDO
+C C
+C           DO N = 1, NUMAX
+C             ! WC_U(K,I,N) = WCSRD_U(K,I,N)
+C             WV_U(K,I,N) = WVSRD_U(K,I,N)
+C             DO J = 1, NVOR
+C               ! WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
+C               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
+C             ENDDO
+C           ENDDO
+C C
+C         ENDDO
+C       ENDDO
 C
       DO i=1,nvor
 C       WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
@@ -174,19 +196,38 @@ C  &            + WCSRD_U(K,I,6)*WROT(3)
           wv(k, i) = wvsrd_u(k, i, 1)*vinf(1) + wvsrd_u(k, i, 2)*vinf(2)
      +      + wvsrd_u(k, i, 3)*vinf(3) + wvsrd_u(k, i, 4)*wrot(1) + 
      +      wvsrd_u(k, i, 5)*wrot(2) + wvsrd_u(k, i, 6)*wrot(3)
+        ENDDO
+      ENDDO
+      DO j=1,nvor
+        DO i=1,nvor
 C WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
-          DO j=1,nvor
+          DO k=1,3
             wv_diff(k, i) = wv_diff(k, i) + gam(j)*wv_gam_diff(k, i, j) 
      +        + wv_gam(k, i, j)*gam_diff(j)
             wv(k, i) = wv(k, i) + wv_gam(k, i, j)*gam(j)
           ENDDO
-C
-C WC_U(K,I,N) = WCSRD_U(K,I,N)
-          DO n=1,numax
-            wv_u_diff(k, i, n) = 0.D0
+        ENDDO
+      ENDDO
+      DO n=1,numax
+        DO i=1,nvor
+          DO k=1,3
+            wc_u(k, i, n) = wcsrd_u(k, i, n)
             wv_u(k, i, n) = wvsrd_u(k, i, n)
+          ENDDO
+        ENDDO
+      ENDDO
+      DO ii1=1,numax
+        DO ii2=1,nvmax
+          DO ii3=1,3
+            wv_u_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
+      DO n=1,numax
+        DO j=1,nvor
+          DO i=1,nvor
 C WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
-            DO j=1,nvor
+            DO k=1,3
               wv_u_diff(k, i, n) = wv_u_diff(k, i, n) + gam_u(j, n)*
      +          wv_gam_diff(k, i, j) + wv_gam(k, i, j)*gam_u_diff(j, n)
               wv_u(k, i, n) = wv_u(k, i, n) + wv_gam(k, i, j)*gam_u(j, n
@@ -196,49 +237,6 @@ C WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
         ENDDO
       ENDDO
 C
-C       DO I = 1, NVOR
-C         DO K = 1, 3
-C           WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
-C      &            + WCSRD_U(K,I,2)*VINF(2)
-C      &            + WCSRD_U(K,I,3)*VINF(3)
-C      &            + WCSRD_U(K,I,4)*WROT(1)
-C      &            + WCSRD_U(K,I,5)*WROT(2)
-C      &            + WCSRD_U(K,I,6)*WROT(3)
-C           WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
-C      &            + WVSRD_U(K,I,2)*VINF(2)
-C      &            + WVSRD_U(K,I,3)*VINF(3)
-C      &            + WVSRD_U(K,I,4)*WROT(1)
-C      &            + WVSRD_U(K,I,5)*WROT(2)
-C      &            + WVSRD_U(K,I,6)*WROT(3)
-C         enddo 
-C       enddo 
-C       DO J = 1, NVOR
-C         DO I = 1, NVOR
-C           DO K = 1, 3
-C             WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
-C             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
-C           ENDDO
-C         ENDDO
-C       ENDDO
-C       DO N = 1, NUMAX
-C         DO I = 1, NVOR
-C           DO K = 1, 3
-C             WC_U(K,I,N) = WCSRD_U(K,I,N)
-C             WV_U(K,I,N) = WVSRD_U(K,I,N)
-C           enddo
-C         enddo
-C       enddo
-C       DO N = 1, NUMAX
-C         DO J = 1, NVOR
-C           DO I = 1, NVOR
-C             DO K = 1, 3
-C               WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
-C               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
-C             ENDDO
-C           ENDDO
-C         enddo 
-C       enddo
-C C
 C
       RETURN
       END
@@ -308,18 +306,13 @@ C----- might as well directly set operating variables if they are known
           wrot_diff(2) = 2.*conval_diff(icroty, ir)/cref
           wrot(2) = conval(icroty, ir)*2./cref
         END IF
-C$AD-II-loop
         IF (icon(ivrotz, ir) .EQ. icrotz) THEN
           wrot_diff(3) = 2.*conval_diff(icrotz, ir)/bref
           wrot(3) = conval(icrotz, ir)*2./bref
-          DO ii1=1,ndmax
-            delcon_diff(ii1) = 0.D0
-          ENDDO
-        ELSE
-          DO ii1=1,ndmax
-            delcon_diff(ii1) = 0.D0
-          ENDDO
         END IF
+        DO ii1=1,ndmax
+          delcon_diff(ii1) = 0.D0
+        ENDDO
         DO n=1,ndmax
           iv = ivtot + n
           ic = ictot + n
@@ -548,7 +541,6 @@ C
             vc_diff(3) = 0.D0
             vc(3) = 0.
           END IF
-C
           DO k=1,3
             vc_diff(k) = vc_diff(k) + wcsrd_u(k, i, 1)*vinf_diff(1) + 
      +        wcsrd_u(k, i, 2)*vinf_diff(2) + wcsrd_u(k, i, 3)*vinf_diff
@@ -586,7 +578,6 @@ C
       INTEGER j
       INTEGER i
       INTEGER n
-C$AD II-LOOP
       out_vec = 0.
       out_vec_diff = 0.D0
       DO j=1,n

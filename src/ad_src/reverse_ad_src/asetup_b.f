@@ -38,13 +38,13 @@ C$BWD-OF II-LOOP
 C
 C------- go over TE control points on this surface
           j1 = jfrst(n)
-C$AD II-LOOP
           jn = jfrst(n) + nj(n) - 1
 C$BWD-OF II-LOOP 
           DO j=j1,jn
             i1 = ijfrst(j)
             iv = ijfrst(j) + nvstrp(j) - 1
-            DO jv=iv,i1,-1
+C$BWD-OF II-LOOP 
+            DO jv=i1,iv
               aicn_diff(iv, jv) = 0.D0
             ENDDO
 C$BWD-OF II-LOOP 
@@ -63,7 +63,8 @@ C$BWD-OF II-LOOP
       ENDDO
 C$BWD-OF II-LOOP 
       DO j=1,nvor
-        DO i=nvor,1,-1
+C$BWD-OF II-LOOP 
+        DO i=1,nvor
           wc_gam_diff(1, i, j) = wc_gam_diff(1, i, j) + enc(1, i)*
      +      aicn_diff(i, j)
           enc_diff(1, i) = enc_diff(1, i) + wc_gam(1, i, j)*aicn_diff(i
@@ -128,22 +129,40 @@ C
           ENDDO
         ENDDO
       ENDDO
-      DO i=nvor,1,-1
-        DO k=3,1,-1
-          DO n=numax,1,-1
-            DO j=nvor,1,-1
+C$BWD-OF II-LOOP 
+      DO n=1,numax
+        DO j=nvor,1,-1
+          DO i=nvor,1,-1
+            DO k=3,1,-1
               wv_gam_diff(k, i, j) = wv_gam_diff(k, i, j) + gam_u(j, n)*
      +          wv_u_diff(k, i, n)
               gam_u_diff(j, n) = gam_u_diff(j, n) + wv_gam(k, i, j)*
      +          wv_u_diff(k, i, n)
             ENDDO
+          ENDDO
+        ENDDO
+      ENDDO
+C$BWD-OF II-LOOP 
+      DO n=1,numax
+        DO i=nvor,1,-1
+          DO k=3,1,-1
             wv_u_diff(k, i, n) = 0.D0
           ENDDO
-          DO j=nvor,1,-1
+        ENDDO
+      ENDDO
+C$BWD-OF II-LOOP 
+      DO j=1,nvor
+        DO i=nvor,1,-1
+          DO k=3,1,-1
             wv_gam_diff(k, i, j) = wv_gam_diff(k, i, j) + gam(j)*wv_diff
      +        (k, i)
             gam_diff(j) = gam_diff(j) + wv_gam(k, i, j)*wv_diff(k, i)
           ENDDO
+        ENDDO
+      ENDDO
+C$BWD-OF II-LOOP 
+      DO i=1,nvor
+        DO k=3,1,-1
           vinf_diff(1) = vinf_diff(1) + wvsrd_u(k, i, 1)*wv_diff(k, i)
           vinf_diff(2) = vinf_diff(2) + wvsrd_u(k, i, 2)*wv_diff(k, i)
           vinf_diff(3) = vinf_diff(3) + wvsrd_u(k, i, 3)*wv_diff(k, i)
@@ -207,36 +226,27 @@ C----- might as well directly set operating variables if they are known
         ELSE
           CALL PUSHCONTROL1B(1)
         END IF
-C$AD-II-loop
         IF (icon(ivrotz, ir) .EQ. icrotz) THEN
-          CALL PUSHCONTROL1B(1)
-        ELSE
           CALL PUSHCONTROL1B(0)
+        ELSE
+          CALL PUSHCONTROL1B(1)
         END IF
-        DO n=1,ndmax
-          iv = ivtot + n
-          ic = ictot + n
-          IF (icon(iv, ir) .EQ. ic) THEN
-            CALL PUSHCONTROL1B(1)
-          ELSE
-            CALL PUSHCONTROL1B(0)
-          END IF
-        ENDDO
         DO ii1=1,nrmax
           DO ii2=1,icmax
             conval_diff(ii2, ii1) = 0.D0
           ENDDO
         ENDDO
-        DO n=ndmax,1,-1
-          CALL POPCONTROL1B(branch)
-          IF (branch .NE. 0) THEN
-            ic = ictot + n
+C$BWD-OF II-LOOP 
+        DO n=1,ndmax
+          iv = ivtot + n
+          ic = ictot + n
+          IF (icon(iv, ir) .EQ. ic) THEN
             conval_diff(ic, ir) = conval_diff(ic, ir) + delcon_diff(n)
             delcon_diff(n) = 0.D0
           END IF
         ENDDO
         CALL POPCONTROL1B(branch)
-        IF (branch .NE. 0) THEN
+        IF (branch .EQ. 0) THEN
           conval_diff(icrotz, ir) = conval_diff(icrotz, ir) + 2.*
      +      wrot_diff(3)/bref
           wrot_diff(3) = 0.D0
@@ -305,70 +315,42 @@ C
       REAL result1
       REAL result1_diff
       INTEGER branch
-      DO i=1,nvor
-        IF (lvnc(i)) THEN
-          CALL PUSHREAL8(vunit(1))
-          vunit(1) = 0.
-          CALL PUSHREAL8(vunit(2))
-          vunit(2) = 0.
-          CALL PUSHREAL8(vunit(3))
-          vunit(3) = 0.
-          CALL PUSHREAL8(wunit(1))
-          wunit(1) = 0.
-          CALL PUSHREAL8(wunit(2))
-          wunit(2) = 0.
-          CALL PUSHREAL8(wunit(3))
-          wunit(3) = 0.
-          IF (lvalbe(i)) THEN
-            CALL PUSHREAL8(vunit(1))
-            vunit(1) = vinf(1)
-            CALL PUSHREAL8(vunit(2))
-            vunit(2) = vinf(2)
-            CALL PUSHREAL8(vunit(3))
-            vunit(3) = vinf(3)
-            CALL PUSHREAL8(wunit(1))
-            wunit(1) = wrot(1)
-            CALL PUSHREAL8(wunit(2))
-            wunit(2) = wrot(2)
-            CALL PUSHREAL8(wunit(3))
-            wunit(3) = wrot(3)
-            CALL PUSHCONTROL1B(0)
-          ELSE
-            CALL PUSHCONTROL1B(1)
-          END IF
-          CALL PUSHREAL8(rrot(1))
-          rrot(1) = rc(1, i) - xyzref(1)
-          CALL PUSHREAL8(rrot(2))
-          rrot(2) = rc(2, i) - xyzref(2)
-          CALL PUSHREAL8(rrot(3))
-          rrot(3) = rc(3, i) - xyzref(3)
-          CALL CROSS(rrot, wunit, vunit_w_term)
-          CALL PUSHREAL8ARRAY(vunit, 3)
-          vunit = vunit + vunit_w_term
-C Add contribution from control surfaces
-          DO n=1,ncontrol
-            CALL PUSHREAL8(result1)
-            result1 = DOT(enc_d(1, i, n), vunit)
-          ENDDO
-          CALL PUSHCONTROL1B(1)
-        ELSE
-          CALL PUSHCONTROL1B(0)
-        END IF
-      ENDDO
       enc_diff = 0.D0
       vunit_diff = 0.D0
       wunit_diff = 0.D0
       vunit_w_term_diff = 0.D0
       rrot_diff = 0.D0
-      DO i=nvor,1,-1
-        CALL POPCONTROL1B(branch)
-        IF (branch .EQ. 0) THEN
-          rhs_diff(i) = 0.D0
-        ELSE
-          DO n=ncontrol,1,-1
+C$BWD-OF II-LOOP 
+      DO i=1,nvor
+        IF (lvnc(i)) THEN
+          vunit(1) = 0.
+          vunit(2) = 0.
+          vunit(3) = 0.
+          wunit(1) = 0.
+          wunit(2) = 0.
+          wunit(3) = 0.
+          IF (lvalbe(i)) THEN
+            vunit(1) = vinf(1)
+            vunit(2) = vinf(2)
+            vunit(3) = vinf(3)
+            wunit(1) = wrot(1)
+            wunit(2) = wrot(2)
+            wunit(3) = wrot(3)
+            CALL PUSHCONTROL1B(0)
+          ELSE
+            CALL PUSHCONTROL1B(1)
+          END IF
+          rrot(1) = rc(1, i) - xyzref(1)
+          rrot(2) = rc(2, i) - xyzref(2)
+          rrot(3) = rc(3, i) - xyzref(3)
+          CALL CROSS(rrot, wunit, vunit_w_term)
+          vunit = vunit + vunit_w_term
+C Add contribution from control surfaces
+C$BWD-OF II-LOOP 
+          DO n=1,ncontrol
+            result1 = DOT(enc_d(1, i, n), vunit)
             result1_diff = -(delcon(n)*rhs_diff(i))
             delcon_diff(n) = delcon_diff(n) - result1*rhs_diff(i)
-            CALL POPREAL8(result1)
             CALL DOT_B(enc_d(1, i, n), enc_d_diff(1, i, n), vunit, 
      +                 vunit_diff, result1_diff)
           ENDDO
@@ -376,55 +358,41 @@ C Add contribution from control surfaces
           rhs_diff(i) = 0.D0
           CALL DOT_B(enc(1, i), enc_diff(1, i), vunit, vunit_diff, 
      +               result1_diff)
-          CALL POPREAL8ARRAY(vunit, 3)
           vunit_w_term_diff = vunit_w_term_diff + vunit_diff
           CALL CROSS_B(rrot, rrot_diff, wunit, wunit_diff, vunit_w_term
      +                 , vunit_w_term_diff)
-          CALL POPREAL8(rrot(3))
           rc_diff(3, i) = rc_diff(3, i) + rrot_diff(3)
           xyzref_diff(3) = xyzref_diff(3) - rrot_diff(3)
           rrot_diff(3) = 0.D0
-          CALL POPREAL8(rrot(2))
           rc_diff(2, i) = rc_diff(2, i) + rrot_diff(2)
           xyzref_diff(2) = xyzref_diff(2) - rrot_diff(2)
           rrot_diff(2) = 0.D0
-          CALL POPREAL8(rrot(1))
           rc_diff(1, i) = rc_diff(1, i) + rrot_diff(1)
           xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
           rrot_diff(1) = 0.D0
           CALL POPCONTROL1B(branch)
           IF (branch .EQ. 0) THEN
-            CALL POPREAL8(wunit(3))
             wrot_diff(3) = wrot_diff(3) + wunit_diff(3)
             wunit_diff(3) = 0.D0
-            CALL POPREAL8(wunit(2))
             wrot_diff(2) = wrot_diff(2) + wunit_diff(2)
             wunit_diff(2) = 0.D0
-            CALL POPREAL8(wunit(1))
             wrot_diff(1) = wrot_diff(1) + wunit_diff(1)
             wunit_diff(1) = 0.D0
-            CALL POPREAL8(vunit(3))
             vinf_diff(3) = vinf_diff(3) + vunit_diff(3)
             vunit_diff(3) = 0.D0
-            CALL POPREAL8(vunit(2))
             vinf_diff(2) = vinf_diff(2) + vunit_diff(2)
             vunit_diff(2) = 0.D0
-            CALL POPREAL8(vunit(1))
             vinf_diff(1) = vinf_diff(1) + vunit_diff(1)
             vunit_diff(1) = 0.D0
           END IF
-          CALL POPREAL8(wunit(3))
           wunit_diff(3) = 0.D0
-          CALL POPREAL8(wunit(2))
           wunit_diff(2) = 0.D0
-          CALL POPREAL8(wunit(1))
           wunit_diff(1) = 0.D0
-          CALL POPREAL8(vunit(3))
           vunit_diff(3) = 0.D0
-          CALL POPREAL8(vunit(2))
           vunit_diff(2) = 0.D0
-          CALL POPREAL8(vunit(1))
           vunit_diff(1) = 0.D0
+        ELSE
+          rhs_diff(i) = 0.D0
         END IF
       ENDDO
       END
@@ -449,74 +417,47 @@ C
       REAL result1_diff
       INTEGER branch
       INTEGER iu
-      DO i=1,nvor
-        IF (lvnc(i)) THEN
-          CALL PUSHREAL8(vunit(1))
-          vunit(1) = 0.
-          CALL PUSHREAL8(vunit(2))
-          vunit(2) = 0.
-          CALL PUSHREAL8(vunit(3))
-          vunit(3) = 0.
-          CALL PUSHREAL8(wunit(1))
-          wunit(1) = 0.
-          CALL PUSHREAL8(wunit(2))
-          wunit(2) = 0.
-          CALL PUSHREAL8(wunit(3))
-          wunit(3) = 0.
-          IF (lvalbe(i)) THEN
-            IF (iu .LE. 3) THEN
-              CALL PUSHREAL8(vunit(iu))
-              vunit(iu) = vunit(iu) + 1.0
-              CALL PUSHCONTROL2B(0)
-            ELSE IF (iu .LE. 6) THEN
-              CALL PUSHREAL8(wunit(iu-3))
-              wunit(iu-3) = wunit(iu-3) + 1.0
-              CALL PUSHCONTROL2B(1)
-            ELSE
-              CALL PUSHCONTROL2B(2)
-            END IF
-          ELSE
-            CALL PUSHCONTROL2B(3)
-          END IF
-C--------- always add on indirect freestream influence via BODY sources and doublets
-          CALL PUSHREAL8(vunit(1))
-          vunit(1) = vunit(1) + wcsrd_u(1, i, iu)
-          CALL PUSHREAL8(vunit(2))
-          vunit(2) = vunit(2) + wcsrd_u(2, i, iu)
-          CALL PUSHREAL8(vunit(3))
-          vunit(3) = vunit(3) + wcsrd_u(3, i, iu)
-C
-          CALL PUSHREAL8(rrot(1))
-          rrot(1) = rc(1, i) - xyzref(1)
-          CALL PUSHREAL8(rrot(2))
-          rrot(2) = rc(2, i) - xyzref(2)
-          CALL PUSHREAL8(rrot(3))
-          rrot(3) = rc(3, i) - xyzref(3)
-          CALL CROSS(rrot, wunit, vunit_w_term)
-          CALL PUSHREAL8ARRAY(vunit, 3)
-          vunit = vunit + vunit_w_term
-C Add contribution from control surfaces
-          DO n=1,ncontrol
-            CALL PUSHREAL8(result1)
-            result1 = DOT(enc_d(1, i, n), vunit)
-          ENDDO
-          CALL PUSHCONTROL1B(1)
-        ELSE
-          CALL PUSHCONTROL1B(0)
-        END IF
-      ENDDO
       vunit_diff = 0.D0
       vunit_w_term_diff = 0.D0
       rrot_diff = 0.D0
-      DO i=nvor,1,-1
-        CALL POPCONTROL1B(branch)
-        IF (branch .EQ. 0) THEN
-          rhs_u_diff(i, iu) = 0.D0
-        ELSE
-          DO n=ncontrol,1,-1
+C$BWD-OF II-LOOP 
+      DO i=1,nvor
+        IF (lvnc(i)) THEN
+          vunit(1) = 0.
+          vunit(2) = 0.
+          vunit(3) = 0.
+          wunit(1) = 0.
+          wunit(2) = 0.
+          wunit(3) = 0.
+          IF (lvalbe(i)) THEN
+            IF (iu .LE. 3) THEN
+              CALL PUSHCONTROL2B(0)
+              vunit(iu) = vunit(iu) + 1.0
+            ELSE IF (iu .LE. 6) THEN
+              CALL PUSHCONTROL2B(1)
+              wunit(iu-3) = wunit(iu-3) + 1.0
+            ELSE
+              CALL PUSHCONTROL2B(1)
+            END IF
+          ELSE
+            CALL PUSHCONTROL2B(2)
+          END IF
+C--------- always add on indirect freestream influence via BODY sources and doublets
+          vunit(1) = vunit(1) + wcsrd_u(1, i, iu)
+          vunit(2) = vunit(2) + wcsrd_u(2, i, iu)
+          vunit(3) = vunit(3) + wcsrd_u(3, i, iu)
+C
+          rrot(1) = rc(1, i) - xyzref(1)
+          rrot(2) = rc(2, i) - xyzref(2)
+          rrot(3) = rc(3, i) - xyzref(3)
+          CALL CROSS(rrot, wunit, vunit_w_term)
+          vunit = vunit + vunit_w_term
+C Add contribution from control surfaces
+C$BWD-OF II-LOOP 
+          DO n=1,ncontrol
+            result1 = DOT(enc_d(1, i, n), vunit)
             result1_diff = -(delcon(n)*rhs_u_diff(i, iu))
             delcon_diff(n) = delcon_diff(n) - result1*rhs_u_diff(i, iu)
-            CALL POPREAL8(result1)
             CALL DOT_B(enc_d(1, i, n), enc_d_diff(1, i, n), vunit, 
      +                 vunit_diff, result1_diff)
           ENDDO
@@ -524,43 +465,25 @@ C Add contribution from control surfaces
           rhs_u_diff(i, iu) = 0.D0
           CALL DOT_B(enc(1, i), enc_diff(1, i), vunit, vunit_diff, 
      +               result1_diff)
-          CALL POPREAL8ARRAY(vunit, 3)
           vunit_w_term_diff = vunit_w_term_diff + vunit_diff
           wunit_diff = 0.D0
           CALL CROSS_B(rrot, rrot_diff, wunit, wunit_diff, vunit_w_term
      +                 , vunit_w_term_diff)
-          CALL POPREAL8(rrot(3))
           rc_diff(3, i) = rc_diff(3, i) + rrot_diff(3)
           xyzref_diff(3) = xyzref_diff(3) - rrot_diff(3)
           rrot_diff(3) = 0.D0
-          CALL POPREAL8(rrot(2))
           rc_diff(2, i) = rc_diff(2, i) + rrot_diff(2)
           xyzref_diff(2) = xyzref_diff(2) - rrot_diff(2)
           rrot_diff(2) = 0.D0
-          CALL POPREAL8(rrot(1))
           rc_diff(1, i) = rc_diff(1, i) + rrot_diff(1)
           xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
           rrot_diff(1) = 0.D0
-          CALL POPREAL8(vunit(3))
-          CALL POPREAL8(vunit(2))
-          CALL POPREAL8(vunit(1))
           CALL POPCONTROL2B(branch)
-          IF (branch .LT. 2) THEN
-            IF (branch .EQ. 0) THEN
-              CALL POPREAL8(vunit(iu))
-            ELSE
-              CALL POPREAL8(wunit(iu-3))
-            END IF
-          END IF
-          CALL POPREAL8(wunit(3))
-          CALL POPREAL8(wunit(2))
-          CALL POPREAL8(wunit(1))
-          CALL POPREAL8(vunit(3))
           vunit_diff(3) = 0.D0
-          CALL POPREAL8(vunit(2))
           vunit_diff(2) = 0.D0
-          CALL POPREAL8(vunit(1))
           vunit_diff(1) = 0.D0
+        ELSE
+          rhs_u_diff(i, iu) = 0.D0
         END IF
       ENDDO
       END
@@ -587,43 +510,6 @@ Cset_vel_rhs_u
       INTEGER branch
       INTEGER ii1
       INTEGER iq
-C
-      DO i=1,nvor
-        IF (lvnc(i)) THEN
-          IF (lvalbe(i)) THEN
-            CALL PUSHREAL8(rrot(1))
-            rrot(1) = rc(1, i) - xyzref(1)
-            CALL PUSHREAL8(rrot(2))
-            rrot(2) = rc(2, i) - xyzref(2)
-            CALL PUSHREAL8(rrot(3))
-            rrot(3) = rc(3, i) - xyzref(3)
-            CALL CROSS(rrot, wrot, vrot)
-            DO k=1,3
-              CALL PUSHREAL8(vc(k))
-              vc(k) = vinf(k) + vrot(k)
-            ENDDO
-            CALL PUSHCONTROL1B(1)
-          ELSE
-            CALL PUSHREAL8(vc(1))
-            vc(1) = 0.
-            CALL PUSHREAL8(vc(2))
-            vc(2) = 0.
-            CALL PUSHREAL8(vc(3))
-            vc(3) = 0.
-            CALL PUSHCONTROL1B(0)
-          END IF
-C
-          DO k=1,3
-            CALL PUSHREAL8(vc(k))
-            vc(k) = vc(k) + wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*
-     +        vinf(2) + wcsrd_u(k, i, 3)*vinf(3) + wcsrd_u(k, i, 4)*wrot
-     +        (1) + wcsrd_u(k, i, 5)*wrot(2) + wcsrd_u(k, i, 6)*wrot(3)
-          ENDDO
-          CALL PUSHCONTROL1B(1)
-        ELSE
-          CALL PUSHCONTROL1B(0)
-        END IF
-      ENDDO
       DO ii1=1,3
         vrot_diff(ii1) = 0.D0
       ENDDO
@@ -633,17 +519,37 @@ C
       DO ii1=1,3
         rrot_diff(ii1) = 0.D0
       ENDDO
-      DO i=nvor,1,-1
-        CALL POPCONTROL1B(branch)
-        IF (branch .EQ. 0) THEN
-          rhs_vec_diff(i) = 0.D0
-        ELSE
+C$BWD-OF II-LOOP 
+      DO i=1,nvor
+        IF (lvnc(i)) THEN
+          IF (lvalbe(i)) THEN
+            rrot(1) = rc(1, i) - xyzref(1)
+            rrot(2) = rc(2, i) - xyzref(2)
+            rrot(3) = rc(3, i) - xyzref(3)
+            CALL CROSS(rrot, wrot, vrot)
+C$FWD-OF II-LOOP 
+            DO k=1,3
+              vc(k) = vinf(k) + vrot(k)
+            ENDDO
+            CALL PUSHCONTROL1B(0)
+          ELSE
+            vc(1) = 0.
+            vc(2) = 0.
+            vc(3) = 0.
+            CALL PUSHCONTROL1B(1)
+          END IF
+C$FWD-OF II-LOOP 
+          DO k=1,3
+            vc(k) = vc(k) + wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*
+     +        vinf(2) + wcsrd_u(k, i, 3)*vinf(3) + wcsrd_u(k, i, 4)*wrot
+     +        (1) + wcsrd_u(k, i, 5)*wrot(2) + wcsrd_u(k, i, 6)*wrot(3)
+          ENDDO
           result1_diff = -rhs_vec_diff(i)
           rhs_vec_diff(i) = 0.D0
           CALL DOT_B(enc_q(1, i, iq), enc_q_diff(1, i, iq), vc, vc_diff
      +               , result1_diff)
-          DO k=3,1,-1
-            CALL POPREAL8(vc(k))
+C$BWD-OF II-LOOP 
+          DO k=1,3
             vinf_diff(1) = vinf_diff(1) + wcsrd_u(k, i, 1)*vc_diff(k)
             vinf_diff(2) = vinf_diff(2) + wcsrd_u(k, i, 2)*vc_diff(k)
             vinf_diff(3) = vinf_diff(3) + wcsrd_u(k, i, 3)*vc_diff(k)
@@ -653,34 +559,30 @@ C
           ENDDO
           CALL POPCONTROL1B(branch)
           IF (branch .EQ. 0) THEN
-            CALL POPREAL8(vc(3))
-            vc_diff(3) = 0.D0
-            CALL POPREAL8(vc(2))
-            vc_diff(2) = 0.D0
-            CALL POPREAL8(vc(1))
-            vc_diff(1) = 0.D0
-          ELSE
-            DO k=3,1,-1
-              CALL POPREAL8(vc(k))
+C$BWD-OF II-LOOP 
+            DO k=1,3
               vinf_diff(k) = vinf_diff(k) + vc_diff(k)
               vrot_diff(k) = vrot_diff(k) + vc_diff(k)
               vc_diff(k) = 0.D0
             ENDDO
             CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, 
      +                   vrot_diff)
-            CALL POPREAL8(rrot(3))
             rc_diff(3, i) = rc_diff(3, i) + rrot_diff(3)
             xyzref_diff(3) = xyzref_diff(3) - rrot_diff(3)
             rrot_diff(3) = 0.D0
-            CALL POPREAL8(rrot(2))
             rc_diff(2, i) = rc_diff(2, i) + rrot_diff(2)
             xyzref_diff(2) = xyzref_diff(2) - rrot_diff(2)
             rrot_diff(2) = 0.D0
-            CALL POPREAL8(rrot(1))
             rc_diff(1, i) = rc_diff(1, i) + rrot_diff(1)
             xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
             rrot_diff(1) = 0.D0
+          ELSE
+            vc_diff(3) = 0.D0
+            vc_diff(2) = 0.D0
+            vc_diff(1) = 0.D0
           END IF
+        ELSE
+          rhs_vec_diff(i) = 0.D0
         END IF
       ENDDO
       END
@@ -698,11 +600,11 @@ C
       REAL mat_diff(nvmax, nvmax), vec_diff(nvmax), out_vec_diff(nvmax)
       INTEGER j
       INTEGER i
-C$AD II-LOOP
       INTEGER n
 C$BWD-OF II-LOOP 
       DO j=1,n
-        DO i=n,1,-1
+C$BWD-OF II-LOOP 
+        DO i=1,n
           mat_diff(i, j) = mat_diff(i, j) + vec(j)*out_vec_diff(i)
           vec_diff(j) = vec_diff(j) + mat(i, j)*out_vec_diff(i)
         ENDDO
