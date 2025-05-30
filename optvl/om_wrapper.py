@@ -214,7 +214,7 @@ class OVLSolverComp(om.ImplicitComponent):
         # TODO-api: this should probably be an API level call to set gamma
         self.ovl.set_avl_fort_arr("VRTX_R", "GAM", gam_arr, slicer=self.res_slice)
         self.ovl.set_avl_fort_arr("VRTX_R", "GAM_D", gam_d_arr, slicer=self.res_d_slice)
-        self.set_avl_fort_arr("VRTX_R", "GAM_U", gam_u_arr, slicer=self.res_u_slice)
+        self.ovl.set_avl_fort_arr("VRTX_R", "GAM_U", gam_u_arr, slicer=self.res_u_slice)
 
         # propogate the seeds through without resolving
         self.ovl.avl.update_surfaces()

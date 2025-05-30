@@ -697,11 +697,11 @@ class OVLSolver(object):
         """        
         
         # warn the user that alpha, beta,
-        if param_key is ["alpha", "beta", "pb/2V", "qc/2V", "rb/2V", "CL"]:
+        if param_key in ["alpha", "beta", "pb/2V", "qc/2V", "rb/2V", "CL"]:
             raise ValueError(
                 "alpha, beta, pb/2V, qc/2V, rb/2V, and CL are not allowed to be set,\n\
-                             they are calculated during each run based on the contraints. to specify\n\
-                             one of these values use the add_contraint method."
+                             they are calculated during each run based on the constraints. to specify\n\
+                             one of these values use the add_constraint method."
             )
 
         parvals = self.get_avl_fort_arr("CASE_R", "PARVAL")
@@ -2093,7 +2093,7 @@ class OVLSolver(object):
         """Get partial derivatives in reverse mode. This routine is useful internally and when creating wrappers for things like OpenMDAO
 
         Args:
-            func_seeds: force coifficent AD seeds
+            func_seeds: force coefficient AD seeds
             res_seeds:  residual AD seeds
             consurf_derivs_seeds: Control surface derivatives AD seeds
             stab_derivs_seeds: Stability derivatives AD seeds
@@ -2199,16 +2199,16 @@ class OVLSolver(object):
                                 stab_derivs: Optional[List[str]] = None,
                                 consurf_derivs:Optional[List[str]] = None,
                                 print_timings: Optional[bool]=False) ->  Dict[str, Dict[str, float]]:
-        """Run the senstives of the input functionals in adjoint mode
+        """Run the sensitivities of the input functionals in adjoint mode
 
         Args:
-            funcs: force coefficents to compute the senstivies with resprect to 
-            stab_derivs: stability derivatives to compute the senstivies with resprect to 
-            consurf_derivs: control surface derivates to compute the senstivies with resprect to 
+            funcs: force coefficients to compute the sensitivities with respect to 
+            stab_derivs: stability derivatives to compute the sensitivities with respect to 
+            consurf_derivs: control surface derivates to compute the sensitivities with respect to 
             print_timings: flag to print timing information
 
         Returns:
-            sens: a nested dictionary of senstivies. The first key is the function and the next keys are for the design variables. 
+            sens: a nested dictionary of sensitivities. The first key is the function and the next keys are for the design variables. 
         """        
         sens = {}
         
@@ -2539,7 +2539,7 @@ class OVLSolver(object):
         return xyz_list, cp_list
 
     def plot_cp(self):
-        """create a matplotlib plot of the surafce and cp distribution
+        """create a matplotlib plot of the surface and cp distribution
         """
         import matplotlib.pyplot as plt
         from matplotlib import cm
@@ -2592,7 +2592,7 @@ class OVLSolver(object):
 
         Args:
             file_name: Name of the output file
-            solution_time: Add a solution time to the output. This is useful for flipping though data in tecplot, but breaks Paraview.
+            solution_time: Add a solution time to the output. This is useful for flipping through data in tecplot, but breaks Paraview.
         """        
         if solution_time is not None:
             add_time = True
