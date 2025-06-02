@@ -4,6 +4,7 @@ from optvl import OVLSolver
 import numpy as np
 import copy
 import time
+from warnings import warn
 
 class OVLGroup(om.Group):
     """This is the main the top level group for interacting with OptVL. 
@@ -28,7 +29,9 @@ class OVLGroup(om.Group):
 
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
+        self.options.declare("input_airfoil_geom", types=bool, default=False)
         
+        self.options.declare("output_stabililty_derivs", types=bool, default=False)
         self.options.declare("output_stability_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
 
@@ -38,19 +41,26 @@ class OVLGroup(om.Group):
         
         input_param_vals = self.options["input_param_vals"]
         input_ref_vals = self.options["input_ref_vals"]
+        input_airfoil_geom = self.options["input_airfoil_geom"]
         
-        output_stability_derivs = self.options["output_stability_derivs"]
+        if self.options['output_stabililty_derivs']:
+            warn("`output_stabililty_derivs` is now `output_stability_derivs` (typo fixed) and will be removed in the next release.", DeprecationWarning)
+            output_stability_derivs = self.options["output_stabililty_derivs"]
+        else:
+            output_stability_derivs = self.options["output_stability_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
 
         self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
 
         self.add_subsystem("solver", OVLSolverComp(ovl=self.ovl, 
                                     input_param_vals=input_param_vals,
-                                    input_ref_vals=input_ref_vals),
+                                    input_ref_vals=input_ref_vals,
+                                    input_airfoil_geom=input_airfoil_geom),
                                     promotes=["*"])
         self.add_subsystem("funcs", OVLFuncsComp(ovl=self.ovl,
                                     input_param_vals=input_param_vals,
                                     input_ref_vals=input_ref_vals,
+                                    input_airfoil_geom=input_airfoil_geom,
                                     output_stability_derivs=output_stability_derivs,
                                     output_con_surf_derivs=output_con_surf_derivs),
                                     promotes=["*"])
@@ -60,9 +70,12 @@ class OVLGroup(om.Group):
                                                     output_dir=self.options["output_dir"],
                                                     write_grid_sol_time=self.options["write_grid_sol_time"],
                                                     input_param_vals=input_param_vals,
-                                                    input_ref_vals=input_ref_vals),
+                                                    input_ref_vals=input_ref_vals,
+                                                    input_airfoil_geom=input_airfoil_geom),
                                                     promotes=["*"]
                                                 )
+
+AIRFOIL_GEOM_VARS = [ "xasec", "casec", "tasec", "xuasec", "xlasec", "zuasec", "zlasec"]
 
 # helper functions used by the AVL components
 def add_ovl_controls_as_inputs(self, ovl):
@@ -72,12 +85,15 @@ def add_ovl_controls_as_inputs(self, ovl):
         self.add_input(c_name, val=0.0, units="deg", tags="con_surf")
     return self.control_names
 
-def add_ovl_geom_vars(self, ovl, add_as="inputs"):
+def add_ovl_geom_vars(self, ovl, add_as="inputs", include_airfoil_geom=False):
     # add the geometric parameters as inputs
     surf_data = ovl.get_surface_params()
 
     for surf in surf_data:
         for key in surf_data[surf]:
+            if  key in AIRFOIL_GEOM_VARS:
+                if not include_airfoil_geom:
+                    continue
             geom_key = f"{surf}:{key}"
             if add_as == "inputs":
                 self.add_input(geom_key, val=surf_data[surf][key], tags="geom")
@@ -168,12 +184,14 @@ class OVLSolverComp(om.ImplicitComponent):
         self.options.declare("ovl", types=OVLSolver, recordable=False)
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
+        self.options.declare("input_airfoil_geom", types=bool, default=False)
         
 
     def setup(self):
         self.ovl = self.options["ovl"]
         input_param_vals = self.options["input_param_vals"]
         input_ref_vals = self.options["input_ref_vals"]
+        input_airfoil_geom = self.options["input_airfoil_geom"]
         
         self.num_states = self.ovl.get_mesh_size()
         self.num_cs = self.ovl.get_num_control_surfs()
@@ -190,9 +208,9 @@ class OVLSolverComp(om.ImplicitComponent):
         
         if input_ref_vals:
             add_ovl_refs_as_inputs(self, self.ovl)
-        
+            
         self.control_names = add_ovl_controls_as_inputs(self, self.ovl)
-        add_ovl_geom_vars(self, self.ovl, add_as="inputs")
+        add_ovl_geom_vars(self, self.ovl, add_as="inputs", include_airfoil_geom=input_airfoil_geom)
         
         self.res_slice = (slice(0, self.num_states),)
         self.res_d_slice = (slice(0, self.num_cs), slice(0, self.num_states))
@@ -355,6 +373,7 @@ class OVLFuncsComp(om.ExplicitComponent):
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
+        self.options.declare("input_airfoil_geom", types=bool, default=False)
         
 
     def setup(self):
@@ -364,6 +383,7 @@ class OVLFuncsComp(om.ExplicitComponent):
         self.num_vel = self.ovl.NUMAX
         input_param_vals = self.options["input_param_vals"]
         input_ref_vals = self.options["input_ref_vals"]
+        input_airfoil_geom = self.options["input_airfoil_geom"]
         
         self.add_input("gamma", val=np.zeros(self.num_states))
         self.add_input("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
@@ -378,7 +398,7 @@ class OVLFuncsComp(om.ExplicitComponent):
             add_ovl_refs_as_inputs(self, self.ovl)
             
         self.control_names = add_ovl_controls_as_inputs(self, self.ovl)
-        add_ovl_geom_vars(self, self.ovl, add_as="inputs")
+        add_ovl_geom_vars(self, self.ovl, add_as="inputs", include_airfoil_geom=input_airfoil_geom)
 
         # add the outputs
         for func_key in self.ovl.case_var_to_fort_var:
@@ -576,6 +596,7 @@ class OVLPostProcessComp(om.ExplicitComponent):
         self.options.declare("output_dir", types=str, recordable=False, default=".")
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
+        self.options.declare("input_airfoil_geom", types=bool, default=False)
         self.options.declare("write_grid_sol_time", types=bool, default=False)
         
     def setup(self):
@@ -585,6 +606,7 @@ class OVLPostProcessComp(om.ExplicitComponent):
         self.num_vel = self.ovl.NUMAX
         input_param_vals = self.options["input_param_vals"]
         input_ref_vals = self.options["input_ref_vals"]
+        input_airfoil_geom = self.options["input_airfoil_geom"]
         
 
         self.add_input("gamma", val=np.zeros(self.num_states))
@@ -600,7 +622,7 @@ class OVLPostProcessComp(om.ExplicitComponent):
             add_ovl_refs_as_inputs(self, self.ovl)
             
         add_ovl_controls_as_inputs(self, self.ovl)
-        add_ovl_geom_vars(self, self.ovl, add_as="inputs")
+        add_ovl_geom_vars(self, self.ovl, add_as="inputs", include_airfoil_geom=input_airfoil_geom)
 
         self.res_slice = (slice(0, self.num_states),)
         self.res_d_slice = (slice(0, self.num_cs), slice(0, self.num_states))
@@ -657,7 +679,7 @@ class OVLMeshReader(om.ExplicitComponent):
         mass_file = self.options["mass_file"]
 
         avl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
-        add_ovl_geom_vars(self, avl, add_as="outputs")
+        add_ovl_geom_vars(self, avl, add_as="outputs", include_airfoil_geom=True)
 
 
 class Differencer(om.ExplicitComponent):

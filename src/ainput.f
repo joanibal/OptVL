@@ -582,6 +582,8 @@ C
         ZLASEC(2,ISEC,ISURF) = 0
         ZUASEC(1,ISEC,ISURF) = 0
         ZUASEC(2,ISEC,ISURF) = 0
+        CASEC(2,ISEC,ISURF) = 0
+        CASEC(2,ISEC,ISURF) = 0
 cc#endif
 C    ...copy polar data from surface polar (if specified)
         DO L=1, 6
@@ -678,6 +680,7 @@ c...      lower/upper coordinates (for oml)
           XUASEC(I,ISEC,ISURF) = XF - 0.5*THK*SIN(TH)
           ZLASEC(I,ISEC,ISURF) = ZF - 0.5*THK*COS(TH)
           ZUASEC(I,ISEC,ISURF) = ZF + 0.5*THK*COS(TH)
+          CASEC(I,ISEC,ISURF) = ZF
 cc#endif
         ENDDO
 
@@ -766,6 +769,7 @@ C...      lower/upper coordinates (for oml)
           XUASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
           ZLASEC(I,ISEC,ISURF) = ZC - 0.5*TASEC(I,ISEC,ISURF)
           ZUASEC(I,ISEC,ISURF) = ZC + 0.5*TASEC(I,ISEC,ISURF)
+          CASEC(I,ISEC,ISURF) = ZC
 cc#endif
         END DO
         CALL NRMLIZ(NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
@@ -855,6 +859,7 @@ cc#ifdef USE_CPOML
           XUASEC(I,ISEC,ISURF) = 0
           ZLASEC(I,ISEC,ISURF) = 0
           ZUASEC(I,ISEC,ISURF) = 0
+          CASEC(I,ISEC,ISURF) = 0
 cc#endif
          ENDDO
 C
@@ -880,6 +885,7 @@ C...       lower/upper coordinates (for oml)
            XUASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
            ZLASEC(I,ISEC,ISURF) = ZC - 0.5*TASEC(I,ISEC,ISURF)
            ZUASEC(I,ISEC,ISURF) = ZC + 0.5*TASEC(I,ISEC,ISURF)
+           CASEC(I,ISEC,ISURF) = ZC 
 cc#endif
          END DO
          CALL NRMLIZ (NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
