@@ -433,6 +433,7 @@ c
       REAL(kind=avl_real) CHORDS
       REAL(kind=avl_real) AINCS
       REAL(kind=avl_real) XASEC
+      REAL(kind=avl_real) CASEC
       REAL(kind=avl_real) SASEC
       REAL(kind=avl_real) TASEC
       REAL(kind=avl_real) CLCDSEC
@@ -459,6 +460,7 @@ c
      & CHORDS(NSMAX, NFMAX), ! chord length vectorm
      & AINCS(NSMAX, NFMAX), ! incidence angle vector
      & XASEC(IBX, NSMAX, NFMAX),  ! the x coordinate aifoil section
+     & CASEC(IBX, NSMAX, NFMAX),  ! camber line at xasec
      & SASEC(IBX, NSMAX, NFMAX),  ! slope of camber line at xasec
      & TASEC(IBX, NSMAX, NFMAX),   ! thickness at xasec
      & CLCDSEC(6, NSMAX, NFMAX),

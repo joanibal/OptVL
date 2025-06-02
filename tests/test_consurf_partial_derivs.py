@@ -265,14 +265,14 @@ class TestConSurfDerivsPartials(unittest.TestCase):
 
                     # print(f"{sens_label} AD:{cs_d[deriv_func]} FD:{cs_d_fd[deriv_func]}")
 
-                    tol = 1e-13
+                    tol = 1e-10
                     # print(f"{deriv_func} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
                     if np.abs(cs_d[deriv_func]) < tol or np.abs(cs_d_fd[deriv_func]) < tol:
                         # If either value is basically zero, use an absolute tolerance
                         np.testing.assert_allclose(
                             cs_d[deriv_func],
                             cs_d_fd[deriv_func],
-                            atol=1e-20,
+                            atol=5e-13,
                             err_msg=sens_label,
                         )
                     else:

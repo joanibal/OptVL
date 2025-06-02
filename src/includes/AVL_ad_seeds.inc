@@ -369,6 +369,7 @@ C
       real(kind=avl_real) CHORDS_DIFF
       real(kind=avl_real) AINCS_DIFF
       real(kind=avl_real) XASEC_DIFF
+      real(kind=avl_real) CASEC_DIFF
       real(kind=avl_real) SASEC_DIFF
       real(kind=avl_real) TASEC_DIFF
       real(kind=avl_real) CLCDSEC_DIFF
@@ -395,6 +396,7 @@ C
      & CHORDS_DIFF(NSMAX, NFMAX),
      & AINCS_DIFF(NSMAX, NFMAX),
      & XASEC_DIFF(IBX, NSMAX, NFMAX),
+     & CASEC_DIFF(IBX, NSMAX, NFMAX),
      & SASEC_DIFF(IBX, NSMAX, NFMAX),
      & TASEC_DIFF(IBX, NSMAX, NFMAX),
      & CLCDSEC_DIFF(6, NSMAX, NFMAX),
