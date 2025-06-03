@@ -1,7 +1,5 @@
 # Planform optimization
 
-# Planform optimization
-
 This is a considerably more advanced tutorial that aims to represent a more realistic optimization problem. 
 We are going to optimize the planform of a flying wing for maximum glide duration.
 In this example, we are going to walk through the planform optimization starting from a rectangular wing. 
