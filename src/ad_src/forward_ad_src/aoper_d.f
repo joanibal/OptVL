@@ -317,8 +317,8 @@ C  SM = (XNP - XYZREF(1))/CREF This is the same as below
         sm_diff = -((cmtot_al_diff-cmtot_al*cltot_al_diff/cltot_al)/
      +    cltot_al)
         sm = -(cmtot_al/cltot_al)
-        xnp_diff = xyzref_diff(1) - sm*cref_diff - cref*sm_diff
-        xnp = xyzref(1) - cref*sm
+        xnp_diff = xyzref_diff(1) + sm*cref_diff + cref*sm_diff
+        xnp = xyzref(1) + cref*sm
       ELSE
         xnp_diff = 0.D0
         sm_diff = 0.D0

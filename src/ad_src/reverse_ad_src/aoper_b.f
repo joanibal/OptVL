@@ -206,8 +206,8 @@ C  SM = (XNP - XYZREF(1))/CREF This is the same as below
           xyzref_diff(ii1) = 0.D0
         ENDDO
         xyzref_diff(1) = xyzref_diff(1) + xnp_diff
-        cref_diff = cref_diff - sm*xnp_diff
-        sm_diff = sm_diff - cref*xnp_diff
+        cref_diff = cref_diff + sm*xnp_diff
+        sm_diff = sm_diff + cref*xnp_diff
         cmtot_al_diff = cmtot_al_diff - sm_diff/cltot_al
         cltot_al_diff = cltot_al_diff + cmtot_al*sm_diff/cltot_al**2
         xnp_diff = 0.D0
