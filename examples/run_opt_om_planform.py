@@ -242,4 +242,5 @@ prob.setup(mode='rev')
 prob.run_driver()
 om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 
+# prob.run_model()
 # prob.check_totals()

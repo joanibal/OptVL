@@ -1906,7 +1906,7 @@ C
       !  XNP = XYZREF(1) - CREF*CMTOT_AL/CLTOT_AL
       !  SM = (XNP - XYZREF(1))/CREF This is the same as below
        SM = -CMTOT_AL/CLTOT_AL
-       XNP = XYZREF(1) - CREF*SM
+       XNP = XYZREF(1) + CREF*SM
 
 
 C        WRITE(*,8401) XNP
