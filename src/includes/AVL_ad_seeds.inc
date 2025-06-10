@@ -118,6 +118,8 @@ C    must be precended by 'include AVL_ad_seed'
       real(kind=avl_real) DCM_U0_DIFF
       real(kind=avl_real) XNP_DIFF
       real(kind=avl_real) SM_DIFF
+      real(kind=avl_real) BB_DIFF
+      real(kind=avl_real) RR_DIFF
       COMMON /CASE_R_DIFF/
      & YSYM_DIFF,
      & ZSYM_DIFF,
@@ -236,7 +238,9 @@ C    must be precended by 'include AVL_ad_seed'
      & DCL_U0_DIFF,
      & DCM_U0_DIFF,
      & XNP_DIFF,
-     & SM_DIFF
+     & SM_DIFF,
+     & BB_DIFF,
+     & RR_DIFF
 C
       real(kind=avl_real) RHO0_DIFF
       real(kind=avl_real) GEE0_DIFF
