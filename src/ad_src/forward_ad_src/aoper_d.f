@@ -7,7 +7,8 @@ C                cytot_al crtot_al cmtot_al cntot_al cdtot_be cltot_be
 C                cytot_be crtot_be cmtot_be cntot_be cdtot_rx cltot_rx
 C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
 C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
-C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm
+C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
+C                rr
 C   with respect to varying inputs: alfa vinf_a vinf_b wrot cref
 C                bref xyzref crtot cntot cdtot_a cltot_a cdtot_u
 C                cltot_u cytot_u crtot_u cmtot_u cntot_u
@@ -46,9 +47,10 @@ C
       REAL cnsax_a_diff
       INTEGER k
       INTRINSIC ABS
-      REAL bb
       REAL(kind=avl_real) abs0
+      REAL(kind=avl_real) abs1
       INTEGER ii1
+      REAL(kind=avl_real) temp
 C
       CALL GETSA(lnasa_sa, satype, dir)
 C CALL VINFAB
@@ -328,13 +330,34 @@ C  SM = (XNP - XYZREF(1))/CREF This is the same as below
       ELSE
         abs0 = -(crtot_rz*cntot_be)
       END IF
-C apply the facotors to the outputs as done in the print statements of DERMATS
 C
       IF (abs0 .GT. 0.0001) THEN
-        bb = crtot_be*cntot_rz/(crtot_rz*cntot_be)
+        temp = crtot_be*cntot_rz/(crtot_rz*cntot_be)
+        bb_diff = (cntot_rz*crtot_be_diff+crtot_be*cntot_rz_diff-temp*(
+     +    cntot_be*crtot_rz_diff+crtot_rz*cntot_be_diff))/(crtot_rz*
+     +    cntot_be)
+        bb = temp
 C        WRITE(LU,8402) BB 
 C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
 C      &    '    (  > 1 if spirally stable )')
+      ELSE
+        bb_diff = 0.D0
+      END IF
+      IF (crtot_be .GE. 0.) THEN
+        abs1 = crtot_be
+      ELSE
+        abs1 = -crtot_be
+      END IF
+C apply the facotors to the outputs as done in the print statements of DERMATS
+      IF (abs1 .GT. 0.0001) THEN
+        rr_diff = (cntot_be_diff-cntot_be*crtot_be_diff/crtot_be)/
+     +    crtot_be
+        rr = cntot_be/crtot_be
+C        WRITE(LU,8402) BB 
+C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
+C      &    '    (  > 1 if spirally stable )')
+      ELSE
+        rr_diff = 0.D0
       END IF
       crtot_al_diff = dir*crtot_al_diff
       crtot_al = dir*crtot_al

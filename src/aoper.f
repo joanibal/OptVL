@@ -1919,6 +1919,12 @@ C        WRITE(LU,8402) BB
 C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
 C      &    '    (  > 1 if spirally stable )')
       ENDIF
+      IF(ABS(CRTOT_BE) .GT. 0.0001) THEN
+       RR = CNTOT_BE/CRTOT_BE
+C        WRITE(LU,8402) BB 
+C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
+C      &    '    (  > 1 if spirally stable )')
+      ENDIF
       
       ! apply the facotors to the outputs as done in the print statements of DERMATS
       CRTOT_AL = DIR*CRTOT_AL
