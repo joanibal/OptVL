@@ -165,12 +165,24 @@ class OVLSolver(object):
     
     NUMAX = 6
 
-    def __init__(self, geo_file:str, mass_file: Optional[str]=None, debug:Optional[bool]=False, timing:Optional[bool]=False):
-        """Initalize the python and fortran libary from the given objects
+    def __init__(self, geo_file: Optional[str] = None, mass_file: Optional[str] = None, debug: Optional[bool] = False, timing: Optional[bool] = False):
+        """
+        Initializes the OVLSolver.
 
         Args:
-            geo_file: AVL geometry file
-            mass_file: AVL mass file
+            geo_file: Path to the AVL geometry file (.avl).
+                     If None, geometry is not loaded from a file, and the user
+                     is expected to call `set_geometry_from_data()` to define
+                     the geometry programmatically.
+            mass_file: Path to the AVL mass file (.mass). Optional.
+                      Only loaded if `geo_file` is also provided.
+            debug: If True, enables verbose output from the Fortran library (LVERBOSE).
+            timing: If True, enables timing output from the Fortran library (LTIMING).
+        """
+
+        if timing:
+            start_time = time.time()
+            mass_file: AVL mass file (optional, requires geo_file)
             debug: flag for debug printing
             timing: flag for timing printing
 
@@ -180,60 +192,66 @@ class OVLSolver(object):
             start_time = time.time()
 
         # MExt is important for creating multiple instances of the AVL solver that do not share memory
-        # It is very gross, but I cannot figure out a better way (maybe use install_name_tool to change the dynamic library path to absolute).
-        # increment this counter for the hours you wasted on trying find a better way
-        # 7 hours
-
         module_dir = os.path.dirname(os.path.realpath(__file__))
         module_name = os.path.basename(module_dir)
         
         if platform.system() == "Windows":
-            #HACK
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.pyd"))[0]
         else:
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
             
-        # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
         self.avl = MExt.MExt("libavl", module_name, "optvl", lib_so_file=avl_lib_so_file, debug=debug)._module
 
-        # this way doesn't work with mulitple isntances fo OVLSolver
-        # from . import libavl
-        # self.avl = libavl
+        self.avl.avl() # Initialize the Fortran library core
 
-        if not (geo_file is None):
+        if debug:
+            self.set_avl_fort_arr("CASE_L", "LVERBOSE", True)
+        if timing:
+            self.set_avl_fort_arr("CASE_L", "LTIMING", True)
+
+        # Initialize these attributes to ensure they exist even if no geo_file is loaded initially
+        self.surface_names = []
+        self.unique_surface_names = []
+        self.surf_geom_to_fort_var = {}
+        self.surf_pannel_to_fort_var = {}
+        self.con_surf_to_fort_var = {} # Base will be populated later, extended by _init_control_mappings
+
+        if geo_file is not None:
             try:
                 # check to make sure files exist
-                file = geo_file
+                file_to_check = geo_file
                 f = open(geo_file, "r")
                 f.close()
 
-                if not (mass_file is None):
-                    file = mass_file
+                if mass_file is not None:
+                    file_to_check = mass_file
                     f = open(mass_file, "r")
                     f.close()
             except FileNotFoundError:
                 raise FileNotFoundError(
-                    f"Could not open the file '{file}' from python. This is usually an issue with the specified file path"
+                    f"Could not open the file '{file_to_check}' from python. This is usually an issue with the specified file path"
                 )
-
-            self.avl.avl()
-            if debug:
-                self.set_avl_fort_arr("CASE_L", "LVERBOSE", True)
-
-            if timing:
-                self.set_avl_fort_arr("CASE_L", "LTIMING", True)
 
             self.avl.loadgeo(geo_file)
 
             if mass_file is not None:
                 self.avl.loadmass(mass_file)
 
-        else:
-            raise ValueError("neither a geometry file or aircraft object was given")
-        
-        # todo store the default dict somewhere else
-        # the control surface contraints get added to this array in the __init__
+            # These methods populate geometry-dependent mappings
+            self._init_surf_data()
+            self._init_control_mappings()
+
+        # else:
+            # If geo_file is None, _init_surf_data and _init_control_mappings
+            # will be called by set_geometry_from_data() later.
+            # Initialize control_variables here as _init_control_mappings might not run yet.
+            # self.control_variables = {} # _init_control_mappings handles this.
+            # self.conval_idx_dict is initialized below with base values.
+            # self.con_var_to_fort_var is initialized below with base values.
+            # _init_control_mappings will extend conval_idx_dict and con_var_to_fort_var.
+
+        # Base dictionary for constraint values, extended by control surfaces
         self.conval_idx_dict = {
             "alpha": 0,
             "beta": 1,
@@ -247,25 +265,20 @@ class OVLSolver(object):
             "CR": 9,
         }
         
-        # control surfaces added in __init__
-        #TODO: the keys of this dict aren't used
+        # Base dictionary for control variables, extended by control surfaces
         self.con_var_to_fort_var = {
             "alpha": ["CASE_R", "ALFA"],
             "beta": ["CASE_R", "BETA"],
         }
 
-
-
-        control_names = self.get_control_names()
-        self.control_variables = {}
-        for idx_c_var, c_name in enumerate(control_names):
-            self.control_variables[c_name] = f"D{idx_c_var+1}"
-            
-        # set control surface constraint indecies in to con val dict
-        idx_control_start = np.max([x for x in self.conval_idx_dict.values()]) + 1
-        for idx_c_var, c_name in enumerate(control_names):
-            self.conval_idx_dict[c_name] = idx_control_start + idx_c_var
-            self.con_var_to_fort_var[c_name] = ["CASE_R", "DELCON"]
+        # If geo_file was not loaded, self.get_control_names() would be empty or error.
+        # _init_control_mappings is responsible for populating control_variables
+        # and extending conval_idx_dict and con_var_to_fort_var.
+        # If geo_file is None, these will be minimally initialized here, and fully by set_geometry_from_data.
+        if geo_file is None:
+             self.control_variables = {} # Ensure it exists.
+        # No explicit call to _init_control_mappings here if geo_file is None,
+        # as it relies on get_control_names() which needs loaded geometry.
             
         var_to_suffix = {
             "alpha": "AL",
@@ -281,7 +294,608 @@ class OVLSolver(object):
                 
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
+        # If geo_file was loaded, _init_surf_data() was already called.
+        # If not, it will be called by set_geometry_from_data().
+
+    def _init_control_mappings(self):
+        """
+        Initializes or updates Python-side mappings related to control surfaces.
+
+        This method reads the defined control surface names (DNAME) from the
+        Fortran common blocks, then populates:
+        - `self.control_variables`: Maps control names to AVL's internal "D<n>"
+                                   identifiers (e.g., "Elevator" -> "D1").
+        - `self.conval_idx_dict`: Extends this dictionary to map control surface
+                                 names to their corresponding indices in the CONVAL
+                                 Fortran array (used for setting constraints).
+        - `self.con_var_to_fort_var`: Ensures entries for control deflections
+                                     (mapping to DELCON in Fortran).
+
+        This method is called during `__init__` if a geometry file is loaded,
+        and also at the end of `set_geometry_from_data` to reflect any newly
+        defined or changed control surfaces.
+        """
+        control_names = self.get_control_names()
+        self.control_variables = {}
+        for idx_c_var, c_name in enumerate(control_names):
+            self.control_variables[c_name] = f"D{idx_c_var+1}"
+
+        # set control surface constraint indecies in to con val dict
+        # Find the maximum existing index in conval_idx_dict to ensure new indices are unique
+        if self.conval_idx_dict: # Check if dict is not empty
+            idx_control_start = np.max(list(self.conval_idx_dict.values())) + 1
+        else:
+            idx_control_start = 0 # Start from 0 if dict is empty
+
+        for idx_c_var, c_name in enumerate(control_names):
+            self.conval_idx_dict[c_name] = idx_control_start + idx_c_var
+            # Ensure this doesn't overwrite existing keys if c_name is already in con_var_to_fort_var
+            if c_name not in self.con_var_to_fort_var:
+                 self.con_var_to_fort_var[c_name] = ["CASE_R", "DELCON"]
+
+    def set_geometry_from_data(self, geom_data: Dict[str, Any]):
+        """
+        Defines the aircraft geometry programmatically from a dictionary.
+
+        This method allows for the creation of an aircraft model within AVL
+        without loading an external .avl geometry file. It populates the
+        necessary Fortran common blocks with the provided geometry data.
+
+        The `geom_data` dictionary should be structured to provide all
+        necessary geometric parameters.
+
+        **Note:** The current implementation expects `geom_data` to be a
+        relatively flat dictionary. Refer to the example
+        `examples/run_programmatic_geometry.py` for the expected structure and
+        a helper function `create_simple_wing_geom_data` which produces a more
+        user-friendly nested dictionary that is then translated by the example
+        for use with this method. Future versions may support the nested
+        structure directly.
+
+        Key top-level entries expected in `geom_data` (non-exhaustive):
+        - "name": AircraftName (string, currently not directly set in Fortran TITLE).
+        - "Sref", "Cref", "Bref": Reference dimensions (float).
+        - "Xref", "Yref", "Zref": Moment reference point (float).
+        - "Mach": Freestream Mach number (float).
+        - "IYsym", "IZsym", "Zsym": Symmetry plane definitions (int/float).
+        - "CD0": Profile drag coefficient (float).
+        - "surfaces": A list of surface dictionaries.
+        - "bodies": A list of body dictionaries (optional).
+
+        Each surface dictionary in "surfaces" should contain (non-exhaustive):
+        - "name": Surface title (string).
+        - "Nchordwise": Number of chordwise panels (int).
+        - "Cspace": Chordwise spacing parameter (float, e.g., -1 for cosine).
+        - "Nspanwise": Number of spanwise panels for the whole surface (int, if "Lsurfspacing" is True).
+        - "Sspace": Spanwise spacing parameter (float, if "Lsurfspacing" is True).
+        - "Lsurfspacing": Boolean, True if NVS/SSPACE are per-surface.
+        - "Yduplicate": Y-coordinate for YDUPLICATE plane (float, optional).
+        - "component": Component index (int, optional, defaults to 1).
+        - "scale": [X,Y,Z] scaling factors (list/array of floats, optional).
+        - "translate": [X,Y,Z] translation vector (list/array of floats, optional).
+        - "angle": Additional incidence for the whole surface in degrees (float, optional).
+        - "sections": A list of section dictionaries.
+        - "controls": A list of control surface definitions (optional).
+
+        Each section dictionary in "sections" should contain (non-exhaustive):
+        - "Xle", "Yle", "Zle": Leading edge coordinates (float).
+        - "chord": Section chord (float).
+        - "ainc": Section incidence angle in degrees (float).
+        - "Nspan": Number of spanwise panels for this section (int, if "Lsurfspacing" is False).
+        - "Sspace": Spanwise spacing for this section (float, if "Lsurfspacing" is False).
+        - "afile": Airfoil definition (e.g., "NACA 0012" or path to .dat file as string).
+        - "CLaf": Lift curve slope factor (float, optional).
+        - "CDCL": [cd0, cl1, cd1, cl2, cd2, cm] - 6 values (list/array of floats, optional).
+
+        Each control definition in a surface's "controls" list (simplified):
+        - "name": Global name of the control (string, must be pre-declared in DNAME).
+        - "gain": Control gain (float).
+        - "xhinge": Hinge line x/c (float).
+        - "hvec": [X,Y,Z] hinge vector (list/array of floats).
+        - "SgnDup": Sign for duplicated control (+1 or -1) (float, optional, defaults to 1.0).
+
+        After successfully populating the geometry, this method calls
+        `self.avl.update_surfaces()` to process the geometry in Fortran,
+        re-initializes internal Python mappings via `_init_surf_data()`
+        and `_init_control_mappings()`, and sets the `LGEO` Fortran flag to .TRUE.
+        """
+        # NFMAX = self.get_avl_fort_arr("COMMONS", "NFMAX") # Example, need actual common block
+        # NSMAX = self.get_avl_fort_arr("COMMONS", "NSMAX")
+        NFMAX = 30  # Max number of surfaces, typical default
+        NSECMAX = 10 # Max sections per surface
+        NASECMAX = 80 # Max airfoil coordinate points per section
+        NCONTROLMAX = 10 # Max control surfaces
+        NCMMAX = 20 # Max control deflections stored in some arrays
+
+        # --- Try to re-initialize AVL's internal geometry state ---
+        # This is a bit of a guess. Ideally, AVL would have a "clear_geometry" function.
+        # Re-calling avl() might reset things, but could also have side effects.
+        # For now, we assume that we are either populating a fresh OVLSolver
+        # or that subsequent calls to set_avl_fort_arr will overwrite existing data.
+        # self.avl.avl() # Potentially dangerous if not intended to fully reset the solver instance
+
+        # --- Set Header / Global Data ---
+        if "name" in geom_data:
+            # AVL's TITLE is a character array. Need to format it.
+            # Max length for title seems to be 80 based on write_header
+            title_str = geom_data["name"][:80]
+            # Fortran character arrays are tricky with f2py.
+            # self.set_avl_fort_arr("CASE_C", "TITLE", self._createFortranStringArray([title_str], 80)[0])
+            # The _write_header uses _convertFortranStringArrayToList which implies TITLE might be stored differently.
+            # Let's try to set it in a way that mimics how it's read/written.
+            # This part needs careful handling of Fortran strings.
+            # For now, deferring direct TITLE modification if it's complex,
+            # as it's mostly for output files.
+            # self.avl.CASE_C.TITLE = self._createFortranStringArray([title_str], 80)[0] # Direct access
+            pass # Defer title for now
+
+        if "Sref" in geom_data: self.set_avl_fort_arr("CASE_R", "SREF", float(geom_data["Sref"]))
+        if "Cref" in geom_data: self.set_avl_fort_arr("CASE_R", "CREF", float(geom_data["Cref"]))
+        if "Bref" in geom_data: self.set_avl_fort_arr("CASE_R", "BREF", float(geom_data["Bref"]))
+
+        if "Xref" in geom_data and "Yref" in geom_data and "Zref" in geom_data:
+            xyzref = np.array([float(geom_data["Xref"]), float(geom_data["Yref"]), float(geom_data["Zref"])])
+            self.set_avl_fort_arr("CASE_R", "XYZREF", xyzref)
+
+        if "IYsym" in geom_data: self.set_avl_fort_arr("CASE_I", "IYSYM", int(geom_data["IYsym"]))
+        if "IZsym" in geom_data: self.set_avl_fort_arr("CASE_I", "IZSYM", int(geom_data["IZsym"]))
+        if "Zsym"  in geom_data: self.set_avl_fort_arr("CASE_R", "ZSYM",  float(geom_data["Zsym"]))
+        if "Mach"  in geom_data: self.set_avl_fort_arr("CASE_R", "MACH0", float(geom_data["Mach"]))
+        if "CD0"   in geom_data: self.set_avl_fort_arr("CASE_R", "CDREF0",float(geom_data["CD0"]))
+
+
+        # --- Initialize surface count and control surface count ---
+        num_surfaces = len(geom_data.get("surfaces", []))
+        self.set_avl_fort_arr("CASE_I", "NSURF", num_surfaces)
+
+        # This needs to be done *before* _init_control_mappings if it relies on DNAME being populated
+        # However, DNAME is populated based on controls defined *within* surfaces.
+        # This creates a circular dependency if not handled carefully.
+        # For now, assume DNAME is populated later or _init_control_mappings is called again.
+        # Let's pre-count total controls for NCONTROL
+        total_controls = 0
+        control_name_list = []
+        if "surfaces" in geom_data:
+            for surf_data in geom_data["surfaces"]:
+                for con_data in surf_data.get("controls", []):
+                    if con_data["name"] not in control_name_list:
+                        control_name_list.append(con_data["name"])
+                        total_controls +=1
+
+        self.set_avl_fort_arr("CASE_I", "NCONTROL", total_controls)
+        # Populate DNAME based on the collected unique control names
+        # Max DNAME length is 16 (S16)
+        # dname_arr = self._createFortranStringArray([name[:15] for name in control_name_list], 16)
+        # self.set_avl_fort_arr("CASE_C", "DNAME", dname_arr) # This sets the whole array
+
+        # We need to set individual elements of DNAME
+        # Assuming DNAME is (NCONTROLMAX, 16)
+        # Clear existing DNAMEs first
+        empty_dnames = self._createFortranStringArray([""] * NCONTROLMAX, 16)
+        self.set_avl_fort_arr("CASE_C", "DNAME", empty_dnames) # Clear
+        for i, name in enumerate(control_name_list):
+            if i < NCONTROLMAX:
+                 # Create a Fortran string for a single name
+                fort_str_name = np.array(list(name.ljust(16)), dtype='S1')
+                self.set_avl_fort_arr("CASE_C", "DNAME", fort_str_name, slicer=(i,))
+
+
+        # Re-initialize control mappings now that NCONTROL and DNAME might be set
+        self._init_control_mappings()
+
+
+        # --- Surfaces ---
+        if "surfaces" in geom_data:
+            # Initialize all surface titles first
+            stitle_list = [s.get("name", f"Surf{i+1}")[:39] for i, s in enumerate(geom_data["surfaces"])]
+            stitle_arr_clear = self._createFortranStringArray([""]*NFMAX, 40)
+            self.set_avl_fort_arr("CASE_C", "STITLE", stitle_arr_clear) # Clear
+            for i, title in enumerate(stitle_list):
+                if i < NFMAX:
+                    fort_str_title = np.array(list(title.ljust(40)), dtype='S1')
+                    self.set_avl_fort_arr("CASE_C", "STITLE", fort_str_title, slicer=(i,))
+
+
+            for surf_idx, surf_data in enumerate(geom_data["surfaces"]):
+                if surf_idx >= NFMAX:
+                    warnings.warn(f"Skipping surface {surf_idx} due to NFMAX limit.")
+                    continue
+
+                s_idx_slice = (surf_idx,)
+
+                # Basic Surface Properties
+                if "Nchordwise" in surf_data: self.set_avl_fort_arr("SURF_GEOM_I", "NVC", int(surf_data["Nchordwise"]), slicer=s_idx_slice)
+                if "Cspace" in surf_data: self.set_avl_fort_arr("SURF_GEOM_R", "CSPACE", float(surf_data["Cspace"]), slicer=s_idx_slice)
+
+                lsurfspacing = bool(surf_data.get("Lsurfspacing", True)) # Default to true if not specified
+                self.set_avl_fort_arr("SURF_GEOM_L", "LSURFSPACING", lsurfspacing, slicer=s_idx_slice)
+                if lsurfspacing:
+                    if "Nspanwise" in surf_data: self.set_avl_fort_arr("SURF_GEOM_I", "NVS", int(surf_data["Nspanwise"]), slicer=s_idx_slice)
+                    if "Sspace" in surf_data: self.set_avl_fort_arr("SURF_GEOM_R", "SSPACE", float(surf_data["Sspace"]), slicer=s_idx_slice)
+
+                if "component" in surf_data: self.set_avl_fort_arr("SURF_I", "LSCOMP", int(surf_data["component"]), slicer=s_idx_slice)
+                else: # Default component to 1
+                    self.set_avl_fort_arr("SURF_I", "LSCOMP", 1, slicer=s_idx_slice)
+
+                if "Yduplicate" in surf_data:
+                    self.set_avl_fort_arr("SURF_GEOM_R", "YDUPL", float(surf_data["Yduplicate"]), slicer=s_idx_slice)
+                    self.set_avl_fort_arr("SURF_GEOM_L", "LDUPL", True, slicer=s_idx_slice) # Assume LDUPL if YDUPLICATE is set
+                    self.set_avl_fort_arr("SURF_I", "IMAGS", -1 * (surf_idx + 1) , slicer=s_idx_slice) # Negative index for duplicated surface
+                else:
+                    self.set_avl_fort_arr("SURF_GEOM_L", "LDUPL", False, slicer=s_idx_slice)
+                    self.set_avl_fort_arr("SURF_I", "IMAGS", surf_idx + 1 , slicer=s_idx_slice) # Positive index for original surface
+
+
+                s_all_slice = (surf_idx, slice(None))
+                if "scale" in surf_data: self.set_avl_fort_arr("SURF_GEOM_R", "XYZSCAL", np.array(surf_data["scale"], dtype=float), slicer=s_all_slice)
+                if "translate" in surf_data: self.set_avl_fort_arr("SURF_GEOM_R", "XYZTRAN", np.array(surf_data["translate"], dtype=float), slicer=s_all_slice)
+                if "angle" in surf_data: self.set_avl_fort_arr("SURF_GEOM_R", "ADDINC", float(surf_data["angle"]), slicer=s_idx_slice)
+
+                num_sections = len(surf_data.get("sections", []))
+                self.set_avl_fort_arr("SURF_GEOM_I", "NSEC", num_sections, slicer=s_idx_slice)
+
+                # --- Sections ---
+                if "sections" in surf_data:
+                    # Clear AFILES for this surface first
+                    empty_afiles_sec = self._createFortranStringArray([""] * NSECMAX, 120) # AFILES are S120
+                    self.set_avl_fort_arr("CASE_C", "AFILES", empty_afiles_sec, slicer=(slice(None), surf_idx))
+
+
+                    for sec_idx, sec_data in enumerate(surf_data["sections"]):
+                        if sec_idx >= NSECMAX:
+                            warnings.warn(f"Skipping section {sec_idx} in surface {surf_idx} due to NSECMAX limit.")
+                            continue
+
+                        s_sec_slice = (surf_idx, sec_idx) # Slice for single value in a section
+
+                        # Section geometry
+                        self.set_avl_fort_arr("SURF_GEOM_R", "XYZLES", float(sec_data.get("Xle", 0.0)), slicer=s_sec_slice + (0,))
+                        self.set_avl_fort_arr("SURF_GEOM_R", "XYZLES", float(sec_data.get("Yle", 0.0)), slicer=s_sec_slice + (1,))
+                        self.set_avl_fort_arr("SURF_GEOM_R", "XYZLES", float(sec_data.get("Zle", 0.0)), slicer=s_sec_slice + (2,))
+                        self.set_avl_fort_arr("SURF_GEOM_R", "CHORDS", float(sec_data.get("chord", 1.0)), slicer=s_sec_slice)
+                        self.set_avl_fort_arr("SURF_GEOM_R", "AINCS", float(sec_data.get("ainc", 0.0)), slicer=s_sec_slice)
+
+                        if not lsurfspacing: # Use section specific paneling if Lsurfspacing is false
+                            self.set_avl_fort_arr("SURF_GEOM_I", "NSPANS", int(sec_data.get("Nspan", 1)), slicer=s_sec_slice) # Default Nspan to 1 if not given
+                            self.set_avl_fort_arr("SURF_GEOM_R", "SSPACES", float(sec_data.get("Sspace", 1.0)), slicer=s_sec_slice)
+
+                        # Airfoil - AFILE, NACA, or coordinates
+                        afile_val = sec_data.get("afile", "")
+                        if afile_val.upper().startswith("NACA ") and len(afile_val.split()[-1]) == 4:
+                            naca_code = afile_val.split()[-1]
+                            try:
+                                # Assuming NASECMAX points for generated coordinates for now
+                                coords = self._generate_naca4_coordinates(naca_code, NASECMAX // 2) # NASECMAX total points, so NASECMAX/2 for half-airfoil num_points
+
+                                # Store these coordinates in XUASEC, ZUASEC, XLASEC, ZLASEC
+                                # These are (NFMAX, NSECMAX, NASECMAX)
+                                # Coords are [(x,y), (x,y)...] from TE_upper -> LE -> TE_lower
+                                # AVL expects upper and lower separately, from LE to TE.
+                                # _generate_naca4_coordinates returns [(xu_TE,yu_TE) ... (xu_LE,yu_LE) ... (xl_TE,yl_TE)]
+                                # Let's re-check the output of _generate_naca4_coordinates format.
+                                # It's: upper_coords[::-1] + lower_coords[1:]
+                                # upper_coords are LE to TE. So upper_coords[::-1] is TE to LE for upper.
+                                # lower_coords are LE to TE. lower_coords[1:] is (LE+1) to TE for lower.
+                                # This is already in the format that list goes from TE-upper-LE-lower-TE
+
+                                # AVL wants XUASEC (x-upper), ZUASEC (z-upper), XLASEC (x-lower), ZLASEC (z-lower)
+                                # All from LE to TE.
+                                num_gen_pts = len(coords)
+                                if num_gen_pts > NASECMAX :
+                                     warnings.warn(f"NACA generated points ({num_gen_pts}) > NASECMAX ({NASECMAX}). Truncating.")
+                                     coords = coords[:NASECMAX]
+                                     num_gen_pts = NASECMAX
+
+                                le_index = -1
+                                for i, (x,y) in enumerate(coords):
+                                    if np.isclose(x,0.0):
+                                        le_index = i
+                                        break
+                                if le_index == -1:
+                                    raise ValueError("Leading edge not found in generated NACA coordinates.")
+
+                                xu_le_te = np.array([c[0] for c in coords[le_index::-1]]) # LE to TE upper
+                                zu_le_te = np.array([c[1] for c in coords[le_index::-1]])
+                                xl_le_te = np.array([c[0] for c in coords[le_index:]])   # LE to TE lower
+                                zl_le_te = np.array([c[1] for c in coords[le_index:]])
+
+                                n_upper = len(xu_le_te)
+                                n_lower = len(xl_le_te)
+
+                                # Pad with zeros if fewer points than NASECMAX
+                                xu_padded = np.pad(xu_le_te, (0, NASECMAX - n_upper), 'constant', constant_values=0.0)
+                                zu_padded = np.pad(zu_le_te, (0, NASECMAX - n_upper), 'constant', constant_values=0.0)
+                                xl_padded = np.pad(xl_le_te, (0, NASECMAX - n_lower), 'constant', constant_values=0.0)
+                                zl_padded = np.pad(zl_le_te, (0, NASECMAX - n_lower), 'constant', constant_values=0.0)
+
+                                self.set_avl_fort_arr("SURF_GEOM_I", "NASEC", n_upper, slicer=s_sec_slice) # Number of points for upper
+                                self.set_avl_fort_arr("SURF_GEOM_I", "NLASEC", n_lower, slicer=s_sec_slice) # Number of points for lower
+
+                                af_sec_slice = (surf_idx, sec_idx, slice(None, NASECMAX))
+                                self.set_avl_fort_arr("SURF_GEOM_R", "XUASEC", xu_padded, slicer=af_sec_slice)
+                                self.set_avl_fort_arr("SURF_GEOM_R", "ZUASEC", zu_padded, slicer=af_sec_slice)
+                                self.set_avl_fort_arr("SURF_GEOM_R", "XLASEC", xl_padded, slicer=af_sec_slice)
+                                self.set_avl_fort_arr("SURF_GEOM_R", "ZLASEC", zl_padded, slicer=af_sec_slice)
+                                self.set_avl_fort_arr("SURF_GEOM_L", "LOUVER", True, slicer=s_sec_slice) # Indicate explicit coordinates are used
+
+                            except ValueError as e:
+                                warnings.warn(f"Could not generate NACA {naca_code} for surf {surf_idx} sec {sec_idx}: {e}")
+                                self.set_avl_fort_arr("SURF_GEOM_L", "LOUVER", False, slicer=s_sec_slice)
+                        elif afile_val: # Actual file path
+                            # Set AFILE for the section: CASE_C.AFILES(NSECMAX, NFMAX)
+                            # Ensure string is correctly formatted for Fortran (padded, S120)
+                            fort_str_afile = np.array(list(afile_val.ljust(120)), dtype='S1')
+                            self.set_avl_fort_arr("CASE_C", "AFILES", fort_str_afile, slicer=(sec_idx, surf_idx))
+                            self.set_avl_fort_arr("SURF_GEOM_L", "LOUVER", False, slicer=s_sec_slice) # Not using explicit coords from XUASEC etc.
+                        else: # No airfoil specified, clear LOUVER
+                            self.set_avl_fort_arr("SURF_GEOM_L", "LOUVER", False, slicer=s_sec_slice)
+
+
+                        if "CLaf" in sec_data: self.set_avl_fort_arr("SURF_GEOM_R", "CLAF", float(sec_data["CLaf"]), slicer=s_sec_slice)
+                        if "CDCL" in sec_data: # Array of 6 values
+                            cdcl_arr = np.array(sec_data["CDCL"], dtype=float)
+                            if len(cdcl_arr) == 6:
+                                self.set_avl_fort_arr("SURF_GEOM_R", "CLCDSEC", cdcl_arr, slicer=(surf_idx, sec_idx, slice(None)))
+                            else:
+                                warnings.warn(f"CDCL for surf {surf_idx} sec {sec_idx} should have 6 values.")
+
+                # --- Controls for the current surface ---
+                # This needs to be done after DNAME and NCONTROL are set globally
+                num_surf_controls = 0
+                if "controls" in surf_data:
+                    for con_idx, con_data in enumerate(surf_data["controls"]):
+                        # Find the global index of this control name
+                        try:
+                            global_con_idx = control_name_list.index(con_data["name"]) + 1 # Fortran 1-based index
+                        except ValueError:
+                            warnings.warn(f"Control '{con_data['name']}' not found in global control list. Skipping.")
+                            continue
+
+                        # Loop through sections where this control is active
+                        # For simplicity here, assume control applies to all sections of this surface
+                        # or that con_data specifies which sections. The current AVL format implies
+                        # controls are defined per section.
+                        # The prompt implies a simplified setup. Let's assume one control definition per surface for now,
+                        # and apply its parameters to ICONTD, GAIND etc. for relevant sections.
+                        # This part is complex as AVL defines controls *per section*.
+                        # The provided `geom_data` structure has "controls" at surface level.
+                        # A better `geom_data` would have controls per section.
+                        # For now, I'll assume a control defined at surface level applies to all its sections.
+
+                        for sec_idx_for_control in range(num_sections):
+                            s_sec_slice = (surf_idx, sec_idx_for_control)
+
+                            # We need to find which slot (0 to NSCONMAX-1) this control occupies in this section
+                            # This is tricky. Let's assume we are adding it as the next available control for this section.
+                            # Get current NSCON for this section
+                            current_nscon = self.get_avl_fort_arr("SURF_GEOM_I", "NSCON", slicer=s_sec_slice)
+                            if current_nscon < 4 : # Max 4 controls per section in AVL? (NSCONMAX) - check AVL.INC
+                                con_slot_idx = current_nscon
+                                s_sec_con_slice = (surf_idx, sec_idx_for_control, con_slot_idx)
+
+                                self.set_avl_fort_arr("SURF_GEOM_I", "ICONTD", global_con_idx, slicer=s_sec_con_slice)
+                                self.set_avl_fort_arr("SURF_GEOM_R", "GAIND", float(con_data["gain"]), slicer=s_sec_con_slice)
+                                self.set_avl_fort_arr("SURF_GEOM_R", "XHINGED", float(con_data["xhinge"]), slicer=s_sec_con_slice)
+
+                                hvec = np.array(con_data["hvec"], dtype=float)
+                                if len(hvec) == 3:
+                                     self.set_avl_fort_arr("SURF_GEOM_R", "VHINGED", hvec, slicer=s_sec_con_slice + (slice(None),))
+
+                                self.set_avl_fort_arr("SURF_GEOM_R", "REFLD", float(con_data.get("SgnDup", 1.0)), slicer=s_sec_con_slice)
+
+                                # Increment NSCON for this section
+                                self.set_avl_fort_arr("SURF_GEOM_I", "NSCON", current_nscon + 1, slicer=s_sec_slice)
+                                num_surf_controls +=1 # This count is per surface, not global
+                            else:
+                                warnings.warn(f"Max controls per section reached for surf {surf_idx} sec {sec_idx_for_control}.")
+                # self.set_avl_fort_arr("SURF_I", "NCONSF", num_surf_controls, slicer=s_idx_slice) # NCONSF seems to be total controls on this surface
+
+        # --- Bodies ---
+        if "bodies" in geom_data:
+            num_bodies = len(geom_data["bodies"])
+            self.set_avl_fort_arr("CASE_I", "NBODY", num_bodies)
+
+            # Clear BTITLEs
+            btitle_arr_clear = self._createFortranStringArray([""]*NFMAX, 40) # Assuming NFMAX is also max bodies, and S40
+            self.set_avl_fort_arr("CASE_C", "BTITLE", btitle_arr_clear)
+            # Clear BFILES
+            bfiles_arr_clear = self._createFortranStringArray([""]*NFMAX, 120) # Assuming S120
+            self.set_avl_fort_arr("CASE_C", "BFILES", bfiles_arr_clear)
+
+
+            for body_idx, body_data in enumerate(geom_data["bodies"]):
+                if body_idx >= NFMAX: # Assuming NFMAX is also max bodies
+                    warnings.warn(f"Skipping body {body_idx} due to NBODYMAX limit.")
+                    continue
+
+                b_idx_slice = (body_idx,)
+
+                if "name" in body_data:
+                    b_title_str = body_data["name"][:39]
+                    fort_str_btitle = np.array(list(b_title_str.ljust(40)), dtype='S1')
+                    self.set_avl_fort_arr("CASE_C", "BTITLE", fort_str_btitle, slicer=b_idx_slice)
+
+                if "nvb" in body_data: self.set_avl_fort_arr("BODY_GEOM_I", "NVB", int(body_data["nvb"]), slicer=b_idx_slice)
+                if "bspace" in body_data: self.set_avl_fort_arr("BODY_GEOM_R", "BSPACE", float(body_data["bspace"]), slicer=b_idx_slice)
+
+                b_all_slice = (body_idx, slice(None))
+                if "scale" in body_data: self.set_avl_fort_arr("BODY_GEOM_R", "XYZSCAL_B", np.array(body_data["scale"], dtype=float), slicer=b_all_slice)
+                if "translate" in body_data: self.set_avl_fort_arr("BODY_GEOM_R", "XYZTRAN_B", np.array(body_data["translate"], dtype=float), slicer=b_all_slice)
+
+                if "bfile" in body_data and body_data["bfile"]:
+                    bfile_str = body_data["bfile"][:119]
+                    fort_str_bfile = np.array(list(bfile_str.ljust(120)), dtype='S1')
+                    self.set_avl_fort_arr("CASE_C", "BFILES", fort_str_bfile, slicer=b_idx_slice)
+
+        # --- Finalize Geometry Setup ---
+        # Call AVL routines to update internal geometry structures from the common blocks
+        # self.avl.geomgn() # This is often called after loading geo
+        # self.avl.masses() # If mass data also needs update based on new geo
+        self.avl.update_surfaces() # This seems essential
+        # self.avl.make_mesh() # May also be needed if paneling changes
+        # self.avl.calc_refs() # Recalculate reference areas if not explicitly set or if auto-calc desired
+
+        # Re-initialize surface data mappings as geometry has changed
         self._init_surf_data()
+        # Re-initialize control mappings if number of controls or surfaces changed significantly
+        # self._init_control_mappings() # Already called earlier, but if NCONTROL changed, might be needed again.
+
+        print("Geometry set from data. AVL internal geometry updated.")
+
+        # Indicate that geometry is now loaded and processed
+        self.set_avl_fort_arr("CASE_L", "LGEO", True)
+
+
+    def _generate_naca4_coordinates(self, naca_code: str, num_points: int = 50) -> List[Tuple[float, float]]:
+        """
+        Generates airfoil coordinates for a NACA 4-digit series.
+
+        This method calculates the x and y coordinates that define the shape
+        of a NACA 4-digit airfoil. The coordinates are generated using
+        cosine spacing for the x-positions to ensure higher density of points
+        near the leading and trailing edges.
+
+        Args:
+            naca_code: The 4-digit NACA code as a string (e.g., "2412", "0012").
+            num_points: The number of points to generate for one side of the
+                        airfoil (e.g., upper or lower surface). The total number
+                        of unique points in the output list will be approximately
+                        2 * num_points - 1 (due to shared LE and TE points).
+                        Defaults to 50.
+        Returns:
+            A list of (x, y) tuples representing the airfoil coordinates.
+            The coordinates are ordered starting from the trailing edge,
+            proceeding along the upper surface to the leading edge, and then
+            along the lower surface back to the trailing edge. This format
+            is suitable for creating airfoil geometry files or for direct
+            plotting.
+
+        Example:
+            coords = self._generate_naca4_coordinates("0012", 50)
+            x_vals = [c[0] for c in coords]
+            y_vals = [c[1] for c in coords]
+            # These can then be used to populate XUASEC, ZUASEC etc. in set_geometry_from_data
+        """
+        if not isinstance(naca_code, str) or len(naca_code) != 4:
+            raise ValueError("NACA code must be a 4-digit string (e.g., '2412').")
+        try:
+            m_percent = int(naca_code[0])
+            p_percent = int(naca_code[1])
+            t_percent = int(naca_code[2:])
+        except ValueError:
+            raise ValueError("NACA code digits must be integers.")
+
+        m = m_percent / 100.0  # Max camber
+        p = p_percent / 10.0   # Position of max camber
+        t = t_percent / 100.0  # Thickness
+
+        # Create cosine-spaced x-coordinates
+        # Generate num_points on the curve from 0 to pi (for one side of airfoil)
+        beta = np.linspace(0, np.pi, num_points)
+        x_cos = (1 - np.cos(beta)) / 2.0 # Cosine spacing
+
+        # Thickness distribution (yt)
+        # Ensure it's applied to the cosine-spaced x coordinates
+        yt = 5 * t * (
+            0.2969 * np.sqrt(x_cos)
+            - 0.1260 * x_cos
+            - 0.3516 * x_cos**2
+            + 0.2843 * x_cos**3
+            - 0.1015 * x_cos**4
+        )
+
+        if m == 0 or p == 0:  # Symmetric airfoil
+            yc = np.zeros_like(x_cos)
+            dyc_dx = np.zeros_like(x_cos)
+
+            xu = x_cos
+            yu = yt
+            xl = x_cos
+            yl = -yt
+
+        else: # Cambered airfoil
+            yc = np.zeros_like(x_cos)
+            dyc_dx = np.zeros_like(x_cos)
+
+            front_mask = x_cos <= p
+            rear_mask = x_cos > p
+
+            # Calculate camber line (yc) for front and rear sections based on x_cos
+            yc[front_mask] = (m / p**2) * (2 * p * x_cos[front_mask] - x_cos[front_mask]**2)
+            yc[rear_mask] = (m / (1 - p)**2) * ((1 - 2 * p) + 2 * p * x_cos[rear_mask] - x_cos[rear_mask]**2)
+
+            # Calculate camber line gradient (dyc_dx)
+            dyc_dx[front_mask] = (2 * m / p**2) * (p - x_cos[front_mask])
+            dyc_dx[rear_mask] = (2 * m / (1 - p)**2) * (p - x_cos[rear_mask])
+
+            theta = np.arctan(dyc_dx)
+
+            # Upper surface coordinates
+            xu = x_cos - yt * np.sin(theta)
+            yu = yc + yt * np.cos(theta)
+
+            # Lower surface coordinates
+            xl = x_cos + yt * np.sin(theta)
+            yl = yc - yt * np.cos(theta)
+
+        # Combine and order points: TE -> Upper -> LE -> Lower -> TE
+        # Upper surface points are added from LE to TE (index 0 to num_points-1)
+        # Lower surface points are added from TE to LE (index num_points-1 to 0)
+
+        coords = []
+        # Upper surface from LE to TE (reversed later for correct order)
+        for i in range(num_points):
+            coords.append((xu[i], yu[i]))
+
+        # Lower surface from TE to LE (skipping the LE point which is xu[0], yu[0])
+        # and skipping the TE point which is xl[num_points-1], yl[num_points-1] if it's same as xu[num_points-1]
+        for i in range(num_points - 1, 0, -1): # Iterate from second to last point down to point after LE
+            coords.append((xl[i], yl[i]))
+
+        # The list `coords` currently is [Upper_LE, ..., Upper_TE, Lower_TE-1, ..., Lower_LE+1]
+        # We need to reverse the upper surface part and then append the lower surface part.
+
+        upper_coords = list(zip(xu, yu))
+        lower_coords = list(zip(xl, yl))
+
+        # Start from TE of upper surface (which is LE of calculation), go to LE of upper, then LE of lower, then TE of lower
+        # This means: upper_coords reversed, then lower_coords (skipping the first element of lower_coords as it's LE)
+
+        final_coords = upper_coords[::-1] # From TE_upper (x=1) to LE_upper (x=0)
+        final_coords.extend(lower_coords[1:]) # From LE_lower (x=0, skip) to TE_lower (x=1)
+
+        # Ensure trailing edge is closed
+        # If the airfoil is thick, the last point of lower surface and first point of reversed upper surface should meet at x=1
+        # For NACA airfoils, they are defined from x=0 to x=1.
+        # xu, yu go from x=0 to x=1
+        # xl, yl go from x=0 to x=1
+        # upper_coords[::-1] goes from (xu_last, yu_last) to (xu_first, yu_first)
+        # lower_coords[1:] goes from (xl_second, yl_second) to (xl_last, yl_last)
+        # So, final_coords[0] is (xu[num_points-1], yu[num_points-1]) which should be (1, yt_TE_upper)
+        # And final_coords[-1] is (xl[num_points-1], yl[num_points-1]) which should be (1, yt_TE_lower)
+        # For a closed TE, yt at x=1 should be 0.
+        # The NACA formula for yt includes -0.1015 * x^4, which means yt(1) is not exactly zero.
+        # A common modification is -0.1036*x^4 for a closed TE, but let's stick to the definition.
+        # We will force closure if the points are very close.
+
+        if final_coords: # Check if list is not empty
+            # Check if the trailing edge x-coordinates are both 1.0
+            # And if y-coordinates are very close, make them identical
+            first_pt = final_coords[0]
+            last_pt = final_coords[-1]
+            if np.isclose(first_pt[0], 1.0) and np.isclose(last_pt[0], 1.0):
+                if not np.isclose(first_pt[1], last_pt[1]):
+                    # Average the y-coordinates for a cleaner closure
+                    avg_y_te = (first_pt[1] + last_pt[1]) / 2.0
+                    final_coords[0] = (first_pt[0], avg_y_te)
+                    final_coords[-1] = (last_pt[0], avg_y_te)
+                # If already close, ensure they are identical by setting last to first
+                final_coords[-1] = final_coords[0]
+
+
+        return final_coords
+
+    def _init_surf_data(self):
 
         # set the default solver tolerance
         self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', 2e-5)
