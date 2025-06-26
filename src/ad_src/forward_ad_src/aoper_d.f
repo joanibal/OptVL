@@ -49,6 +49,8 @@ C
       INTRINSIC ABS
       REAL(kind=avl_real) abs0
       REAL(kind=avl_real) abs1
+      REAL(kind=avl_real) abs2
+      REAL(kind=avl_real) abs2_diff
       INTEGER ii1
       REAL(kind=avl_real) temp
 C
@@ -350,9 +352,15 @@ C      &    '    (  > 1 if spirally stable )')
       END IF
 C apply the facotors to the outputs as done in the print statements of DERMATS
       IF (abs1 .GT. 0.0001) THEN
-        rr_diff = (cntot_be_diff-cntot_be*crtot_be_diff/crtot_be)/
-     +    crtot_be
-        rr = cntot_be/crtot_be
+        IF (crtot_be .GE. 0.) THEN
+          abs2_diff = crtot_be_diff
+          abs2 = crtot_be
+        ELSE
+          abs2_diff = -crtot_be_diff
+          abs2 = -crtot_be
+        END IF
+        rr_diff = (cntot_be_diff-cntot_be*abs2_diff/abs2)/abs2
+        rr = cntot_be/abs2
 C        WRITE(LU,8402) BB 
 C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
 C      &    '    (  > 1 if spirally stable )')

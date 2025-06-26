@@ -50,6 +50,8 @@ C
       INTRINSIC ABS
       REAL(kind=avl_real) abs0
       REAL(kind=avl_real) abs1
+      REAL(kind=avl_real) abs2
+      REAL(kind=avl_real) abs2_diff
       REAL(kind=8) temp_diff
       INTEGER ii1
       REAL(kind=avl_real) temp_diff0
@@ -162,6 +164,13 @@ C
       END IF
 C apply the facotors to the outputs as done in the print statements of DERMATS
       IF (abs1 .GT. 0.0001) THEN
+        IF (crtot_be .GE. 0.) THEN
+          abs2 = crtot_be
+          CALL PUSHCONTROL1B(0)
+        ELSE
+          abs2 = -crtot_be
+          CALL PUSHCONTROL1B(1)
+        END IF
         CALL PUSHCONTROL1B(0)
       ELSE
         CALL PUSHCONTROL1B(1)
@@ -226,8 +235,14 @@ C apply the facotors to the outputs as done in the print statements of DERMATS
       crtot_al_diff = dir*crtot_al_diff
       CALL POPCONTROL1B(branch)
       IF (branch .EQ. 0) THEN
-        cntot_be_diff = cntot_be_diff + rr_diff/crtot_be
-        crtot_be_diff = crtot_be_diff - cntot_be*rr_diff/crtot_be**2
+        cntot_be_diff = cntot_be_diff + rr_diff/abs2
+        abs2_diff = -(cntot_be*rr_diff/abs2**2)
+        CALL POPCONTROL1B(branch)
+        IF (branch .EQ. 0) THEN
+          crtot_be_diff = crtot_be_diff + abs2_diff
+        ELSE
+          crtot_be_diff = crtot_be_diff - abs2_diff
+        END IF
         rr_diff = 0.D0
       END IF
       CALL POPCONTROL1B(branch)
