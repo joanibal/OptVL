@@ -152,7 +152,7 @@ C  SM = (XNP - XYZREF(1))/CREF This is the same as below
         abs0 = -(crtot_rz*cntot_be)
       END IF
 C
-      IF (abs0 .GT. 0.0001) THEN
+      IF (abs0 .GT. 0.0) THEN
         CALL PUSHCONTROL1B(1)
       ELSE
         CALL PUSHCONTROL1B(0)
@@ -163,7 +163,7 @@ C
         abs1 = -crtot_be
       END IF
 C apply the facotors to the outputs as done in the print statements of DERMATS
-      IF (abs1 .GT. 0.0001) THEN
+      IF (abs1 .GT. 0.0) THEN
         IF (crtot_be .GE. 0.) THEN
           abs2 = crtot_be
           CALL PUSHCONTROL1B(0)

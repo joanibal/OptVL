@@ -274,7 +274,7 @@ class OVLSolver(object):
             "pitch rate": "RY",
             "yaw rate": "RZ",
             }
-        self.case_stab_derivs_to_fort_var = { "spiral parameter": ['CASE_R', "BB"], "roll parameter": ['CASE_R', "RR"], "static margin": ['CASE_R', "SM"], "neutral point": ["CASE_R", "XNP"]}
+        self.case_stab_derivs_to_fort_var = { "spiral parameter": ['CASE_R', "BB"], "lateral parameter": ['CASE_R', "RR"], "static margin": ['CASE_R', "SM"], "neutral point": ["CASE_R", "XNP"]}
         for func in ["CL", "CD", "CY", "CR", "CM", "CN"]:
             for var in var_to_suffix:
                 self.case_stab_derivs_to_fort_var[self._get_deriv_key(var, func)] = ["CASE_R", f"{func}TOT_{var_to_suffix[var]}"]

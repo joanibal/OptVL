@@ -1913,13 +1913,13 @@ C        WRITE(*,8401) XNP
  8401  FORMAT(/'Neutral point  Xnp =', F11.6)
       ENDIF
 C
-      IF(ABS(CRTOT_RZ*CNTOT_BE) .GT. 0.0001) THEN
+      IF(ABS(CRTOT_RZ*CNTOT_BE) .GT. 0.0) THEN
        BB = CRTOT_BE*CNTOT_RZ / (CRTOT_RZ*CNTOT_BE)
 C        WRITE(LU,8402) BB 
 C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
 C      &    '    (  > 1 if spirally stable )')
       ENDIF
-      IF(ABS(CRTOT_BE) .GT. 0.0001) THEN
+      IF(ABS(CRTOT_BE) .GT. 0.0) THEN
        RR = CNTOT_BE/abs(CRTOT_BE)
 C        WRITE(LU,8402) BB 
 C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
