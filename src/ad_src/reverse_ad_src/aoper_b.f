@@ -134,9 +134,17 @@ C
      +  )*vinf_b(3)
       cntot_rx = cnsax_u(4)*wrot_rx(1) + cnsax_u(6)*wrot_rx(3)
       cntot_ry = cnsax_u(5)
+C apply the facotors to the outputs as done in the print statements of DERMATS
       cntot_rz = cnsax_u(6)*wrot_rz(3) + cnsax_u(4)*wrot_rz(1)
 C
 C        
+C
+      crtot_be = dir*crtot_be
+      cntot_be = dir*cntot_be
+      CALL PUSHREAL8(crtot_rz)
+      crtot_rz = dir*crtot_rz*2.0/bref
+      CALL PUSHREAL8(cntot_rz)
+      cntot_rz = dir*cntot_rz*2.0/bref
 C
       IF (cltot_al .NE. 0.0) THEN
 C  XNP = XYZREF(1) - CREF*CMTOT_AL/CLTOT_AL
@@ -162,7 +170,6 @@ C
       ELSE
         abs1 = -crtot_be
       END IF
-C apply the facotors to the outputs as done in the print statements of DERMATS
       IF (abs1 .GT. 0.0) THEN
         IF (crtot_be .GE. 0.) THEN
           abs2 = crtot_be
@@ -171,70 +178,6 @@ C apply the facotors to the outputs as done in the print statements of DERMATS
           abs2 = -crtot_be
           CALL PUSHCONTROL1B(1)
         END IF
-        CALL PUSHCONTROL1B(0)
-      ELSE
-        CALL PUSHCONTROL1B(1)
-      END IF
-      temp_diff1 = dir*2.0*cntot_rz_diff/bref
-      cntot_rz_diff = temp_diff1
-      bref_diff = -(cntot_rz*temp_diff1/bref)
-      temp_diff1 = dir*2.0*cntot_ry_diff/cref
-      cntot_ry_diff = temp_diff1
-      cref_diff = -(cntot_ry*temp_diff1/cref)
-      temp_diff1 = dir*2.0*cntot_rx_diff/bref
-      cntot_rx_diff = temp_diff1
-      bref_diff = bref_diff - cntot_rx*temp_diff1/bref
-      temp_diff1 = 2.0*cmtot_rz_diff/bref
-      cmtot_rz_diff = temp_diff1
-      bref_diff = bref_diff - cmtot_rz*temp_diff1/bref
-      temp_diff1 = 2.0*cmtot_ry_diff/cref
-      cmtot_ry_diff = temp_diff1
-      cref_diff = cref_diff - cmtot_ry*temp_diff1/cref
-      temp_diff1 = 2.0*cmtot_rx_diff/bref
-      cmtot_rx_diff = temp_diff1
-      bref_diff = bref_diff - cmtot_rx*temp_diff1/bref
-      temp_diff1 = dir*2.0*crtot_rz_diff/bref
-      crtot_rz_diff = temp_diff1
-      bref_diff = bref_diff - crtot_rz*temp_diff1/bref
-      temp_diff1 = dir*2.0*crtot_ry_diff/cref
-      crtot_ry_diff = temp_diff1
-      cref_diff = cref_diff - crtot_ry*temp_diff1/cref
-      temp_diff1 = dir*2.0*crtot_rx_diff/bref
-      crtot_rx_diff = temp_diff1
-      bref_diff = bref_diff - crtot_rx*temp_diff1/bref
-      temp_diff1 = 2.0*cytot_rz_diff/bref
-      cytot_rz_diff = temp_diff1
-      bref_diff = bref_diff - cytot_rz*temp_diff1/bref
-      temp_diff1 = 2.0*cytot_ry_diff/cref
-      cytot_ry_diff = temp_diff1
-      cref_diff = cref_diff - cytot_ry*temp_diff1/cref
-      temp_diff1 = 2.0*cytot_rx_diff/bref
-      cytot_rx_diff = temp_diff1
-      bref_diff = bref_diff - cytot_rx*temp_diff1/bref
-      temp_diff1 = 2.0*cdtot_rz_diff/bref
-      cdtot_rz_diff = temp_diff1
-      bref_diff = bref_diff - cdtot_rz*temp_diff1/bref
-      temp_diff1 = 2.0*cdtot_ry_diff/cref
-      cdtot_ry_diff = temp_diff1
-      cref_diff = cref_diff - cdtot_ry*temp_diff1/cref
-      temp_diff1 = 2.0*cdtot_rx_diff/bref
-      cdtot_rx_diff = temp_diff1
-      bref_diff = bref_diff - cdtot_rx*temp_diff1/bref
-      temp_diff1 = 2.0*cltot_rz_diff/bref
-      cltot_rz_diff = temp_diff1
-      bref_diff = bref_diff - cltot_rz*temp_diff1/bref
-      temp_diff1 = 2.0*cltot_ry_diff/cref
-      cltot_ry_diff = temp_diff1
-      cref_diff = cref_diff - cltot_ry*temp_diff1/cref
-      temp_diff1 = 2.0*cltot_rx_diff/bref
-      cltot_rx_diff = temp_diff1
-      bref_diff = bref_diff - cltot_rx*temp_diff1/bref
-      cntot_be_diff = dir*cntot_be_diff
-      cntot_al_diff = dir*cntot_al_diff
-      crtot_be_diff = dir*crtot_be_diff
-      crtot_al_diff = dir*crtot_al_diff
-      CALL POPCONTROL1B(branch)
-      IF (branch .EQ. 0) THEN
         cntot_be_diff = cntot_be_diff + rr_diff/abs2
         abs2_diff = -(cntot_be*rr_diff/abs2**2)
         CALL POPCONTROL1B(branch)
@@ -257,6 +200,7 @@ C apply the facotors to the outputs as done in the print statements of DERMATS
       END IF
       CALL POPCONTROL1B(branch)
       IF (branch .EQ. 0) THEN
+        cref_diff = 0.D0
         DO ii1=1,3
           xyzref_diff(ii1) = 0.D0
         ENDDO
@@ -265,13 +209,73 @@ C apply the facotors to the outputs as done in the print statements of DERMATS
           xyzref_diff(ii1) = 0.D0
         ENDDO
         xyzref_diff(1) = xyzref_diff(1) + xnp_diff
-        cref_diff = cref_diff + sm*xnp_diff
+        cref_diff = sm*xnp_diff
         sm_diff = sm_diff + cref*xnp_diff
         cmtot_al_diff = cmtot_al_diff - sm_diff/cltot_al
         cltot_al_diff = cltot_al_diff + cmtot_al*sm_diff/cltot_al**2
         xnp_diff = 0.D0
         sm_diff = 0.D0
       END IF
+      CALL POPREAL8(cntot_rz)
+      temp_diff0 = dir*2.0*cntot_rz_diff/bref
+      cntot_rz_diff = temp_diff0
+      bref_diff = -(cntot_rz*temp_diff0/bref)
+      temp_diff0 = dir*2.0*cntot_ry_diff/cref
+      cntot_ry_diff = temp_diff0
+      cref_diff = cref_diff - cntot_ry*temp_diff0/cref
+      temp_diff0 = dir*2.0*cntot_rx_diff/bref
+      cntot_rx_diff = temp_diff0
+      bref_diff = bref_diff - cntot_rx*temp_diff0/bref
+      temp_diff0 = 2.0*cmtot_rz_diff/bref
+      cmtot_rz_diff = temp_diff0
+      bref_diff = bref_diff - cmtot_rz*temp_diff0/bref
+      temp_diff0 = 2.0*cmtot_ry_diff/cref
+      cmtot_ry_diff = temp_diff0
+      cref_diff = cref_diff - cmtot_ry*temp_diff0/cref
+      temp_diff0 = 2.0*cmtot_rx_diff/bref
+      cmtot_rx_diff = temp_diff0
+      bref_diff = bref_diff - cmtot_rx*temp_diff0/bref
+      CALL POPREAL8(crtot_rz)
+      temp_diff0 = dir*2.0*crtot_rz_diff/bref
+      crtot_rz_diff = temp_diff0
+      bref_diff = bref_diff - crtot_rz*temp_diff0/bref
+      temp_diff0 = dir*2.0*crtot_ry_diff/cref
+      crtot_ry_diff = temp_diff0
+      cref_diff = cref_diff - crtot_ry*temp_diff0/cref
+      temp_diff0 = dir*2.0*crtot_rx_diff/bref
+      crtot_rx_diff = temp_diff0
+      bref_diff = bref_diff - crtot_rx*temp_diff0/bref
+      temp_diff0 = 2.0*cytot_rz_diff/bref
+      cytot_rz_diff = temp_diff0
+      bref_diff = bref_diff - cytot_rz*temp_diff0/bref
+      temp_diff0 = 2.0*cytot_ry_diff/cref
+      cytot_ry_diff = temp_diff0
+      cref_diff = cref_diff - cytot_ry*temp_diff0/cref
+      temp_diff0 = 2.0*cytot_rx_diff/bref
+      cytot_rx_diff = temp_diff0
+      bref_diff = bref_diff - cytot_rx*temp_diff0/bref
+      temp_diff0 = 2.0*cdtot_rz_diff/bref
+      cdtot_rz_diff = temp_diff0
+      bref_diff = bref_diff - cdtot_rz*temp_diff0/bref
+      temp_diff0 = 2.0*cdtot_ry_diff/cref
+      cdtot_ry_diff = temp_diff0
+      cref_diff = cref_diff - cdtot_ry*temp_diff0/cref
+      temp_diff0 = 2.0*cdtot_rx_diff/bref
+      cdtot_rx_diff = temp_diff0
+      bref_diff = bref_diff - cdtot_rx*temp_diff0/bref
+      temp_diff0 = 2.0*cltot_rz_diff/bref
+      cltot_rz_diff = temp_diff0
+      bref_diff = bref_diff - cltot_rz*temp_diff0/bref
+      temp_diff0 = 2.0*cltot_ry_diff/cref
+      cltot_ry_diff = temp_diff0
+      cref_diff = cref_diff - cltot_ry*temp_diff0/cref
+      temp_diff0 = 2.0*cltot_rx_diff/bref
+      cltot_rx_diff = temp_diff0
+      bref_diff = bref_diff - cltot_rx*temp_diff0/bref
+      cntot_be_diff = dir*cntot_be_diff
+      cntot_al_diff = dir*cntot_al_diff
+      crtot_be_diff = dir*crtot_be_diff
+      crtot_al_diff = dir*crtot_al_diff
       DO ii1=1,numax
         cnsax_u_diff(ii1) = 0.D0
       ENDDO
