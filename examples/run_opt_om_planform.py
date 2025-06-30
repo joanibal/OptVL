@@ -15,7 +15,6 @@ class GeometryParametrizationComp(om.ExplicitComponent):
         self.add_input('c/4_sweep', val=0.0, desc='shear Sweep')
         self.add_input('taper_ratio', val=1.0, desc='taper ratio of the wing')
         self.add_input('dihedral', val=0.0, desc='dihedral of wing')
-        self.add_input('winglet_z', val=0.0, desc='dihedral of wing')
 
         # Output variables
         self.add_output('xles_out', copy_shape='yles_in', desc='Transformed xyz leading edge coordinates')
@@ -36,7 +35,6 @@ class GeometryParametrizationComp(om.ExplicitComponent):
         chords = ((tr - 1)*relative_span + 1)*chord_root
         
         zles = inputs['dihedral']*relative_span 
-        zles[-1] += inputs['winglet_z']
         
         # do some math to figure out the quarter chord sweeep
         outputs['xles_out'] = inputs['c/4_sweep']*relative_span + (chord_root - chords)/4
@@ -207,16 +205,18 @@ model.connect("geom_dvs.aincs", "differ_aincs.input_vec")
 
 # design variables modify the planform and twist distribution
 model.add_design_var("geom_param.c/4_sweep", lower=0.0, upper=3.0)
-model.add_design_var("geom_param.dihedral", lower=0.0, upper=3.0)
-# model.add_design_var("geom_param.winglet_z", lower=0.0, upper=1.0)
 model.add_design_var("geom_param.taper_ratio", lower=0.1, upper=1.0)
 model.add_design_var("geom_param.root_chord", lower=0.5, upper=4.0)
 model.add_design_var("ovlsolver.Wing:aincs", lower=-15, upper=15)
 
-model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
+model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e2)
 model.add_constraint("ovlsolver.static margin", upper=0.3, lower=0.1, scaler=1e1)
-model.add_constraint("ovlsolver.spiral parameter", lower=1.0, scaler=1e-1)
-# model.add_constraint("ovlsolver.lateral parameter", lower=0.33, upper=0.66, scaler=1e0)
+
+# this spiral parameter makes the problem harder to solve but more realistic 
+# model.add_constraint("ovlsolver.spiral parameter", lower=1.0, scaler=1e0)
+
+# you can optionally add dihedral as a design variable too 
+# model.add_design_var("geom_param.dihedral", lower=0.0, upper=0.5)
 
 
 # make sure CL stays slightly positive to avoid 
@@ -255,5 +255,5 @@ prob.setup(mode='rev')
 prob.run_driver()
 om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 
-prob.run_model()
-prob.check_totals()
+# prob.run_model()
+# prob.check_totals()
