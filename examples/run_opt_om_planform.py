@@ -14,9 +14,11 @@ class GeometryParametrizationComp(om.ExplicitComponent):
         self.add_input('root_chord', val=1.0, desc='Baseline y leading edge coordinates')
         self.add_input('c/4_sweep', val=0.0, desc='shear Sweep')
         self.add_input('taper_ratio', val=1.0, desc='taper ratio of the wing')
+        self.add_input('dihedral', val=0.0, desc='dihedral of wing')
 
         # Output variables
         self.add_output('xles_out', copy_shape='yles_in', desc='Transformed xyz leading edge coordinates')
+        self.add_output('zles_out', copy_shape='yles_in', desc='Transformed xyz leading edge coordinates')
         self.add_output('chords_out', copy_shape='yles_in', desc='Transformed chord array')
 
         # Finite difference partials
@@ -32,8 +34,11 @@ class GeometryParametrizationComp(om.ExplicitComponent):
         tr = inputs['taper_ratio']
         chords = ((tr - 1)*relative_span + 1)*chord_root
         
+        zles = inputs['dihedral']*relative_span 
+        
         # do some math to figure out the quarter chord sweeep
         outputs['xles_out'] = inputs['c/4_sweep']*relative_span + (chord_root - chords)/4
+        outputs['zles_out'] = zles
         outputs['chords_out'] = chords
 # geom-end     
         
@@ -184,6 +189,7 @@ model.connect("geom_param.chords_out",['mass_props.chords'] )
 
 model.add_subsystem("ovlsolver", OVLGroup(geom_file="rectangle.avl", output_stability_derivs=True, write_grid=True, input_param_vals=True, input_ref_vals=True, output_dir='opt_output_sweep'))
 model.connect("geom_param.xles_out",['ovlsolver.Wing:xles'] )
+model.connect("geom_param.zles_out",['ovlsolver.Wing:zles'] )
 model.connect("geom_param.chords_out",['ovlsolver.Wing:chords'] )
 model.connect('mass_props.x_cg', ['ovlsolver.X cg'])
 model.connect('mass_props.area', ['ovlsolver.Sref'])
@@ -203,8 +209,15 @@ model.add_design_var("geom_param.taper_ratio", lower=0.1, upper=1.0)
 model.add_design_var("geom_param.root_chord", lower=0.5, upper=4.0)
 model.add_design_var("ovlsolver.Wing:aincs", lower=-15, upper=15)
 
-model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
+model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e2)
 model.add_constraint("ovlsolver.static margin", upper=0.3, lower=0.1, scaler=1e1)
+
+# this spiral parameter makes the problem harder to solve but more realistic 
+# model.add_constraint("ovlsolver.spiral parameter", lower=1.0, scaler=1e0)
+
+# you can optionally add dihedral as a design variable too 
+# model.add_design_var("geom_param.dihedral", lower=0.0, upper=0.5)
+
 
 # make sure CL stays slightly positive to avoid 
 model.add_constraint("ovlsolver.CL", lower=0.1, scaler=1)

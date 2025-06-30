@@ -1902,23 +1902,6 @@ C
 C
 C        
 
-      IF(CLTOT_AL .NE. 0.0) THEN
-      !  XNP = XYZREF(1) - CREF*CMTOT_AL/CLTOT_AL
-      !  SM = (XNP - XYZREF(1))/CREF This is the same as below
-       SM = -CMTOT_AL/CLTOT_AL
-       XNP = XYZREF(1) + CREF*SM
-
-
-C        WRITE(*,8401) XNP
- 8401  FORMAT(/'Neutral point  Xnp =', F11.6)
-      ENDIF
-C
-      IF(ABS(CRTOT_RZ*CNTOT_BE) .GT. 0.0001) THEN
-       BB = CRTOT_BE*CNTOT_RZ / (CRTOT_RZ*CNTOT_BE)
-C        WRITE(LU,8402) BB 
-C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
-C      &    '    (  > 1 if spirally stable )')
-      ENDIF
       
       ! apply the facotors to the outputs as done in the print statements of DERMATS
       CRTOT_AL = DIR*CRTOT_AL
@@ -1948,6 +1931,30 @@ C      &    '    (  > 1 if spirally stable )')
       CNTOT_RY = DIR*CNTOT_RY*2.0/CREF
       CNTOT_RZ = DIR*CNTOT_RZ*2.0/BREF
 
+      
+      IF(CLTOT_AL .NE. 0.0) THEN
+      !  XNP = XYZREF(1) - CREF*CMTOT_AL/CLTOT_AL
+      !  SM = (XNP - XYZREF(1))/CREF This is the same as below
+       SM = -CMTOT_AL/CLTOT_AL
+       XNP = XYZREF(1) + CREF*SM
+
+
+C        WRITE(*,8401) XNP
+ 8401  FORMAT(/'Neutral point  Xnp =', F11.6)
+      ENDIF
+C
+      IF(ABS(CRTOT_RZ*CNTOT_BE) .GT. 0.0) THEN
+       BB = CRTOT_BE*CNTOT_RZ / (CRTOT_RZ*CNTOT_BE)
+C        WRITE(LU,8402) BB 
+C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
+C      &    '    (  > 1 if spirally stable )')
+      ENDIF
+      IF(ABS(CRTOT_BE) .GT. 0.0) THEN
+       RR = CNTOT_BE/abs(CRTOT_BE)
+C        WRITE(LU,8402) BB 
+C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
+C      &    '    (  > 1 if spirally stable )')
+      ENDIF
 C C
       RETURN
       END ! calcST

@@ -393,9 +393,9 @@ C---- Arc length positions of sections in wing trace in y-z plane
         ENDDO
 C we can not rely on the original condition becuase NVS(ISURF) is filled 
 C and we may want to rebuild the surface later
-C IF(NVS(ISURF).EQ.0) THEN
 C
-        IF (lsurfspacing(isurf) .EQV. .false.) THEN
+        IF (nvs(isurf) .EQ. 0 .OR. (lsurfspacing(isurf) .EQV. .false.)) 
+     +  THEN
 C----- set spanwise spacing using spacing parameters for each section interval
           DO isec=1,nsec(isurf)-1
             nvs(isurf) = nvs(isurf) + nspans(isec, isurf)

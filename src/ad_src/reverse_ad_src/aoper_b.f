@@ -8,10 +8,11 @@ C                cltot_be cytot_be crtot_be cmtot_be cntot_be cdtot_rx
 C                cltot_rx cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry
 C                cltot_ry cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz
 C                cltot_rz cytot_rz crtot_rz cmtot_rz cntot_rz xnp
-C                sm
+C                sm bb rr
 C   with respect to varying inputs: alfa vinf_a vinf_b wrot cref
 C                bref xyzref crtot cntot cdtot_a cltot_a cdtot_u
 C                cltot_u cytot_u crtot_u cmtot_u cntot_u xnp sm
+C                bb rr
 C GETFILE
 C
 C
@@ -47,11 +48,14 @@ C
       REAL cnsax_a_diff
       INTEGER k
       INTRINSIC ABS
-      REAL bb
       REAL(kind=avl_real) abs0
+      REAL(kind=avl_real) abs1
+      REAL(kind=avl_real) abs2
+      REAL(kind=avl_real) abs2_diff
       REAL(kind=8) temp_diff
       INTEGER ii1
       REAL(kind=avl_real) temp_diff0
+      REAL(kind=avl_real) temp_diff1
       INTEGER branch
 C
       CALL GETSA(lnasa_sa, satype, dir)
@@ -113,6 +117,8 @@ C
       cytot_ry = cytot_u(5)
       cytot_rz = cytot_u(6)*wrot_rz(3) + cytot_u(4)*wrot_rz(1)
 C
+      crtot_be = crsax_u(1)*vinf_b(1) + crsax_u(2)*vinf_b(2) + crsax_u(3
+     +  )*vinf_b(3)
       crtot_rx = crsax_u(4)*wrot_rx(1) + crsax_u(6)*wrot_rx(3)
       crtot_ry = crsax_u(5)
       crtot_rz = crsax_u(6)*wrot_rz(3) + crsax_u(4)*wrot_rz(1)
@@ -124,11 +130,21 @@ C
       cmtot_ry = cmsax_u(5)
       cmtot_rz = cmsax_u(6)*wrot_rz(3) + cmsax_u(4)*wrot_rz(1)
 C
+      cntot_be = cnsax_u(1)*vinf_b(1) + cnsax_u(2)*vinf_b(2) + cnsax_u(3
+     +  )*vinf_b(3)
       cntot_rx = cnsax_u(4)*wrot_rx(1) + cnsax_u(6)*wrot_rx(3)
       cntot_ry = cnsax_u(5)
+C apply the facotors to the outputs as done in the print statements of DERMATS
       cntot_rz = cnsax_u(6)*wrot_rz(3) + cnsax_u(4)*wrot_rz(1)
 C
 C        
+C
+      crtot_be = dir*crtot_be
+      cntot_be = dir*cntot_be
+      CALL PUSHREAL8(crtot_rz)
+      crtot_rz = dir*crtot_rz*2.0/bref
+      CALL PUSHREAL8(cntot_rz)
+      cntot_rz = dir*cntot_rz*2.0/bref
 C
       IF (cltot_al .NE. 0.0) THEN
 C  XNP = XYZREF(1) - CREF*CMTOT_AL/CLTOT_AL
@@ -138,12 +154,75 @@ C  SM = (XNP - XYZREF(1))/CREF This is the same as below
       ELSE
         CALL PUSHCONTROL1B(0)
       END IF
+      IF (crtot_rz*cntot_be .GE. 0.) THEN
+        abs0 = crtot_rz*cntot_be
+      ELSE
+        abs0 = -(crtot_rz*cntot_be)
+      END IF
+C
+      IF (abs0 .GT. 0.0) THEN
+        CALL PUSHCONTROL1B(1)
+      ELSE
+        CALL PUSHCONTROL1B(0)
+      END IF
+      IF (crtot_be .GE. 0.) THEN
+        abs1 = crtot_be
+      ELSE
+        abs1 = -crtot_be
+      END IF
+      IF (abs1 .GT. 0.0) THEN
+        IF (crtot_be .GE. 0.) THEN
+          abs2 = crtot_be
+          CALL PUSHCONTROL1B(0)
+        ELSE
+          abs2 = -crtot_be
+          CALL PUSHCONTROL1B(1)
+        END IF
+        cntot_be_diff = cntot_be_diff + rr_diff/abs2
+        abs2_diff = -(cntot_be*rr_diff/abs2**2)
+        CALL POPCONTROL1B(branch)
+        IF (branch .EQ. 0) THEN
+          crtot_be_diff = crtot_be_diff + abs2_diff
+        ELSE
+          crtot_be_diff = crtot_be_diff - abs2_diff
+        END IF
+        rr_diff = 0.D0
+      END IF
+      CALL POPCONTROL1B(branch)
+      IF (branch .NE. 0) THEN
+        temp_diff0 = bb_diff/(crtot_rz*cntot_be)
+        crtot_be_diff = crtot_be_diff + cntot_rz*temp_diff0
+        cntot_rz_diff = cntot_rz_diff + crtot_be*temp_diff0
+        temp_diff1 = -(crtot_be*cntot_rz*temp_diff0/(crtot_rz*cntot_be))
+        crtot_rz_diff = crtot_rz_diff + cntot_be*temp_diff1
+        cntot_be_diff = cntot_be_diff + crtot_rz*temp_diff1
+        bb_diff = 0.D0
+      END IF
+      CALL POPCONTROL1B(branch)
+      IF (branch .EQ. 0) THEN
+        cref_diff = 0.D0
+        DO ii1=1,3
+          xyzref_diff(ii1) = 0.D0
+        ENDDO
+      ELSE
+        DO ii1=1,3
+          xyzref_diff(ii1) = 0.D0
+        ENDDO
+        xyzref_diff(1) = xyzref_diff(1) + xnp_diff
+        cref_diff = sm*xnp_diff
+        sm_diff = sm_diff + cref*xnp_diff
+        cmtot_al_diff = cmtot_al_diff - sm_diff/cltot_al
+        cltot_al_diff = cltot_al_diff + cmtot_al*sm_diff/cltot_al**2
+        xnp_diff = 0.D0
+        sm_diff = 0.D0
+      END IF
+      CALL POPREAL8(cntot_rz)
       temp_diff0 = dir*2.0*cntot_rz_diff/bref
       cntot_rz_diff = temp_diff0
       bref_diff = -(cntot_rz*temp_diff0/bref)
       temp_diff0 = dir*2.0*cntot_ry_diff/cref
       cntot_ry_diff = temp_diff0
-      cref_diff = -(cntot_ry*temp_diff0/cref)
+      cref_diff = cref_diff - cntot_ry*temp_diff0/cref
       temp_diff0 = dir*2.0*cntot_rx_diff/bref
       cntot_rx_diff = temp_diff0
       bref_diff = bref_diff - cntot_rx*temp_diff0/bref
@@ -156,6 +235,7 @@ C  SM = (XNP - XYZREF(1))/CREF This is the same as below
       temp_diff0 = 2.0*cmtot_rx_diff/bref
       cmtot_rx_diff = temp_diff0
       bref_diff = bref_diff - cmtot_rx*temp_diff0/bref
+      CALL POPREAL8(crtot_rz)
       temp_diff0 = dir*2.0*crtot_rz_diff/bref
       crtot_rz_diff = temp_diff0
       bref_diff = bref_diff - crtot_rz*temp_diff0/bref
@@ -196,23 +276,6 @@ C  SM = (XNP - XYZREF(1))/CREF This is the same as below
       cntot_al_diff = dir*cntot_al_diff
       crtot_be_diff = dir*crtot_be_diff
       crtot_al_diff = dir*crtot_al_diff
-      CALL POPCONTROL1B(branch)
-      IF (branch .EQ. 0) THEN
-        DO ii1=1,3
-          xyzref_diff(ii1) = 0.D0
-        ENDDO
-      ELSE
-        DO ii1=1,3
-          xyzref_diff(ii1) = 0.D0
-        ENDDO
-        xyzref_diff(1) = xyzref_diff(1) + xnp_diff
-        cref_diff = cref_diff + sm*xnp_diff
-        sm_diff = sm_diff + cref*xnp_diff
-        cmtot_al_diff = cmtot_al_diff - sm_diff/cltot_al
-        cltot_al_diff = cltot_al_diff + cmtot_al*sm_diff/cltot_al**2
-        xnp_diff = 0.D0
-        sm_diff = 0.D0
-      END IF
       DO ii1=1,numax
         cnsax_u_diff(ii1) = 0.D0
       ENDDO

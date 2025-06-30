@@ -116,7 +116,7 @@ class TestTotals(unittest.TestCase):
                 ad_dot = sens_funcs[func_key][con_key]
                 fd_dot = func_seeds[func_key]
 
-                print(f"{func_key} wrt {con_key}", "AD", ad_dot, "FD", fd_dot)
+                # print(f"{func_key} wrt {con_key}", "AD", ad_dot, "FD", fd_dot)
                 rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
 
                 # print(f"{func_key:5} wrt {con_key:5} | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
@@ -257,7 +257,7 @@ class TestTotals(unittest.TestCase):
                         rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
 
                         # print(
-                        #     f"{func_key} wrt {var_key:5}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                        #     f"{func_key}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                         # )
                         
                         tol = 1e-10
