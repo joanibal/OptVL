@@ -1,7 +1,7 @@
 project(
   'optvl',
   'c',
-  version: '1.4.0',
+  version: '1.4.1',
   license: 'GPL-3.0',
   meson_version: '>= 0.64.0',
   default_options: [
