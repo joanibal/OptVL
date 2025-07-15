@@ -638,14 +638,14 @@ class OVLSolver(object):
 
         # add a dictionary for each surface that will be filled later
         surf_data = {}
-        for surf in self.surf_names:
+        for surf in self.surface_names:
             surf_data[surf] = {}
 
         for key, avl_key in self.case_surf_var_to_fort_var.items():
             vals = self.get_avl_fort_arr(*avl_key)
 
             # add the values to corresponding surface dict
-            for idx_surf, surf_name in enumerate(self.surf_names):
+            for idx_surf, surf_name in enumerate(self.surface_names):
                 surf_data[surf_name][key] = vals[idx_surf]
 
         return surf_data
@@ -1154,7 +1154,7 @@ class OVLSolver(object):
                 raise ValueError(
                     f"""surface name, {surf_name}, not found in the current avl object."
                         Note duplicated surfaces can not be set directly.
-                        Surface in file {self.unique_surface_names}
+                        Surfaces in file {self.unique_surface_names}
                         {self.surface_names}"""
                 )
 
