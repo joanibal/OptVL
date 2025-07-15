@@ -1,37 +1,23 @@
 # Development Overview
 
 OptVL is an ongoing project done entirely in my free time. 
-Pull requests are welcome if you have something that you would like to contribute.  
+Pull requests are welcome if you have something that you would like to contribute.
 Suggestions are also welcome, but I can't promise that I will ever have time to address them. 
 I'm using Github to track issues and bugs so open a new issue there with any concerns.
 
-# Common things you might want to modify
-Below is some information on a few development tasks that you may be interested in. 
+## Code philosophy
+OptVL should be easy to install and use. 
+To make it easy to install, OptVL should always be pip installable and only rely on core scientific Python packages like NumPy, and Matplotlib.
+The user could have additional programs like Tecplot and ParaView, but they should never be required.
+To keep OptVL easy to use, it is import to keep the required level of Python knowledge low as most users will be aerospace engineers first and may not have much Python experience.
+ 
 
-## Modify the python wrapper or OpenMDAO wrapper.
-The file `optvl_class.py` wraps the Fortran object file and is where the user API is defined. 
-For most development tasks this is what you will need to modify. 
-The file `om_wrapper.py` wraps the `OVLSolver` class for use with OpenMDAO. 
-If you want to change something about the OpenMDAO interface, you'll need to start here. 
+## Development roadmap 
+Below are some features I'm considering implementing.
 
-## Run AD on modified code
-Tapenade 3.16 is used to generate the derivative routines. 
-After installing Tapenade (only really works on Linux), navigate to the `/src/ad_src`.
-From here run `make -f Makefile_tapenade`.
-This will make both the forward and reverse routines by default. 
-After Tapenade generates the routines a few loop dimensions will need to be changed for speed. 
-I can do this step for you if you make a pull request.
-But in general there are a few places where we can loop over NVOR instead of NVMAX.
+- Make it easier to use Camber and thickness as design variables
+- Flush out OpenMDAO geometry component that makes it easy to set geometric variables via splines
+- Add body components to geometry plots and Cp surface output
+- Add actuator disk model of Conway similar to VSPAERO
+- Add interface to AeroSandbox
 
-
-## Expose an additional variable from the Fortran level
-1. in `AVL.INC.in` add it to the COMMON line AND declare its type above
-2. replace instances of the local variable in the code with the global variable from the COMMON block
-3. navigate to `src/includes` and run `gen_ad_inc.py` 
-4. rebuild the library 
-
-## Releasing a new version
-1. Bump the version number in `pyproject.toml` AND in `meson.build`.
-    - I cannot figure out a way to single source this so it will have to be done in two steps for now.
-2. Then create a new release on GitHub. Create a new tagged version as part of the release
-3. Check that that new version has been released on PyPI as intended

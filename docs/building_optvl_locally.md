@@ -13,6 +13,7 @@ To modify aspects of the build, such as the compilation flags, see the `meson.bu
 
 ## Using Make
 This method is more convenient for quick compilation during editing. The steps are
+
 1. Copy a config file from `config/defaults` to the config directory, i.e. `cp  config/defaults/config.LINUX_GFORTRAN.mk config/config.mk`
 2. Create the shared library file with `make`
 3. Install the python wrapper with `python setup_deprecated.py develop`

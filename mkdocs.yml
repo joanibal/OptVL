@@ -26,6 +26,7 @@ nav:
       - making_a_movie.md
   - Development:
       - dev_docs.md
+      - common_developement_tasks.md
       - building_optvl_locally.md
       - pyavl_changes.md  
   # defer to gen-files + literate-nav
