@@ -111,7 +111,7 @@ def add_ovl_params_as_inputs(sys, ovl):
     # TODO: add all par vals with the analysis is supported
     
     # only adding the ones people would use for now
-    for param in ["CD0", "Mach", "X cg", "Y cg", "Z cg"]:
+    for param in ["velocity", "CD0", "Mach", "X cg", "Y cg", "Z cg"]:
         val = ovl.get_parameter(param)
         sys.add_input(param, val=val, tags="param")
 
