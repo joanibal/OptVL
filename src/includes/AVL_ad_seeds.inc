@@ -51,7 +51,14 @@ C    must be precended by 'include AVL_ad_seed'
       real(kind=avl_real) CRSAX_DIFF
       real(kind=avl_real) CMSAX_DIFF
       real(kind=avl_real) CNSAX_DIFF
+      real(kind=avl_real) CXBAX_DIFF
+      real(kind=avl_real) CYBAX_DIFF
+      real(kind=avl_real) CZBAX_DIFF
+      real(kind=avl_real) CRBAX_DIFF
+      real(kind=avl_real) CMBAX_DIFF
+      real(kind=avl_real) CNBAX_DIFF
       real(kind=avl_real) CDVTOT_DIFF
+      real(kind=avl_real) CDITOT_DIFF
       real(kind=avl_real) CDTOT_A_DIFF
       real(kind=avl_real) CLTOT_A_DIFF
       real(kind=avl_real) CDTOT_U_DIFF
@@ -108,6 +115,24 @@ C    must be precended by 'include AVL_ad_seed'
       real(kind=avl_real) CRTOT_RZ_DIFF
       real(kind=avl_real) CMTOT_RZ_DIFF
       real(kind=avl_real) CNTOT_RZ_DIFF
+      real(kind=avl_real) CXTOT_U_BA_DIFF
+      real(kind=avl_real) CYTOT_U_BA_DIFF
+      real(kind=avl_real) CZTOT_U_BA_DIFF
+      real(kind=avl_real) CRTOT_U_BA_DIFF
+      real(kind=avl_real) CMTOT_U_BA_DIFF
+      real(kind=avl_real) CNTOT_U_BA_DIFF
+      real(kind=avl_real) CXTOT_D_BA_DIFF
+      real(kind=avl_real) CYTOT_D_BA_DIFF
+      real(kind=avl_real) CZTOT_D_BA_DIFF
+      real(kind=avl_real) CRTOT_D_BA_DIFF
+      real(kind=avl_real) CMTOT_D_BA_DIFF
+      real(kind=avl_real) CNTOT_D_BA_DIFF
+      real(kind=avl_real) CXTOT_G_BA_DIFF
+      real(kind=avl_real) CYTOT_G_BA_DIFF
+      real(kind=avl_real) CZTOT_G_BA_DIFF
+      real(kind=avl_real) CRTOT_G_BA_DIFF
+      real(kind=avl_real) CMTOT_G_BA_DIFF
+      real(kind=avl_real) CNTOT_G_BA_DIFF
       real(kind=avl_real) CHINGE_DIFF
       real(kind=avl_real) CHINGE_U_DIFF
       real(kind=avl_real) CHINGE_D_DIFF
@@ -172,7 +197,14 @@ C    must be precended by 'include AVL_ad_seed'
      & CRSAX_DIFF,
      & CMSAX_DIFF,
      & CNSAX_DIFF,
+     & CXBAX_DIFF,
+     & CYBAX_DIFF,
+     & CZBAX_DIFF,
+     & CRBAX_DIFF,
+     & CMBAX_DIFF,
+     & CNBAX_DIFF,
      & CDVTOT_DIFF,
+     & CDITOT_DIFF,
      & CDTOT_A_DIFF,
      & CLTOT_A_DIFF,
      & CDTOT_U_DIFF(NUMAX),
@@ -229,6 +261,24 @@ C    must be precended by 'include AVL_ad_seed'
      & CRTOT_RZ_DIFF,
      & CMTOT_RZ_DIFF,
      & CNTOT_RZ_DIFF,
+     & CXTOT_U_BA_DIFF(NUMAX),
+     & CYTOT_U_BA_DIFF(NUMAX),
+     & CZTOT_U_BA_DIFF(NUMAX),
+     & CRTOT_U_BA_DIFF(NUMAX),
+     & CMTOT_U_BA_DIFF(NUMAX),
+     & CNTOT_U_BA_DIFF(NUMAX),
+     & CXTOT_D_BA_DIFF(NDMAX),
+     & CYTOT_D_BA_DIFF(NDMAX),
+     & CZTOT_D_BA_DIFF(NDMAX),
+     & CRTOT_D_BA_DIFF(NDMAX),
+     & CMTOT_D_BA_DIFF(NDMAX),
+     & CNTOT_D_BA_DIFF(NDMAX),
+     & CXTOT_G_BA_DIFF(NGMAX),
+     & CYTOT_G_BA_DIFF(NGMAX),
+     & CZTOT_G_BA_DIFF(NGMAX),
+     & CRTOT_G_BA_DIFF(NGMAX),
+     & CMTOT_G_BA_DIFF(NGMAX),
+     & CNTOT_G_BA_DIFF(NGMAX),
      & CHINGE_DIFF(NDMAX),
      & CHINGE_U_DIFF(NDMAX,NUMAX),
      & CHINGE_D_DIFF(NDMAX,NDMAX),

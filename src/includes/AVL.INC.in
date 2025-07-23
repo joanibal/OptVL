@@ -188,7 +188,10 @@ C
       real(kind=avl_real) CXTOT, CYTOT, CZTOT
       real(kind=avl_real) CRTOT, CMTOT, CNTOT
       real(kind=avl_real) CRSAX, CMSAX, CNSAX   
+      real(kind=avl_real) CXBAX, CYBAX, CZBAX
+      real(kind=avl_real) CRBAX, CMBAX, CNBAX   
       real(kind=avl_real) CDVTOT          
+      real(kind=avl_real) CDITOT          
       real(kind=avl_real) CDTOT_A, CLTOT_A      
       real(kind=avl_real) CDTOT_U,CLTOT_U
       real(kind=avl_real) CXTOT_U,CYTOT_U,CZTOT_U
@@ -209,6 +212,12 @@ C
       real(kind=avl_real) CMTOT_RY, CNTOT_RY ! stab derives wrt 
       real(kind=avl_real) CDTOT_RZ, CLTOT_RZ, CYTOT_RZ, CRTOT_RZ
       real(kind=avl_real) CMTOT_RZ, CNTOT_RZ ! stab derives wrt 
+      real(kind=avl_real) CXTOT_U_BA, CYTOT_U_BA, CZTOT_U_BA 
+      real(kind=avl_real) CRTOT_U_BA, CMTOT_U_BA, CNTOT_U_BA 
+      real(kind=avl_real) CXTOT_D_BA, CYTOT_D_BA, CZTOT_D_BA 
+      real(kind=avl_real) CRTOT_D_BA, CMTOT_D_BA, CNTOT_D_BA 
+      real(kind=avl_real) CXTOT_G_BA, CYTOT_G_BA, CZTOT_G_BA 
+      real(kind=avl_real) CRTOT_G_BA, CMTOT_G_BA, CNTOT_G_BA 
       real(kind=avl_real) CHINGE
       real(kind=avl_real) CHINGE_U
       real(kind=avl_real) CHINGE_D
@@ -256,7 +265,10 @@ C
      & CXTOT, CYTOT, CZTOT,   ! total Cx,Cy,Cz
      & CRTOT, CMTOT, CNTOT,   ! total Cl,Cm,Cn
      & CRSAX, CMSAX, CNSAX,   ! total Cl,Cm,Cn in stability axis
+     & CXBAX, CYBAX, CZBAX,    ! total Cx,Cy,Cz in stability axis
+     & CRBAX, CMBAX, CNBAX,    ! total Cl,Cm,Cn in body axis
      & CDVTOT,                ! total viscous CD
+     & CDITOT,                ! total invisid CD
      & CDTOT_A, CLTOT_A, ! sensitivities wrt alpha (part of total?!? you probably want *_AL)          
      & CDTOT_U(NUMAX),CLTOT_U(NUMAX),                !sens wrt U,W
      & CXTOT_U(NUMAX),CYTOT_U(NUMAX),CZTOT_U(NUMAX), !sens wrt U,W
@@ -269,9 +281,15 @@ C
      & CRTOT_G(NGMAX),CMTOT_G(NGMAX),CNTOT_G(NGMAX), !sens wrt design
      & CDTOT_AL, CLTOT_AL, CYTOT_AL, CRTOT_AL, CMTOT_AL, CNTOT_AL, ! stab derives wrt alpha
      & CDTOT_BE, CLTOT_BE, CYTOT_BE, CRTOT_BE, CMTOT_BE, CNTOT_BE, ! stab derives wrt beta
-     & CDTOT_RX, CLTOT_RX, CYTOT_RX, CRTOT_RX, CMTOT_RX, CNTOT_RX, ! stab derives wrt beta
-     & CDTOT_RY, CLTOT_RY, CYTOT_RY, CRTOT_RY, CMTOT_RY, CNTOT_RY, ! stab derives wrt beta
-     & CDTOT_RZ, CLTOT_RZ, CYTOT_RZ, CRTOT_RZ, CMTOT_RZ, CNTOT_RZ, ! stab derives wrt beta
+     & CDTOT_RX, CLTOT_RX, CYTOT_RX, CRTOT_RX, CMTOT_RX, CNTOT_RX, ! stab derives wrt roll
+     & CDTOT_RY, CLTOT_RY, CYTOT_RY, CRTOT_RY, CMTOT_RY, CNTOT_RY, ! stab derives wrt pitch
+     & CDTOT_RZ, CLTOT_RZ, CYTOT_RZ, CRTOT_RZ, CMTOT_RZ, CNTOT_RZ, ! stab derives wrt yaw
+     & CXTOT_U_BA(NUMAX), CYTOT_U_BA(NUMAX), CZTOT_U_BA(NUMAX), ! body axis stab derive wrt vel
+     & CRTOT_U_BA(NUMAX), CMTOT_U_BA(NUMAX), CNTOT_U_BA(NUMAX), ! body axis stab derive wrt vel
+     & CXTOT_D_BA(NDMAX), CYTOT_D_BA(NDMAX), CZTOT_D_BA(NDMAX), ! body axis stab derive wrt control
+     & CRTOT_D_BA(NDMAX), CMTOT_D_BA(NDMAX), CNTOT_D_BA(NDMAX), ! body axis stab derive wrt control
+     & CXTOT_G_BA(NGMAX), CYTOT_G_BA(NGMAX), CZTOT_G_BA(NGMAX), ! body axis stab derive wrt design
+     & CRTOT_G_BA(NGMAX), CMTOT_G_BA(NGMAX), CNTOT_G_BA(NGMAX), ! body axis stab derive wrt design
      & CHINGE(NDMAX), !hinge moment for control
      & CHINGE_U(NDMAX,NUMAX), ! sens wrt U,W
      & CHINGE_D(NDMAX,NDMAX), ! sens wrt control

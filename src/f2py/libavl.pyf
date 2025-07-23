@@ -55,8 +55,8 @@ python module libavl ! in
         end subroutine trmset
         
 
-        subroutine calcst ! in :libavl:aoper.f
-        end subroutine calcst
+        subroutine calc_stab_derivs ! in :libavl:aoper.f
+        end subroutine calc_stab_derivs
         
         subroutine update_surfaces ! in :libavl:amake.f
         end subroutine update_surfaces

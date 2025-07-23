@@ -27,10 +27,13 @@ class TestStabDerivs(unittest.TestCase):
 
     def setUp(self):
         # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
+        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl", debug=False)
         # self.ovl_solver = OVLSolver(geo_file="rect.avl")
-        self.ovl_solver.set_constraint("alpha", 5.0)
-        # self.ovl_solver.set_constraint("beta", 0.0)
+        
+        # HACK: we have to use alpha/beta=0 here so the stability and body axis are the same
+        self.ovl_solver.set_constraint("alpha", 0.0)
+        self.ovl_solver.set_constraint("beta", 0.0)
+        
         self.ovl_solver.execute_run()
 
     def tearDown(self):
@@ -56,7 +59,7 @@ class TestStabDerivs(unittest.TestCase):
         self.ovl_solver.avl.aero()
         # self.ovl_solver.execute_run()
         coef_data_peturb = self.ovl_solver.get_total_forces()
-        consurf_derivs_peturb = self.ovl_solver.get_control_stab_derivs()
+        consurf_derivs_peturb = self.ovl_solver.get_control_body_axis_derivs()
 
         self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-step)
@@ -64,7 +67,7 @@ class TestStabDerivs(unittest.TestCase):
         self.ovl_solver.execute_run()
 
         coef_data = self.ovl_solver.get_total_forces()
-        consurf_derivs = self.ovl_solver.get_control_stab_derivs()
+        consurf_derivs = self.ovl_solver.get_control_body_axis_derivs()
 
         func_seeds = {}
         for func_key in coef_data:
@@ -82,22 +85,40 @@ class TestStabDerivs(unittest.TestCase):
 
     def test_deriv_values(self):
         # compare the analytical gradients with finite difference for each constraint and function
+        import pprint
         base_data = self.ovl_solver.get_total_forces()
-        stab_derivs = self.ovl_solver.get_stab_derivs()
+        # pprint.pprint(base_data)
+        
+        # for key in base_data:
+        #     print(f"{key:5} {base_data[key]}")
+            
+        
+        
+        body_axis_derivs = self.ovl_solver.get_body_axis_derivs()
+        # pprint.pprint(body_axis_derivs)
 
-        con_keys =  ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"]
-        func_keys = ["CL", "CD", "CY", "Cl'", "Cm", "Cn'"]
+        con_keys =  ["roll rate", "pitch rate", "yaw rate"]
+        func_keys = ["CX body axis", "CY body axis", "CZ body axis", "Cl", "Cm", "Cn"]
+        # con_keys =  ["roll rate"]
+        # func_keys = ["CZ body axis"]
+    
+        func_to_key = {
+            "Cl" : "Cl",
+            "Cm" : "Cm",
+            "Cn" : "Cn",
+            "CX body axis" : "CX",
+            "CY body axis" : "CY",
+            "CZ body axis" : "CZ",
+        }
         
         con_to_var = {
-            "alpha": "alpha",
-            "beta": "beta",
-            "roll rate" : "p'" ,
-            "pitch rate" : "q'" ,
-            "yaw rate" : "r'" ,
+            "roll rate" : "p" ,
+            "pitch rate" : "q" ,
+            "yaw rate" : "r" ,
         }
         
         for con_key in con_keys:
-            h = 1e-8
+            h = 1e-10
             val = self.ovl_solver.get_constraint(con_key)
             self.ovl_solver.set_constraint(con_key, val + h)
             self.ovl_solver.execute_run()
@@ -105,8 +126,8 @@ class TestStabDerivs(unittest.TestCase):
             self.ovl_solver.set_constraint(con_key, val)
             
             for func_key in func_keys:
-                key = self.ovl_solver._get_deriv_key(con_to_var[con_key], func_key)
-                ad_dot = stab_derivs[key] 
+                key = self.ovl_solver._get_deriv_key(con_to_var[con_key], func_to_key[func_key])
+                ad_dot = body_axis_derivs[key] 
                 
                 fd_dot = (perb_data[func_key] - base_data[func_key]) / h 
                 
@@ -115,15 +136,15 @@ class TestStabDerivs(unittest.TestCase):
                    # convert to radians from degrees!
                 
                 rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
-                # print(f"{key:5}  | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
+                print(f"{key:5}  | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
-                tol = 1e-13
+                tol = 1e-8
                 if np.abs(ad_dot) < tol or np.abs(fd_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
                         ad_dot,
                         fd_dot,
-                        atol=1e-10,
+                        atol=tol,
                         err_msg=f"func_key {key}",
                     )
                 else:

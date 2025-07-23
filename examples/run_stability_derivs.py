@@ -14,3 +14,7 @@ ovl_solver.set_constraint("alpha", alpha + step)
 ovl_solver.execute_run()
 run_data_p = ovl_solver.get_total_forces()
 print("fd", (run_data_p["CL"] - run_data["CL"]) / step)
+
+print("All stability derivs")
+for key in stab_derivs:
+    print(f"{key}: {stab_derivs[key]}")
