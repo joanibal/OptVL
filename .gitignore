@@ -50,6 +50,8 @@ src/includes/AVL.INC
 examples/*.html
 examples/*.db
 examples/reports
+examples/figures
+examples/debugging
 tests/reports/
 tests/*.html
 tests/*_out.avl
@@ -57,6 +59,8 @@ tests/reports
 tests/opt_*.avl
 .devcontainer
 **.DS_Store
+**/*_out
+external
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.

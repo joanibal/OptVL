@@ -86,13 +86,7 @@ C
       CALL BDFORC
       CALL TPFORC
 C
-      SINA = SIN(ALFA)
-      COSA = COS(ALFA)
-C     calculate stability axis based values
-      CALL GETSA(LNASA_SA,SATYPE,DIR)
-      CRSAX = DIR*(CRTOT*COSA + CNTOT*SINA)
-      CNSAX = DIR*(CNTOT*COSA - CRTOT*SINA)
-      
+       
       DO K = 1, NCONTROL
         ! do the sign change here so that it included in the derivative
         ! routines         
@@ -122,9 +116,30 @@ C
         CYTOT_U(IU) = CYTOT_U(IU) + CDREF*VINF(2)*VINF(IU)/VMAG
         CZTOT_U(IU) = CZTOT_U(IU) + CDREF*VINF(3)*VINF(IU)/VMAG
       ENDDO
+
+      CDITOT = CDTOT - CDVTOT
+      
+      SINA = SIN(ALFA)
+      COSA = COS(ALFA)
+C     calculate stability axis based values
+      CALL GETSA(LNASA_SA,SATYPE,DIR)
+      CRSAX = DIR*(CRTOT*COSA + CNTOT*SINA)
+      CMSAX = CMTOT
+      CNSAX = DIR*(CNTOT*COSA - CRTOT*SINA)
+      
+      ! apply sign to body-axis variables
+      CXBAX = DIR*CXTOT  
+      CYBAX =     CYTOT  
+      CZBAX = DIR*CZTOT  
+      
+      CRBAX = DIR*CRTOT  
+      CMBAX =     CMTOT  
+      CNBAX = DIR*CNTOT
+
 C
       ! compute the stability derivatives every time (it's quite cheap)
-      call calcST
+      call calc_stab_derivs
+      
       RETURN
       END ! AERO
 

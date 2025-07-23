@@ -204,7 +204,7 @@ C
       ENDDO
 C compute the stability derivatives every time (it's quite cheap)
 C
-      CALL CALCST_D()
+      CALL calc_stab_derivs_D()
       RETURN
       END
 

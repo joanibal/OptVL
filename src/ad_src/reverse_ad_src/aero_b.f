@@ -193,7 +193,7 @@ C
         cdtot_u(iu) = cdtot_u(iu) + cdref*2.0*vinf(iu)
         cytot_u(iu) = cytot_u(iu) + cdref*vinf(2)*vinf(iu)/vmag
       ENDDO
-      CALL CALCST_B()
+      CALL calc_stab_derivs_B()
       DO ii1=1,3
         vinf_diff(ii1) = 0.D0
       ENDDO
