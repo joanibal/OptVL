@@ -130,13 +130,13 @@ class TestGeom(unittest.TestCase):
         
         # if only one wing was updated then will have unbalanced yaw and roll moments
         np.testing.assert_allclose(
-            run_data["CR SA"],
+            run_data["Cl"],
             0.0,
             atol=1e-12
         )
         
         np.testing.assert_allclose(
-            run_data["CN SA"],
+            run_data["Cn"],
             0.0,
             atol=1e-12
         )

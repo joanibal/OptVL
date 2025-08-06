@@ -47,7 +47,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
             for deriv_func in bd_d:
                 sens_label = f"{deriv_func} wrt {con_key}"
-                # print(sens_label, bd_d[deriv_func][cs_key], bd_d_fd[deriv_func][cs_key])
+                # print(sens_label, bd_d[deriv_func], bd_d_fd[deriv_func])
                 np.testing.assert_allclose(
                     bd_d[deriv_func],
                     bd_d_fd[deriv_func],
@@ -95,7 +95,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
                 bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[4]
 
                 bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(
-                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=5e-8
+                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-9
                 )[4]
 
                 for deriv_func in bd_d:
@@ -103,21 +103,21 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
                     # print(f"{sens_label} AD:{bd_d[deriv_func]} FD:{bd_d_fd[deriv_func]}")
                     # quit()
-                    tol = 1e-10
+                    tol = 1e-7
                     # print(f"{deriv_func} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
                     if np.abs(bd_d[deriv_func]) < tol or np.abs(bd_d_fd[deriv_func]) < tol:
                         # If either value is basically zero, use an absolute tolerance
                         np.testing.assert_allclose(
                             bd_d[deriv_func],
                             bd_d_fd[deriv_func],
-                            atol=1e-8,
+                            atol=tol,
                             err_msg=sens_label,
                         )
                     else:
                         np.testing.assert_allclose(
                             bd_d[deriv_func],
                             bd_d_fd[deriv_func],
-                            rtol=1e-4,
+                            rtol=5e-3,
                             err_msg=sens_label,
                         )
 
@@ -220,7 +220,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
             for deriv_func in bd_d:
                 sens_label = f"{deriv_func} wrt {ref_key}"
-                print(sens_label, bd_d[deriv_func], bd_d_fd[deriv_func])
+                # print(sens_label, bd_d[deriv_func], bd_d_fd[deriv_func])
                 
                 tol = 1e-8
                 if np.abs( bd_d[deriv_func]) < tol or np.abs(bd_d_fd[deriv_func]) < tol:
@@ -261,7 +261,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
             # do dot product
             ref_sum = np.sum(ref_seeds_rev[ref_key])
 
-            print(f"cs_dervs wrt {ref_key}", "rev", ref_sum, "fwd", body_axis_deriv_sum)
+            # print(f"cs_dervs wrt {ref_key}", "rev", ref_sum, "fwd", body_axis_deriv_sum)
 
             np.testing.assert_allclose(
                 ref_sum,

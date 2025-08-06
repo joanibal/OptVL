@@ -4,13 +4,16 @@ C
 C  Differentiation of aero in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: clff cyff cdff spanef cdtot
 C                cltot cxtot cytot cztot crtot cmtot cntot crsax
-C                cnsax cdvtot cdtot_d cltot_d cxtot_d cytot_d cztot_d
+C                cnsax cxbax cybax czbax crbax cmbax cnbax cdvtot
+C                cditot cdtot_d cltot_d cxtot_d cytot_d cztot_d
 C                crtot_d cmtot_d cntot_d cdtot_al cltot_al cytot_al
 C                crtot_al cmtot_al cntot_al cdtot_be cltot_be cytot_be
 C                crtot_be cmtot_be cntot_be cdtot_rx cltot_rx cytot_rx
 C                crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry cytot_ry
 C                crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz cytot_rz
-C                crtot_rz cmtot_rz cntot_rz xnp sm bb rr
+C                crtot_rz cmtot_rz cntot_rz cxtot_u_ba cytot_u_ba
+C                cztot_u_ba crtot_u_ba cmtot_u_ba cntot_u_ba xnp
+C                sm bb rr
 C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
 C                sref cref bref xyzref mach cdref rle chord rle1
 C                chord1 rle2 chord2 wstrip ensy ensz xsref ysref
@@ -20,20 +23,23 @@ C                wrot:in sref:in cref:in bref:in xyzref:in mach:in
 C                cdref:in clff:out cyff:out cdff:out spanef:out
 C                cdtot:out cltot:out cxtot:out cytot:out cztot:out
 C                crtot:out cmtot:out cntot:out crsax:out cnsax:out
-C                cdvtot:out cdtot_d:out cltot_d:out cxtot_d:out
-C                cytot_d:out cztot_d:out crtot_d:out cmtot_d:out
-C                cntot_d:out cdtot_al:out cltot_al:out cytot_al:out
-C                crtot_al:out cmtot_al:out cntot_al:out cdtot_be:out
-C                cltot_be:out cytot_be:out crtot_be:out cmtot_be:out
-C                cntot_be:out cdtot_rx:out cltot_rx:out cytot_rx:out
-C                crtot_rx:out cmtot_rx:out cntot_rx:out cdtot_ry:out
-C                cltot_ry:out cytot_ry:out crtot_ry:out cmtot_ry:out
-C                cntot_ry:out cdtot_rz:out cltot_rz:out cytot_rz:out
-C                crtot_rz:out cmtot_rz:out cntot_rz:out xnp:out
-C                sm:out bb:out rr:out rle:in chord:in rle1:in chord1:in
-C                rle2:in chord2:in wstrip:in ensy:in ensz:in xsref:in
-C                ysref:in zsref:in rv1:in rv2:in rv:in rc:in gam:in
-C                gam_u:in gam_d:in wv:in wv_u:in
+C                cxbax:out cybax:out czbax:out crbax:out cmbax:out
+C                cnbax:out cdvtot:out cditot:out cdtot_d:out cltot_d:out
+C                cxtot_d:out cytot_d:out cztot_d:out crtot_d:out
+C                cmtot_d:out cntot_d:out cdtot_al:out cltot_al:out
+C                cytot_al:out crtot_al:out cmtot_al:out cntot_al:out
+C                cdtot_be:out cltot_be:out cytot_be:out crtot_be:out
+C                cmtot_be:out cntot_be:out cdtot_rx:out cltot_rx:out
+C                cytot_rx:out crtot_rx:out cmtot_rx:out cntot_rx:out
+C                cdtot_ry:out cltot_ry:out cytot_ry:out crtot_ry:out
+C                cmtot_ry:out cntot_ry:out cdtot_rz:out cltot_rz:out
+C                cytot_rz:out crtot_rz:out cmtot_rz:out cntot_rz:out
+C                cxtot_u_ba:out cytot_u_ba:out cztot_u_ba:out crtot_u_ba:out
+C                cmtot_u_ba:out cntot_u_ba:out xnp:out sm:out bb:out
+C                rr:out rle:in chord:in rle1:in chord1:in rle2:in
+C                chord2:in wstrip:in ensy:in ensz:in xsref:in ysref:in
+C                zsref:in rv1:in rv2:in rv:in rc:in gam:in gam_u:in
+C                gam_d:in wv:in wv_u:in
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -60,19 +66,21 @@ C
       CHARACTER*50 satype
       INTEGER l
       INTEGER n
-      REAL sina
-      INTRINSIC SIN
-      REAL cosa
-      INTRINSIC COS
-      REAL dir
-      EXTERNAL GETSA
-      INTEGER k
       REAL vsq
       REAL vsq_diff
       REAL vmag
       REAL vmag_diff
       INTRINSIC SQRT
       INTEGER iu
+      REAL sina
+      REAL sina_diff
+      INTRINSIC SIN
+      REAL cosa
+      REAL cosa_diff
+      INTRINSIC COS
+      REAL dir
+      EXTERNAL GETSA
+      INTEGER k
       REAL temp
       REAL(kind=8) temp0
       REAL(kind=avl_real) temp1
@@ -141,20 +149,6 @@ C
       CALL BDFORC_D()
       CALL TPFORC_D()
 C
-      sina = SIN(alfa)
-      cosa = COS(alfa)
-C     calculate stability axis based values
-      CALL GETSA(lnasa_sa, satype, dir)
-      crsax = dir*(crtot*cosa+cntot*sina)
-      cnsax = dir*(cntot*cosa-crtot*sina)
-C do the sign change here so that it included in the derivative
-C routines         
-      DO k=1,ncontrol
-        crtot_d_diff(k) = dir*crtot_d_diff(k)
-        crtot_d(k) = dir*crtot_d(k)
-        cntot_d_diff(k) = dir*cntot_d_diff(k)
-        cntot_d(k) = dir*cntot_d(k)
-      ENDDO
 C---------------------------------------------------------
 C---- add baseline reference CD
 C
@@ -184,36 +178,88 @@ C
      +  cdref_diff+cdref*vmag_diff)
       cztot = cztot + cdref*vinf(3)*vmag
 C
+      cxtot_u_diff(1) = cxtot_u_diff(1) + vmag*cdref_diff + cdref*
+     +  vmag_diff
       cxtot_u(1) = cxtot_u(1) + cdref*vmag
       cytot_u_diff(2) = cytot_u_diff(2) + vmag*cdref_diff + cdref*
      +  vmag_diff
       cytot_u(2) = cytot_u(2) + cdref*vmag
+      cztot_u_diff(3) = cztot_u_diff(3) + vmag*cdref_diff + cdref*
+     +  vmag_diff
       cztot_u(3) = cztot_u(3) + cdref*vmag
       DO iu=1,3
         cdtot_u_diff(iu) = cdtot_u_diff(iu) + 2.0*(vinf(iu)*cdref_diff+
      +    cdref*vinf_diff(iu))
         cdtot_u(iu) = cdtot_u(iu) + cdref*2.0*vinf(iu)
-        cxtot_u(iu) = cxtot_u(iu) + cdref*vinf(1)*vinf(iu)/vmag
+        temp0 = cdref/vmag
+        temp1 = vinf(1)*vinf(iu)
+        cxtot_u_diff(iu) = cxtot_u_diff(iu) + temp0*(vinf(iu)*vinf_diff(
+     +    1)+vinf(1)*vinf_diff(iu)) + temp1*(cdref_diff-temp0*vmag_diff)
+     +    /vmag
+        cxtot_u(iu) = cxtot_u(iu) + temp1*temp0
         temp0 = cdref/vmag
         temp1 = vinf(2)*vinf(iu)
         cytot_u_diff(iu) = cytot_u_diff(iu) + temp0*(vinf(iu)*vinf_diff(
      +    2)+vinf(2)*vinf_diff(iu)) + temp1*(cdref_diff-temp0*vmag_diff)
      +    /vmag
         cytot_u(iu) = cytot_u(iu) + temp1*temp0
-        cztot_u(iu) = cztot_u(iu) + cdref*vinf(3)*vinf(iu)/vmag
+        temp0 = cdref/vmag
+        temp1 = vinf(3)*vinf(iu)
+        cztot_u_diff(iu) = cztot_u_diff(iu) + temp0*(vinf(iu)*vinf_diff(
+     +    3)+vinf(3)*vinf_diff(iu)) + temp1*(cdref_diff-temp0*vmag_diff)
+     +    /vmag
+        cztot_u(iu) = cztot_u(iu) + temp1*temp0
       ENDDO
-C compute the stability derivatives every time (it's quite cheap)
 C
-      CALL calc_stab_derivs_D()
+      cditot_diff = cdtot_diff - cdvtot_diff
+      cditot = cdtot - cdvtot
+      sina_diff = COS(alfa)*alfa_diff
+      sina = SIN(alfa)
+      cosa_diff = -(SIN(alfa)*alfa_diff)
+      cosa = COS(alfa)
+C     calculate stability axis based values
+      CALL GETSA(lnasa_sa, satype, dir)
+C do the sign change here so that it included in the derivative
+C routines         
+      DO k=1,ncontrol
+        crtot_d_diff(k) = dir*crtot_d_diff(k)
+        crtot_d(k) = dir*crtot_d(k)
+        cntot_d_diff(k) = dir*cntot_d_diff(k)
+        cntot_d(k) = dir*cntot_d(k)
+      ENDDO
+      crsax_diff = dir*(cosa*crtot_diff+crtot*cosa_diff+sina*cntot_diff+
+     +  cntot*sina_diff)
+      crsax = dir*(crtot*cosa+cntot*sina)
+      cmsax = cmtot
+C apply sign to body-axis variables
+      cnsax_diff = dir*(cosa*cntot_diff+cntot*cosa_diff-sina*crtot_diff-
+     +  crtot*sina_diff)
+      cnsax = dir*(cntot*cosa-crtot*sina)
+      cxbax_diff = dir*cxtot_diff
+      cxbax = dir*cxtot
+      cybax_diff = cytot_diff
+      cybax = cytot
+      czbax_diff = dir*cztot_diff
+      czbax = dir*cztot
+      crbax_diff = dir*crtot_diff
+      crbax = dir*crtot
+      cmbax_diff = cmtot_diff
+      cmbax = cmtot
+C compute the stability derivatives every time (it's quite cheap)
+      cnbax_diff = dir*cntot_diff
+      cnbax = dir*cntot
+C
+C
+      CALL CALC_STAB_DERIVS_D()
       RETURN
       END
 
 C  Differentiation of sfforc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: cdtot cltot cxtot cytot cztot
 C                crtot cmtot cntot cdvtot cdtot_a cltot_a cdtot_u
-C                cltot_u cytot_u crtot_u cmtot_u cntot_u cdtot_d
-C                cltot_d cxtot_d cytot_d cztot_d crtot_d cmtot_d
-C                cntot_d
+C                cltot_u cxtot_u cytot_u cztot_u crtot_u cmtot_u
+C                cntot_u cdtot_d cltot_d cxtot_d cytot_d cztot_d
+C                crtot_d cmtot_d cntot_d
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref rle chord rle1 chord1 rle2 chord2 wstrip
 C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_u
@@ -428,7 +474,17 @@ C
       ENDDO
       DO ii1=1,numax
         DO ii2=1,nsmax
+          cxst_u_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,numax
+        DO ii2=1,nsmax
           cyst_u_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,numax
+        DO ii2=1,nsmax
+          czst_u_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
       DO ii1=1,numax
@@ -1608,9 +1664,11 @@ C
           clst_u_diff(j, n) = cosa*cfz_u_diff(n) + cfz_u(n)*cosa_diff - 
      +      sina*cfx_u_diff(n) - cfx_u(n)*sina_diff
           clst_u(j, n) = -(cfx_u(n)*sina) + cfz_u(n)*cosa
+          cxst_u_diff(j, n) = cfx_u_diff(n)
           cxst_u(j, n) = cfx_u(n)
           cyst_u_diff(j, n) = cfy_u_diff(n)
           cyst_u(j, n) = cfy_u(n)
+          czst_u_diff(j, n) = cfz_u_diff(n)
           czst_u(j, n) = cfz_u(n)
         ENDDO
 C
@@ -1792,7 +1850,13 @@ C
         cltot_u_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,numax
+        cxtot_u_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,numax
         cytot_u_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,numax
+        cztot_u_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,numax
         crtot_u_diff(ii1) = 0.D0
@@ -1872,7 +1936,17 @@ C
       ENDDO
       DO ii1=1,numax
         DO ii2=1,nfmax
+          cxs_u_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,numax
+        DO ii2=1,nfmax
           cys_u_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,numax
+        DO ii2=1,nfmax
+          czs_u_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
       DO ii1=1,numax
@@ -1966,9 +2040,11 @@ C
           cds_u(is, n) = 0.
           cls_u_diff(is, n) = 0.D0
           cls_u(is, n) = 0.
+          cxs_u_diff(is, n) = 0.D0
           cxs_u(is, n) = 0.
           cys_u_diff(is, n) = 0.D0
           cys_u(is, n) = 0.
+          czs_u_diff(is, n) = 0.D0
           czs_u(is, n) = 0.
           crs_u_diff(is, n) = 0.D0
           crs_u(is, n) = 0.
@@ -2091,12 +2167,18 @@ C
      +        , n) + clst_u(j, n)*(sr_diff-temp2*sref_diff)/sref
             cls_u(is, n) = cls_u(is, n) + clst_u(j, n)*temp2
 C
-            cxs_u(is, n) = cxs_u(is, n) + cxst_u(j, n)*sr/sref
+            temp2 = sr/sref
+            cxs_u_diff(is, n) = cxs_u_diff(is, n) + temp2*cxst_u_diff(j
+     +        , n) + cxst_u(j, n)*(sr_diff-temp2*sref_diff)/sref
+            cxs_u(is, n) = cxs_u(is, n) + cxst_u(j, n)*temp2
             temp2 = sr/sref
             cys_u_diff(is, n) = cys_u_diff(is, n) + temp2*cyst_u_diff(j
      +        , n) + cyst_u(j, n)*(sr_diff-temp2*sref_diff)/sref
             cys_u(is, n) = cys_u(is, n) + cyst_u(j, n)*temp2
-            czs_u(is, n) = czs_u(is, n) + czst_u(j, n)*sr/sref
+            temp2 = sr/sref
+            czs_u_diff(is, n) = czs_u_diff(is, n) + temp2*czst_u_diff(j
+     +        , n) + czst_u(j, n)*(sr_diff-temp2*sref_diff)/sref
+            czs_u(is, n) = czs_u(is, n) + czst_u(j, n)*temp2
 C
             temp2 = crst_u(j, n)*sr*cr/(sref*bref)
             crs_u_diff(is, n) = crs_u_diff(is, n) + (sr*cr*crst_u_diff(j
@@ -2270,9 +2352,11 @@ C
             cdtot_u(n) = cdtot_u(n) + cds_u(is, n)
             cltot_u_diff(n) = cltot_u_diff(n) + cls_u_diff(is, n)
             cltot_u(n) = cltot_u(n) + cls_u(is, n)
+            cxtot_u_diff(n) = cxtot_u_diff(n) + cxs_u_diff(is, n)
             cxtot_u(n) = cxtot_u(n) + cxs_u(is, n)
             cytot_u_diff(n) = cytot_u_diff(n) + cys_u_diff(is, n)
             cytot_u(n) = cytot_u(n) + cys_u(is, n)
+            cztot_u_diff(n) = cztot_u_diff(n) + czs_u_diff(is, n)
             cztot_u(n) = cztot_u(n) + czs_u(is, n)
             crtot_u_diff(n) = crtot_u_diff(n) + crs_u_diff(is, n)
             crtot_u(n) = crtot_u(n) + crs_u(is, n)
@@ -2346,9 +2430,11 @@ C
           cdtot_u(n) = 2.0*cdtot_u(n)
           cltot_u_diff(n) = 2.0*cltot_u_diff(n)
           cltot_u(n) = 2.0*cltot_u(n)
+          cxtot_u_diff(n) = 2.0*cxtot_u_diff(n)
           cxtot_u(n) = 2.0*cxtot_u(n)
           cytot_u_diff(n) = 0.D0
           cytot_u(n) = 0.
+          cztot_u_diff(n) = 2.0*cztot_u_diff(n)
           cztot_u(n) = 2.0*cztot_u(n)
           crtot_u_diff(n) = 0.D0
           crtot_u(n) = 0.
@@ -2397,12 +2483,12 @@ C
 
 C  Differentiation of bdforc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: cdtot cltot cxtot cytot cztot
-C                crtot cmtot cntot cdtot_u cltot_u cytot_u crtot_u
-C                cmtot_u cntot_u
+C                crtot cmtot cntot cdtot_u cltot_u cxtot_u cytot_u
+C                cztot_u crtot_u cmtot_u cntot_u
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref mach cdtot cltot cxtot cytot cztot crtot
-C                cmtot cntot cdtot_u cltot_u cytot_u crtot_u cmtot_u
-C                cntot_u
+C                cmtot cntot cdtot_u cltot_u cxtot_u cytot_u cztot_u
+C                crtot_u cmtot_u cntot_u
 C SFFORC
 C
 C
@@ -2422,9 +2508,9 @@ C
       REAL cdbdy_u(numax), clbdy_u(numax), cxbdy_u(numax), cybdy_u(numax
      +     ), czbdy_u(numax), crbdy_u(numax), cmbdy_u(numax), cnbdy_u(
      +     numax)
-      REAL cdbdy_u_diff(numax), clbdy_u_diff(numax), cybdy_u_diff(numax)
-     +     , crbdy_u_diff(numax), cmbdy_u_diff(numax), cnbdy_u_diff(
-     +     numax)
+      REAL cdbdy_u_diff(numax), clbdy_u_diff(numax), cxbdy_u_diff(numax)
+     +     , cybdy_u_diff(numax), czbdy_u_diff(numax), crbdy_u_diff(
+     +     numax), cmbdy_u_diff(numax), cnbdy_u_diff(numax)
       REAL betm
       REAL betm_diff
       INTRINSIC SQRT
@@ -2524,6 +2610,12 @@ C
           fb_u_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
+      DO ii1=1,numax
+        cxbdy_u_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,numax
+        czbdy_u_diff(ii1) = 0.D0
+      ENDDO
       DO ii1=1,3
         esl_diff(ii1) = 0.D0
       ENDDO
@@ -2585,9 +2677,11 @@ C
           cdbdy_u(iu) = 0.0
           clbdy_u_diff(iu) = 0.D0
           clbdy_u(iu) = 0.0
+          cxbdy_u_diff(iu) = 0.D0
           cxbdy_u(iu) = 0.0
           cybdy_u_diff(iu) = 0.D0
           cybdy_u(iu) = 0.0
+          czbdy_u_diff(iu) = 0.D0
           czbdy_u(iu) = 0.0
           crbdy_u_diff(iu) = 0.D0
           crbdy_u(iu) = 0.0
@@ -2779,12 +2873,18 @@ C
      +        iu)*sina_diff-temp0*sref_diff)/sref
             clbdy_u(iu) = clbdy_u(iu) + 2.0*temp0
 C
-            cxbdy_u(iu) = cxbdy_u(iu) + fb_u(1, iu)*2.0/sref
+            temp0 = fb_u(1, iu)/sref
+            cxbdy_u_diff(iu) = cxbdy_u_diff(iu) + 2.0*(fb_u_diff(1, iu)-
+     +        temp0*sref_diff)/sref
+            cxbdy_u(iu) = cxbdy_u(iu) + 2.0*temp0
             temp0 = fb_u(2, iu)/sref
             cybdy_u_diff(iu) = cybdy_u_diff(iu) + 2.0*(fb_u_diff(2, iu)-
      +        temp0*sref_diff)/sref
             cybdy_u(iu) = cybdy_u(iu) + 2.0*temp0
-            czbdy_u(iu) = czbdy_u(iu) + fb_u(3, iu)*2.0/sref
+            temp0 = fb_u(3, iu)/sref
+            czbdy_u_diff(iu) = czbdy_u_diff(iu) + 2.0*(fb_u_diff(3, iu)-
+     +        temp0*sref_diff)/sref
+            czbdy_u(iu) = czbdy_u(iu) + 2.0*temp0
 C
             temp0 = mb_u(1, iu)/(sref*bref)
             crbdy_u_diff(iu) = crbdy_u_diff(iu) + 2.0*(mb_u_diff(1, iu)-
@@ -2827,10 +2927,12 @@ C
           cltot_u_diff(iu) = cltot_u_diff(iu) + clbdy_u_diff(iu)
           cltot_u(iu) = cltot_u(iu) + clbdy_u(iu)
 C
+          cxtot_u_diff(iu) = cxtot_u_diff(iu) + cxbdy_u_diff(iu)
           cxtot_u(iu) = cxtot_u(iu) + cxbdy_u(iu)
 Cccc      CXTOT_U(IU) = CYTOT_U(IU) + CYBDY_U(IU)   <<< BUG  5 Dec 10  MD
           cytot_u_diff(iu) = cytot_u_diff(iu) + cybdy_u_diff(iu)
           cytot_u(iu) = cytot_u(iu) + cybdy_u(iu)
+          cztot_u_diff(iu) = cztot_u_diff(iu) + czbdy_u_diff(iu)
           cztot_u(iu) = cztot_u(iu) + czbdy_u(iu)
 C
           crtot_u_diff(iu) = crtot_u_diff(iu) + crbdy_u_diff(iu)

@@ -87,13 +87,6 @@ C
       CALL TPFORC
 C
        
-      DO K = 1, NCONTROL
-        ! do the sign change here so that it included in the derivative
-        ! routines         
-        CRTOT_D(K) = DIR*CRTOT_D(K)
-        CNTOT_D(K) = DIR*CNTOT_D(K)
-      ENDDO
-      
 C---------------------------------------------------------
 C---- add baseline reference CD
 C
@@ -123,6 +116,14 @@ C
       COSA = COS(ALFA)
 C     calculate stability axis based values
       CALL GETSA(LNASA_SA,SATYPE,DIR)
+      
+      DO K = 1, NCONTROL
+        ! do the sign change here so that it included in the derivative
+        ! routines         
+        CRTOT_D(K) = DIR*CRTOT_D(K)
+        CNTOT_D(K) = DIR*CNTOT_D(K)
+      ENDDO
+      
       CRSAX = DIR*(CRTOT*COSA + CNTOT*SINA)
       CMSAX = CMTOT
       CNSAX = DIR*(CNTOT*COSA - CRTOT*SINA)

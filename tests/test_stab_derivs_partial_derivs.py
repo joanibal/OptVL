@@ -40,11 +40,11 @@ class TestResidualUPartials(unittest.TestCase):
 
     def test_fwd_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
-            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[6]
 
             res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, mode="FD", step=1e-5
-            )[5]
+            )[6]
 
             np.testing.assert_allclose(
                 res_u_seeds,
@@ -55,7 +55,7 @@ class TestResidualUPartials(unittest.TestCase):
     def test_rev_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
         # for con_key in ["beta", "beta"]:
-            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[6]
 
             num_gamma = self.ovl_solver.get_mesh_size()
             np.random.seed(111)
@@ -87,11 +87,11 @@ class TestResidualUPartials(unittest.TestCase):
 
                 res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )[5]
+                )[6]
 
                 res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
-                )[5]
+                )[6]
 
                 abs_error = np.abs(res_u_seeds.flatten() - res_u_seeds_FD.flatten())
                 rel_error = np.abs((res_u_seeds.flatten() - res_u_seeds_FD.flatten()) / (res_u_seeds.flatten() + 1e-15))
@@ -125,7 +125,7 @@ class TestResidualUPartials(unittest.TestCase):
 
                 res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )[5]
+                )[6]
 
                 # do dot product
                 res_sum = np.sum(res_u_seeds_rev * res_u_seeds_fwd)
@@ -147,11 +147,11 @@ class TestResidualUPartials(unittest.TestCase):
         gamma_u_seeds = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
         # gamma_u_seeds = np.array([[1],[0]])
 
-        res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[5]
+        res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[6]
 
         res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
             gamma_u_seeds=gamma_u_seeds, mode="FD", step=1e-0
-        )[5]
+        )[6]
 
         np.testing.assert_allclose(
             res_u_seeds,
@@ -165,7 +165,7 @@ class TestResidualUPartials(unittest.TestCase):
 
         res_u_seeds_rev = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
-        res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[5]
+        res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[6]
         self.ovl_solver.clear_ad_seeds_fast()
 
         gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[4]
@@ -183,11 +183,11 @@ class TestResidualUPartials(unittest.TestCase):
     
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[5]
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[6]
 
             res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 ref_seeds={ref_key: 1.0}, mode="FD", step=1e-5
-            )[5]
+            )[6]
             
             print(res_u_seeds, res_u_seeds_FD)
 
@@ -396,7 +396,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
 
             for deriv_func in sd_d:
                 sens_label = f"{deriv_func} wrt {ref_key}"
-                print(sens_label, sd_d[deriv_func], sd_d_fd[deriv_func])
+                # print(sens_label, sd_d[deriv_func], sd_d_fd[deriv_func])
                 
                 tol = 1e-8
                 if np.abs( sd_d[deriv_func]) < tol or np.abs(sd_d_fd[deriv_func]) < tol:
@@ -437,7 +437,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
             # do dot product
             ref_sum = np.sum(ref_seeds_rev[ref_key])
 
-            print(f"cs_dervs wrt {ref_key}", "rev", ref_sum, "fwd", stab_deriv_sum)
+            # print(f"cs_dervs wrt {ref_key}", "rev", ref_sum, "fwd", stab_deriv_sum)
 
             np.testing.assert_allclose(
                 ref_sum,

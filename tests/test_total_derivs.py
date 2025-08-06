@@ -63,6 +63,7 @@ class TestTotals(unittest.TestCase):
         coef_data_peturb = self.ovl_solver.get_total_forces()
         consurf_derivs_peturb = self.ovl_solver.get_control_stab_derivs()
         stab_deriv_derivs_peturb = self.ovl_solver.get_stab_derivs()
+        body_axis_deriv_petrub = self.ovl_solver.get_body_axis_derivs()
 
         self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-1*step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1*step)
@@ -81,7 +82,7 @@ class TestTotals(unittest.TestCase):
         coef_data = self.ovl_solver.get_total_forces()
         consurf_derivs = self.ovl_solver.get_control_stab_derivs()
         stab_deriv_derivs = self.ovl_solver.get_stab_derivs()
-
+        body_axis_deriv = self.ovl_solver.get_body_axis_derivs()
 
         func_seeds = {}
         for func_key in coef_data:
@@ -99,18 +100,26 @@ class TestTotals(unittest.TestCase):
                 stab_deriv_derivs_peturb[func_key] - stab_deriv_derivs[func_key]
             ) / step
 
-        return func_seeds, consurf_derivs_seeds, stab_derivs_seeds
+        body_axis_derivs_seeds = {}
+        for deriv_func in body_axis_deriv:
+            body_axis_derivs_seeds[deriv_func] = (
+                body_axis_deriv_petrub[deriv_func] - body_axis_deriv[deriv_func]
+            ) / step
+
+        return func_seeds, consurf_derivs_seeds, stab_derivs_seeds, body_axis_derivs_seeds
 
     def test_aero_constraint(self):
         # compare the analytical gradients with finite difference for each constraint and function
         func_vars = self.ovl_solver.case_var_to_fort_var
         stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
+        body_axis_derivs = self.ovl_solver.case_body_derivs_to_fort_var
         sens_funcs = self.ovl_solver.execute_run_sensitivities(func_vars)
         sens_sd = self.ovl_solver.execute_run_sensitivities([], stab_derivs=stab_derivs, print_timings=False)
+        sens_bd = self.ovl_solver.execute_run_sensitivities([], body_axis_derivs=body_axis_derivs, print_timings=False)
 
         for con_key in self.ovl_solver.con_var_to_fort_var:
             # for con_key in ['beta']:
-            func_seeds, consurf_deriv_seeds, stab_derivs_seeds = self.finite_dif([con_key], {}, {}, {}, step=1.0e-5)
+            func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif([con_key], {}, {}, {}, step=1.0e-5)
 
             for func_key in func_vars:
                 ad_dot = sens_funcs[func_key][con_key]
@@ -164,6 +173,33 @@ class TestTotals(unittest.TestCase):
                             rtol=1e-4,
                             err_msg=f"{func_key} wrt {con_key}",
                         )
+            
+            for func_key in body_axis_derivs_seeds:
+                    ad_dot = sens_bd[func_key][con_key]
+                    func_dot = body_axis_derivs_seeds[func_key]
+
+                    rel_err = np.abs(ad_dot - func_dot) / np.abs(func_dot + 1e-20)
+
+                    print(
+                        f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                    )
+                    
+                    tol = 1e-8
+                    if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
+                        # If either value is basically zero, use an absolute tolerance
+                        np.testing.assert_allclose(
+                            ad_dot,
+                            func_dot,
+                            atol=1e-9,
+                            err_msg=f"{func_key} wrt {con_key}",
+                        )
+                    else:
+                        np.testing.assert_allclose(
+                            ad_dot,
+                            func_dot,
+                            rtol=1e-4,
+                            err_msg=f"{func_key} wrt {con_key}",
+                        )
                     
     def test_geom(self):
         # compare the analytical gradients with finite difference for each
@@ -178,10 +214,11 @@ class TestTotals(unittest.TestCase):
             consurf_vars.append(self.ovl_solver._get_deriv_key(cs_names[0], func_key))
    
             
-        stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
-        # sens = self.ovl_solver.execute_run_sensitivities(func_vars)
         func_vars = self.ovl_solver.case_var_to_fort_var
-        sens = self.ovl_solver.execute_run_sensitivities(func_vars, consurf_derivs=consurf_vars, stab_derivs=stab_derivs, print_timings=False)
+        stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
+        body_axis_derivs = self.ovl_solver.case_body_derivs_to_fort_var
+        
+        sens = self.ovl_solver.execute_run_sensitivities(func_vars, consurf_derivs=consurf_vars, stab_derivs=stab_derivs, body_axis_derivs=body_axis_derivs, print_timings=False)
 
         # for con_key in self.ovl_solver.con_var_to_fort_var:
         sens_FD = {}
@@ -193,7 +230,7 @@ class TestTotals(unittest.TestCase):
                 rand_arr = np.random.rand(*arr.shape)
                 rand_arr /= np.linalg.norm(rand_arr)
 
-                func_seeds, consurf_deriv_seeds, stab_derivs_seeds = self.finite_dif([], {surf_key: {geom_key: rand_arr}}, {}, {}, step=1.0e-7)
+                func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif([], {surf_key: {geom_key: rand_arr}}, {}, {}, step=1.0e-7)
 
                 for func_key in func_vars:
                     geom_dot = np.sum(sens[func_key][surf_key][geom_key] * rand_arr)
@@ -276,6 +313,36 @@ class TestTotals(unittest.TestCase):
                                 rtol=3e-3,
                                 err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                             )                
+                
+                for func_key in body_axis_derivs_seeds:
+                        geom_dot = np.sum(sens[func_key][surf_key][geom_key] * rand_arr)
+                        func_dot = body_axis_derivs_seeds[func_key]
+
+
+                        rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
+
+                        print(
+                            f"{func_key}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                        )
+                        
+                        tol = 5e-7
+                        if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
+                            # If either value is basically zero, use an absolute tolerance
+                            np.testing.assert_allclose(
+                                geom_dot,
+                                func_dot,
+                                atol=tol,
+                                err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
+                            )
+                        else:
+                            np.testing.assert_allclose(
+                                geom_dot,
+                                func_dot,
+                                rtol=3e-3,
+                                err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
+                            )                
+                
+                    
 
     def test_params(self):
         # compare the analytical gradients with finite difference for each constraint and function
@@ -351,7 +418,7 @@ class TestTotals(unittest.TestCase):
 
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             # for con_key in ['beta']:
-            func_seeds, consurf_deriv_seeds, stab_derivs_seeds = self.finite_dif([], {}, {}, {ref_key:1.0}, step=1.0e-5)
+            func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif([], {}, {}, {ref_key:1.0}, step=1.0e-5)
 
             for func_key in func_vars:
                 ad_dot = sens[func_key][ref_key]

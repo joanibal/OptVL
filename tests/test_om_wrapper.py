@@ -146,7 +146,7 @@ class TestOMWrapper(unittest.TestCase):
     def test_CM_solve(self):
         prob = self.prob
         prob.model.add_design_var("ovlsolver.alpha", lower=-10, upper=10)
-        prob.model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
+        prob.model.add_constraint("ovlsolver.Cm", equals=0.0, scaler=1e3)
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
         prob.setup(mode='rev')
         prob.driver = om.ScipyOptimizeDriver()
@@ -189,7 +189,7 @@ class TestOMWrapper(unittest.TestCase):
         prob.model.add_constraint("ovlsolver.CL", equals=cl_star)
         prob.model.add_constraint("ovlsolver.dCL/dalpha", equals=-dcl_dalpha_star)
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
-        prob.model.add_objective("ovlsolver.CM", scaler=1e3)
+        prob.model.add_objective("ovlsolver.Cm", scaler=1e3)
         prob.setup(mode='rev')
         prob.run_model()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")

@@ -27,7 +27,7 @@ python -m unittest -v test_analysis.py
 python -m unittest -v test_surf_geom.py
 python -m unittest -v test_contraints.py
 python -m unittest -v test_stab_derivs.py
-
+python -m unittest -v test_body_axis_derivs.py
 # test eigenmode analysis
 python -m unittest -v test_eigen_analysis.py
 
@@ -41,6 +41,8 @@ python -m unittest -v test_consurf_partial_derivs.TestResidualDPartials
 python -m unittest -v test_consurf_partial_derivs.TestConSurfDerivsPartials
 python -m unittest -v test_stab_derivs_partial_derivs.TestResidualUPartials
 python -m unittest -v test_stab_derivs_partial_derivs.TestStabDerivDerivsPartials
+
+python -m unittest -v test_body_axis_derivs_partial_derivs.py
 python -m unittest -v test_total_derivs.py
 
 # test openmdao wrapper and basic optimization results

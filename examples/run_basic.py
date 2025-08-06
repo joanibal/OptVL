@@ -19,7 +19,7 @@ ovl.execute_run()
 # print data about the run 
 force_data = ovl.get_total_forces()
 print(
-    f'CL:{force_data["CL"]:10.6f}   CD:{force_data["CD"]:10.6f}   CM:{force_data["CM"]:10.6f}'
+    f'CL:{force_data["CL"]:10.6f}   CD:{force_data["CD"]:10.6f}   Cm:{force_data["Cm"]:10.6f}'
 )
 
 # lets look at the cp countours 
