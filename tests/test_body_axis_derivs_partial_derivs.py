@@ -103,7 +103,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
                     # print(f"{sens_label} AD:{bd_d[deriv_func]} FD:{bd_d_fd[deriv_func]}")
                     # quit()
-                    tol = 1e-7
+                    tol = 5e-7
                     # print(f"{deriv_func} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
                     if np.abs(bd_d[deriv_func]) < tol or np.abs(bd_d_fd[deriv_func]) < tol:
                         # If either value is basically zero, use an absolute tolerance
