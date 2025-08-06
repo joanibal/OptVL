@@ -353,7 +353,7 @@ class TestTotals(unittest.TestCase):
 
         for param_key in self.ovl_solver.param_idx_dict:
             # for con_key in ['beta']:
-            func_seeds, consurf_deriv_seeds, stab_derivs_seeds  = self.finite_dif([], {}, {param_key:1.0}, {}, step=1.0e-6)
+            func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds  = self.finite_dif([], {}, {param_key:1.0}, {}, step=1.0e-6)
 
             for func_key in func_vars:
                 ad_dot = sens[func_key][param_key]
