@@ -2,6 +2,8 @@ from setuptools import setup
 import re
 import os
 import subprocess
+import re
+from pathlib import Path
 
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
@@ -29,15 +31,25 @@ def make_avl_lib():
         raise OSError("make", f"The compile command failed! Check the log at {compile_log} for more information.")
 
 
+def get_version_from_pyproject():
+    pyproject = Path(__file__).parent / "pyproject.toml"
+    text = pyproject.read_text()
+
+    match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
+    if match:
+        return match.group(1)
+    raise RuntimeError("Version not found in pyproject.toml")
 
 
 if __name__ == "__main__":
     # to install locally use...
     # `python setup_deprecated.py develop`
 
+    print(get_version_from_pyproject())
+
     setup(
         name="optvl",
-        version="dev",
+        version=get_version_from_pyproject(),
         description="A direct Python interface for Mark Drela and Harold Youngren's famous AVL code.",
         long_description=long_description,
         long_description_content_type="text/markdown",
