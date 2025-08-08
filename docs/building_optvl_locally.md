@@ -5,8 +5,9 @@ After cloning the repo and navigating to the root directory there are two method
 ## Using Meson
 This method exists to integrate with the tools necessary to package the binaries into wheels for distribution on PYPI, 
 The steps are 
+
 1. install meson and ninja
-2. run `pip install -e .`
+2. run `pip install .`
 
 The `pyproject.toml` should hold all the information pip needs to use the meson backend for compiling the code. 
 To modify aspects of the build, such as the compilation flags, see the `meson.build` file. 
