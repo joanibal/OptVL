@@ -17,7 +17,7 @@ class OVLGroup(om.Group):
         output_dir: the output directory for the files generated
         input_param_vals: flag to turn on the flght parameters (Mach, Velocity, etc.) as inputs
         input_ref_val: flag to turn on the geometric reference values (Sref, Cref, Bref) as inputs
-        output_stability_derivs: flag to turn on the output of stability derivatives
+        output_stabililty_derivs: flag to turn on the output of stability derivatives
         output_con_surf_derivs: flag to turn on the output of control surface deflections 
     """
     def initialize(self):
@@ -31,8 +31,8 @@ class OVLGroup(om.Group):
         self.options.declare("input_ref_vals", types=bool, default=False)
         self.options.declare("input_airfoil_geom", types=bool, default=False)
         
-        self.options.declare("output_stabililty_derivs", types=bool, default=False)
         self.options.declare("output_stability_derivs", types=bool, default=False)
+        self.options.declare("output_body_axis_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
 
     def setup(self):
@@ -43,11 +43,8 @@ class OVLGroup(om.Group):
         input_ref_vals = self.options["input_ref_vals"]
         input_airfoil_geom = self.options["input_airfoil_geom"]
         
-        if self.options['output_stabililty_derivs']:
-            warn("`output_stabililty_derivs` is now `output_stability_derivs` (typo fixed) and will be removed in the next release.", DeprecationWarning)
-            output_stability_derivs = self.options["output_stabililty_derivs"]
-        else:
-            output_stability_derivs = self.options["output_stability_derivs"]
+        output_stability_derivs = self.options["output_stability_derivs"]
+        output_body_axis_derivs = self.options["output_body_axis_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
 
         self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
@@ -62,6 +59,7 @@ class OVLGroup(om.Group):
                                     input_ref_vals=input_ref_vals,
                                     input_airfoil_geom=input_airfoil_geom,
                                     output_stability_derivs=output_stability_derivs,
+                                    output_body_axis_derivs=output_body_axis_derivs,
                                     output_con_surf_derivs=output_con_surf_derivs),
                                     promotes=["*"])
         if self.options["write_grid"]:
@@ -370,6 +368,7 @@ class OVLFuncsComp(om.ExplicitComponent):
     def initialize(self):
         self.options.declare("ovl", types=OVLSolver, recordable=False)
         self.options.declare("output_stability_derivs", types=bool, default=False)
+        self.options.declare("output_body_axis_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
@@ -404,14 +403,17 @@ class OVLFuncsComp(om.ExplicitComponent):
         for func_key in self.ovl.case_var_to_fort_var:
             self.add_output(func_key)
 
-        self.output_con_surf_derivs = self.options["output_con_surf_derivs"]
-        if self.output_con_surf_derivs:
+        if self.options["output_con_surf_derivs"]:
             for func_key in self.ovl.case_derivs_to_fort_var:
                 self.add_output(func_key)
         
-        self.output_stability_derivs = self.options["output_stability_derivs"]
-        if self.output_stability_derivs:
+        if self.options["output_stability_derivs"]:
             deriv_dict = self.ovl.case_stab_derivs_to_fort_var
+            for func_key in deriv_dict:
+                self.add_output(func_key)        
+        
+        if self.options["output_body_axis_derivs"]:
+            deriv_dict = self.ovl.case_body_derivs_to_fort_var
             for func_key in deriv_dict:
                 self.add_output(func_key)        
         
@@ -457,16 +459,21 @@ class OVLFuncsComp(om.ExplicitComponent):
             outputs[func_key] = run_data[func_key]
         # print(f" CD {run_data['CD']} CL {run_data['CL']}")
 
-        if self.output_con_surf_derivs:
+        if self.options["output_con_surf_derivs"]:
             consurf_derivs_seeds = self.ovl.get_control_stab_derivs()
             for func_key in consurf_derivs_seeds:
                     # var_name = f"d{func_key}_d{con_name}"
                 outputs[func_key] = consurf_derivs_seeds[func_key]
 
-        if self.output_stability_derivs:
+        if self.options["output_stability_derivs"]:
             stab_derivs = self.ovl.get_stab_derivs()
             for func_key in stab_derivs:
                 outputs[func_key] = stab_derivs[func_key]
+
+        if self.options["output_body_axis_derivs"]:
+            body_axis_derivs = self.ovl.get_body_axis_derivs()
+            for func_key in body_axis_derivs:
+                outputs[func_key] = body_axis_derivs[func_key]
                 
         # print("Funcs Compute time: ", time.time() - start_time)
 
@@ -508,7 +515,7 @@ class OVLFuncsComp(om.ExplicitComponent):
 
             geom_seeds = self.om_input_to_surf_dict(self, d_inputs)
 
-            func_seeds, _, csd_seeds, stab_derivs_seeds, _, _ = self.ovl._execute_jac_vec_prod_fwd(
+            func_seeds, _, csd_seeds, stab_derivs_seeds, body_axis_seeds, _, _ = self.ovl._execute_jac_vec_prod_fwd(
                 con_seeds=con_seeds, geom_seeds=geom_seeds, gamma_seeds=gamma_seeds, gamma_d_seeds=gamma_d_seeds, gamma_u_seeds=gamma_u_seeds,
                 param_seeds=param_seeds, ref_seeds=ref_seeds
             )
@@ -525,6 +532,11 @@ class OVLFuncsComp(om.ExplicitComponent):
                 for var in stab_derivs_seeds[func_key]:
                     var_name = f"d{func_key}_d{var}"
                     d_outputs[var_name] = stab_derivs_seeds[func_key][var]
+            
+            for func_key in body_axis_seeds:
+                for var in body_axis_seeds[func_key]:
+                    var_name = f"d{func_key}_d{var}"
+                    d_outputs[var_name] = body_axis_seeds[func_key][var]
 
         if mode == "rev":
             self.ovl.clear_ad_seeds_fast()
@@ -559,10 +571,19 @@ class OVLFuncsComp(om.ExplicitComponent):
                     if np.abs(stab_derivs_seeds[func_key]) > 0.0:
                         # print(var_name, stab_derivs_seeds[func_key])
                         print(f'  running rev mode derivs for {func_key}')
+            
+            body_axis_seeds = {}
+            for func_key in self.ovl.case_body_derivs_to_fort_var:
+                if func_key in d_outputs:
+                    body_axis_seeds[func_key] = d_outputs[func_key]
+                    
+                    if np.abs(body_axis_seeds[func_key]) > 0.0:
+                        # print(var_name, body_axis_seeds[func_key])
+                        print(f'  running rev mode derivs for {func_key}')
 
                         
             con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = self.ovl._execute_jac_vec_prod_rev(
-                func_seeds=func_seeds, consurf_derivs_seeds=csd_seeds, stab_derivs_seeds=stab_derivs_seeds
+                func_seeds=func_seeds, consurf_derivs_seeds=csd_seeds, stab_derivs_seeds=stab_derivs_seeds, body_axis_derivs_seeds=body_axis_seeds
             )
 
             if "gamma" in d_inputs:

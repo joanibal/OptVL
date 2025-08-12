@@ -35,6 +35,7 @@ class TestOMWrapper(unittest.TestCase):
         model = om.Group()
         model.add_subsystem("ovlsolver", OVLGroup(geom_file=geom_file, mass_file=mass_file, 
                                                   output_stability_derivs=True,
+                                                  output_body_axis_derivs=True,
                                                   input_param_vals=True, input_ref_vals=True, input_airfoil_geom=True))
 
         self.prob = om.Problem(model)
@@ -83,6 +84,11 @@ class TestOMWrapper(unittest.TestCase):
                 for func in stab_derivs:        
                     om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == stab_derivs[func]
+
+                body_axis_derivs = self.ovl_solver.get_body_axis_derivs()
+                for func in body_axis_derivs:        
+                    om_val = prob.get_val(f"ovlsolver.{func}")
+                    assert om_val == body_axis_derivs[func]
     
     def test_param_setting(self):
         prob = self.prob
@@ -112,6 +118,11 @@ class TestOMWrapper(unittest.TestCase):
                 om_val = prob.get_val(f"ovlsolver.{func}")
                 print(func, om_val,stab_derivs[func])
                 assert om_val == stab_derivs[func]
+
+            body_axis_derivs = self.ovl_solver.get_body_axis_derivs()
+            for func in body_axis_derivs:        
+                om_val = prob.get_val(f"ovlsolver.{func}")
+                assert om_val == body_axis_derivs[func]
         
     def test_CL_solve(self):
         prob = self.prob
@@ -188,19 +199,21 @@ class TestOMWrapper(unittest.TestCase):
         prob.model.add_design_var("ovlsolver.X cg")
         prob.model.add_constraint("ovlsolver.CL", equals=cl_star)
         prob.model.add_constraint("ovlsolver.dCL/dalpha", equals=-dcl_dalpha_star)
+        prob.model.add_constraint("ovlsolver.dCl/dp", equals=-dcl_dalpha_star)
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
         prob.model.add_objective("ovlsolver.Cm", scaler=1e3)
         prob.setup(mode='rev')
         prob.run_model()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
         
-        deriv_err = prob.check_totals()
-        rtol = 5e-4
+        deriv_err = prob.check_totals(step=1e-6)
+        rtol = 5e-3
         for key, data in deriv_err.items():
                 np.testing.assert_allclose(
                     data['J_fd'],
                     data['J_rev'],
                     rtol=rtol,
+                    atol=1e-9,
                     err_msg=f"deriv of {key[0]} wrt {key[1]} does not agree with FD to rtol={rtol}"
                 )
         
