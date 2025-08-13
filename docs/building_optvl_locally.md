@@ -17,7 +17,7 @@ This method is more convenient for quick compilation during editing, but only wo
 
 1. Copy a config file from `config/defaults` to the config directory, i.e. `cp  config/defaults/config.LINUX_GFORTRAN.mk config/config.mk`
 2. Create the shared library file with `make`
-3. Install the python wrapper with `pip install -e ./dev_make_instal`
+3. Install the python wrapper with `pip install -e ./dev_make_install`
 
 After modifying the Fortran code only `make` needs to be run again. 
 If you only modify the python code then there is no need to rerun anything. 
