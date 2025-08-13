@@ -20,7 +20,7 @@ for alpha in range(10):
     ovl.execute_run()
     run_data = ovl.get_total_forces()
     print(
-        f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
+        f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["Cm"]:10.6f}'
     )
 
 ovl.set_constraint("alpha", 0.00)
@@ -32,7 +32,7 @@ for beta in range(10):
     ovl.execute_run()
     run_data = ovl.get_total_forces()
     print(
-        f' {beta:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
+        f' {beta:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["Cm"]:10.6f}'
     )
 
 ovl.set_constraint("beta", 0.00)
@@ -44,7 +44,7 @@ for mach in np.arange(0.0,0.7,0.1):
     ovl.execute_run()
     run_data = ovl.get_total_forces()
     print(
-        f' {mach:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
+        f' {mach:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["Cm"]:10.6f}'
     )
 
 
@@ -56,5 +56,5 @@ for cl in np.arange(0.6,1.6,0.1):
     run_data = ovl.get_total_forces()
     alpha = ovl.get_parameter("alpha")
     print(
-        f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
+        f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["Cm"]:10.6f}'
     )

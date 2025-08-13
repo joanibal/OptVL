@@ -209,7 +209,7 @@ model.add_design_var("geom_param.taper_ratio", lower=0.1, upper=1.0)
 model.add_design_var("geom_param.root_chord", lower=0.5, upper=4.0)
 model.add_design_var("ovlsolver.Wing:aincs", lower=-15, upper=15)
 
-model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e2)
+model.add_constraint("ovlsolver.Cm", equals=0.0, scaler=1e2)
 model.add_constraint("ovlsolver.static margin", upper=0.3, lower=0.1, scaler=1e1)
 
 # this spiral parameter makes the problem harder to solve but more realistic 

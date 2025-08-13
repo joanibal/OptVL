@@ -83,22 +83,26 @@ class OVLSolver(object):
         # lift and drag calculated from farfield integration
         "CLff": ["CASE_R", "CLFF"],
         "CYff": ["CASE_R", "CYFF"],
-        "CDi": ["CASE_R", "CDFF"], # induced drag
+        "CDff": ["CASE_R", "CDFF"],
         
         # non-dimensionalized forces 
         "CX": ["CASE_R", "CXTOT"], 
         "CY": ["CASE_R", "CYTOT"], 
         "CZ": ["CASE_R", "CZTOT"],   
         
+        # non-dimensionalized forces (body frame)
+        "CX body axis": ["CASE_R", "CXBAX"], 
+        "CY body axis": ["CASE_R", "CYBAX"], 
+        "CZ body axis": ["CASE_R", "CZBAX"],   
+        
         # non-dimensionalized moments (body frame)
-        "CR BA": ["CASE_R", "CRTOT"],
-        "CM": ["CASE_R", "CMTOT"],
-        "CN BA": ["CASE_R", "CNTOT"],
+        "Cl": ["CASE_R", "CRBAX"],
+        "Cm": ["CASE_R", "CMBAX"],
+        "Cn": ["CASE_R", "CNBAX"],
 
         # non-dimensionalized moments (stablity frame)
-        "CR SA": ["CASE_R", "CRSAX"],
-        # "CM SA": ["CASE_R", "CMSAX"], # This is the same in both frames
-        "CN SA": ["CASE_R", "CNSAX"],
+        "Cl'": ["CASE_R", "CRSAX"],
+        "Cn'": ["CASE_R", "CNSAX"],
         
         # spanwise efficiency
         "e": ["CASE_R", "SPANEF"],
@@ -270,15 +274,40 @@ class OVLSolver(object):
         var_to_suffix = {
             "alpha": "AL",
             "beta": "BE",
-            "roll rate": "RX",
-            "pitch rate": "RY",
-            "yaw rate": "RZ",
-            }
+            "p'": "RX",
+            "q'": "RY",
+            "r'": "RZ",
+        }
+        func_to_prefix = {
+            "CL": "CL",
+            "CD": "CD",
+            "CY": "CY",
+            "Cl'": "CR",
+            "Cm":  "CM",
+            "Cn'": "CN",
+        }
         self.case_stab_derivs_to_fort_var = { "spiral parameter": ['CASE_R', "BB"], "lateral parameter": ['CASE_R', "RR"], "static margin": ['CASE_R', "SM"], "neutral point": ["CASE_R", "XNP"]}
-        for func in ["CL", "CD", "CY", "CR", "CM", "CN"]:
+        for func in ["CL", "CD", "CY", "Cl'", "Cm", "Cn'"]:
             for var in var_to_suffix:
-                self.case_stab_derivs_to_fort_var[self._get_deriv_key(var, func)] = ["CASE_R", f"{func}TOT_{var_to_suffix[var]}"]
-                
+                deriv_key = self._get_deriv_key(var, func)
+                self.case_stab_derivs_to_fort_var[deriv_key] = ["CASE_R", f"{func_to_prefix[func]}TOT_{var_to_suffix[var]}"]
+        
+        func_to_prefix = {
+            "CX": "CX",
+            "CY": "CY",
+            "CZ": "CZ",
+            "Cl": "CR",
+            "Cm": "CM",
+            "Cn": "CN",
+        }
+               
+        self.case_body_derivs_to_fort_var = {}
+        for func in ["CX", "CY", "CZ", "Cl", "Cm", "Cn"]:
+            # for var in var_to_suffix:
+            for idx_var, var in enumerate(["u","v", "w", "p", "q", "r"]): 
+                deriv_key =self._get_deriv_key(var, func)
+                self.case_body_derivs_to_fort_var[deriv_key] = ["CASE_R", f"{func_to_prefix[func]}TOT_U_BA", (idx_var,)]
+        
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
         self._init_surf_data()
@@ -552,6 +581,21 @@ class OVLSolver(object):
             deriv_data[func_key] = val_arr[()]
 
         return deriv_data
+
+    def get_body_axis_derivs(self) -> Dict[str, Dict[str, float]]:
+        """gets the body-axis derivates after an analysis run
+
+        Returns:
+            body_deriv_dict: Dictionary of stability derivatives.
+        """        
+        deriv_data = {}
+
+        for func_key, avl_key in self.case_body_derivs_to_fort_var.items():
+
+            val_arr = self.get_avl_fort_arr(*avl_key)
+            deriv_data[func_key] = val_arr[()]
+
+        return deriv_data
     
     def get_reference_data(self) -> Dict[str, float]:
         ref_data = {}
@@ -702,7 +746,7 @@ class OVLSolver(object):
         """        
         
         # warn the user that alpha, beta,
-        if param_key in ["alpha", "beta", "pb/2V", "qc/2V", "rb/2V", "CL"]:
+        if param_key in ["alpha", "beta", "pb/2V", "qc/2V", "rb/2V", "CL", "roll rate", "picth rate", "yaw rate"]:
             raise ValueError(
                 "alpha, beta, pb/2V, qc/2V, rb/2V, and CL are not allowed to be set,\n\
                              they are calculated during each run based on the constraints. to specify\n\
@@ -1533,7 +1577,7 @@ class OVLSolver(object):
         return var, func
     
     def _get_deriv_key(self, var: str, func : str) -> str:
-        return f'd{func}/d{var}'
+        return f"d{func}/d{var}"
     
 # ---------------------------
 # --- Derivative routines ---
@@ -1859,6 +1903,33 @@ class OVLSolver(object):
             
             self.set_avl_fort_arr(blk, var, val)
 
+    def get_body_axis_derivs_ad_seeds(self):
+        
+        deriv_data = {}
+
+        for func_key, avl_vars in self.case_body_derivs_to_fort_var.items():
+            deriv_data[func_key] = {}
+
+            blk, var, slicer = avl_vars
+            blk += self.ad_suffix
+            var += self.ad_suffix    
+            val_arr = self.get_avl_fort_arr(blk, var, slicer=slicer)
+            deriv_data[func_key] = val_arr[()]
+
+        return deriv_data
+
+    def set_body_axis_derivs_ad_seeds(self, body_axis_deriv_seeds: Dict[str, Dict[str, float]], scale=1.0):
+        for func_key in body_axis_deriv_seeds:
+            blk, var, slicer  = self.case_body_derivs_to_fort_var[func_key]
+
+            blk += self.ad_suffix
+            var += self.ad_suffix
+            
+            val = body_axis_deriv_seeds[func_key] * scale
+            
+            self.set_avl_fort_arr(blk, var, val, slicer=slicer)
+
+
 # --- derivative utils
     def clear_ad_seeds(self):
         for att in dir(self.avl):
@@ -2003,6 +2074,7 @@ class OVLSolver(object):
             res_seeds = self.get_residual_ad_seeds()
             consurf_derivs_seeds = self.get_consurf_derivs_ad_seeds()
             stab_derivs_seeds = self.get_stab_derivs_ad_seeds()
+            body_axis_derivs_seeds = self.get_body_axis_derivs_ad_seeds()
             res_d_seeds = self.get_residual_d_ad_seeds()
             res_u_seeds = self.get_residual_u_ad_seeds()
 
@@ -2035,6 +2107,7 @@ class OVLSolver(object):
             coef_data_peturb = self.get_total_forces()
             consurf_derivs_petrub = self.get_control_stab_derivs()
             stab_deriv_petrub = self.get_stab_derivs()
+            body_axis_deriv_petrub = self.get_body_axis_derivs()
 
             res_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
             res_d_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
@@ -2057,6 +2130,7 @@ class OVLSolver(object):
             coef_data = self.get_total_forces()
             consurf_derivs = self.get_control_stab_derivs()
             stab_deriv = self.get_stab_derivs()
+            body_axis_deriv = self.get_body_axis_derivs()
 
             res = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES", slicer=res_slice))
             res_d = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
@@ -2077,13 +2151,19 @@ class OVLSolver(object):
                 stab_derivs_seeds[deriv_func] = (
                     stab_deriv_petrub[deriv_func] - stab_deriv[deriv_func]
                 ) / step
+                
+            body_axis_derivs_seeds = {}
+            for deriv_func in body_axis_deriv:
+                body_axis_derivs_seeds[deriv_func] = (
+                    body_axis_deriv_petrub[deriv_func] - body_axis_deriv[deriv_func]
+                ) / step
 
             res_seeds = (res_peturbed - res) / step
             res_d_seeds = (res_d_peturbed - res_d) / step
             res_u_seeds = (res_u_peturbed - res_u) / step
         
         # TODO-clean: the way these arrays are returned is a bit of a mess 
-        return func_seeds, res_seeds, consurf_derivs_seeds, stab_derivs_seeds, res_d_seeds, res_u_seeds
+        return func_seeds, res_seeds, consurf_derivs_seeds, stab_derivs_seeds, body_axis_derivs_seeds, res_d_seeds, res_u_seeds
 
     def _execute_jac_vec_prod_rev(
         self,
@@ -2091,6 +2171,7 @@ class OVLSolver(object):
         res_seeds: Optional[np.ndarray] = None,
         consurf_derivs_seeds: Optional[Dict[str, float]] = None,
         stab_derivs_seeds: Optional[Dict[str, float]] = None,
+        body_axis_derivs_seeds: Optional[Dict[str, float]] = None,
         res_d_seeds: Optional[np.ndarray] = None,
         res_u_seeds: Optional[np.ndarray] = None,
         print_timings:Optional[bool]=False,
@@ -2102,6 +2183,7 @@ class OVLSolver(object):
             res_seeds:  residual AD seeds
             consurf_derivs_seeds: Control surface derivatives AD seeds
             stab_derivs_seeds: Stability derivatives AD seeds
+            body_axis_derivs_seeds: body axis derivatives AD seeds
             res_d_seeds: dResidual/d(Controls Deflection) AD seeds
             res_u_seeds: dResidual/d(flight condition) AD seeds
             print_timings: flag to show timing data
@@ -2141,6 +2223,9 @@ class OVLSolver(object):
         if stab_derivs_seeds is None:
             stab_derivs_seeds = {}
 
+        if body_axis_derivs_seeds is None:
+            body_axis_derivs_seeds = {}
+
         # set derivative seeds
         # self.clear_ad_seeds()
         time_last = time.time()
@@ -2150,6 +2235,7 @@ class OVLSolver(object):
         self.set_residual_u_ad_seeds(res_u_seeds)
         self.set_consurf_derivs_ad_seeds(consurf_derivs_seeds)
         self.set_stab_derivs_ad_seeds(stab_derivs_seeds)
+        self.set_body_axis_derivs_ad_seeds(body_axis_derivs_seeds)
 
         if print_timings:
             print(f"    Time to set seeds: {time.time() - time_last}")
@@ -2191,6 +2277,7 @@ class OVLSolver(object):
         self.set_residual_u_ad_seeds(res_u_seeds, scale=0.0)
         self.set_consurf_derivs_ad_seeds(consurf_derivs_seeds, scale=0.0)
         self.set_stab_derivs_ad_seeds(stab_derivs_seeds, scale=0.0)
+        self.set_body_axis_derivs_ad_seeds(body_axis_derivs_seeds, scale=0.0)
         if print_timings:
             print(f"    Time to clear seeds: {time.time() - time_last}")
             time_last = time.time()
@@ -2202,6 +2289,7 @@ class OVLSolver(object):
 
     def execute_run_sensitivities(self, funcs : List[str],
                                 stab_derivs: Optional[List[str]] = None,
+                                body_axis_derivs: Optional[List[str]] = None,
                                 consurf_derivs:Optional[List[str]] = None,
                                 print_timings: Optional[bool]=False) ->  Dict[str, Dict[str, float]]:
         """Run the sensitivities of the input functionals in adjoint mode
@@ -2209,6 +2297,7 @@ class OVLSolver(object):
         Args:
             funcs: force coefficients to compute the sensitivities with respect to 
             stab_derivs: stability derivatives to compute the sensitivities with respect to 
+            body_axis_derivs: body axis derivatives to compute the sensitivities with respect to 
             consurf_derivs: control surface derivates to compute the sensitivities with respect to 
             print_timings: flag to print timing information
 
@@ -2235,9 +2324,9 @@ class OVLSolver(object):
             # self.clear_ad_seeds()
             # u solver adjoint equation with RHS
             self.set_gamma_ad_seeds(-1 * pfpU)
-            solve_stab_deriv_adj=False
-            solve_con_surf_adj=False
-            self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
+            solve_gamma_u_adj=False
+            solve_gamma_d_adj=False
+            self.avl.solve_adjoint(solve_gamma_u_adj, solve_gamma_d_adj)
             if print_timings:
                 print(f"Time to solve adjoint: {time.time() - time_last}")
                 time_last = time.time()
@@ -2276,9 +2365,9 @@ class OVLSolver(object):
                 # u solver adjoint equation with RHS
                 self.set_gamma_ad_seeds(-1 * pfpU)
                 self.set_gamma_d_ad_seeds(-1 * pf_pU_d)
-                solve_stab_deriv_adj=False
-                solve_con_surf_adj=True
-                self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
+                solve_gamma_u_adj=False
+                solve_gamma_d_adj=True
+                self.avl.solve_adjoint(solve_gamma_u_adj, solve_gamma_d_adj)
                 if print_timings:
                     print(f"Time to solve adjoint: {time.time() - time_last}")
                     time_last = time.time()
@@ -2304,15 +2393,9 @@ class OVLSolver(object):
                 print("Running stab derivs")
                 time_last = time.time()
 
-            # sd_deriv_seeds = {}
             for func_key in stab_derivs:
-                # sd_deriv_seeds[func_key] = {}
                 if func_key not in sens:
                     sens[func_key] = {}
-
-                # for var_key in stab_derivs[func_key]:
-                #     sd_deriv_seeds[func_key][var_key] = 1.0
-                #     sens[func_key][var_key] = {}
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
@@ -2325,9 +2408,9 @@ class OVLSolver(object):
                 # u solver adjoint equation with RHS
                 self.set_gamma_ad_seeds(-1 * pfpU)
                 self.set_gamma_u_ad_seeds(-1 * pf_pU_u)
-                solve_stab_deriv_adj=True
-                solve_con_surf_adj=False
-                self.avl.solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
+                solve_gamma_u_adj=True
+                solve_gamma_d_adj=False
+                self.avl.solve_adjoint(solve_gamma_u_adj, solve_gamma_d_adj)
                 if print_timings:
                     print(f"Time to solve adjoint: {time.time() - time_last}")
                     time_last = time.time()
@@ -2349,6 +2432,50 @@ class OVLSolver(object):
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
                 # sd_deriv_seeds[func_key] = 0.0
+
+        if body_axis_derivs is not None:
+            if print_timings:
+                print("Running stab derivs")
+                time_last = time.time()
+
+            for func_key in body_axis_derivs:
+                if func_key not in sens:
+                    sens[func_key] = {}
+
+                # get the RHS of the adjoint equation (pFpU)
+                # TODO: remove seeds if it doesn't effect accuracy
+                _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(body_axis_derivs_seeds={func_key : 1.0})
+                if print_timings:
+                    print(f"Time to get RHS: {time.time() - time_last}")
+                    time_last = time.time()
+
+                # self.clear_ad_seeds()
+                # u solver adjoint equation with RHS
+                self.set_gamma_ad_seeds(-1 * pfpU)
+                self.set_gamma_u_ad_seeds(-1 * pf_pU_u)
+                solve_gamma_u_adj=True
+                solve_gamma_d_adj=False
+                self.avl.solve_adjoint(solve_gamma_u_adj, solve_gamma_d_adj)
+                if print_timings:
+                    print(f"Time to solve adjoint: {time.time() - time_last}")
+                    time_last = time.time()
+
+                # get the resulting adjoint vector (dfunc/dRes) from fortran
+                dfdR = self.get_residual_ad_seeds()
+                dfdR_u = self.get_residual_u_ad_seeds()
+                # self.clear_ad_seeds()
+                con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                    body_axis_derivs_seeds={func_key : 1.0}, res_seeds=dfdR, res_u_seeds=dfdR_u
+                )
+
+                if print_timings:
+                    print(f"Time to combine : {time.time() - time_last}")
+                    time_last = time.time()
+
+                sens[func_key].update(con_seeds)
+                sens[func_key].update(geom_seeds)
+                sens[func_key].update(param_seeds)
+                sens[func_key].update(ref_seeds)
 
         return sens
 

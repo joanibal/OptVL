@@ -22,7 +22,7 @@ mass_file = os.path.join(base_dir, "aircraft.mass")
 
 class TestAnalysisSweep(unittest.TestCase):
     def setUp(self):
-        self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False)
+        self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False, debug=False)
 
     def test_constrained_alpha_sweep(self):
         self.ovl_solver.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
@@ -74,7 +74,7 @@ class TestAnalysisSweep(unittest.TestCase):
                 rtol=1e-8,
             )
             np.testing.assert_allclose(
-                run_data["CM"],
+                run_data["Cm"],
                 0.0,
                 atol=1e-8,
             )
@@ -116,7 +116,7 @@ class TestAnalysisSweep(unittest.TestCase):
                 rtol=1e-8,
             )
             np.testing.assert_allclose(
-                run_data["CM"],
+                run_data["Cm"],
                 0.0,
                 atol=1e-8,
             )
@@ -134,7 +134,7 @@ class TestBodyAnalysis(unittest.TestCase):
         # the values are wonky here because of an unrealistic CDCL curve
         np.testing.assert_allclose(coef_data["CL"], 0.636031170179549, rtol=1e-8)
         np.testing.assert_allclose(coef_data["CD"], 3.6953247032454204, rtol=1e-8)
-        np.testing.assert_allclose(coef_data["CM"], -0.5736410313952236, rtol=1e-8)
+        np.testing.assert_allclose(coef_data["Cm"], -0.5736410313952236, rtol=1e-8)
 
 class TestHingeMom(unittest.TestCase):
     def setUp(self):
