@@ -287,7 +287,7 @@ class OVLSolver(object):
             "Cn'": "CN",
         }
         self.case_stab_derivs_to_fort_var = { "spiral parameter": ['CASE_R', "BB"], "lateral parameter": ['CASE_R', "RR"], "static margin": ['CASE_R', "SM"], "neutral point": ["CASE_R", "XNP"]}
-        for func in ["CL", "CD", "CY", "Cl'", "Cm", "Cn'"]:
+        for func in func_to_prefix:
             for var in var_to_suffix:
                 deriv_key = self._get_deriv_key(var, func)
                 self.case_stab_derivs_to_fort_var[deriv_key] = ["CASE_R", f"{func_to_prefix[func]}TOT_{var_to_suffix[var]}"]
