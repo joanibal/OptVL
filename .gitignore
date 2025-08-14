@@ -13,6 +13,11 @@ config/config*
 *.orig
 *.dat
 *.tar.gz
+
+dev_make_install/optvl
+
+tests/test_om_wrapper*_out
+examples/run_opt_om*_out
 # ==============================================================================
 # Github python gitignore template
 # ==============================================================================
