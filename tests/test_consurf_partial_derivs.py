@@ -41,11 +41,11 @@ class TestResidualDPartials(unittest.TestCase):
 
     def test_fwd_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
-            res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[4]
+            res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
             res_d_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, mode="FD", step=1e-5
-            )[4]
+            )[5]
 
             np.testing.assert_allclose(
                 res_d_seeds,
@@ -55,7 +55,7 @@ class TestResidualDPartials(unittest.TestCase):
 
     def test_rev_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
-            res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[4]
+            res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
             num_gamma = self.ovl_solver.get_mesh_size()
             num_consurf = self.ovl_solver.get_num_control_surfs()
@@ -88,11 +88,11 @@ class TestResidualDPartials(unittest.TestCase):
 
                 res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )[4]
+                )[5]
 
                 res_d_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
-                )[4]
+                )[5]
                 abs_error = np.abs(res_d_seeds.flatten() - res_d_seeds_FD.flatten())
                 rel_error = np.abs((res_d_seeds.flatten() - res_d_seeds_FD.flatten()) / (res_d_seeds.flatten() + 1e-15))
 
@@ -127,7 +127,7 @@ class TestResidualDPartials(unittest.TestCase):
 
                 res_d_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )[4]
+                )[5]
 
                 # do dot product
                 res_sum = np.sum(res_d_seeds_rev * res_d_seeds_fwd)
@@ -149,11 +149,11 @@ class TestResidualDPartials(unittest.TestCase):
         gamma_d_seeds = np.random.rand(num_consurf, num_gamma)
         # gamma_d_seeds = np.array([[1],[0]])
 
-        res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds)[4]
+        res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds)[5]
 
         res_d_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
             gamma_d_seeds=gamma_d_seeds, mode="FD", step=1e-0
-        )[4]
+        )[5]
 
         np.testing.assert_allclose(
             res_d_seeds,
@@ -168,7 +168,7 @@ class TestResidualDPartials(unittest.TestCase):
 
         res_d_seeds_rev = np.random.rand(num_consurf, num_gamma)
 
-        res_d_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds_fwd)[4]
+        res_d_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds_fwd)[5]
         self.ovl_solver.clear_ad_seeds_fast()
 
         gamma_d_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)[3]
@@ -301,7 +301,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds_fwd = np.random.rand(*arr.shape)
 
-                func_seeds_fwd, _, cs_d_fwd, _, _, _ = self.ovl_solver._execute_jac_vec_prod_fwd(
+                func_seeds_fwd, _, cs_d_fwd, _, _, _,_ = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds_fwd}}
                 )
                 

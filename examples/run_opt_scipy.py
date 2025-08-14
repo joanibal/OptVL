@@ -52,19 +52,19 @@ def eq_constraint(x):
     cm_target = 0.0
 
     cl_con = coeff['CL'] - cl_target
-    cm_con = coeff['CM'] - cm_target
+    cm_con = coeff['Cm'] - cm_target
 
     return np.array([cl_con, cm_con])
 
 # Define the gradient of the equality constraint
 def eq_constraint_jac(x):
-    sens = ovl_solver.execute_run_sensitivities(['CL', 'CM'])
+    sens = ovl_solver.execute_run_sensitivities(['CL', 'Cm'])
     dcl_dele = sens['CL']['Elevator']
     dcl_daincs = sens['CL']['Wing']['aincs']
     dcl_dx = np.concatenate(([dcl_dele], dcl_daincs))
     
-    dcm_dele = sens['CM']['Elevator']
-    dcm_daincs = sens['CM']['Wing']['aincs']
+    dcm_dele = sens['Cm']['Elevator']
+    dcm_daincs = sens['Cm']['Wing']['aincs']
     dcm_dx = np.concatenate(([dcm_dele], dcm_daincs))
 
     # concatinate the two and return the derivs
