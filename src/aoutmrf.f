@@ -280,12 +280,12 @@ C
      &    SSURF(N),CAVESURF(N),
      &    '| Surface area Ssurf, Ave. chord Cave'
 C
-        CDISURF = CDSURF(N)-CDVSURF(N)
+      !   CDISURF = CDSURF(N)-CDVSURF(N)
         WRITE(LUN,'(8(ES23.15),3X,A,A,A)')
      &    CLSURF(N),DIR*CRSURF(N),
      &    CYSURF(N),    CMSURF(N),
      &    CDSURF(N),DIR*CNSURF(N),
-     &    CDISURF,CDVSURF(N),
+     &    CDISURF(N),CDVSURF(N),
      &    '| CLsurf, Clsurf, CYsurf, Cmsurf, ',
      &    'CDsurf, Cnsurf, CDisurf, CDvsurf',
      &    '; Forces referred to Sref, Cref, Bref about Xref, Yref, Zref'
@@ -301,13 +301,13 @@ C
         DO JJ = 1, NS
           J = J1 + JJ-1
           ASTRP = WSTRIP(J)*CHORD(J)
-          XCP = 999.
-          IF(CL_LSTRP(J).NE.0.)  XCP = 0.25 - CMC4(J)/CL_LSTRP(J)
+          XCPSTRP = 999.
+          IF(CL_LSTRP(J).NE.0.)  XCPSTRP = 0.25 - CMC4(J)/CL_LSTRP(J)
           WRITE(LUN,'(I4,14(ES23.15))')
      &      J,RLE(1,J),RLE(2,J),RLE(3,J),
      &      CHORD(J),ASTRP,CNC(J),DWWAKE(J),
      &      CLTSTRP(J),CL_LSTRP(J),CD_LSTRP(J),CDV_LSTRP(J),
-     &      CMC4(J),CMLE(J),XCP
+     &      CMC4(J),CMLE(J),XCPSTRP
         END DO
       END DO
 C
@@ -350,7 +350,7 @@ C
      &    SSURF(N),CAVESURF(N),
      &    '| Surface area, Ave. chord'
 C
-        CDISURF = CDSURF(N)-CDVSURF(N)
+      !   CDISURF = CDSURF(N)-CDVSURF(N)
         WRITE(LUN,'(8(ES23.15),3X,A,A)')
      &    CLSURF(N),DIR*CRSURF(N),
      &    CYSURF(N),    CMSURF(N),

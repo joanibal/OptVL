@@ -365,7 +365,7 @@ cc#endif
       REAL(kind=avl_real) CDSURF,CLSURF
       REAL(kind=avl_real) CXSURF,CYSURF,CZSURF
       REAL(kind=avl_real) CRSURF,CNSURF,CMSURF
-      REAL(kind=avl_real) CDVSURF
+      REAL(kind=avl_real) CDVSURF, CDISURF
       REAL(kind=avl_real) CDS_A, CLS_A
       REAL(kind=avl_real) CDS_U, CLS_U
       REAL(kind=avl_real) CXS_U, CYS_U, CZS_U
@@ -385,8 +385,8 @@ C   Surface forces and moments referenced to SREF,CREF,BREF about XREF,YREF,ZREF
      & CDSURF(NFMAX),CLSURF(NFMAX),                ! surface CD,CL
      & CXSURF(NFMAX),CYSURF(NFMAX),CZSURF(NFMAX),  ! surface Cx,Cy,Cz
      & CRSURF(NFMAX),CNSURF(NFMAX),CMSURF(NFMAX),  ! surface Cl,Cm,Cn
-     & CDVSURF(NFMAX),                             ! surface viscous CD
-     & CDS_A(NFMAX), CLS_A(NFMAX),                                 ! alpha sens.
+     & CDVSURF(NFMAX),CDISURF(NFMAX),              ! surface viscous/invisid CD
+     & CDS_A(NFMAX), CLS_A(NFMAX),                                ! alpha sens.
      & CDS_U(NFMAX,NUMAX), CLS_U(NFMAX,NUMAX),
      & CXS_U(NFMAX,NUMAX), CYS_U(NFMAX,NUMAX), CZS_U(NFMAX,NUMAX), ! velocity and rotation sens.
      & CRS_U(NFMAX,NUMAX), CNS_U(NFMAX,NUMAX), CMS_U(NFMAX,NUMAX),

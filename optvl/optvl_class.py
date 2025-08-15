@@ -67,8 +67,8 @@ class OVLSolver(object):
         "Izx": 25,
         "visc CL_a": 26,
         "visc CL_u": 27,
-        "visc CM_a": 28,
-        "visc CM_u": 29,
+        "visc Cm_a": 28,
+        "visc Cm_u": 29,
     }
     
     # fmt: off
@@ -79,6 +79,7 @@ class OVLSolver(object):
         "CL": ["CASE_R", "CLTOT"],
         "CD": ["CASE_R", "CDTOT"],
         "CDv": ["CASE_R", "CDVTOT"], # viscous drag
+        "CDi": ["CASE_R", "CDITOT"], # viscous drag
         
         # lift and drag calculated from farfield integration
         "CLff": ["CASE_R", "CLFF"],
@@ -120,9 +121,9 @@ class OVLSolver(object):
         "CX": ["CASE_R", "CXTOT_D"],
         "CY": ["CASE_R", "CYTOT_D"],
         "CZ": ["CASE_R", "CZTOT_D"],
-        "CR": ["CASE_R", "CRTOT_D"],
-        "CM": ["CASE_R", "CMTOT_D"],
-        "CN": ["CASE_R", "CNTOT_D"],
+        "Cl": ["CASE_R", "CRTOT_D"],
+        "Cm": ["CASE_R", "CMTOT_D"],
+        "Cn": ["CASE_R", "CNTOT_D"],
     }
   
     # This dict has the following structure:
@@ -132,22 +133,27 @@ class OVLSolver(object):
         "CL": ["SURF_R", "CLSURF"],
         "CD": ["SURF_R", "CDSURF"],
         "CDv": ["SURF_R", "CDVSURF"],  # viscous drag
+        "CDi": ["SURF_R", "CDISURF"],  # inviscid drag
+        
+        # geometric
+        "area": ["SURF_R", "SSURF"], 
+        "average chord": ["SURF_R", "CAVESURF"],
         
         # non-dimensionalized forces 
-        "CX": ["SURF_R", "CXSURF"], 
-        "CY": ["SURF_R", "CYSURF"], 
-        "CZ": ["SURF_R", "CZSURF"],   
-        
-        # non-dimensionalized moments (body frame)
-        "CR": ["SURF_R", "CRSURF"],
-        "CM": ["SURF_R", "CMSURF"],
-        "CN": ["SURF_R", "CNSURF"],
+        "CX ": ["SURF_R", "CXSURF"], 
+        "C Y": ["SURF_R", "CYSURF"], 
+        " CZ": ["SURF_R", "CZSURF"],   
+         
+        # non-dimensionalized momen ts (body frame)
+        "Cl": ["SURF_R", "CRSURF"  ],
+        "Cm": ["SURF_R", "CMSUR  F"],
+        "Cn": ["SURF_R", "CNSURF"],
         
         # forces non-dimentionalized by surface quantities
         # uses surface area instead of sref and takes moments about leading edge
         "CL surf" : ["SURF_R", "CL_SRF"],
         "CD surf" : ["SURF_R", "CD_SRF"],
-        "CMLE surf" : ["SURF_R", "CMLE_SRF"],
+        "CmLE surf" : ["SURF_R", "CMLE_SRF"],
         
         #TODO: add CF_SRF(3,NFMAX), CM_SRF(3,NFMAX)
     }
@@ -246,9 +252,9 @@ class OVLSolver(object):
             "yaw rate": 4,
             "CL": 5,
             "CY": 6,
-            "CR BA": 7,
-            "CM": 8,
-            "CR": 9,
+            "Cl": 7,
+            "Cm": 8,
+            "Cl'": 9,
         }
         
         # control surfaces added in __init__
@@ -724,7 +730,7 @@ class OVLSolver(object):
         """get the value of a constraint
 
         Args:
-            con_key: name of the constraint. Options are ["alpha","beta","roll rate","pitch rate","yaw rate","CL","CY","CR BA","CM","CR"]
+            con_key: name of the constraint. Options are ["alpha","beta","roll rate","pitch rate","yaw rate","CL","CY","Cl","Cm","Cl'"]
 
         Returns:
             con_val: value of the constraint
@@ -797,18 +803,18 @@ class OVLSolver(object):
     def get_strip_forces(self) -> Dict[str, Dict[str, np.ndarray]]:
         """get force data for each strip (chordwise segment) of the mesh.
 
-        Returns:
-            strip_data: dictionary of strip data. The keys are ["chord", "width", "X LE", "Y LE", "Z LE", "twist","CL", "CD", "CDv", "downwash", "CX", "CY", "CZ","CM", "CN", "CR","CL strip", "CD strip", "CF strip", "CM strip","CL perp","CM c/4,"CM LE"]
+        Returns:       
+            strip_data: dictionary of strip data. The keys are ["chord", "width", "X LE", "Y LE", "Z LE", "twist","CL", "CD", "CDv", "downwash", "CX", "CY", "CZ","Cm", "Cn", "Cl","CL strip", "CD strip", "CF strip", "Cm strip","CL perp","Cm c/4,"Cm LE"]
             
         """ 
         # fmt: off
         var_to_fort_var = {
             # geometric quantities
-            "chord": ["STRP_R", "CHORD"],
-            "width": ["STRP_R", "WSTRIP"],
             "X LE": ["STRP_R", "RLE", (slice(None), 0)],  # control point leading edge coordinates
             "Y LE": ["STRP_R", "RLE", (slice(None), 1)],  # control point leading edge coordinates
             "Z LE": ["STRP_R", "RLE", (slice(None), 2)],  # control point leading edge coordinates
+            "chord": ["STRP_R", "CHORD"],
+            "width": ["STRP_R", "WSTRIP"],
             "twist": ["STRP_R", "AINC"],
             
             # strip contributions to total lift and drag from strip integration
@@ -824,21 +830,21 @@ class OVLSolver(object):
             "CZ": ["STRP_R", "CZSTRP"],   
             
             # strip contributions to total moments (body frame)
-            "CM": ["STRP_R", "CMSTRP"],
-            "CN": ["STRP_R", "CNSTRP"],
-            "CR": ["STRP_R", "CRSTRP"],
+            "Cl": ["STRP_R", "CRSTRP"],
+            "Cm": ["STRP_R", "CMSTRP"],
+            "Cn": ["STRP_R", "CNSTRP"],
             
             
             # forces non-dimentionalized by strip quantities
             "CL strip" : ["STRP_R", "CL_LSTRP"],
             "CD strip" : ["STRP_R", "CD_LSTRP"],
             "CF strip" : ["STRP_R", "CF_STRP"], # forces in 3 directions
-            "CM strip" : ["STRP_R", "CM_STRP"], # moments in 3 directions
+            "Cm strip" : ["STRP_R", "CM_STRP"], # moments in 3 directions
 
             # additional forces and moments
             "CL perp" : ["STRP_R", "CLTSTRP"], # strip CL referenced to Vperp,
-            "CM c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
-            "CM LE" : ["STRP_R","CMLE"],  # strip pitching moment about LE vector
+            "Cm c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
+            "Cm LE" : ["STRP_R","CMLE"],  # strip pitching moment about LE vector
             "spanloading" : ["STRP_R","CNC"],   # strip spanloading 
             
         }    
@@ -857,11 +863,17 @@ class OVLSolver(object):
                 idx_srp_beg, idx_srp_end = self._get_surface_strip_indices(idx_surf)
                 strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
         
-        
-        # convert the twist to degrees
+        # process the data 
+        # add a few more pieces of data that are output on the fortran layer         
         for surf_key in strip_data:
-            # add sectional lift and drag
+            # convert the twist to degrees     
             strip_data[surf_key]["twist"] = 180/np.pi *strip_data[surf_key]["twist"]
+            # add the area of each strip
+            strip_data[surf_key]["area"] = strip_data[surf_key]["width"]*strip_data[surf_key]["chord"]
+            
+            # formula is directly from AVL
+            xcp  = 0.25 - strip_data[surf_key]["Cm c/4"]/strip_data[surf_key]["CL perp"]
+            strip_data[surf_key]["CP x/c"] = xcp
         
         # get length of along the surface of each strip
         for idx_surf, surf_key in enumerate(strip_data):
@@ -890,8 +902,8 @@ class OVLSolver(object):
             # add sectional lift and drag
             strip_data[surf_key]["lift dist"] = strip_data[surf_key]["CL"] * strip_data[surf_key]["chord"] / cref
             strip_data[surf_key]["drag dist"] = strip_data[surf_key]["CD"] * strip_data[surf_key]["chord"] / cref
-            strip_data[surf_key]["roll dist"] = strip_data[surf_key]["CN"] * (strip_data[surf_key]["chord"] / cref)**2
-            strip_data[surf_key]["yaw dist"] = strip_data[surf_key]["CY"] * strip_data[surf_key]["chord"]**2 / (bref*cref)
+            strip_data[surf_key]["roll dist"] = strip_data[surf_key]["Cl"] * (strip_data[surf_key]["chord"] / cref)**2
+            strip_data[surf_key]["yaw dist"] = strip_data[surf_key]["Cn"] * strip_data[surf_key]["chord"]**2 / (bref*cref)
 
         return strip_data
 
@@ -1926,7 +1938,6 @@ class OVLSolver(object):
             var += self.ad_suffix
             
             val = body_axis_deriv_seeds[func_key] * scale
-            
             self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
 

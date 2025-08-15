@@ -169,7 +169,7 @@ C...Force components from each surface
         CALL STRIP(STITLE(N),NT)
         WRITE (LUN,211) N,SSURF(N),CLSURF(N),CDSURF(N),CMSURF(N),
      &                  CYSURF(N),DIR*CNSURF(N),DIR*CRSURF(N),
-     &                  CDSURF(N)-CDVSURF(N),CDVSURF(N),
+     &                  CDISURF(N),CDVSURF(N),
      &                  STITLE(N)(1:NT)
       END DO
 cc      WRITE(LUN,212)
