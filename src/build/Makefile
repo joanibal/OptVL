@@ -75,7 +75,7 @@ default: lib ../f2py/libavl.pyf
 	$(FF90) $(FF90_ALL_FLAGS) -I ../includes -I./ -c libavl-f2pywrappers.f
 
 # Final Link:
-	$(FF90) -shared fortranobject.o libavlmodule.o libavl-f2pywrappers.o libavl.a $(LINKER_ALL_FLAGS) -o libavl.so
+	$(FF90) $(LINKER_FLAGS) -shared fortranobject.o libavlmodule.o libavl-f2pywrappers.o libavl.a -o libavl.so
 	$(PYTHON) importTest.py libavl
 	mv libavl.*so ../../optvl/libavl.so
 
