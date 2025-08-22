@@ -99,6 +99,18 @@ def add_ovl_geom_vars(self, ovl, add_as="inputs", include_airfoil_geom=False):
                 self.add_input(geom_key, val=surf_data[surf][key], tags="geom")
             elif add_as == "outputs":
                 self.add_output(geom_key, val=surf_data[surf][key], tags="geom")
+
+def add_ovl_mesh_out_as_output(self, ovl):
+    surf_data = ovl.get_surface_params()
+
+    meshes,_ = ovl.get_cp_data()
+
+    for surf in surf_data:
+        idx_surf = ovl.surface_names.index(surf)
+        out_name = f"{surf}:mesh"
+        self.add_output(out_name, val=meshes[idx_surf], tags="geom_mesh")
+    
+
                 
 def add_ovl_conditions_as_inputs(sys, ovl):
     # TODO: add all the condition constraints
@@ -673,14 +685,18 @@ class OVLMeshReader(om.ExplicitComponent):
     def initialize(self):
         self.options.declare("geom_file", types=str)
         self.options.declare("mass_file", default=None)
+        self.options.declare("mesh_output",default=False)
 
     def setup(self):
         geom_file = self.options["geom_file"]
         mass_file = self.options["mass_file"]
+        mesh_output = self.options["mesh_output"]
 
         avl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
         add_ovl_geom_vars(self, avl, add_as="outputs", include_airfoil_geom=True)
 
+        if mesh_output:
+            add_ovl_mesh_out_as_output(self,avl)
 
 class Differencer(om.ExplicitComponent):
     def setup(self):
