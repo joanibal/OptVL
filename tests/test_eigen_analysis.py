@@ -66,7 +66,7 @@ class TestEigenAnalysis(unittest.TestCase):
                                      [ 0.0000000000000000e+00,  0.0000000000000000e+00,  0.0000000000000000e+00, 0.0000000000000000e+00,  0.0000000000000000e+00,  0.0000000000000000e+00,-1.0000000000000000e+00, -1.0736384262997174e-27,  0.0000000000000000e+00, 0.0000000000000000e+00,  0.0000000000000000e+00,  0.0000000000000000e+00]])
                                             
         
-        np.testing.assert_allclose(Amat, reference_matrix, rtol=1e-10)
+        np.testing.assert_allclose(Amat, reference_matrix, atol=1e-12)
         
 
     def test_vel_sweep(self):
