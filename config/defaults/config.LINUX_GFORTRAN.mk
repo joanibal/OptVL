@@ -13,3 +13,5 @@ F2PY = f2py
 F2PY_FF90 = gfortran
 
 PYTHON = python
+
+LINKER_FLAGS =  

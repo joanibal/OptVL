@@ -40,15 +40,49 @@ OFILES=$(f90Files:%.f90=%.o) $(F90Files:%.F90=%.o) $(f77FilesNoDir:%.f=%.o) $(cF
 # .PHONY: ../include/AVL.INC sources lib
 
 default: lib ../f2py/libavl.pyf
-	$(F2PY) --fcompiler=$(F2PY_FF90) --f90flags='$(FF90_ALL_FLAGS)' -c -m  libavl ../f2py/libavl.pyf libavl.a
-	python importTest.py libavl
+# Generate Python inlude directory
+	 $(eval PYTHON_INCLUDES = $(shell python3-config --includes))
+	 @echo "#------------------------------------------------------#"
+	 @echo Python Inclue Flags $(PYTHON_INCLUDES)
+	 @echo "#------------------------------------------------------#"
+
+# Generate Numpy inlude directory
+	$(eval NUMPY_INCLUDES = $(shell $(PYTHON) -c 'import numpy; print(numpy.get_include())'))
+	@echo "#------------------------------------------------------#"
+	@echo Numpy Include Directory: $(NUMPY_INCLUDES)
+	@echo "#------------------------------------------------------#"
+
+# Generate f2py root directory
+	$(eval F2PY_ROOT = $(shell $(PYTHON) ../f2py/get_f2py.py))
+	@echo "#------------------------------------------------------#"
+	@echo f2py root directory: $(F2PY_ROOT)
+	@echo "#------------------------------------------------------#"
+
+
+# take all the of f2py steps one at a time to avoid using a backend 
+# Run f2py to get libavl-f2pywrappers.f and libavlmodule.c
+	$(F2PY) ../f2py/libavl.pyf
+	
+# Compile c wrapper. Don't use CC_ALL_FLAGS...PETSc wil F-up this command.
+	$(CC) $(CC_ALL_FLAGS) $(PYTHON_INCLUDES) -I$(NUMPY_INCLUDES) \
+	-I$(F2PY_ROOT)/src -c libavlmodule.c
+
+# Compile fortranobject needed by all f2py modules
+	$(CC) $(CC_ALL_FLAGS) $(PYTHON_INCLUDES) -I$(NUMPY_INCLUDES) \
+	-c $(F2PY_ROOT)/src/fortranobject.c -o fortranobject.o
+
+# Compiled f2py-generated wrapper file
+	$(FF90) $(FF90_ALL_FLAGS) -I ../includes -I./ -c libavl-f2pywrappers.f
+
+# Final Link:
+	$(FF90) $(LINKER_FLAGS) -shared fortranobject.o libavlmodule.o libavl-f2pywrappers.o libavl.a -o libavl.so
+	$(PYTHON) importTest.py libavl
 	mv libavl.*so ../../optvl/libavl.so
 
 
 # # Rule to generate AVL.INC
 ../includes/AVL.INC: ../includes/AVL.INC.in
-	python ../create_avl_inc.py
-
+	$(PYTHON) ../create_avl_inc.py
 
 # Ensure all object files are recompiled if AVL.INC changes
 # $(OFILES): ../includes/AVL.INC
