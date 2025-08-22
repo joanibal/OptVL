@@ -1530,6 +1530,7 @@ C
      &     (BSYS(I,N)*USGN(I)        , N=1, NCONTROL)
 c     &   ,   RSYS(I)*USGN(I)
  1200   FORMAT(1X,12e24.16,3X,12G12.4)
+!  1200   FORMAT(1X,12F10.4,3X,12G12.4)
       ENDDO
 C
       RETURN
@@ -1604,9 +1605,9 @@ C
       NEIGEN(IR) = KEIG
 C
       ! do KEIG = 1, NEIGEN(IR)
-      !     write(*,*) KEIG, 'EIGEN(KEIG,IR)'
+      !     write(*,*) KEIG, 'EIGEN(KEIG,IR)', EVAL(KEIG,IR)
       !     DO I = 1, NSYS
-      !      write(*,*) EVEC(I,KEIG,IR) 
+      !      write(*,*) EVEC(I,KEIG,IR)
       !    ENDDO
       ! enddo
       RETURN
@@ -2175,6 +2176,14 @@ C
             
             LOGICAL :: LPROOT(JEMAX,NRMAX), LPRNUM(JEMAX,NRMAX), LOK
        
+            if (lverbose) then 
+            WRITE(*,1050) 
+ 1050 FORMAT(
+     &  /'  Run-case parameters for eigenmode analyses ... ')
+C
+            LU = 6
+            CALL RUNLST(LU,IRUNE)
+            end if 
             
             
             CALL RUNCHK(IR,LOK)
@@ -2194,9 +2203,11 @@ C
             ELSE
                   CALL APPMAT(IR,ASYS,BSYS,RSYS,NSYS)
             ENDIF
-            
-            ! LU = 6
-            ! CALL SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
+
+            if (lverbose) then 
+                  LU = 6
+                  CALL SYSSHO(LU,ASYS,BSYS,RSYS,NSYS)
+            endif
 C
             INFO = 1
             ETOL = 1.0E-5

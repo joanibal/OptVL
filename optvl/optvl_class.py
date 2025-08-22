@@ -898,7 +898,7 @@ class OVLSolver(object):
         
         return eig_vecs
     
-    def get_system_matrix(self) -> np.ndarray:
+    def get_system_matrix(self, in_body_axis=False) -> np.ndarray:
         """returns the system matrix used for the eigenmode calculation
         
         Returns:
@@ -913,6 +913,44 @@ class OVLSolver(object):
         # 1 because optvl only supports 1 run case and we are using fortran base 1 indexing
         irun_case = 1
         self.avl.get_system_matrix(irun_case,asys)
+        
+        def apply_state_signs(asys):
+            """
+            Apply sign changes to the state matrix A and return the modified version.
+            """
+            nsys = asys.shape[0]
+
+            # Indices for sign flip
+            jeu   = 0
+            jew   = 1
+            jeq   = 2
+            jeth  = 3
+            jev   = 4
+            jep   = 5
+            jer   = 6
+            jeph  = 7
+            jex   = 8
+            jey   = 9
+            jez   = 10
+            jeps  = 11
+
+            usgn = np.ones(nsys)
+            for idx in [jeu, jew, jep, jer, jex, jez]:
+                if 0 <= idx < nsys:
+                    usgn[idx] = -1.0
+
+            # Allocate result
+            asys_signed = np.zeros_like(asys)
+
+            # Apply row/column sign flips explicitly
+            for i in range(nsys):
+                for j in range(nsys):
+                    asys_signed[i, j] = asys[i, j] * usgn[i] * usgn[j]
+
+            return asys_signed
+        
+        if in_body_axis:
+            asys = apply_state_signs(asys)
         
         return asys
 
