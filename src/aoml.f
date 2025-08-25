@@ -175,6 +175,178 @@ C
       END ! CPTHK
 
 
+      SUBROUTINE COMPUTE_XYZSURF(ISURF, NSURF, NK, NJ, JFRST, IJFRST,
+     &                           RLE1, RLE2, XYN1, XYN2,
+     &                           ZLON1, ZLON2, ZUPN1, ZUPN2,
+     &                           AINC1, AINC2, XYZSURF)
+C
+      INCLUDE 'AVL.INC'
+C
+      INTEGER ISURF, NSURF
+      INTEGER NK(*), NJ(*)
+      INTEGER JFRST(*), IJFRST(*)
+      REAL RLE1(3,*), RLE2(3,*)
+      REAL XYN1(2,*), XYN2(2,*)
+      REAL ZLON1(*), ZLON2(*), ZUPN1(*), ZUPN2(*)
+      REAL AINC1(*), AINC2(*)
+      REAL XYZSURF(3,NPNTS,NSURF_MAX)
+C
+C     Local variables
+      INTEGER NVC_chord, ISTRIP0, ISTRIP1, ISTEP
+      INTEGER idx_mesh, idx_mesh_surf, idx_strip, idx_LE
+      INTEGER I1, I, II
+      REAL XLE, YLE, ZLE
+      REAL CSA, SNA, CSD, SND
+      REAL X0, Y0, ZLO0, ZUP0
+      REAL YLOD, YUPD, ZLOD, ZUPD
+      REAL XLO, XUP, ZLO, ZUP, YLO, YUP
+      REAL DYLE, DZLE, DY, DZ
+C
+      NVC_chord = NK(ISURF)
+C
+C...    determine if surface is L-to-R or R-to-L
+      IF (NJ(ISURF) .EQ. 1) THEN
+        ISTRIP0 = JFRST(ISURF)
+        ISTRIP1 = ISTRIP0 + NJ(ISURF) - 1
+        ISTEP = 1
+      ELSE
+        ISTRIP0 = JFRST(ISURF)
+        ISTRIP1 = ISTRIP0 + NJ(ISURF) - 1
+C
+        Y0 = RLE1(2,ISTRIP0)
+        DY = RLE1(2,ISTRIP1) - Y0  ! Use DY to check direction more robustly
+        IF (DY .GE. 0.0) THEN      ! Assuming Y increases from left to right
+          ISTEP = 1                           ! L-to-R
+        ELSE
+          ISTRIP1 = JFRST(ISURF)
+          ISTRIP0 = ISTRIP1 + NJ(ISURF) - 1
+          ISTEP = -1                          ! R-to-L
+        ENDIF
+      ENDIF
+C
+      idx_mesh_surf = 1 ! Not used in this part, but kept for consistency if logic evolves
+      idx_strip =  0
+      DO J = ISTRIP0, ISTRIP1, ISTEP
+        idx_strip =  idx_strip+1
+        I1 = IJFRST(J)
+C
+        DYLE = RLE2(2,J) - RLE1(2,J)
+        DZLE = RLE2(3,J) - RLE1(3,J)
+
+        CSA = COS(AINC1(J))
+        SNA = SIN(AINC1(J))
+C
+        XLE = RLE1(1,J)
+        YLE = RLE1(2,J)
+        ZLE = RLE1(3,J)
+
+        idx_LE = (idx_strip-1)*(2*NVC_chord+1) +   NVC_chord + 1
+        XYZSURF(1,idx_LE, ISURF) = XLE
+        XYZSURF(2,idx_LE, ISURF) = YLE
+        XYZSURF(3,idx_LE, ISURF) = ZLE
+
+        IF (DYLE*DYLE + DZLE*DZLE .GT. 1.0E-12) THEN ! Avoid division by zero if DYLE and DZLE are very small
+          CSD  = DYLE/SQRT(DYLE*DYLE + DZLE*DZLE)
+          SND  = DZLE/SQRT(DYLE*DYLE + DZLE*DZLE)
+        ELSE
+          CSD = 1.0
+          SND = 0.0
+        ENDIF
+C
+        DO II = 1, NVC_chord
+          I = I1 + (II-1)
+C
+          X0 = XYN1(1,I)
+          Y0 = XYN1(2,I)
+          ZLO0 = ZLON1(I)
+          ZUP0 = ZUPN1(I)
+C
+C...        rotate airfoil in (y,z) so that it is perpendicular to dihedral
+          YLOD = YLE + (Y0 - YLE)*CSD - (ZLO0 - ZLE)*SND
+          YUPD = YLE + (Y0 - YLE)*CSD - (ZUP0 - ZLE)*SND
+          ZLOD = ZLE - (Y0 - YLE)*SND + (ZLO0 - ZLE)*CSD
+          ZUPD = ZLE - (Y0 - YLE)*SND + (ZUP0 - ZLE)*CSD
+C
+C...        rotate airfoil in (x,z) for twist
+          XLO = XLE + (X0 - XLE)*CSA + (ZLOD - ZLE)*SNA
+          XUP = XLE + (X0 - XLE)*CSA + (ZUPD - ZLE)*SNA
+          ZLO = ZLE - (X0 - XLE)*SNA + (ZLOD - ZLE)*CSA
+          ZUP = ZLE - (X0 - XLE)*SNA + (ZUPD - ZLE)*CSA
+          YLO = YLOD
+          YUP = YUPD
+
+          XYZSURF(1, idx_LE - II, ISURF) =  XUP
+          XYZSURF(2, idx_LE - II, ISURF) =  YUP
+          XYZSURF(3, idx_LE - II, ISURF) =  ZUP
+
+          XYZSURF(1, idx_LE + II, ISURF) =  XLO
+          XYZSURF(2, idx_LE + II, ISURF) =  YLO
+          XYZSURF(3, idx_LE + II, ISURF) =  ZLO
+        ENDDO
+      ENDDO
+C
+      J = ISTRIP1
+      I1 = IJFRST(J)
+C
+      CSA = COS(AINC2(J))
+      SNA = SIN(AINC2(J))
+C
+      XLE = RLE2(1,J)
+      YLE = RLE2(2,J)
+      ZLE = RLE2(3,J)
+
+      idx_strip = idx_strip + 1
+      idx_LE = (idx_strip-1)*(2*NVC_chord+1) +   NVC_chord + 1
+      XYZSURF(1,idx_LE, ISURF) = XLE
+      XYZSURF(2,idx_LE, ISURF) = YLE
+      XYZSURF(3,idx_LE, ISURF) = ZLE
+
+      DY = YLE - RLE1(2,J)
+      DZ = ZLE - RLE1(3,J)
+
+      IF (DY*DY + DZ*DZ .GT. 1.0E-12) THEN ! Avoid division by zero
+        CSD  = DY/SQRT(DY*DY + DZ*DZ)
+        SND  = DZ/SQRT(DY*DY + DZ*DZ)
+      ELSE
+        CSD = 1.0
+        SND = 0.0
+      ENDIF
+C
+      DO II = 1, NVC_chord
+        I = I1 + (II-1)
+C
+        X0 = XYN2(1,I)
+        Y0 = XYN2(2,I)
+        ZLO0 = ZLON2(I)
+        ZUP0 = ZUPN2(I)
+C
+C...      rotate airfoil in (y,z) so that it is perpendicular to dihedral
+        YLOD = YLE + (Y0 - YLE)*CSD - (ZLO0 - ZLE)*SND
+        YUPD = YLE + (Y0 - YLE)*CSD - (ZUP0 - ZLE)*SND
+        ZLOD = ZLE - (Y0 - YLE)*SND + (ZLO0 - ZLE)*CSD
+        ZUPD = ZLE - (Y0 - YLE)*SND + (ZUP0 - ZLE)*CSD
+C
+C...      rotate airfoil in (x,z) for twist
+        XLO = XLE + (X0 - XLE)*CSA + (ZLOD - ZLE)*SNA
+        XUP = XLE + (X0 - XLE)*CSA + (ZUPD - ZLE)*SNA
+        ZLO = ZLE - (X0 - XLE)*SNA + (ZLOD - ZLE)*CSA
+        ZUP = ZLE - (X0 - XLE)*SNA + (ZUPD - ZLE)*CSA
+        YLO = YLOD
+        YUP = YUPD
+
+        XYZSURF(1, idx_LE - II, ISURF) =  XUP
+        XYZSURF(2, idx_LE - II, ISURF) =  YUP
+        XYZSURF(3, idx_LE - II, ISURF) =  ZUP
+
+        XYZSURF(1, idx_LE + II, ISURF) =  XLO
+        XYZSURF(2, idx_LE + II, ISURF) =  YLO
+        XYZSURF(3, idx_LE + II, ISURF) =  ZLO
+      ENDDO
+C
+      RETURN
+      END ! COMPUTE_XYZSURF
+
+
       SUBROUTINE CPDUMP(save_file)
 C
 C...PURPOSE     output OML upper and lower grid and pressure coefficients
@@ -202,30 +374,28 @@ C
 
       DO ISURF = 1, NSURF
         idx_mesh = 1
-
+C
+C...    Determine NVC_chord for the current surface (used in WRITE statements below if save_file is true)
         NVC_chord = NK(ISURF)
 C
-C...    determine if surface is L-to-R or R-to-L
+C...    determine ISTRIP0, ISTRIP1, ISTEP for loop limits and direction for section indices output
         IF (NJ(ISURF) .EQ. 1) THEN
           ISTRIP0 = JFRST(ISURF)
-          ISTRIP1 = ISTRIP0 + NJ(ISURF) - 1
           ISTEP = 1
         ELSE
           ISTRIP0 = JFRST(ISURF)
           ISTRIP1 = ISTRIP0 + NJ(ISURF) - 1
-C
           Y0 = RLE1(2,ISTRIP0)
-          Y1 = RLE1(2,ISTRIP1)
-          IF (Y1 .GE. Y0) THEN
+          DY = RLE1(2,ISTRIP1) - Y0 ! Use DY to check direction
+          IF (DY .GE. 0.0) THEN
             ISTEP = 1                           ! L-to-R
           ELSE
-            ISTRIP1 = JFRST(ISURF)
-            ISTRIP0 = ISTRIP1 + NJ(ISURF) - 1
+            ISTRIP0 = JFRST(ISURF) + NJ(ISURF) - 1 ! Corrected starting point for R-to-L
             ISTEP = -1                          ! R-to-L
           ENDIF
         ENDIF
-C       
-        if (save_file) then 
+
+        if (save_file) then
           WRITE(LU,'(A)') 'SURFACE'
           WRITE(LU,'(A)') STITLE(ISURF)
           WRITE(LU,'(I6,6X,A)') LSCOMP(ISURF), '  | component'
@@ -237,159 +407,101 @@ C
 C
         NSEC_surf = NCNTSEC(ISURF)
         II = ICNTFRST(ISURF)
-        if (save_file) then 
+        if (save_file) then
           WRITE(LU,'(I6,6X,A)') NSEC_surf, '  | section indices'
           IF (ISTEP .GT. 0) THEN
             WRITE(LU,*) (ICNTSEC(II + ISEC-1), ISEC=1,NSEC_surf)
           ELSE
-        endif
-          NSPAN = NJ(ISURF) + 1
-          WRITE(LU,*) (NSPAN - ICNTSEC(II + ISEC-1) + 1,
-     & ISEC=NSEC_surf,1,-1)
+            NSPAN = NJ(ISURF) + 1
+            WRITE(LU,*) (NSPAN - ICNTSEC(II + ISEC-1) + 1,
+     &                   ISEC=NSEC_surf,1,-1)
+          ENDIF
         ENDIF
-        
+
 C
-C 
-        if (save_file) then 
+C       Call the new subroutine to compute XYZSURF
+C
+        CALL COMPUTE_XYZSURF(ISURF, NSURF, NK, NJ, JFRST, IJFRST,
+     &                       RLE1, RLE2, XYN1, XYN2,
+     &                       ZLON1, ZLON2, ZUPN1, ZUPN2,
+     &                       AINC1, AINC2, XYZSURF)
+
+        if (save_file) then
           WRITE(LU,'(A,1X,A)') 'VERTEX_GRID',
      &      '(x_lo, x_up, y_lo, y_up, z_lo, z_up)'
-        endif
-c     
-        idx_mesh = 1
-        idx_mesh_surf = 1
-        idx_strip =  0
-        DO J = ISTRIP0, ISTRIP1, ISTEP
-          idx_strip =  idx_strip+1
-          I1 = IJFRST(J)
 C
-          DYLE = RLE2(2,J) - RLE1(2,J)
-          DZLE = RLE2(3,J) - RLE1(3,J)
-
-          CSA = COS(AINC1(J))
-          SNA = SIN(AINC1(J))
+C         Output the XYZSURF data that was just computed
 C
-          XLE = RLE1(1,J)
-          YLE = RLE1(2,J)
-          ZLE = RLE1(3,J)
-          if (save_file) then 
-            WRITE(LU,'(6(ES23.15))') XLE, XLE, YLE, YLE, ZLE, ZLE
-          endif
-          
-                    
-          idx_LE = (idx_strip-1)*(2*NVC_chord+1) +   NVC_chord + 1
-          XYZSURF(1,idx_LE, isurf) = XLE
-          XYZSURF(2,idx_LE, isurf) = YLE
-          XYZSURF(3,idx_LE, isurf) = ZLE
-
-          CSD  = DYLE/SQRT(DYLE*DYLE + DZLE*DZLE)
-          SND  = DZLE/SQRT(DYLE*DYLE + DZLE*DZLE)
-C
-          DO II = 1, NVC_chord
-            I = I1 + (II-1)
-C
-            X0 = XYN1(1,I)
-            Y0 = XYN1(2,I)
-            ZLO0 = ZLON1(I)
-            ZUP0 = ZUPN1(I)
-C
-C...        rotate airfoil in (y,z) so that it is perpendicular to dihedral
-
-            YLOD = YLE + (Y0 - YLE)*CSD - (ZLO0 - ZLE)*SND
-            YUPD = YLE + (Y0 - YLE)*CSD - (ZUP0 - ZLE)*SND
-            ZLOD = ZLE - (Y0 - YLE)*SND + (ZLO0 - ZLE)*CSD
-            ZUPD = ZLE - (Y0 - YLE)*SND + (ZUP0 - ZLE)*CSD
-C
-C...        rotate airfoil in (x,z) for twist
-            XLO = XLE + (X0 - XLE)*CSA + (ZLOD - ZLE)*SNA
-            XUP = XLE + (X0 - XLE)*CSA + (ZUPD - ZLE)*SNA
-            ZLO = ZLE - (X0 - XLE)*SNA + (ZLOD - ZLE)*CSA
-            ZUP = ZLE - (X0 - XLE)*SNA + (ZUPD - ZLE)*CSA
-            YLO = YLOD
-            YUP = YUPD
-            if (save_file) then 
-              WRITE(LU,'(6(ES23.15))') XLO, XUP, YLO, YUP, ZLO, ZUP
-            endif
+          idx_strip = 0
+          DO J_loop_var = ISTRIP0, ISTRIP1, ISTEP  ! J_loop_var takes values of actual strip indices
+            idx_strip = idx_strip + 1 ! This corresponds to the 'segment number', 1 to NJ(ISURF)
             
-            XYZSURF(1, idx_LE - II, isurf) =  XUP
-            XYZSURF(2, idx_LE - II, isurf) =  YUP
-            XYZSURF(3, idx_LE - II, isurf) =  ZUP
-            
-            XYZSURF(1, idx_LE + II, isurf) =  XLO
-            XYZSURF(2, idx_LE + II, isurf) =  YLO
-            XYZSURF(3, idx_LE + II, isurf) =  ZLO
-            
+            ! Current Leading Edge (start of segment J_loop_var)
+            ! This XYZSURF entry was set using RLE1(.., J_loop_var) in COMPUTE_XYZSURF
+            ! or RLE2(.., J_loop_var) if it's the start of a segment in R-L scan that was end of segment in L-R
+            ! The idx_LE in COMPUTE_XYZSURF correctly captures the vertex points.
+            current_LE_idx_in_xyzsurf = (idx_strip-1)*(2*NVC_chord+1)
+     &                                + NVC_chord + 1
+            WRITE(LU,'(6(ES23.15))')
+     &         XYZSURF(1,current_LE_idx_in_xyzsurf, ISURF),
+     &         XYZSURF(1,current_LE_idx_in_xyzsurf, ISURF),
+     &         XYZSURF(2,current_LE_idx_in_xyzsurf, ISURF),
+     &         XYZSURF(2,current_LE_idx_in_xyzsurf, ISURF),
+     &         XYZSURF(3,current_LE_idx_in_xyzsurf, ISURF),
+     &         XYZSURF(3,current_LE_idx_in_xyzsurf, ISURF)
+
+            ! Chordwise points for this segment
+            DO IC = 1, NVC_chord
+              WRITE(LU,'(6(ES23.15))')
+     &           XYZSURF(1, current_LE_idx_in_xyzsurf + IC, ISURF),
+     &           XYZSURF(1, current_LE_idx_in_xyzsurf - IC, ISURF),
+     &           XYZSURF(2, current_LE_idx_in_xyzsurf + IC, ISURF),
+     &           XYZSURF(2, current_LE_idx_in_xyzsurf - IC, ISURF),
+     &           XYZSURF(3, current_LE_idx_in_xyzsurf + IC, ISURF),
+     &           XYZSURF(3, current_LE_idx_in_xyzsurf - IC, ISURF)
+            ENDDO
           ENDDO
-        ENDDO
 C
-        J = ISTRIP1
-        I1 = IJFRST(J)
-C
-        CSA = COS(AINC2(J))
-        SNA = SIN(AINC2(J))
-C
-        XLE = RLE2(1,J)
-        YLE = RLE2(2,J)
-        ZLE = RLE2(3,J)
-        if (save_file) then 
-          WRITE(LU,'(6(ES23.15))') XLE, XLE, YLE, YLE, ZLE, ZLE
+C         Handle the last station's LE point (end of the last segment)
+C         This corresponds to idx_strip = NJ(ISURF) + 1 in COMPUTE_XYZSURF logic
+          final_LE_idx_in_xyzsurf = ( (NJ(ISURF)+1) -1)*(2*NVC_chord+1)
+     &                              + NVC_chord + 1
+          WRITE(LU,'(6(ES23.15))')
+     &       XYZSURF(1,final_LE_idx_in_xyzsurf, ISURF),
+     &       XYZSURF(1,final_LE_idx_in_xyzsurf, ISURF),
+     &       XYZSURF(2,final_LE_idx_in_xyzsurf, ISURF),
+     &       XYZSURF(2,final_LE_idx_in_xyzsurf, ISURF),
+     &       XYZSURF(3,final_LE_idx_in_xyzsurf, ISURF),
+     &       XYZSURF(3,final_LE_idx_in_xyzsurf, ISURF)
         endif
-        
-        idx_strip = idx_strip + 1
-        idx_LE = (idx_strip-1)*(2*NVC_chord+1) +   NVC_chord + 1
-        XYZSURF(1,idx_LE, isurf) = XLE
-        XYZSURF(2,idx_LE, isurf) = YLE
-        XYZSURF(3,idx_LE, isurf) = ZLE
-        
-        DY = YLE - RLE1(2,J)
-        DZ = ZLE - RLE1(3,J)
-        
-        CSD  = DY/SQRT(DY*DY + DZ*DZ)
-        SND  = DZ/SQRT(DY*DY + DZ*DZ)       
-C
-        DO II = 1, NVC_chord
-          I = I1 + (II-1)
-C
-          X0 = XYN2(1,I)
-          Y0 = XYN2(2,I)
-          ZLO0 = ZLON2(I)
-          ZUP0 = ZUPN2(I)
-C
-C...      rotate airfoil in (y,z) so that it is perpendicular to dihedral
-          YLOD = YLE + (Y0 - YLE)*CSD - (ZLO0 - ZLE)*SND
-          YUPD = YLE + (Y0 - YLE)*CSD - (ZUP0 - ZLE)*SND
-          ZLOD = ZLE - (Y0 - YLE)*SND + (ZLO0 - ZLE)*CSD
-          ZUPD = ZLE - (Y0 - YLE)*SND + (ZUP0 - ZLE)*CSD
-C
-C...      rotate airfoil in (x,z) for twist
-          XLO = XLE + (X0 - XLE)*CSA + (ZLOD - ZLE)*SNA
-          XUP = XLE + (X0 - XLE)*CSA + (ZUPD - ZLE)*SNA
-          ZLO = ZLE - (X0 - XLE)*SNA + (ZLOD - ZLE)*CSA
-          ZUP = ZLE - (X0 - XLE)*SNA + (ZUPD - ZLE)*CSA
-          YLO = YLOD
-          YUP = YUPD
-          
-          if (save_file) then 
-            WRITE(LU,'(6(ES23.15))') XLO, XUP, YLO, YUP, ZLO, ZUP
-          endif
-          
-          XYZSURF(1, idx_LE - II, isurf) =  XUP
-          XYZSURF(2, idx_LE - II, isurf) =  YUP
-          XYZSURF(3, idx_LE - II, isurf) =  ZUP
-          
-          XYZSURF(1, idx_LE + II, isurf) =  XLO
-          XYZSURF(2, idx_LE + II, isurf) =  YLO
-          XYZSURF(3, idx_LE + II, isurf) =  ZLO
-          
-          
-        ENDDO
+
         idx_mesh = 1
-        if (save_file) then 
+        if (save_file) then
           WRITE(LU,'(A,1X,A)') 'ELEMENT_CP',
      &      '(x_lo, x_up, y_lo, y_up, z_lo, z_up, cp_lo, cp_up)'
-        endif 
+        endif
        
         idx_strip = 0
-        DO J = ISTRIP0, ISTRIP1, ISTEP
+C Re-calculate ISTRIP0 and ISTRIP1 for the CP calculation loop as it was in the original code
+        IF (NJ(ISURF) .EQ. 1) THEN
+          ISTRIP0_cp = JFRST(ISURF)
+          ISTRIP1_cp = ISTRIP0_cp + NJ(ISURF) - 1
+          ISTEP_cp = 1
+        ELSE
+          ISTRIP0_cp = JFRST(ISURF)
+          ISTRIP1_cp = ISTRIP0_cp + NJ(ISURF) - 1
+          Y0_cp = RLE1(2,ISTRIP0_cp)
+          Y1_cp = RLE1(2,ISTRIP1_cp)
+          IF (Y1_cp .GE. Y0_cp) THEN
+            ISTEP_cp = 1                           ! L-to-R
+          ELSE
+            ISTRIP1_cp = JFRST(ISURF)
+            ISTRIP0_cp = ISTRIP1_cp + NJ(ISURF) - 1
+            ISTEP_cp = -1                          ! R-to-L
+          ENDIF
+        ENDIF
+
+        DO J = ISTRIP0_cp, ISTRIP1_cp, ISTEP_cp
           idx_strip =  idx_strip+1
           I1 = IJFRST(J)
 C
