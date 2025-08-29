@@ -2375,20 +2375,20 @@ class OVLSolver(object):
         strip_slice = (slice(0, num_strips),)
         surf_slice = (slice(0, num_surfs),)
         
-        rv1 = self.get_avl_fort_arr("VRTX_R", "RV1", slicer=mesh_slice)
-        rv2 = self.get_avl_fort_arr("VRTX_R", "RV2", slicer=mesh_slice)
-        rle1 = self.get_avl_fort_arr("STRP_R", "RLE1", slicer=strip_slice)
-        rle2 = self.get_avl_fort_arr("STRP_R", "RLE2", slicer=strip_slice)
-        chord1 = self.get_avl_fort_arr("STRP_R", "CHORD1", slicer=strip_slice)
-        chord2 = self.get_avl_fort_arr("STRP_R", "CHORD2", slicer=strip_slice)
-        jfrst = self.get_avl_fort_arr("SURF_I", "JFRST", slicer=surf_slice)
+        rv1 = self.get_avl_fort_arr("VRTX_R", "RV1", slicer=mesh_slice) # Vortex Left points
+        rv2 = self.get_avl_fort_arr("VRTX_R", "RV2", slicer=mesh_slice) # Vortex Right points
+        rle1 = self.get_avl_fort_arr("STRP_R", "RLE1", slicer=strip_slice) # Strip left end LE point
+        rle2 = self.get_avl_fort_arr("STRP_R", "RLE2", slicer=strip_slice) # Strip right end LE point
+        chord1 = self.get_avl_fort_arr("STRP_R", "CHORD1", slicer=strip_slice) # Left strip chord
+        chord2 = self.get_avl_fort_arr("STRP_R", "CHORD2", slicer=strip_slice) # Right strip chord
+        jfrst = self.get_avl_fort_arr("SURF_I", "JFRST", slicer=surf_slice) # Index of first strip in surface
         
-        ijfrst = self.get_avl_fort_arr("STRP_I", "IJFRST", slicer=strip_slice)
-        nvstrp = self.get_avl_fort_arr("STRP_I", "NVSTRP", slicer=strip_slice)
+        ijfrst = self.get_avl_fort_arr("STRP_I", "IJFRST", slicer=strip_slice) # Index of first element in strip
+        nvstrp = self.get_avl_fort_arr("STRP_I", "NVSTRP", slicer=strip_slice) # Number of elements in strip
         
         
-        nj = self.get_avl_fort_arr("SURF_I", "NJ", slicer=surf_slice)
-        imags = self.get_avl_fort_arr("SURF_I", "IMAGS")
+        nj = self.get_avl_fort_arr("SURF_I", "NJ", slicer=surf_slice) # Number of elements along span in surface
+        imags = self.get_avl_fort_arr("SURF_I", "IMAGS") # Is surface YDUPL one?
               
         for idx_surf in range(num_surfs):
             # get the range of the elements that belong to this surfaces
