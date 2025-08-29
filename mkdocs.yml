@@ -12,6 +12,7 @@ nav:
   - Analysis:
       - making_a_script.md
       - optvl_api.md
+      - optvl_changes_from_avl.md
       - alpha_cl_sweep.md
       - modal_analysis.md
       - parameter_sweeps.md
