@@ -56,7 +56,7 @@ class TestConstraints(unittest.TestCase):
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            run_data["CM"],
+            run_data["Cm"],
             -0.19528584013607497,
             rtol=1e-8,
         )
@@ -78,7 +78,7 @@ class TestConstraints(unittest.TestCase):
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            run_data["CM"],
+            run_data["Cm"],
             0.959676732257107,
             rtol=1e-8,
         )
@@ -100,7 +100,7 @@ class TestConstraints(unittest.TestCase):
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            run_data["CM"],
+            run_data["Cm"],
             0.959676732257107,
             rtol=1e-8,
         )
@@ -133,7 +133,7 @@ class TestConstraints(unittest.TestCase):
             rtol=1e-8,
         )
         np.testing.assert_allclose(
-            run_data["CM"],
+            run_data["Cm"],
             0.2558492940049343,
             rtol=1e-8,
         )

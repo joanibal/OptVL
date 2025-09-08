@@ -1767,10 +1767,10 @@ C
 
 C ==================== addition wrapper helper programs ==============
 
-      SUBROUTINE calcST
+      SUBROUTINE calc_stab_derivs
 C C---------------------------------------------------------
 C C     Calculates and outputs stability derivative matrix
-C C     for current ALFA, BETA.
+C C     for current ALFA, BETA for both the stability axis and the body axis.
 C C---------------------------------------------------------
       INCLUDE 'AVL.INC'
       CHARACTER*50 SATYPE
@@ -1814,9 +1814,6 @@ C
       WROT_A(3)  = -RZ*SA + RX*CA   !!! =  WROT(1)
 C
 C
-      CRSAX = DIR*(CRTOT*CA + CNTOT*SA)
-      CMSAX = CMTOT              
-      CNSAX = DIR*(CNTOT*CA - CRTOT*SA)
       CRSAX_A = -CRTOT*SA + CNTOT*CA
       CNSAX_A = -CNTOT*SA - CRTOT*CA
 C
@@ -1950,14 +1947,92 @@ C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
 C      &    '    (  > 1 if spirally stable )')
       ENDIF
       IF(ABS(CRTOT_BE) .GT. 0.0) THEN
+       ! this is the lateral stablity parameter suggested by John Yost
        RR = CNTOT_BE/abs(CRTOT_BE)
-C        WRITE(LU,8402) BB 
-C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
-C      &    '    (  > 1 if spirally stable )')
       ENDIF
+      
+      ! ---- body axis derivatives
+      ! these expressions are taken from DERMATB
+      
+      !'  axial   vel. u', ' sideslip vel. v', '  normal  vel. w'
+      
+      CXTOT_U_BA(1) = -    CXTOT_U(1)
+      CXTOT_U_BA(2) = -DIR*CXTOT_U(2)
+      CXTOT_U_BA(3) = -    CXTOT_U(3)
+      
+      CYTOT_U_BA(1) = -DIR*CYTOT_U(1)
+      CYTOT_U_BA(2) = -    CYTOT_U(2)
+      CYTOT_U_BA(3) = -DIR*CYTOT_U(3)
+      
+      CZTOT_U_BA(1) = -    CZTOT_U(1)
+      CZTOT_U_BA(2) = -DIR*CZTOT_U(2)
+      CZTOT_U_BA(3) = -    CZTOT_U(3)
+      
+      CRTOT_U_BA(1) = -    CRTOT_U(1)
+      CRTOT_U_BA(2) = -DIR*CRTOT_U(2)
+      CRTOT_U_BA(3) = -    CRTOT_U(3)
+      
+      CMTOT_U_BA(1) = -DIR*CMTOT_U(1)
+      CMTOT_U_BA(2) = -    CMTOT_U(2)
+      CMTOT_U_BA(3) = -DIR*CMTOT_U(3)
+      
+      CNTOT_U_BA(1) = -    CNTOT_U(1)
+      CNTOT_U_BA(2) = -DIR*CNTOT_U(2)
+      CNTOT_U_BA(3) = -    CNTOT_U(3)
+      
+      !'    roll rate  p','   pitch rate  q','     yaw rate  r'
+      CXTOT_U_BA(4) =     CXTOT_U(4)*2.0/BREF
+      CXTOT_U_BA(5) = DIR*CXTOT_U(5)*2.0/CREF
+      CXTOT_U_BA(6) =     CXTOT_U(6)*2.0/BREF
+      
+      CYTOT_U_BA(4) = DIR*CYTOT_U(4)*2.0/BREF
+      CYTOT_U_BA(5) =     CYTOT_U(5)*2.0/CREF
+      CYTOT_U_BA(6) = DIR*CYTOT_U(6)*2.0/BREF
+      
+      CZTOT_U_BA(4) =      CZTOT_U(4)*2.0/BREF
+      CZTOT_U_BA(5) =  DIR*CZTOT_U(5)*2.0/CREF
+      CZTOT_U_BA(6) =      CZTOT_U(6)*2.0/BREF
+      
+      CRTOT_U_BA(4) =     CRTOT_U(4)*2.0/BREF
+      CRTOT_U_BA(5) = DIR*CRTOT_U(5)*2.0/CREF
+      CRTOT_U_BA(6) =     CRTOT_U(6)*2.0/BREF
+      
+      CMTOT_U_BA(4) = DIR*CMTOT_U(4)*2.0/BREF
+      CMTOT_U_BA(5) =     CMTOT_U(5)*2.0/CREF
+      CMTOT_U_BA(6) = DIR*CMTOT_U(6)*2.0/BREF
+      
+      CNTOT_U_BA(4) =     CNTOT_U(4)*2.0/BREF
+      CNTOT_U_BA(5) = DIR*CNTOT_U(5)*2.0/CREF
+      CNTOT_U_BA(6) =     CNTOT_U(6)*2.0/BREF
+      
+      ! control surfaces
+      
+      do K=1, NCONTROL
+            CXTOT_D_BA(K) = DIR*CXTOT_D(K)
+            CYTOT_D_BA(K) =     CYTOT_D(K)
+            CZTOT_D_BA(K) = DIR*CZTOT_D(K)
+            CRTOT_D_BA(K) = DIR*CRTOT_D(K)
+            CMTOT_D_BA(K) =     CMTOT_D(K)
+            CNTOT_D_BA(K) = DIR*CNTOT_D(K)
+      enddo
+      
+      ! design variables
+      
+      do K=1, NDESIGN
+            CXTOT_G_BA(K) = DIR*CXTOT_G(K)
+            CYTOT_G_BA(K) =     CYTOT_G(K)
+            CZTOT_G_BA(K) = DIR*CZTOT_G(K)
+            CRTOT_G_BA(K) = DIR*CRTOT_G(K)
+            CMTOT_G_BA(K) =     CMTOT_G(K)
+            CNTOT_G_BA(K) = DIR*CNTOT_G(K)
+      enddo
+      
 C C
       RETURN
-      END ! calcST
+      
+      
+      
+      END ! calc_stab_derivs
 
 
 

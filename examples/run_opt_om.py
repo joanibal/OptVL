@@ -11,7 +11,7 @@ model.add_design_var("ovlsolver.Elevator", lower=-10, upper=10)
 
 # the outputs of OptVL can be used as contraints
 model.add_constraint("ovlsolver.CL", equals=1.5)
-model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
+model.add_constraint("ovlsolver.Cm", equals=0.0, scaler=1e3)
 
 # the scaler values bring the objective functinon to ~ order 1 for the optimizer
 model.add_objective("ovlsolver.CD", scaler=1e3)

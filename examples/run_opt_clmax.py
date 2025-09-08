@@ -67,7 +67,7 @@ def cm_con(dvs):
     ovl_solver.set_constraint("Elevator", def_elev) 
     ovl_solver.execute_run()
     
-    cm = ovl_solver.get_total_forces()['CM']
+    cm = ovl_solver.get_total_forces()['Cm']
     
     return cm
 
@@ -115,7 +115,7 @@ ovl_solver.execute_run()
 total_forces_verify = ovl_solver.get_total_forces()
 cl_verify = total_forces_verify['CL']
 cd_verify = total_forces_verify['CD'] 
-cm_verify = total_forces_verify['CM']
+cm_verify = total_forces_verify['Cm']
 strip_forces = ovl_solver.get_strip_forces()
 sectional_cls = strip_forces['Wing']['CL']
 y_le = strip_forces['Wing']['Y LE']
@@ -123,7 +123,7 @@ y_le = strip_forces['Wing']['Y LE']
 
 print(f"  Total CL from verification run: {cl_verify:.4f}")
 print(f"  Total CD from verification run: {cd_verify:.4f}")
-print(f"  Total CM from verification run: {cm_verify:.4f}")
+print(f"  Total Cm from verification run: {cm_verify:.4f}")
 print(f"  Maximum sectional Cl from verification run: {np.max(sectional_cls):.4f} (Constraint: <= 1.75)")
 
 # --- Plotting Span-wise Cl Distribution ---
