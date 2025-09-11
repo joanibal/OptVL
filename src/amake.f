@@ -778,7 +778,61 @@ C
       RETURN
       END ! MAKEBODY
 
+      subroutine update_bodies()
+c--------------------------------------------------------------
+c     Updates all bodies, using the stored data.
+c--------------------------------------------------------------
+      
+      include 'AVL.INC'
+      integer IBODY, NBOD, NBLDS
+      real XBOD(IBX), YBOD(IBX), TBOD(IBX), XB(IBX), YB(IBX)
+      character*120 upname
+      
+      
+      do IBODY=1,NBODY
+       if (lverbose) then 
+        write(*,*) 'Updating body ',IBODY
+       end if
+       NBLDS = 1
+       call READBL(BFILES(IBODY),IBX,NBLDS,XB,YB,NB,NBL,
+     & upname,XINL,XOUT,YBOT,YTOP)
 
+      if(NB.LE.2) then
+       write(*,*)    '** Error reading body from ', BFILES(IBODY)
+       write(*,*)    '   Body not defined'
+       continue
+      else
+C------ set thread line y, and thickness t ( = 2r)
+       nbod = min( 50 , ibx )
+       call getcam(xb,yb,nb,xbod,ybod,tbod,nbod,.false.)
+      endif
+            
+
+      if (IBODY.ne.1) then
+       if(ldupl_b(ibody-1)) then 
+        ! this body has already been created
+        ! it was probably duplicated from the previous one
+        cycle
+       end if
+       call makebody(IBODY,XBOD,YBOD,TBOD,NBOD)
+      else
+       call makebody(IBODY,XBOD,YBOD,TBOD,NBOD)
+      endif
+      
+      if(ldupl_b(ibody)) then
+       call bdupl(ibody,ydupl(ibody),'ydup')
+      endif
+      end do 
+      
+      CALL ENCALC
+      
+      LAIC = .FALSE.
+      LSRD = .FALSE.
+      LVEL = .FALSE.
+      LSOL = .FALSE.
+      LSEN = .FALSE.
+      
+      end subroutine update_bodies
 
 
       SUBROUTINE SDUPL(NN, Ypt,MSG)

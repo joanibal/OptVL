@@ -457,10 +457,10 @@ c
      & SSPACE(NFMAX), ! spanwise spacing
      & SSPACES(NSMAX, NFMAX), ! spanwise spacing vector
      & XYZLES(3, NSMAX, NFMAX), ! leading edge cordinate vector
-     & XLASEC(IBX, NSMAX, NFMAX),
-     & ZLASEC(IBX, NSMAX, NFMAX),
-     & XUASEC(IBX, NSMAX, NFMAX),
-     & ZUASEC(IBX, NSMAX, NFMAX),
+     & XLASEC(IBX, NSMAX, NFMAX), ! airfoil lower surface x-coords
+     & ZLASEC(IBX, NSMAX, NFMAX), ! airfoil lower surface z-coords
+     & XUASEC(IBX, NSMAX, NFMAX), ! airfoil upper surface x-coords
+     & ZUASEC(IBX, NSMAX, NFMAX), ! airfoil upper surface z-coords
      & CHORDS(NSMAX, NFMAX), ! chord length vectorm
      & AINCS(NSMAX, NFMAX), ! incidence angle vector
      & XASEC(IBX, NSMAX, NFMAX),  ! the x coordinate aifoil section
@@ -469,7 +469,7 @@ c
      & TASEC(IBX, NSMAX, NFMAX),   ! thickness at xasec
      & CLCDSEC(6, NSMAX, NFMAX),
      & CLCDSRF(6, NFMAX),
-     & CLAF(NSMAX, NFMAX),
+     & CLAF(NSMAX, NFMAX),   ! CL alpha (dCL/da) scaling factor
      & XHINGED(ICONX, NSMAX, NFMAX), ! hinge location
      & VHINGED(3, ICONX, NSMAX, NFMAX), ! hinge vector
      & GAIND(ICONX, NSMAX, NFMAX), ! control surface gain
