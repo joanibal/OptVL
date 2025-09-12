@@ -1200,7 +1200,7 @@ class OVLSolver(object):
 
 
         Returns:
-            param: the parameter of the surface
+            val: the val of parameter of the body
         """
 
         body_names = self.get_body_names()
@@ -1220,8 +1220,12 @@ class OVLSolver(object):
                 f"{param}, not set for {body_name}"
             )
 
-        param = self.get_avl_fort_arr(self.body_geom_to_fort_var[param][0], self.body_geom_to_fort_var[param][1], slicer=idx_body)
-        return copy.deepcopy(param)  # return the value of the array, but not a reference to avoid sideffects
+        val = self.get_avl_fort_arr(self.body_geom_to_fort_var[param][0], self.body_geom_to_fort_var[param][1], slicer=idx_body)
+
+        if param == "bfile":
+            val = self.__decodeFortranString(val)
+
+        return copy.deepcopy(val)  # return the value of the array, but not a reference to avoid sideffects
 
     def set_body_param(self, body_name: str, param: str, val: float, update_geom: bool = True):
         """Set a parameter of a specified body
