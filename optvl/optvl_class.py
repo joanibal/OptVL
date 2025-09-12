@@ -106,6 +106,7 @@ class OVLSolver(object):
         "Sref": ["CASE_R", "SREF"],
         "Cref": ["CASE_R", "CREF"],
         "Bref": ["CASE_R", "BREF"],
+        "XYZref":["CASE_R", "XYZREF"],
     }
 
     case_derivs_to_fort_var = {
@@ -162,12 +163,32 @@ class OVLSolver(object):
 
     ad_suffix = "_DIFF"
 
-    NUMAX = 6
+    # Primary array limits: These also need to updated in the Fortran layer if changed
+    NSMAX = 400 # number of chord strips
+    NFMAX = 30 # number of surfaces
+    NLMAX = 500 # number of source/doublet line nodes
+    NBMAX = 20 # number of bodies
+    NUMAX = 6 # number of freestream parameters (V,Omega)
+    NDMAX = 30 # number of control deflection parameters
+    NGMAX = 20 # number of design variables
+    NRMAX = 25 # number of stored run cases
+    NTMAX = 5000 # number of stored time levels
+    IBX = 300
+    ICONX = 20
+
+    if platform.system == "Windows":
+        NVMAX = 5000 # number of horseshoe vortices
+    else:
+        NVMAX = 6000 # number of horseshoe vortices
+
+
+
 
     def __init__(
         self,
-        geo_file: str,
+        geo_file: Optional[str] = None,
         mass_file: Optional[str] = None,
+        input_dict: Optional[dict] = None,
         debug: Optional[bool] = False,
         timing: Optional[bool] = False,
     ):
@@ -233,7 +254,8 @@ class OVLSolver(object):
 
             if mass_file is not None:
                 self.avl.loadmass(mass_file)
-
+        elif (input_dict is not None):
+            self.load_input_dict(input_dict)
         else:
             raise ValueError("neither a geometry file or aircraft object was given")
 
@@ -410,6 +432,72 @@ class OVLSolver(object):
                 "idestd": ["SURF_GEOM_I", "IDESTD", idestd_slices],
                 "gaing": ["SURF_GEOM_R", "GAING", gaing_slices],
             }
+
+    def load_input_dict(self, input:dict):
+        """Reads and loads the input dictionary data into optvl.
+        Equivalent to loadgeo operation.
+
+        Args:
+            input: input dictionary in optvl format
+        """
+
+        # Initialize Variables and Counters
+        self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=slice(0, self.NFMAX))
+        self.avl.CASE_R.DCL_A0 = 0.
+        self.avl.CASE_R.DCM_A0 = 0.
+        self.avl.CASE_R.DCL_U0 = 0.
+        self.avl.CASE_R.DCM_U0 = 0.
+        self.set_avl_fort_arr("SURF_GEOM_I","NSEC", 0, slicer=slice(0, self.NFMAX))
+        self.set_avl_fort_arr("BODY_GEOM_I","NSEC_B", 0, slicer=slice(0, self.NBMAX))
+        self.avl.STRP_I.NSURF = 0
+        self.avl.CASE_I.NVOR = 0
+        self.avl.CASE_I.NSTRIP = 0
+        self.avl.CASE_I.NBODY = 0
+        self.avl.CASE_I.NLNODE = 0
+        self.avl.CASE_I.NCONTROL = 0
+        self.avl.CASE_I.NDESIGN = 0
+        self.set_avl_fort_arr("SURF_GEOM_R","CLCDSRF", 0.0, slicer=(slice(0,6), slice(0,self.NFMAX)))
+        self.avl.CASE_L.LVISC = False
+
+
+        """ISURF
+        IBODY
+        ILINE"""
+
+
+        #Parse and Load Mandatory General Info
+        if "title" in input.keys() and isinstance(input["title"],str):
+            self.avl.CASE_R.TITLE = self._createFortranStringArray([input["title"]],num_max_char=120)
+        if "mach" in input.keys() and isinstance(input["mach"],float):
+            self.avl.CASE_R.MACH0 = input["mach"]
+        if "iysym" in input.keys() and isinstance(input["iysym"],int):
+            self.avl.CASE_I.IYSYM = np.sign(input["iysym"])
+        if "izsym" in input.keys() and isinstance(input["izsym"],int):
+            self.avl.CASE_I.IZSYM = np.sign(input["izsym"])
+        if "zsym" in input.keys() and isinstance(input["zsym"],float):
+            self.avl.CASE_R.ZSYM = input["zsym"]
+        self.avl.CASE_R.YSYM = 0.0 # YSYM Hardcoded to 0
+        if "Sref" in input.keys() and isinstance(input["Sref"],float):
+            self.avl.CASE_R.SREF = input["Sref"] if input["Sref"] > 0 else 1.0
+        if "Cref" in input.keys() and isinstance(input["Cref"],float):
+            self.avl.CASE_R.CREF = input["Cref"] if input["Cref"] > 0 else 1.0
+        if "Bref" in input.keys() and isinstance(input["Bref"],float):
+            self.avl.CASE_R.BREF = input["Bref"] if input["Bref"] > 0 else 1.0
+        if "Xref" in input.keys() and isinstance(input["Xref"],float):
+            self.set_avl_fort_arr("CASE_R","XYZREF0", input["Xref"], slicer=0)
+        if "Yref" in input.keys() and isinstance(input["Yref"],float):
+            self.set_avl_fort_arr("CASE_R","XYZREF0", input["Yref"], slicer=1)
+        if "Zref" in input.keys() and isinstance(input["Zref"],float):
+            self.set_avl_fort_arr("CASE_R","XYZREF0", input["Zref"], slicer=2)
+
+        #Parse and Load CDp
+        if "CDp" in input.keys() and isinstance(input["CDp"],float):
+            self.avl.CASE_R.CDREF0 = input["CDp"]
+        else:
+            self.avl.CASE_R.CDREF0 = 0.0
+        pass
+
+
 
     # region -- analysis api
     def execute_run(self, tol: float = 0.00002):
