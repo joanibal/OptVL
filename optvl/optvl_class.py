@@ -14,6 +14,7 @@ import warnings
 import glob
 from typing import Optional
 import platform
+import operator
 
 # =============================================================================
 # External Python modules
@@ -449,7 +450,7 @@ class OVLSolver(object):
         self.avl.CASE_R.DCM_U0 = 0.
         self.set_avl_fort_arr("SURF_GEOM_I","NSEC", 0, slicer=slice(0, self.NFMAX))
         self.set_avl_fort_arr("BODY_GEOM_I","NSEC_B", 0, slicer=slice(0, self.NBMAX))
-        self.avl.STRP_I.NSURF = 0
+        self.avl.CASE_I.NSURF = 0
         self.avl.CASE_I.NVOR = 0
         self.avl.CASE_I.NSTRIP = 0
         self.avl.CASE_I.NBODY = 0
@@ -464,39 +465,148 @@ class OVLSolver(object):
         IBODY
         ILINE"""
 
-
         #Parse and Load Mandatory General Info
-        if "title" in input.keys() and isinstance(input["title"],str):
-            self.avl.CASE_R.TITLE = self._createFortranStringArray([input["title"]],num_max_char=120)
-        if "mach" in input.keys() and isinstance(input["mach"],float):
-            self.avl.CASE_R.MACH0 = input["mach"]
-        if "iysym" in input.keys() and isinstance(input["iysym"],int):
-            self.avl.CASE_I.IYSYM = np.sign(input["iysym"])
-        if "izsym" in input.keys() and isinstance(input["izsym"],int):
-            self.avl.CASE_I.IZSYM = np.sign(input["izsym"])
-        if "zsym" in input.keys() and isinstance(input["zsym"],float):
-            self.avl.CASE_R.ZSYM = input["zsym"]
-        self.avl.CASE_R.YSYM = 0.0 # YSYM Hardcoded to 0
-        if "Sref" in input.keys() and isinstance(input["Sref"],float):
-            self.avl.CASE_R.SREF = input["Sref"] if input["Sref"] > 0 else 1.0
-        if "Cref" in input.keys() and isinstance(input["Cref"],float):
-            self.avl.CASE_R.CREF = input["Cref"] if input["Cref"] > 0 else 1.0
-        if "Bref" in input.keys() and isinstance(input["Bref"],float):
-            self.avl.CASE_R.BREF = input["Bref"] if input["Bref"] > 0 else 1.0
-        if "Xref" in input.keys() and isinstance(input["Xref"],float):
-            self.set_avl_fort_arr("CASE_R","XYZREF0", input["Xref"], slicer=0)
-        if "Yref" in input.keys() and isinstance(input["Yref"],float):
-            self.set_avl_fort_arr("CASE_R","XYZREF0", input["Yref"], slicer=1)
-        if "Zref" in input.keys() and isinstance(input["Zref"],float):
-            self.set_avl_fort_arr("CASE_R","XYZREF0", input["Zref"], slicer=2)
 
-        #Parse and Load CDp
-        if "CDp" in input.keys() and isinstance(input["CDp"],float):
-            self.avl.CASE_R.CDREF0 = input["CDp"]
-        else:
-            self.avl.CASE_R.CDREF0 = 0.0
+        # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
+        generalFields = {
+            "title": (self.avl.CASE_R, "TITLE", str, "Case", None,
+                    lambda v: self._createFortranStringArray([v], num_max_char=120)),
+            "mach":  (self.avl.CASE_R, "MACH0", float, 0.0, None, None),
+            "iysym": (self.avl.CASE_I, "IYSYM", int, 0, None, np.sign),
+            "izsym": (self.avl.CASE_I, "IZSYM", int, 0, None, np.sign),
+            "zsym":  (self.avl.CASE_R, "ZSYM", float, 0.0, None, None),
+            "Sref":  (self.avl.CASE_R, "SREF", float, 1.0, None, lambda v: v if v > 0 else 1.0),
+            "Cref":  (self.avl.CASE_R, "CREF", float, 1.0, None, lambda v: v if v > 0 else 1.0),
+            "Bref":  (self.avl.CASE_R, "BREF", float, 1.0, None, lambda v: v if v > 0 else 1.0),
+            "Xref":  ("CASE_R","XYZREF0", float, 0.0, 0, None),
+            "Yref":  ("CASE_R","XYZREF0", float, 0.0, 1, None),
+            "Zref":  ("CASE_R","XYZREF0", float, 0.0, 2, None),
+            "CDp":   (self.avl.CASE_R, "CDREF0", float, 0.0, None, None),
+        }
+
+        for key, (obj, attr, expected_type, default, slicer, transform) in generalFields.items():
+            val = input.get(key, default)
+            if val is None:
+                continue
+            if isinstance(val, expected_type):
+                if transform:
+                    val = transform(val)
+                if slicer is not None:
+                    self.set_avl_fort_arr(obj,attr, val, slicer=slicer)
+                else:
+                    setattr(obj, attr, val)
+        self.avl.CASE_R.YSYM = 0.0 # YSYM Hardcoded to 0
+
+        # Parse Surfaces
+        if len(input["surfaces"]) > 0:
+            surf_names = list(input["surfaces"].keys())
+            for i in range(len(input["surfaces"])):
+                # Setup surface
+                # Increment surface count by one
+                self.avl.CASE_I.NSURF += 1
+                # initialize default values for surface
+                self.avl.SURF_I.LSCOMP[i] = i + 1
+                self.avl.SURF_GEOM_I.NSEC[i] = 0
+                self.avl.SURF_GEOM_L.LDUPL[i] = False
+                lhinge = False
+                self.avl.SURF_L.LFWAKE[i] = True
+                self.avl.SURF_L.LFALBE[i] = True
+                self.avl.SURF_L.LFLOAD[i] = True
+                self.set_avl_fort_arr("SURF_GEOM_R","XYZSCAL", 1.0, slicer=(slice(None), slice(0, 3)))
+                self.set_avl_fort_arr("SURF_GEOM_R","XYZTRAN", 0, slicer=(slice(None), slice(0, 3)))
+                self.avl.SURF_GEOM_R.ADDINC[i] = 0.0
+
+                # Set surface name
+                self.avl.CASE_C.STITLE[i] = surf_names[i] #self._createFortranStringArray([surf_names[i]], num_max_char=40) idk why this doesn't work
+
+                # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
+                surfaceFields = {
+                    "nchordwise":  ("SURF_GEOM_I", "NVC", (int, np.integer), 1, i, None),
+                    "cspace": ("SURF_GEOM_R", "CSPACE", (float, np.floating), 0.0, i, None),
+                    "nspan": ("SURF_GEOM_I", "NVS", (int, np.integer), 0, i, None),
+                    "sspace":  ("SURF_GEOM_R", "SSPACE", (float, np.floating), 0.0, i, None),
+                    "use surface spacing": ("SURF_GEOM_L", "LSURFSPACING", bool, False, i, None),
+                    "yduplicate":  ("SURF_GEOM_R", "YDUPL", (float, np.floating), None, i, lambda v: (operator.setitem(self.avl.SURF_GEOM_L.LDUPL, i, v is not None),v)[1]),
+                    "component":  ("SURF_I", "LSCOMP", (int, np.integer), None, i, None),
+                    "scale":  ("SURF_GEOM_R", "XYZSCAL", np.ndarray, np.array([[1.,1.,1.]]), (slice(i), slice(0, 3)), None),
+                    "translate":  ("SURF_GEOM_R", "XYZTRAN", np.ndarray, np.array([[0.,0.,0.]]), (slice(i), slice(0, 3)), None),
+                    "angle":  ("SURF_GEOM_R", "ADDINC", (float, np.floating), 0.0, i, None),
+                    "nowake":  ("SURF_L","LFWAKE", bool, False, i, None),
+                    "noalbe":  ("SURF_L","LFALBE", bool, False, i, None),
+                    "noload":  ("SURF_L","LFLOAD", bool, False, i, None),
+                }
+
+                # Starting reading the dict for loading the surface dict into AVL
+                surf = input["surfaces"][surf_names[i]]
+                for key, (obj, attr, expected_type, default, slicer, transform) in surfaceFields.items():
+                    val = surf.get(key, default)
+                    if val is None:
+                        continue
+                    if isinstance(val, expected_type):
+                        if transform:
+                            val = transform(val)
+                        if slicer is not None:
+                            self.set_avl_fort_arr(obj,attr, val, slicer=slicer)
+                        else:
+                            setattr(obj, attr, val)
+
+                # Parse sections
+                self.avl.SURF_GEOM_I.NSEC[i] = surf["num_sections"]
+                for j in range(surf["num_sections"]):
+                    # Setup section defaults
+                    self.set_avl_fort_arr("SURF_GEOM_I","NASEC", 2, slicer=(slice(i),slice(j)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","XASEC", np.array([[0.0, 1.0]]), slicer=(slice(i),slice(j),slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","SASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","TASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
+
+                    self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","CASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_I","NSCON", 0, slicer=(slice(i),slice(j)))
+                    self.set_avl_fort_arr("SURF_GEOM_I","NSDES", 0, slicer=(slice(i),slice(j)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","CLAF", 1.0, slicer=(slice(i),slice(j)))
+
+
+                    # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
+                    sectionFields = {
+                        "xles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), None, (slice(i),slice(j),slice(0)), None),
+                        "yles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), None, (slice(i),slice(j),slice(1)), None),
+                        "zles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), None, (slice(i),slice(j),slice(2)), None),
+                        "chords":  ("SURF_GEOM_R", "CHORDS", (float, np.floating), None, (slice(i),slice(j)), None),
+                        "aincs":  ("SURF_GEOM_R", "AINCS", (float, np.floating), None, (slice(i),slice(j)), None),
+                        "nspans": ("SURF_GEOM_I", "NSPANS", (int, np.integer), 0, (slice(i),slice(j)), None),
+                        "sspaces":  ("SURF_GEOM_R", "SSPACES", (float, np.floating), 0.0, (slice(i),slice(j)), None),
+                        "clcd":  ("SURF_GEOM_R", "CLCDSRF", (float, np.floating), np.array([[[0.,0.,0.,0.,0.,0.]]]), (slice(i),slice(0,6)), lambda v: (operator.setitem(self.avl.CASE_L.LVISC,0,"clcd" in surf.keys()),v)[1]),
+                        "clcdsec":  ("SURF_GEOM_R", "CLCDSEC", (float, np.floating), np.array([[[0.,0.,0.,0.,0.,0.]]]), (slice(i),slice(j),slice(0,6)), lambda v: (operator.setitem(self.avl.CASE_L.LVISC,0,"clcdsec" in surf.keys()),surf["clcd"] if "clcd" in surf.keys() else v)[1]),
+                        "claf":  ("SURF_GEOM_R", "CLAF", (float, np.floating), 0.0, (slice(i),slice(j)), None),
+                    }
+
+                    # Load basic surface data into AVL
+                    for key, (obj, attr, expected_type, default, slicer, transform) in sectionFields.items():
+                        val = surf.get(key, default)
+                        if val is None:
+                            continue
+                        if isinstance(val, expected_type):
+                            # Get the val for section j, array are technically 2D with an empty axis so index that first
+                            val = val[0][j]
+                            if transform:
+                                val = transform(val)
+                            if slicer is not None:
+                                self.set_avl_fort_arr(obj,attr, val, slicer=slicer)
+                            else:
+                                setattr(obj, attr, val)
+
+
+
         pass
 
+    def check_surface_consistency(self):
+        pass
+
+    def generate_naca_four(self,naca: str):
+        pass
 
 
     # region -- analysis api
@@ -703,7 +813,7 @@ class OVLSolver(object):
             slicer: slice applied to the common block variable to return a subset of the data. i.e. (100) or slice(2, 5)
 
         """
-        # convert from fortran ordering to c ordering
+        # convert from c ordering to fortran ordering
         if isinstance(val, np.ndarray):
             val = val.ravel(order="C").reshape(val.shape[::-1], order="F")
 

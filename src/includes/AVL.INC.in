@@ -249,7 +249,7 @@ C
      & CLFF_G(NGMAX),CYFF_G(NGMAX),CDFF_G(NGMAX), ! deriv wrt design
      & SPANEF,           ! span efficiency
      & SPANEF_A,         ! d(SPANEF)/d(alpha)
-     & SPANEF_U(NUMAX),  ! d(SPANEF)/d(U,W))
+     & SPANEF_U(NUMAX),  ! d(SPANEF)/d(U,W)
      & SPANEF_D(NDMAX),  ! d(SPANEF)/d(control)
      & SPANEF_G(NGMAX),  ! d(SPANEF)/d(design)
      & CDTOT, CLTOT,          ! total CD,CL
