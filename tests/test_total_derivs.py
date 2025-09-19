@@ -30,8 +30,8 @@ class TestTotals(unittest.TestCase):
         # self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
         self.ovl_solver = OVLSolver(geo_file="aircraft_L1_trans.avl")
         # self.ovl_solver = OVLSolver(geo_file="rect.avl")
-        self.ovl_solver.set_constraint("alpha", 5.0)
-        self.ovl_solver.set_constraint("beta", 0.0)
+        self.ovl_solver.set_variable("alpha", 5.0)
+        self.ovl_solver.set_variable("beta", 0.0)
         self.ovl_solver.execute_run()
 
     def tearDown(self):
@@ -47,7 +47,7 @@ class TestTotals(unittest.TestCase):
         for con in con_list:
             con_seeds[con] = 1.0
             
-        self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
+        self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
         self.ovl_solver.set_parameter_ad_seeds(param_seeds, mode="FD", scale=step)
         self.ovl_solver.set_reference_ad_seeds(ref_seeds, mode="FD", scale=step)
@@ -65,7 +65,7 @@ class TestTotals(unittest.TestCase):
         stab_deriv_derivs_peturb = self.ovl_solver.get_stab_derivs()
         body_axis_deriv_petrub = self.ovl_solver.get_body_axis_derivs()
 
-        self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-1*step)
+        self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=-1*step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1*step)
         self.ovl_solver.set_parameter_ad_seeds(param_seeds, mode="FD", scale=-1*step)
         self.ovl_solver.set_reference_ad_seeds(ref_seeds, mode="FD", scale=-1*step)

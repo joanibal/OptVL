@@ -27,8 +27,8 @@ class TestResidualUPartials(unittest.TestCase):
         # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
         # self.ovl_solver = OVLSolver(geo_file="rect.avl")
-        self.ovl_solver.set_constraint("alpha", 25.0)
-        self.ovl_solver.set_constraint("beta", 5.0)
+        self.ovl_solver.set_variable("alpha", 25.0)
+        self.ovl_solver.set_variable("beta", 5.0)
         self.ovl_solver.execute_run()
 
     def tearDown(self):
@@ -204,8 +204,8 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
         # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
         # self.ovl_solver = OVLSolver(geo_file="rect.avl")
-        self.ovl_solver.set_constraint("alpha", 45.0)
-        self.ovl_solver.set_constraint("beta", 45.0)
+        self.ovl_solver.set_variable("alpha", 45.0)
+        self.ovl_solver.set_variable("beta", 45.0)
         self.ovl_solver.execute_run()
         self.ovl_solver.clear_ad_seeds_fast()
 

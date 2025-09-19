@@ -31,8 +31,8 @@ class TestStabDerivs(unittest.TestCase):
         # self.ovl_solver = OVLSolver(geo_file="rect.avl")
         
         # HACK: we have to use alpha/beta=0 here so the stability and body axis are the same
-        self.ovl_solver.set_constraint("alpha", 0.0)
-        self.ovl_solver.set_constraint("beta", 0.0)
+        self.ovl_solver.set_variable("alpha", 0.0)
+        self.ovl_solver.set_variable("beta", 0.0)
         
         self.ovl_solver.execute_run()
 
@@ -48,7 +48,7 @@ class TestStabDerivs(unittest.TestCase):
         for con in con_list:
             con_seeds[con] = 1.0
 
-        self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
+        self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
 
         self.ovl_solver.avl.update_surfaces()
@@ -61,7 +61,7 @@ class TestStabDerivs(unittest.TestCase):
         coef_data_peturb = self.ovl_solver.get_total_forces()
         consurf_derivs_peturb = self.ovl_solver.get_control_body_axis_derivs()
 
-        self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-step)
+        self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=-step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-step)
 
         self.ovl_solver.execute_run()
@@ -85,7 +85,6 @@ class TestStabDerivs(unittest.TestCase):
 
     def test_deriv_values(self):
         # compare the analytical gradients with finite difference for each constraint and function
-        import pprint
         base_data = self.ovl_solver.get_total_forces()
         # pprint.pprint(base_data)
         
@@ -119,11 +118,11 @@ class TestStabDerivs(unittest.TestCase):
         
         for con_key in con_keys:
             h = 1e-10
-            val = self.ovl_solver.get_constraint(con_key)
-            self.ovl_solver.set_constraint(con_key, val + h)
+            val = self.ovl_solver.get_variable(con_key)
+            self.ovl_solver.set_variable(con_key, val + h)
             self.ovl_solver.execute_run()
             perb_data = self.ovl_solver.get_total_forces()
-            self.ovl_solver.set_constraint(con_key, val)
+            self.ovl_solver.set_variable(con_key, val)
             
             for func_key in func_keys:
                 key = self.ovl_solver._get_deriv_key(con_to_var[con_key], func_to_key[func_key])

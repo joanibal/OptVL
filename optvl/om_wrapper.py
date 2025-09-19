@@ -154,10 +154,10 @@ def om_surf_dict_to_input(surf_dict):
 
 def om_set_avl_inputs(sys, inputs):
     for c_name in sys.control_names:
-        sys.ovl.set_constraint(c_name, inputs[c_name][0])
+        sys.ovl.set_control_deflection(c_name, inputs[c_name][0])
 
-    sys.ovl.set_constraint("alpha", inputs["alpha"][0])
-    sys.ovl.set_constraint("beta", inputs["beta"][0])
+    sys.ovl.set_variable("alpha", inputs["alpha"][0])
+    sys.ovl.set_variable("beta", inputs["beta"][0])
 
     # add the parameters to the run
     for param in sys.ovl.param_idx_dict:
@@ -424,9 +424,6 @@ class OVLFuncsComp(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         # self.ovl.set_gamma(inputs['gamma'])
-        # for c_name in self.control_names:
-        #     self.ovl.set_constraint(c_name, inputs[c_name][0])
-        # def_dict = self.ovl.get_control_deflections()
 
         # TODO: set_constraint does not correctly do derives yet
         start_time = time.time()
@@ -567,7 +564,7 @@ class OVLFuncsComp(om.ExplicitComponent):
             for func_key in self.ovl.case_stab_derivs_to_fort_var:
                 if func_key in d_outputs:
                     stab_derivs_seeds[func_key] = d_outputs[func_key]
-                    
+
                     if np.abs(stab_derivs_seeds[func_key]) > 0.0:
                         # print(var_name, stab_derivs_seeds[func_key])
                         print(f'  running rev mode derivs for {func_key}')
@@ -576,6 +573,7 @@ class OVLFuncsComp(om.ExplicitComponent):
             for func_key in self.ovl.case_body_derivs_to_fort_var:
                 if func_key in d_outputs:
                     body_axis_seeds[func_key] = d_outputs[func_key]
+                    print(func_key, type(body_axis_seeds[func_key]))
                     
                     if np.abs(body_axis_seeds[func_key]) > 0.0:
                         # print(var_name, body_axis_seeds[func_key])
@@ -656,9 +654,6 @@ class OVLPostProcessComp(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         # self.ovl.set_gamma(inputs['gamma'])
-        # for c_name in self.control_names:
-        #     self.ovl.set_constraint(c_name, inputs[c_name][0])
-        # def_dict = self.ovl.get_control_deflections()
 
         om_set_avl_inputs(self, inputs)
 

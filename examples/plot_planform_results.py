@@ -10,7 +10,7 @@ cr = om.CaseReader("./run_opt_om_planform_out/opt_history.sql")
 driver_cases = cr.list_cases('driver',out_stream=None)
 obj_arr = np.zeros(len(driver_cases))
 for idx_case in range(len(driver_cases)):
-    obj_arr[idx_case] = cr.get_case(driver_cases[idx_case])['glide.duration']
+    obj_arr[idx_case] = cr.get_case(driver_cases[idx_case])['glide.duration'][0]
     
 plt.plot(obj_arr)
 plt.xlabel('iteration')

@@ -30,8 +30,8 @@ class TestConstraints(unittest.TestCase):
     # def test_rates(self):
 
     def test_angles(self):
-        self.ovl_solver.set_constraint("alpha", 6.00)
-        self.ovl_solver.set_constraint("beta", 2.00)
+        self.ovl_solver.set_variable("alpha", 6.00)
+        self.ovl_solver.set_variable("beta", 2.00)
         self.ovl_solver.execute_run()
 
         np.testing.assert_allclose(
@@ -62,8 +62,8 @@ class TestConstraints(unittest.TestCase):
         )
 
     def test_control_surfaces(self):
-        self.ovl_solver.set_constraint("D1", 10.00)
-        self.ovl_solver.set_constraint("D2", 5.00)
+        self.ovl_solver.set_control_deflection("D1", 10.00)
+        self.ovl_solver.set_control_deflection("D2", 5.00)
         self.ovl_solver.execute_run()
         run_data = self.ovl_solver.get_total_forces()
         
@@ -85,8 +85,8 @@ class TestConstraints(unittest.TestCase):
 
     def test_control_surfaces_names(self):
         """test that the control surface names are can be used as well"""
-        self.ovl_solver.set_constraint("Elevator", 10.00)
-        self.ovl_solver.set_constraint("Rudder", 5.00)
+        self.ovl_solver.set_control_deflection("Elevator", 10.00)
+        self.ovl_solver.set_control_deflection("Rudder", 5.00)
         self.ovl_solver.execute_run()
         run_data = self.ovl_solver.get_total_forces()
         np.testing.assert_allclose(

@@ -8,9 +8,10 @@ ovl_solver = OVLSolver(geo_file="aircraft.avl", debug=False)
 # setup OptVL 
 ovl_solver.set_parameter("Mach", 0.0)
 
+# obj-start
 # Define your custom objective function with outputs from OptVL
 def objective_function(x):
-    ovl_solver.set_constraint("Elevator", x[0])
+    ovl_solver.set_control_deflection("Elevator", x[0])
     ovl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
     
     ovl_solver.execute_run()
@@ -18,14 +19,15 @@ def objective_function(x):
     print(x, cd)
 
     return cd
-
+# obj-end
+# objgrad-start
 def objective_gradient(x):
     # Partial derivatives of the objective_function
     
     # we are trusting that the design variables have already been applied 
     # and propogated through by the objective_function. 
     
-    ovl_solver.set_constraint("Elevator", x[0])
+    ovl_solver.set_control_deflection("Elevator", x[0])
     ovl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
     
     ovl_solver.execute_run()
@@ -36,11 +38,12 @@ def objective_gradient(x):
 
     # concatinate the two and return the derivs
     return np.concatenate(([dcd_dele], dcd_daincs))
+# objgrad-end
 
-
+# eq-start
 # Define equality constraint: h(x) = 0
 def eq_constraint(x):
-    ovl_solver.set_constraint("Elevator", x[0])
+    ovl_solver.set_control_deflection("Elevator", x[0])
     ovl_solver.set_surface_params({"Wing":{"aincs":x[1:]}})
 
     ovl_solver.execute_run()
@@ -55,7 +58,8 @@ def eq_constraint(x):
     cm_con = coeff['Cm'] - cm_target
 
     return np.array([cl_con, cm_con])
-
+# eq-end
+# eqgrad-start
 # Define the gradient of the equality constraint
 def eq_constraint_jac(x):
     sens = ovl_solver.execute_run_sensitivities(['CL', 'Cm'])
@@ -69,6 +73,7 @@ def eq_constraint_jac(x):
 
     # concatinate the two and return the derivs
     return np.array([dcl_dx, dcm_dx])
+# eqgrad-end
 
 num_sec = 5
 # Initial guess for the variables

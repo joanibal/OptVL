@@ -6,7 +6,7 @@ write_tecplot_files = True
 ovl_solver = OVLSolver(geo_file="aircraft.avl", debug=False, timing=False)
 
 # set the angle of attack
-ovl_solver.set_constraint("alpha", 5.00)
+ovl_solver.set_variable("alpha", 5.00)
 
 for idx_scale, y_scale in enumerate(np.linspace(0.5, 1.5, 5)):
     ovl_solver.set_surface_params({"Wing":{"scale":np.array([1, y_scale, 1])}})

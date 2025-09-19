@@ -97,4 +97,4 @@ om.n2(prob, show_browser=False, outfile="vlm_opt_param.html")
 # prob.check_totals()
 
 
-prob.model.ovlsolver.solver.avl.write_geom_file('opt_airplane.avl')
+prob.model.ovlsolver.solver.ovl.write_geom_file('opt_airplane.avl')

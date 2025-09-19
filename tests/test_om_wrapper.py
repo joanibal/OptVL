@@ -173,14 +173,14 @@ class TestOMWrapper(unittest.TestCase):
         om_val = prob.get_val(f"ovlsolver.alpha")
         
         
-        self.ovl_solver.set_constraint("alpha", 0.00, con_var="Cm pitch moment")
+        self.ovl_solver.set_constraint("alpha", "Cm", 0.00)
         self.ovl_solver.execute_run()
         alpha = self.ovl_solver.get_parameter("alpha")
         
         np.testing.assert_allclose(om_val,
                             alpha,
                             rtol=1e-5,
-                            err_msg=f"solved alpha",
+                            err_msg="solved alpha",
                         )
 
     def test_OM_total_derivs(self):
