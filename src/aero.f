@@ -1182,6 +1182,7 @@ ccc        CMLE_SRF(IS) = DOT(CM_SRF(1,IS),VHINGE(1,IS))
 C
 C
 C-------------------------------------------------
+        CDISURF(IS) = CDSURF(IS) - CDVSURF(IS)
         IF(LFLOAD(IS)) THEN
 C------- Total forces summed from surface forces...
 C-         normalized to configuration reference quantities

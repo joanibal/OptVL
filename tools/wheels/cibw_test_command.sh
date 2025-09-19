@@ -25,7 +25,7 @@ python -m unittest -v test_tear_down.py
 python -m unittest -v test_parameters.py
 python -m unittest -v test_analysis.py
 python -m unittest -v test_surf_geom.py
-python -m unittest -v test_contraints.py
+python -m unittest -v test_constraints.py
 python -m unittest -v test_stab_derivs.py
 python -m unittest -v test_body_axis_derivs.py
 # test eigenmode analysis

@@ -12,7 +12,7 @@ mass = ovl.get_parameter("mass")
 weight = mass * g
 cl = weight / (0.5 * dens * vel**2)
 ovl.set_trim_condition("CL", cl)
-ovl.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
+ovl.set_constraint("Elevator", "Cm", 0.00)
 
 ovl.execute_eigen_mode_calc()
 

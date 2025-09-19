@@ -7,12 +7,12 @@ ovl_solver = OVLSolver(geo_file="aircraft.avl", debug=False)
 
 # setup OptVL 
 ovl_solver.set_parameter("Mach", 0.0)
-# ovl_solver.set_constraint("alpha", 5.0)
+# ovl_solver.set_variable("alpha", 5.0)
 
 # Define your custom objective function with outputs from OptVL
 def custom_function(x):
-    ovl_solver.set_constraint("Elevator", x[0])
-    ovl_solver.set_constraint("alpha", x[1])
+    ovl_solver.set_control_deflection("Elevator", x[0])
+    ovl_solver.set_variable("alpha", x[1])
     
     ovl_solver.execute_run()
     cd = ovl_solver.get_total_forces()['CD']
@@ -31,8 +31,8 @@ cl_target = 1.5
 cm_target = 0.0
 # Define equality constraint: h(x) = 0
 def eq_constraint(x):
-    ovl_solver.set_constraint("Elevator", x[0])
-    ovl_solver.set_constraint("alpha", x[1])
+    ovl_solver.set_control_deflection("Elevator", x[0])
+    ovl_solver.set_variable("alpha", x[1])
     ovl_solver.execute_run()
 
     # the objective must always be run first

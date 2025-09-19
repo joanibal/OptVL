@@ -25,7 +25,7 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 class TestNewSubroutines(unittest.TestCase):
     def setUp(self):
         self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl", debug=False)
-        self.ovl_solver.set_constraint("alpha", 25.0)
+        self.ovl_solver.set_variable("alpha", 25.0)
 
     def test_residual(self):
         self.ovl_solver.avl.get_res()
@@ -72,9 +72,9 @@ class TestNewSubroutines(unittest.TestCase):
         )
 
     def test_new_solve(self):
-        self.ovl_solver.set_constraint("Elevator", 10.00)
-        self.ovl_solver.set_constraint("alpha", 10.00)
-        self.ovl_solver.set_constraint("beta", 10.00)
+        self.ovl_solver.set_control_deflection("Elevator", 10.00)
+        self.ovl_solver.set_variable("alpha", 10.00)
+        self.ovl_solver.set_variable("beta", 10.00)
         
         self.ovl_solver.avl.exec_rhs()
         

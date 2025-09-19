@@ -8,7 +8,7 @@ ovl_solver.set_parameter("Mach", 0.0)
 print("----------------- alpha sweep ----------------")
 print("   Angle        Cl           Cd          Cdi          Cdv          Cm")
 for alpha in range(10):
-    ovl_solver.set_constraint("alpha", alpha)
+    ovl_solver.set_variable("alpha", alpha)
     ovl_solver.execute_run()
     run_data = ovl_solver.get_total_forces()
     print(

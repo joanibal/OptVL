@@ -17,34 +17,48 @@ Like AVL, you can also add a mass file as well.
 ovl = OVLSolver(geo_file="aircraft.avl", mass_file="aircraft.mass")
 ```
 
-
-## Constraints
+## Setting variables and control deflections
 After initializing, you can set up various constraints directly.
 You can set `alpha`, `beta`, `roll rate`, `pitch rate`, and `yaw rate` as well as any control surface in this way. 
 
 ```python
-ovl.set_constraint("alpha", 0.00)
+ovl.set_variable("alpha", 0.00)
 ```
-
-You can also set a variable in order to meet a specific constraint value. 
-The valid constraint options are `CL`, `CY`, `Cl roll moment`, `Cm pitch moment`, `Cn yaw moment`.
-
-!!! Warning
-    Be careful to state a constraint variable, `con_var`, that is affected by the input. For example if you accidentally specify that the pitching moment should be trimmed by the rudder the analysis will not converge. 
-
+You can also set the deflection of any control surface for a run.
+The control surfaces are specified using the names in the geometry file.
 ```python
-# set the Elevator to trim Cm to zero
-ovl.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
-# set the Rudder to trim Cn to zero
-ovl.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
+ovl.set_control_deflection("Elevator", 0.00)
 ```
 
+## Setting parameters
 You can also set parameters of the run case. 
-The list of parameters you can set are `CD0`, `bank`, `elevation`, `heading`, `Mach`, `velocity`, `density`, `grav.acc.`, `turn rad.`, `load fac.`, `X cg`, `Y cg`, `Z cg`, `mass`, `Ixx`, `Iyy`, `Izz`, `Ixy`, `Iyz`, `Izx`, `visc CL_a`, `visc CL_u`, `visc CM_a`, `visc CM_u`,
+The list of parameters you can set are `CD0`, `bank`, `elevation`, `heading`, `Mach`, `velocity`, `density`, `grav.acc.`, `turn rad.`, `load fac.`, `X cg`, `Y cg`, `Z cg`, `mass`, `Ixx`, `Iyy`, `Izz`, `Ixy`, `Iyz`, `Izx`, `visc CL_a`, `visc CL_u`, `visc Cm_a`, `visc Cm_u`,
 ```python 
 # set the flow parameters like mach numbers
 ovl.set_parameter("Mach", 0.3)
 ```
+
+
+## Setting constraints
+You can also set a variable in order to meet a specific constraint value. 
+The valid constraint options are `CL`, `CY`, `Cl`, `Cm`, `Cn`.
+The roll moment coefficients have lower case letters just like in AVL.
+
+!!! Warning
+    Note the difference in capitalization between the coefficient of lift, CL, and the roll moment coefficient, `Cl`.
+
+!!! Warning
+    Be careful to state a constraint variable that is affected by the input. For example if you accidentally specify that the pitching moment should be trimmed by the rudder the analysis will not converge. 
+
+```python
+# set the Elevator to trim Cm to zero
+ovl.set_constraint("alpha", "CL", 0.5)
+# set the Elevator to trim Cm to zero
+ovl.set_constraint("Elevator", "Cm", 0.00)
+# set the Rudder to trim Cn to zero
+ovl.set_constraint("Rudder", "Cn", 0.00)
+```
+
 
 ## Running Analysis
 

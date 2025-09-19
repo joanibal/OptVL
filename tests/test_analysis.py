@@ -25,8 +25,8 @@ class TestAnalysisSweep(unittest.TestCase):
         self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file, timing=False, debug=False)
 
     def test_constrained_alpha_sweep(self):
-        self.ovl_solver.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
-        self.ovl_solver.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
+        self.ovl_solver.set_constraint("Elevator", "Cm", 0.00, )
+        self.ovl_solver.set_constraint("Rudder", "Cn", 0.00, )
 
         alpha_array = np.arange(0, 10)
         cl_ref_arr = np.array(
@@ -58,7 +58,7 @@ class TestAnalysisSweep(unittest.TestCase):
             ]
         )
         for idx_alpha, alpha in enumerate(alpha_array):
-            self.ovl_solver.set_constraint("alpha", alpha)
+            self.ovl_solver.set_variable("alpha", alpha)
 
             self.ovl_solver.execute_run()
             run_data = self.ovl_solver.get_total_forces()
@@ -80,8 +80,8 @@ class TestAnalysisSweep(unittest.TestCase):
             )
 
     def test_constrained_cl_sweep(self):
-        self.ovl_solver.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
-        self.ovl_solver.set_constraint("Rudder", 0.00, con_var="Cn yaw moment")
+        self.ovl_solver.set_constraint("Elevator", "Cm", 0.00, )
+        self.ovl_solver.set_constraint("Rudder", "Cn", 0.00, )
 
         cd_ref_arr = np.array(
             [
@@ -127,7 +127,7 @@ class TestBodyAnalysis(unittest.TestCase):
         self.ovl_solver = OVLSolver(geo_file="supra.avl",debug=False)
     
     def test_coefs(self):
-        self.ovl_solver.set_constraint("alpha", 5.00)
+        self.ovl_solver.set_variable("alpha", 5.00)
         self.ovl_solver.execute_run()
         coef_data = self.ovl_solver.get_total_forces()
 
@@ -141,8 +141,8 @@ class TestHingeMom(unittest.TestCase):
         self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
 
     def test_con_surf_mom(self):
-        self.ovl_solver.set_constraint("Elevator", 10.00)
-        self.ovl_solver.set_constraint("Rudder", 0.00)
+        self.ovl_solver.set_control_deflection("Elevator", 10.00)
+        self.ovl_solver.set_control_deflection("Rudder", 0.00)
         self.ovl_solver.execute_run()
 
         mom_data = self.ovl_solver.get_hinge_moments()
@@ -150,8 +150,8 @@ class TestHingeMom(unittest.TestCase):
         np.testing.assert_allclose(mom_data["Elevator"], -0.04381216304, rtol=1e-8)
         np.testing.assert_allclose(mom_data["Rudder"], 0.0, atol=1e-8)
 
-        self.ovl_solver.set_constraint("Elevator", 0.00)
-        self.ovl_solver.set_constraint("Rudder", 10.00)
+        self.ovl_solver.set_control_deflection("Elevator", 0.00)
+        self.ovl_solver.set_control_deflection("Rudder", 10.00)
         self.ovl_solver.execute_run()
         mom_data = self.ovl_solver.get_hinge_moments()
 
@@ -166,7 +166,7 @@ class TestCaseDerivs(unittest.TestCase):
         self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
 
     def test_coefs_wrt_con_surfs(self):
-        self.ovl_solver.set_constraint("alpha", 45.00)
+        self.ovl_solver.set_variable("alpha", 45.00)
         self.ovl_solver.execute_run()
         run_data = self.ovl_solver.get_total_forces()
         coef_derivs = self.ovl_solver.get_control_stab_derivs()
@@ -182,7 +182,7 @@ class TestVariableSetting(unittest.TestCase):
         Test that setting the alpha works
         """
 
-        self.ovl_solver.set_constraint("alpha", 10.00)
+        self.ovl_solver.set_variable("alpha", 10.00)
         self.ovl_solver.execute_run()
         alfa_new = self.ovl_solver.get_parameter("alpha")
         np.testing.assert_allclose(alfa_new, 10.00, rtol=1e-15)
@@ -192,13 +192,22 @@ class TestVariableSetting(unittest.TestCase):
         Test that setting the control surface works
         """
 
-        self.ovl_solver.set_constraint("Elevator", 10.00)
-        self.ovl_solver.set_constraint("alpha", 10.00)
+        self.ovl_solver.set_control_deflection("Elevator", 10.00)
+        self.ovl_solver.set_variable("alpha", 10.00)
         self.ovl_solver.execute_run()
         alfa_new = self.ovl_solver.get_parameter("alpha")
         np.testing.assert_allclose(alfa_new, 10.00, rtol=1e-15)
+        ele_def = self.ovl_solver.get_control_deflection("Elevator")
+        np.testing.assert_allclose(ele_def, 10.00, rtol=1e-15)
+        
         def_dict = self.ovl_solver.get_control_deflections()
-        np.testing.assert_allclose(def_dict["Elevator"], 10.00, rtol=1e-15)
+        for key in def_dict:
+            def_dict[key] += 1.0
+        
+        self.ovl_solver.set_control_deflections(def_dict)
+        
+        ele_def = self.ovl_solver.get_control_deflection("Elevator")
+        np.testing.assert_allclose(ele_def, 11.00, rtol=1e-15)
 
 
 if __name__ == "__main__":

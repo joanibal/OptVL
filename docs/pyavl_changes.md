@@ -18,7 +18,7 @@ The table below lists the changes.
 | `set_case_parameter`          | `set_parameter`               |
 | `get_case_constraint`         | `get_constraint`              |
 | `get_strip_data`              | `get_strip_forces`            |
-| `add_constraint`              | `set_constraint`              |
+| `add_constraint`              | split into `set_constraint`, `set_variable`, `set_control_deflection`|
 | `add_trim_condition`          | `set_trim_condition`          |
 | `executeRun`                  | use `execute_run` instead     |
 

@@ -57,8 +57,8 @@ class TestGeom(unittest.TestCase):
                     err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
                 )
 
-        self.ovl_solver.set_constraint("alpha", 6.00)
-        self.ovl_solver.set_constraint("beta", 2.00)
+        self.ovl_solver.set_variable("alpha", 6.00)
+        self.ovl_solver.set_variable("beta", 2.00)
         self.ovl_solver.execute_run()
         
         assert self.ovl_solver.get_num_surfaces() == 5
@@ -90,8 +90,8 @@ class TestGeom(unittest.TestCase):
         assert self.ovl_solver.get_num_strips() == 90
         assert self.ovl_solver.get_mesh_size() == 780
 
-        self.ovl_solver.set_constraint("alpha", 6.00)
-        self.ovl_solver.set_constraint("beta", 2.00)
+        self.ovl_solver.set_variable("alpha", 6.00)
+        self.ovl_solver.set_variable("beta", 2.00)
         self.ovl_solver.execute_run()
 
         np.testing.assert_allclose(
@@ -121,7 +121,7 @@ class TestGeom(unittest.TestCase):
             },
         }
         
-        self.ovl_solver.set_constraint("alpha", 10.00)
+        self.ovl_solver.set_variable("alpha", 10.00)
         self.ovl_solver.set_surface_params(new_data)
         
         self.ovl_solver.execute_run()

@@ -14,6 +14,7 @@ import warnings
 import glob
 from typing import Optional
 import platform
+from collections import OrderedDict
 
 # =============================================================================
 # External Python modules
@@ -67,8 +68,8 @@ class OVLSolver(object):
         "Izx": 25,
         "visc CL_a": 26,
         "visc CL_u": 27,
-        "visc CM_a": 28,
-        "visc CM_u": 29,
+        "visc Cm_a": 28,
+        "visc Cm_u": 29,
     }
     
     # fmt: off
@@ -79,6 +80,7 @@ class OVLSolver(object):
         "CL": ["CASE_R", "CLTOT"],
         "CD": ["CASE_R", "CDTOT"],
         "CDv": ["CASE_R", "CDVTOT"], # viscous drag
+        "CDi": ["CASE_R", "CDITOT"], # viscous drag
         
         # lift and drag calculated from farfield integration
         "CLff": ["CASE_R", "CLFF"],
@@ -120,9 +122,9 @@ class OVLSolver(object):
         "CX": ["CASE_R", "CXTOT_D"],
         "CY": ["CASE_R", "CYTOT_D"],
         "CZ": ["CASE_R", "CZTOT_D"],
-        "CR": ["CASE_R", "CRTOT_D"],
-        "CM": ["CASE_R", "CMTOT_D"],
-        "CN": ["CASE_R", "CNTOT_D"],
+        "Cl": ["CASE_R", "CRTOT_D"],
+        "Cm": ["CASE_R", "CMTOT_D"],
+        "Cn": ["CASE_R", "CNTOT_D"],
     }
   
     # This dict has the following structure:
@@ -132,22 +134,27 @@ class OVLSolver(object):
         "CL": ["SURF_R", "CLSURF"],
         "CD": ["SURF_R", "CDSURF"],
         "CDv": ["SURF_R", "CDVSURF"],  # viscous drag
+        "CDi": ["SURF_R", "CDISURF"],  # inviscid drag
+        
+        # geometric
+        "area": ["SURF_R", "SSURF"], 
+        "average chord": ["SURF_R", "CAVESURF"],
         
         # non-dimensionalized forces 
-        "CX": ["SURF_R", "CXSURF"], 
-        "CY": ["SURF_R", "CYSURF"], 
-        "CZ": ["SURF_R", "CZSURF"],   
-        
-        # non-dimensionalized moments (body frame)
-        "CR": ["SURF_R", "CRSURF"],
-        "CM": ["SURF_R", "CMSURF"],
-        "CN": ["SURF_R", "CNSURF"],
+        "CX ": ["SURF_R", "CXSURF"], 
+        "C Y": ["SURF_R", "CYSURF"], 
+        " CZ": ["SURF_R", "CZSURF"],   
+         
+        # non-dimensionalized momen ts (body frame)
+        "Cl": ["SURF_R", "CRSURF"  ],
+        "Cm": ["SURF_R", "CMSUR  F"],
+        "Cn": ["SURF_R", "CNSURF"],
         
         # forces non-dimentionalized by surface quantities
         # uses surface area instead of sref and takes moments about leading edge
         "CL surf" : ["SURF_R", "CL_SRF"],
         "CD surf" : ["SURF_R", "CD_SRF"],
-        "CMLE surf" : ["SURF_R", "CMLE_SRF"],
+        "CmLE surf" : ["SURF_R", "CMLE_SRF"],
         
         #TODO: add CF_SRF(3,NFMAX), CM_SRF(3,NFMAX)
     }
@@ -246,9 +253,9 @@ class OVLSolver(object):
             "yaw rate": 4,
             "CL": 5,
             "CY": 6,
-            "CR BA": 7,
-            "CM": 8,
-            "CR": 9,
+            "Cl": 7,
+            "Cm": 8,
+            "Cl'": 9,
         }
         
         # control surfaces added in __init__
@@ -261,9 +268,11 @@ class OVLSolver(object):
 
 
         control_names = self.get_control_names()
-        self.control_variables = {}
+        self.dindex_to_con_surf = OrderedDict()
+        self.con_surf_to_dindex = OrderedDict()
         for idx_c_var, c_name in enumerate(control_names):
-            self.control_variables[c_name] = f"D{idx_c_var+1}"
+            self.dindex_to_con_surf[f"D{idx_c_var+1}"] = c_name
+            self.con_surf_to_dindex[c_name] = f"D{idx_c_var+1}"
             
         # set control surface constraint indecies in to con val dict
         idx_control_start = np.max([x for x in self.conval_idx_dict.values()]) + 1
@@ -306,7 +315,7 @@ class OVLSolver(object):
             # for var in var_to_suffix:
             for idx_var, var in enumerate(["u","v", "w", "p", "q", "r"]): 
                 deriv_key =self._get_deriv_key(var, func)
-                self.case_body_derivs_to_fort_var[deriv_key] = ["CASE_R", f"{func_to_prefix[func]}TOT_U_BA", (idx_var,)]
+                self.case_body_derivs_to_fort_var[deriv_key] = ["CASE_R", f"{func_to_prefix[func]}TOT_U_BA", idx_var]
         
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
@@ -440,14 +449,112 @@ class OVLSolver(object):
         """
         self.set_avl_fort_arr('CASE_R', 'EXEC_TOL', tol)
         self.avl.oper()
+        
+    def set_variable(self, var:str, val:float):
+        """set a variable for the run case (equivalent to setting a variable in AVL's OPER menu)
+        Args:
+            var: variable to be constrained ["alpha"", "beta"", "roll rate", "pitch rate", "yaw rate"] or any control surface.
+            val: target value of `con_var`
+        """     
+        avl_variables = {
+            "alpha":      ("CASE_R","ALFA"),
+            "beta":       ("CASE_R","BETA"),
+            "roll rate":  ("CASE_R","WROT", 0),
+            "pitch rate": ("CASE_R","WROT", 1),
+            "yaw rate":   ("CASE_R","WROT", 2),
+        }
+        ref_data = self.get_reference_data()
+        dtr  = self.get_avl_fort_arr("CASE_R", "DTR")
+        bref = ref_data['Bref']
+        cref = ref_data['Cref']
+        
+        vars_factors = {
+            "alpha":      dtr,
+            "beta":       dtr,
+            "roll rate":  2/bref,
+            "pitch rate": 2/cref,
+            "yaw rate":   2/bref,
+        }
+        
+        
 
-    def set_constraint(self, var:str, val:float, con_var:str=None):
-        """Set the constraints on the analysis case (equivalent to setting a variable in AVL's OPER menu) 
+
+        if var in avl_variables:
+            # save the name of the avl_var 0
+            avl_var = avl_variables[var]
+        else:
+            raise ValueError(
+                f"specified variable `{var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.con_surf_to_dindex.items()]}. Constraints that must be implicitly satisfied (such as `CL`) are set with `add_trim_constraint`."
+            )
+
+        # check that the type of val is correct
+        if isinstance(val, (int, float, np.floating, np.integer)):
+            pass
+        elif isinstance(val, np.ndarray):
+            if val.size != 1:
+                raise TypeError(f"variable value must be can only be an np.ndarray if it has size = 1. Got {val}")
+        else:
+            raise TypeError(f"variable value must be a int or float for contraint {var}. Got {val}")
+        
+        slicer = (avl_var[2],) if len(avl_var) == 3 else None
+        self.set_avl_fort_arr(avl_var[0], avl_var[1], val*vars_factors[var], slicer)
+        
+        # set the contraint value so that the set value is used in analysis        
+        self.set_avl_fort_arr("CASE_R", "CONVAL", val, (self.conval_idx_dict[var],))
+
+        
+    def get_variable(self, var:str):
+        """set a variable for the run case (equivalent to setting a variable in AVL's OPER menu)
+        Args:
+            var: variable to be constrained ["alpha"", "beta"", "roll rate", "pitch rate", "yaw rate"] or any control surface.
+            val: target value of `con_var`
+        """     
+        avl_variables = {
+            "alpha":      ("CASE_R","ALFA"),
+            "beta":       ("CASE_R","BETA"),
+            "roll rate":  ("CASE_R","WROT", 0),
+            "pitch rate": ("CASE_R","WROT", 1),
+            "yaw rate":   ("CASE_R","WROT", 2),
+        }
+        
+        ref_data = self.get_reference_data()
+        dtr  = self.get_avl_fort_arr("CASE_R", "DTR")
+        bref = ref_data['Bref']
+        cref = ref_data['Cref']
+                
+        vars_factors = {
+            "alpha":      dtr,
+            "beta":       dtr,
+            "roll rate":  2/bref,
+            "pitch rate": 2/cref,
+            "yaw rate":   2/bref,
+        }
+        
+        
+        # Check that the variable is valid
+        if var in avl_variables:
+            # save the name of the avl_var
+            var_key = avl_variables[var]
+        else:
+            raise ValueError(
+                f"specified variable `{var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.con_surf_to_dindex.items()]}."
+            )
+        
+        slicer = var_key[2] if len(var_key) == 3 else None
+        
+        val = copy.deepcopy(self.get_avl_fort_arr(var_key[0], var_key[1],slicer))
+        val /= vars_factors[var]
+        
+        return val
+        
+
+    def set_constraint(self, var:str, con_var:str, val:float):
+        """Set the constraints on the analysis case (equivalent to setting a constraint in AVL's OPER menu) 
 
         Args:
             var: variable to be constrained ["alpha"", "beta"", "roll rate", "pitch rate", "yaw rate"] or any control surface.
             val: target value of `con_var`
-            con_var: variable output that needs to be constrained. It could be any value for `var` plus ["CL", "CY", "Cl roll moment", "Cm pitch moment", "Cn yaw moment"]. If None, than `var` is also the `con_var`
+            con_var: variable output that needs to be constrained. It could be any value for `var` plus ["CL", "CY", "Cl", "Cm", "Cn"]. If None, than `var` is also the `con_var`
 
         """        
         avl_variables = {
@@ -463,35 +570,35 @@ class OVLSolver(object):
             {
                 "CL":             "C ",
                 "CY":             "S ",
-                "Cl roll moment": "RM",
-                "Cm pitch moment":"PM",
-                "Cn yaw moment":  "YM",
+                "Cl": "RM",
+                "Cm":"PM",
+                "Cn":  "YM",
             }
         )
 
         if var in avl_variables:
             # save the name of the avl_var
             avl_var = avl_variables[var]
-        elif var in self.control_variables.keys():
-            avl_var = self.control_variables[var]
-        elif var in self.control_variables.values():
+        elif var in self.con_surf_to_dindex:
+            avl_var = self.con_surf_to_dindex[var]
+        elif var in self.dindex_to_con_surf:
             avl_var = var
         else:
             raise ValueError(
-                f"specified variable `{var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items()]}. Constraints that must be implicitly satisfied (such as `CL`) are set with `add_trim_constraint`."
+                f"specified key `{var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.con_surf_to_dindex.items()]}."
             )
 
         if con_var is None:
             avl_con_var = avl_var
         elif con_var in avl_con_variables:
             avl_con_var = avl_con_variables[con_var]
-        elif con_var in self.control_variables.keys():
-            avl_con_var = self.control_variables[con_var]
-        elif con_var in self.control_variables.values():
+        elif con_var in self.con_surf_to_dindex:
+            avl_con_var = self.con_surf_to_dindex[con_var]
+        elif con_var in self.dindex_to_con_surf:
             avl_con_var = con_var
         else:
             raise ValueError(
-                f"specified contraint variable `{con_var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.control_variables.items()]}."
+                f"specified contraint variable `{con_var}` not a valid option. Must be one of the following variables{[key for key in avl_variables]} or control surface name or index{[item for item in self.con_surf_to_dindex.items()]}."
             )
 
         # check that the type of val is correct
@@ -651,7 +758,7 @@ class OVLSolver(object):
             slicer: slice applied to the common block variable to return a subset of the data. i.e. (100) or slice(2, 5)
 
         """        
-        # convert from fortran ordering to c ordering
+        # convert from c ordering to fortran ordering
         if isinstance(val, np.ndarray):
             val = val.ravel(order="C").reshape(val.shape[::-1], order="F")
 
@@ -664,11 +771,24 @@ class OVLSolver(object):
         if slicer is None:
             setattr(common_block_obj, variable.upper(), val)
         else:
-            # flip the order of the slicer to match the cordinates of the val
-            new_slicer = slicer[::-1]
+            if isinstance(slicer, int):
+                if isinstance(val, np.ndarray):
+                    if val.size == 1:
+                        # convert it to a float 
+                        fort_val = val.flatten()[0]
+                    else:
+                        raise ValueError(f"slicer {slicer} is integer, but value {val} isn't size 1" )
+                else:
+                    fort_val = val
+            else: 
+                # the slicer is multidimensional
+                # flip the order of the slicer to match the cordinates of the val
+                slicer = slicer[::-1]
+                fort_val = val
+                    
 
             original_val = getattr(common_block_obj, variable.upper())
-            original_val[new_slicer] = val
+            original_val[slicer] = fort_val
             setattr(common_block_obj, variable.upper(), original_val)
 
         return
@@ -724,7 +844,7 @@ class OVLSolver(object):
         """get the value of a constraint
 
         Args:
-            con_key: name of the constraint. Options are ["alpha","beta","roll rate","pitch rate","yaw rate","CL","CY","CR BA","CM","CR"]
+            con_key: name of the constraint. Options are ["alpha","beta","roll rate","pitch rate","yaw rate","CL","CY","Cl","Cm","Cl'"]
 
         Returns:
             con_val: value of the constraint
@@ -777,7 +897,55 @@ class OVLSolver(object):
             def_dict[con_surf] = def_arr[idx_con]
 
         return def_dict
+    
+    def get_control_deflection(self, con_surf) -> Dict[str, float]:
+        """get the deflections of the control surfaces
 
+        Returns:
+            val: deflection of control surface
+        """        
+        control_surfaces = self.get_control_names()
+        idx_surf = control_surfaces.index(con_surf)
+
+        def_arr = copy.deepcopy(self.get_avl_fort_arr("CASE_R", "DELCON"))
+
+        val = def_arr[idx_surf]
+
+        return val
+    
+    def set_control_deflection(self, con_surf, val) -> Dict[str, float]:
+        """set the deflections of the control surfaces
+
+        args:
+            con_surf : Name or D value (D1, D2, etc.) of the control surface
+        """        
+        con_surf_names = list(self.con_surf_to_dindex.keys())
+        con_surf_dindex = list(self.dindex_to_con_surf.keys())
+        
+        if con_surf in con_surf_names:
+            idx_con_surf = con_surf_names.index(con_surf)
+        elif con_surf in con_surf_dindex:
+            idx_con_surf = con_surf_dindex.index(con_surf)
+            con_surf = self.dindex_to_con_surf[con_surf]
+        
+        vars_idx = self.conval_idx_dict[con_surf]
+        
+        self.set_avl_fort_arr("CASE_R", "CONVAL", val, (vars_idx,))
+        self.set_avl_fort_arr("CASE_R", "DELCON", val, slicer=(idx_con_surf,))
+    
+    def set_control_deflections(self, def_dict:Dict[str, float]):
+        """get the deflections of all the control surfaces
+
+        args:
+            def_dict: dictionary of control surfaces as the keys and deflections as the values
+        """        
+        control_surfaces = self.get_control_names()
+        
+        for con in def_dict: 
+            idx_con = control_surfaces.index(con)
+            self.set_avl_fort_arr("CASE_R", "DELCON", def_dict[con], slicer=idx_con)
+
+    
     def get_hinge_moments(self) -> Dict[str, float]:
         """get the hinge moments from the fortran layer and return them as a dictionary
 
@@ -797,18 +965,18 @@ class OVLSolver(object):
     def get_strip_forces(self) -> Dict[str, Dict[str, np.ndarray]]:
         """get force data for each strip (chordwise segment) of the mesh.
 
-        Returns:
-            strip_data: dictionary of strip data. The keys are ["chord", "width", "X LE", "Y LE", "Z LE", "twist","CL", "CD", "CDv", "downwash", "CX", "CY", "CZ","CM", "CN", "CR","CL strip", "CD strip", "CF strip", "CM strip","CL perp","CM c/4,"CM LE"]
+        Returns:       
+            strip_data: dictionary of strip data. The keys are ["chord", "width", "X LE", "Y LE", "Z LE", "twist","CL", "CD", "CDv", "downwash", "CX", "CY", "CZ","Cm", "Cn", "Cl","CL strip", "CD strip", "CF strip", "Cm strip","CL perp","Cm c/4,"Cm LE"]
             
         """ 
         # fmt: off
         var_to_fort_var = {
             # geometric quantities
-            "chord": ["STRP_R", "CHORD"],
-            "width": ["STRP_R", "WSTRIP"],
             "X LE": ["STRP_R", "RLE", (slice(None), 0)],  # control point leading edge coordinates
             "Y LE": ["STRP_R", "RLE", (slice(None), 1)],  # control point leading edge coordinates
             "Z LE": ["STRP_R", "RLE", (slice(None), 2)],  # control point leading edge coordinates
+            "chord": ["STRP_R", "CHORD"],
+            "width": ["STRP_R", "WSTRIP"],
             "twist": ["STRP_R", "AINC"],
             
             # strip contributions to total lift and drag from strip integration
@@ -824,23 +992,25 @@ class OVLSolver(object):
             "CZ": ["STRP_R", "CZSTRP"],   
             
             # strip contributions to total moments (body frame)
-            "CM": ["STRP_R", "CMSTRP"],
-            "CN": ["STRP_R", "CNSTRP"],
-            "CR": ["STRP_R", "CRSTRP"],
+            "Cl": ["STRP_R", "CRSTRP"], # previously CR
+            "Cm": ["STRP_R", "CMSTRP"], # previously CM
+            "Cn": ["STRP_R", "CNSTRP"], # previously CN
             
             
             # forces non-dimentionalized by strip quantities
             "CL strip" : ["STRP_R", "CL_LSTRP"],
             "CD strip" : ["STRP_R", "CD_LSTRP"],
             "CF strip" : ["STRP_R", "CF_STRP"], # forces in 3 directions
-            "CM strip" : ["STRP_R", "CM_STRP"], # moments in 3 directions
+            "Cm strip" : ["STRP_R", "CM_STRP"], # moments in 3 directions
 
             # additional forces and moments
             "CL perp" : ["STRP_R", "CLTSTRP"], # strip CL referenced to Vperp,
-            "CM c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
-            "CM LE" : ["STRP_R","CMLE"],  # strip pitching moment about LE vector
+            "Cm c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
+            "Cm LE" : ["STRP_R","CMLE"],  # strip pitching moment about LE vector
             "spanloading" : ["STRP_R","CNC"],   # strip spanloading 
             
+            # TODO: add
+            #  & CF_STRP(3,NSMAX),   CM_STRP(3,NSMAX),    ! strip forces in body axes referenced to strip area and 1/4 chord
         }    
         # fmt: on
 
@@ -857,11 +1027,17 @@ class OVLSolver(object):
                 idx_srp_beg, idx_srp_end = self._get_surface_strip_indices(idx_surf)
                 strip_data[surf_name][key] = vals[idx_srp_beg:idx_srp_end]
         
-        
-        # convert the twist to degrees
+        # process the data 
+        # add a few more pieces of data that are output on the fortran layer         
         for surf_key in strip_data:
-            # add sectional lift and drag
+            # convert the twist to degrees     
             strip_data[surf_key]["twist"] = 180/np.pi *strip_data[surf_key]["twist"]
+            # add the area of each strip
+            strip_data[surf_key]["area"] = strip_data[surf_key]["width"]*strip_data[surf_key]["chord"]
+            
+            # formula is directly from AVL
+            xcp  = 0.25 - strip_data[surf_key]["Cm c/4"]/strip_data[surf_key]["CL perp"]
+            strip_data[surf_key]["CP x/c"] = xcp
         
         # get length of along the surface of each strip
         for idx_surf, surf_key in enumerate(strip_data):
@@ -890,8 +1066,8 @@ class OVLSolver(object):
             # add sectional lift and drag
             strip_data[surf_key]["lift dist"] = strip_data[surf_key]["CL"] * strip_data[surf_key]["chord"] / cref
             strip_data[surf_key]["drag dist"] = strip_data[surf_key]["CD"] * strip_data[surf_key]["chord"] / cref
-            strip_data[surf_key]["roll dist"] = strip_data[surf_key]["CN"] * (strip_data[surf_key]["chord"] / cref)**2
-            strip_data[surf_key]["yaw dist"] = strip_data[surf_key]["CY"] * strip_data[surf_key]["chord"]**2 / (bref*cref)
+            strip_data[surf_key]["roll dist"] = strip_data[surf_key]["Cl"] * (strip_data[surf_key]["chord"] / cref)**2
+            strip_data[surf_key]["yaw dist"] = strip_data[surf_key]["Cn"] * strip_data[surf_key]["chord"]**2 / (bref*cref)
 
         return strip_data
 
@@ -1584,7 +1760,7 @@ class OVLSolver(object):
 # ---------------------------
 
 # --- input ad seeds --- 
-    def get_constraint_ad_seeds(self) -> Dict[str, float]:
+    def get_variable_ad_seeds(self) -> Dict[str, float]:
         con_seeds = {}
         for con in self.con_var_to_fort_var:
             idx_con = self.conval_idx_dict[con]
@@ -1597,7 +1773,7 @@ class OVLSolver(object):
 
         return con_seeds
 
-    def set_constraint_ad_seeds(self, con_seeds: Dict[str, Dict[str, float]], mode: str = "AD", scale=1.0) -> None:
+    def set_variable_ad_seeds(self, con_seeds: Dict[str, Dict[str, float]], mode: str = "AD", scale=1.0) -> None:
         for con in con_seeds:
             # determine the proper index
 
@@ -1616,14 +1792,19 @@ class OVLSolver(object):
                 self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
             elif mode == "FD":
-                # reverse lookup in the con_var_to_fort_var dict
-
-                val = self.get_constraint(con)
+                # # reverse lookup in the con_var_to_fort_var dict
+                if con in self.con_surf_to_dindex:
+                    val = self.get_control_deflection(con)
+                else:
+                    val = self.get_variable(con)
 
                 val += con_seed_arr * scale
 
-                # use the contraint API to adjust the value
-                self.set_constraint(con, val)
+                if con in self.con_surf_to_dindex:
+                    self.set_control_deflection(con, val)
+                else:
+                    self.set_variable(con, val)
+                    
     
     def set_parameter_ad_seeds(self, parm_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
         for param_key in parm_seeds:
@@ -1926,7 +2107,6 @@ class OVLSolver(object):
             var += self.ad_suffix
             
             val = body_axis_deriv_seeds[func_key] * scale
-            
             self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
 
@@ -2056,7 +2236,7 @@ class OVLSolver(object):
         if mode == "AD":
             # set derivative seeds
             # self.clear_ad_seeds()
-            self.set_constraint_ad_seeds(con_seeds)
+            self.set_variable_ad_seeds(con_seeds)
             self.set_geom_ad_seeds(geom_seeds)
             self.set_gamma_ad_seeds(gamma_seeds)
             self.set_gamma_d_ad_seeds(gamma_d_seeds)
@@ -2078,7 +2258,7 @@ class OVLSolver(object):
             res_d_seeds = self.get_residual_d_ad_seeds()
             res_u_seeds = self.get_residual_u_ad_seeds()
 
-            self.set_constraint_ad_seeds(con_seeds, scale=0.0)
+            self.set_variable_ad_seeds(con_seeds, scale=0.0)
             self.set_geom_ad_seeds(geom_seeds, scale=0.0)
             self.set_gamma_ad_seeds(gamma_seeds, scale=0.0)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, scale=0.0)
@@ -2090,7 +2270,7 @@ class OVLSolver(object):
             self.set_avl_fort_arr("VRTX_R_DIFF", "GAM_DIFF", gamma_seeds * 0.0, slicer=res_slice)
 
         if mode == "FD":
-            self.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
+            self.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=step)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=step)
@@ -2114,7 +2294,7 @@ class OVLSolver(object):
             res_u_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_U", slicer=res_u_slice))
             
             
-            self.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
+            self.set_variable_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=-1 * step)
@@ -2260,7 +2440,7 @@ class OVLSolver(object):
             time_last = time.time()
 
         # extract derivatives seeds and set the output dict of functions
-        con_seeds = self.get_constraint_ad_seeds()
+        con_seeds = self.get_variable_ad_seeds()
         geom_seeds = self.get_geom_ad_seeds()
         gamma_seeds = self.get_gamma_ad_seeds()
         gamma_d_seeds = self.get_gamma_d_ad_seeds()

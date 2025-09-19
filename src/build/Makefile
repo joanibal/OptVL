@@ -41,7 +41,7 @@ OFILES=$(f90Files:%.f90=%.o) $(F90Files:%.F90=%.o) $(f77FilesNoDir:%.f=%.o) $(cF
 
 default: lib ../f2py/libavl.pyf
 # Generate Python inlude directory
-	 $(eval PYTHON_INCLUDES = $(shell python3-config --includes))
+	 $(eval PYTHON_INCLUDES = $(shell python-config --includes))
 	 @echo "#------------------------------------------------------#"
 	 @echo Python Inclue Flags $(PYTHON_INCLUDES)
 	 @echo "#------------------------------------------------------#"
@@ -72,10 +72,10 @@ default: lib ../f2py/libavl.pyf
 	-c $(F2PY_ROOT)/src/fortranobject.c -o fortranobject.o
 
 # Compiled f2py-generated wrapper file
-	$(FF90) $(FF90_ALL_FLAGS) -I ../includes -I./ -c libavl-f2pywrappers.f
+	$(FF90) $(FF90_ALL_FLAGS) -I../includes -I./ -c libavl-f2pywrappers.f
 
 # Final Link:
-	$(FF90) -shared fortranobject.o libavlmodule.o libavl-f2pywrappers.o libavl.a $(LINKER_ALL_FLAGS) -o libavl.so
+	$(FF90) $(LINKER_FLAGS) -shared fortranobject.o libavlmodule.o libavl-f2pywrappers.o libavl.a -o libavl.so
 	$(PYTHON) importTest.py libavl
 	mv libavl.*so ../../optvl/libavl.so
 
