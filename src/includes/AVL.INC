@@ -1,0 +1,765 @@
+C   Include file for AVL variables
+C
+      INCLUDE 'AINDEX.INC'
+      INCLUDE 'AVL_kinds.INC'
+      INCLUDE 'ADIMEN.INC'
+C
+C   Derived array limits
+C
+C    ITMAX  number of triangles for hidden-line routines
+C    IPMAX  number of parameters
+C    ICMAX  number of constraints
+C    JEMAX  number of eigenmode components
+C
+      PARAMETER (ITMAX=2*NVMAX,
+     &           IVMAX=IVTOT+NDMAX,
+     &           ICMAX=ICTOT+NDMAX,
+     &           IPMAX=IPTOT,
+     &           JEMAX=JETOT )
+C
+C
+C---- unit values, names, and namelengths
+      CHARACTER*32 UNCHL,UNCHM,UNCHT,UNCHF,UNCHS,UNCHV,UNCHA,UNCHI,UNCHD
+      COMMON /UN_R/UNITL,UNITM,UNITT,UNITF,UNITS,UNITV,UNITA,UNITI,UNITD
+      COMMON /UN_C/UNCHL,UNCHM,UNCHT,UNCHF,UNCHS,UNCHV,UNCHA,UNCHI,UNCHD
+      COMMON /UN_I/NUL  ,NUM  ,NUT  ,NUF  ,NUS  ,NUV  ,NUA  ,NUI  ,NUD
+C
+      CHARACTER*256 FILDEF, FRNDEF, FMSDEF, FPRDEF, FEVDEF
+      CHARACTER*120 TITLE
+      CHARACTER*40 STITLE, BTITLE, RTITLE
+      CHARACTER*120 AFILES
+      CHARACTER*120 BFILES
+      
+      CHARACTER*16 DNAME, GNAME
+      CHARACTER*12 VARNAM, CONNAM
+      CHARACTER*12 VARKEY
+      CHARACTER*3  CONKEY
+      CHARACTER*10 PARNAM
+      CHARACTER*32 PARUNCH
+      COMMON /CASE_C/
+     & FILDEF,         ! default configuration save file
+     & FRNDEF,         ! default run case save file
+     & FMSDEF,         ! default mass distribution file
+     & FPRDEF,         ! default dimensional parameter file
+     & FEVDEF,         ! default eigenvalue save file
+     & TITLE,          ! configuration title
+     & STITLE(NFMAX),  ! surface title
+     & AFILES(NSMAX,NFMAX),  ! airfoil file names
+     & BTITLE(NBMAX),  ! body title
+     & BFILES(NBMAX),  ! body file names
+     & RTITLE(NRMAX),  ! run case title
+     & DNAME(NDMAX),   ! control variable name
+     & GNAME(NGMAX),   ! design  variable name
+     & VARNAM(IVMAX),  ! variable   name
+     & CONNAM(ICMAX),  ! constraint name
+     & VARKEY(IVMAX),  ! variable   selection key
+     & CONKEY(ICMAX),  ! constraint selection key
+     & PARNAM(IPMAX),  ! run case parameter name
+     & PARUNCH(IPMAX)  ! run case parameter unit name
+C
+      COMMON /CASE_I/
+     & LUINP,             ! logical unit for configuration file
+     & LURUN,             ! logical unit for run case file
+     & LUOUT,             ! logical unit for output dump file
+     & LUSTD,             ! logical unit for stability deriv. dump file
+     & LUSYS,             ! logical unit for dynamic system matrix dump file
+     & LUMAS,             ! logical unit for mass file
+     & IYSYM,IZSYM,       ! y,z image symm.  (0=no image, 1=image)
+     & MATSYM,            ! matrix symmetry flag
+     & NVOR,              ! number of horseshoe vortices
+     & NSTRIP,            ! number of chordwise strips
+     & NSURF,             ! number of surfaces
+     & NLNODE,            ! number of body source+doublet line nodes
+     & NBODY,             ! number of bodies
+     & ICON(IVMAX,NRMAX), ! index of constraint for each variable
+     & NVTOT,             ! total number of available variables
+     & NCTOT,             ! total number of available constraints
+     & NPTOT,             ! total number of available parameters
+     & NCONTROL,          ! number of control variables
+     & NDESIGN,           ! number of design variables
+     & NITMAX,            ! max number of Newton iterations
+     & IRUN, NRUN,        ! current run case, number of run cases stored
+     & IRUNE,             ! target run case for eigenmode calculations
+     & IRUNT,             ! target run case for time march initial state
+     & ITRIM(NRMAX),      ! trim type used for run case (if any)
+     & NEIGEN(NRMAX),     ! number of valid eigenmodes available for run case
+     & NEIGENDAT(NRMAX),  ! number reference data eigenvalues
+     & CPSCL              ! CP scaling factor for cp plot
+
+C
+      LOGICAL LGEO,LENC,LAIC,LSRD,LVEL,LSOL,LSEN,
+     &        LVISC,LMASS,
+     &        LCONDEF, LDESDEF,
+     &        LPTOT,LPSURF,LPSTRP,LPELE,LPHINGE,LPDERIV,
+     &        LBFORCE,
+     &        LNASA_SA, LSA_RATES,
+     &        LMWAIT,
+     &        LVERBOSE,
+     &        LTIMING
+      LOGICAL LPPAR
+      COMMON /CASE_L/
+     & LGEO,   ! T if geometry exists
+     & LENC,   ! T if all normal vectors are valid
+     & LAIC,   ! T if AIC matrix has been generated
+     & LSRD,   ! T if unit source+doublet strengths are computed
+     & LVEL,   ! T if induced velocity matrix has been computed
+     & LSOL,   ! T if valid solution exists
+     & LSEN,   ! T if valid sensitivities exist
+     & LVISC,  ! T if viscous profile drag terms are to be added
+     & LMASS,  ! T if mass data has been read in
+     & LCONDEF(NDMAX),  ! T if control variable has been declared
+     & LDESDEF(NGMAX),  ! T if design  variable has been declared
+     & LPTOT,  ! T if total   forces are to be printed
+     & LPSURF, ! T if surface forces are to be printed
+     & LPSTRP, ! T if strip   forces are to be printed
+     & LPELE,  ! T if element forces are to be printed
+     & LPHINGE, ! T if hinge moments are to be printed
+     & LPDERIV, ! T if stability and control derivs are to be printed
+     & LBFORCE, ! T if body forces are to be included in total forces
+     & LNASA_SA,    ! T if NASA-std stability axes are to be used
+     & LSA_RATES,   ! T if stability-axis rates are to be used
+     & LMWAIT,      ! T if mode display is to wait for real time
+     & LPPAR(IPMAX),          ! T if parameter value is to be plotted
+     & LVERBOSE,             ! debug flag to trigger writing out typical avl output
+     & LTIMING             ! debug flag to trigger writing out timing info
+      
+      real(kind=avl_real) VERSION 
+      real(kind=avl_real) DTR,     PI
+      real(kind=avl_real) YSYM,    ZSYM
+      real(kind=avl_real) ALFA,   BETA  
+      real(kind=avl_real) VINF       
+      real(kind=avl_real) VINF_A     
+      real(kind=avl_real) VINF_B     
+      real(kind=avl_real) WROT       
+      real(kind=avl_real) DTIMED        
+      real(kind=avl_real) PARVAL  
+      real(kind=avl_real) CONVAL  
+      real(kind=avl_real) DELCON  
+      real(kind=avl_real) DELDES  
+      real(kind=avl_real) SREF,  CREF,  BREF
+      real(kind=avl_real) XYZREF      
+      real(kind=avl_real) XYZREF0      
+      real(kind=avl_real) MACH           
+      real(kind=avl_real) MACH0          
+      real(kind=avl_real) CDREF          
+      real(kind=avl_real) CDREF0         
+      real(kind=avl_real) VRCORE         
+      real(kind=avl_real) SRCORE         
+      real(kind=avl_real) CLFF, CYFF, CDFF     
+      real(kind=avl_real) CLFF_U,CYFF_U,CDFF_U
+      real(kind=avl_real) CLFF_D,CYFF_D,CDFF_D 
+      real(kind=avl_real) CLFF_G,CYFF_G,CDFF_G 
+      real(kind=avl_real) SPANEF     
+      real(kind=avl_real) SPANEF_A   
+      real(kind=avl_real) SPANEF_U
+      real(kind=avl_real) SPANEF_D  
+      real(kind=avl_real) SPANEF_G  
+      real(kind=avl_real) CDTOT, CLTOT    
+      real(kind=avl_real) CXTOT, CYTOT, CZTOT
+      real(kind=avl_real) CRTOT, CMTOT, CNTOT
+      real(kind=avl_real) CRSAX, CMSAX, CNSAX   
+      real(kind=avl_real) CXBAX, CYBAX, CZBAX
+      real(kind=avl_real) CRBAX, CMBAX, CNBAX   
+      real(kind=avl_real) CDVTOT          
+      real(kind=avl_real) CDITOT          
+      real(kind=avl_real) CDTOT_A, CLTOT_A      
+      real(kind=avl_real) CDTOT_U,CLTOT_U
+      real(kind=avl_real) CXTOT_U,CYTOT_U,CZTOT_U
+      real(kind=avl_real) CRTOT_U,CMTOT_U,CNTOT_U
+      real(kind=avl_real) CDTOT_D,CLTOT_D
+      real(kind=avl_real) CXTOT_D,CYTOT_D,CZTOT_D
+      real(kind=avl_real) CRTOT_D,CMTOT_D,CNTOT_D
+      real(kind=avl_real) CDTOT_G,CLTOT_G
+      real(kind=avl_real) CXTOT_G,CYTOT_G,CZTOT_G
+      real(kind=avl_real) CRTOT_G,CMTOT_G,CNTOT_G
+      real(kind=avl_real) CDTOT_AL, CLTOT_AL, CYTOT_AL, CRTOT_AL
+      real(kind=avl_real) CMTOT_AL, CNTOT_AL ! stab derives wrt alpha
+      real(kind=avl_real) CDTOT_BE, CLTOT_BE, CYTOT_BE, CRTOT_BE
+      real(kind=avl_real) CMTOT_BE, CNTOT_BE ! stab derives wrt beta
+      real(kind=avl_real) CDTOT_RX, CLTOT_RX, CYTOT_RX, CRTOT_RX
+      real(kind=avl_real) CMTOT_RX, CNTOT_RX ! stab derives wrt 
+      real(kind=avl_real) CDTOT_RY, CLTOT_RY, CYTOT_RY, CRTOT_RY
+      real(kind=avl_real) CMTOT_RY, CNTOT_RY ! stab derives wrt 
+      real(kind=avl_real) CDTOT_RZ, CLTOT_RZ, CYTOT_RZ, CRTOT_RZ
+      real(kind=avl_real) CMTOT_RZ, CNTOT_RZ ! stab derives wrt 
+      real(kind=avl_real) CXTOT_U_BA, CYTOT_U_BA, CZTOT_U_BA 
+      real(kind=avl_real) CRTOT_U_BA, CMTOT_U_BA, CNTOT_U_BA 
+      real(kind=avl_real) CXTOT_D_BA, CYTOT_D_BA, CZTOT_D_BA 
+      real(kind=avl_real) CRTOT_D_BA, CMTOT_D_BA, CNTOT_D_BA 
+      real(kind=avl_real) CXTOT_G_BA, CYTOT_G_BA, CZTOT_G_BA 
+      real(kind=avl_real) CRTOT_G_BA, CMTOT_G_BA, CNTOT_G_BA 
+      real(kind=avl_real) CHINGE
+      real(kind=avl_real) CHINGE_U
+      real(kind=avl_real) CHINGE_D
+      real(kind=avl_real) CHINGE_G
+      real(kind=avl_real) DCL_A0, DCM_A0
+      real(kind=avl_real) DCL_U0, DCM_U0
+      real(kind=avl_real) XNP
+      real(kind=avl_real) SM
+      real(kind=avl_real) BB
+      real(kind=avl_real) RR
+      real(kind=avl_real) EXEC_TOL                
+      COMMON /CASE_R/
+     & VERSION,          ! AVL version number
+     & DTR,     PI,      ! 3.14159/180 ,  3.14159
+     & YSYM,    ZSYM,    ! y- and z-locations of symmetry planes
+     & ALFA,   BETA,        ! alpha, beta
+     & VINF(3),             ! freestream velocity in body axes
+     & VINF_A(3),           ! d(Vinf)/d(alpha)
+     & VINF_B(3),           ! d(Vinf)/d(beta)
+     & WROT(3),             ! rotation rates in body axes
+     & DTIMED,              ! time step for eigenmode movie integration
+     & PARVAL(IPMAX,NRMAX),  ! parameter values for run cases
+     & CONVAL(ICMAX,NRMAX),  ! imposed constraint value
+     & DELCON(NDMAX),        ! imposed control variable value
+     & DELDES(NGMAX),        ! imposed design  variable value
+     & SREF,  CREF,  BREF,   ! Area, Chord, Span  reference values
+     & XYZREF(3),            ! X,Y,Z location for moments
+     & XYZREF0(3),           ! X,Y,Z location for moments (default)
+     & MACH,                 ! freestream Mach number
+     & MACH0,                ! freestream Mach number (default)
+     & CDREF,                ! baseline profile CD
+     & CDREF0,               ! baseline profile CD (default)
+     & VRCORE,               ! vortex core radius / chord
+     & SRCORE,               ! source core radius / body radius
+     & CLFF, CYFF, CDFF,     ! Trefftz-plane  CL,CY,CDi
+     & CLFF_U(NUMAX),CYFF_U(NUMAX),CDFF_U(NUMAX), ! deriv wrt Vinf,Wrot
+     & CLFF_D(NDMAX),CYFF_D(NDMAX),CDFF_D(NDMAX), ! deriv wrt control
+     & CLFF_G(NGMAX),CYFF_G(NGMAX),CDFF_G(NGMAX), ! deriv wrt design
+     & SPANEF,           ! span efficiency
+     & SPANEF_A,         ! d(SPANEF)/d(alpha)
+     & SPANEF_U(NUMAX),  ! d(SPANEF)/d(U,W))
+     & SPANEF_D(NDMAX),  ! d(SPANEF)/d(control)
+     & SPANEF_G(NGMAX),  ! d(SPANEF)/d(design)
+     & CDTOT, CLTOT,          ! total CD,CL
+     & CXTOT, CYTOT, CZTOT,   ! total Cx,Cy,Cz
+     & CRTOT, CMTOT, CNTOT,   ! total Cl,Cm,Cn
+     & CRSAX, CMSAX, CNSAX,   ! total Cl,Cm,Cn in stability axis
+     & CXBAX, CYBAX, CZBAX,    ! total Cx,Cy,Cz in stability axis
+     & CRBAX, CMBAX, CNBAX,    ! total Cl,Cm,Cn in body axis
+     & CDVTOT,                ! total viscous CD
+     & CDITOT,                ! total invisid CD
+     & CDTOT_A, CLTOT_A, ! sensitivities wrt alpha (part of total?!? you probably want *_AL)          
+     & CDTOT_U(NUMAX),CLTOT_U(NUMAX),                !sens wrt U,W
+     & CXTOT_U(NUMAX),CYTOT_U(NUMAX),CZTOT_U(NUMAX), !sens wrt U,W
+     & CRTOT_U(NUMAX),CMTOT_U(NUMAX),CNTOT_U(NUMAX), !sens wrt U,W
+     & CDTOT_D(NDMAX),CLTOT_D(NDMAX),                !sens wrt control
+     & CXTOT_D(NDMAX),CYTOT_D(NDMAX),CZTOT_D(NDMAX), !sens wrt control
+     & CRTOT_D(NDMAX),CMTOT_D(NDMAX),CNTOT_D(NDMAX), !sens wrt control
+     & CDTOT_G(NGMAX),CLTOT_G(NGMAX),                !sens wrt design
+     & CXTOT_G(NGMAX),CYTOT_G(NGMAX),CZTOT_G(NGMAX), !sens wrt design
+     & CRTOT_G(NGMAX),CMTOT_G(NGMAX),CNTOT_G(NGMAX), !sens wrt design
+     & CDTOT_AL, CLTOT_AL, CYTOT_AL, CRTOT_AL, CMTOT_AL, CNTOT_AL, ! stab derives wrt alpha
+     & CDTOT_BE, CLTOT_BE, CYTOT_BE, CRTOT_BE, CMTOT_BE, CNTOT_BE, ! stab derives wrt beta
+     & CDTOT_RX, CLTOT_RX, CYTOT_RX, CRTOT_RX, CMTOT_RX, CNTOT_RX, ! stab derives wrt roll
+     & CDTOT_RY, CLTOT_RY, CYTOT_RY, CRTOT_RY, CMTOT_RY, CNTOT_RY, ! stab derives wrt pitch
+     & CDTOT_RZ, CLTOT_RZ, CYTOT_RZ, CRTOT_RZ, CMTOT_RZ, CNTOT_RZ, ! stab derives wrt yaw
+     & CXTOT_U_BA(NUMAX), CYTOT_U_BA(NUMAX), CZTOT_U_BA(NUMAX), ! body axis stab derive wrt vel
+     & CRTOT_U_BA(NUMAX), CMTOT_U_BA(NUMAX), CNTOT_U_BA(NUMAX), ! body axis stab derive wrt vel
+     & CXTOT_D_BA(NDMAX), CYTOT_D_BA(NDMAX), CZTOT_D_BA(NDMAX), ! body axis stab derive wrt control
+     & CRTOT_D_BA(NDMAX), CMTOT_D_BA(NDMAX), CNTOT_D_BA(NDMAX), ! body axis stab derive wrt control
+     & CXTOT_G_BA(NGMAX), CYTOT_G_BA(NGMAX), CZTOT_G_BA(NGMAX), ! body axis stab derive wrt design
+     & CRTOT_G_BA(NGMAX), CMTOT_G_BA(NGMAX), CNTOT_G_BA(NGMAX), ! body axis stab derive wrt design
+     & CHINGE(NDMAX), !hinge moment for control
+     & CHINGE_U(NDMAX,NUMAX), ! sens wrt U,W
+     & CHINGE_D(NDMAX,NDMAX), ! sens wrt control
+     & CHINGE_G(NDMAX,NGMAX), ! sens wrt design
+     & DCL_A0, DCM_A0,   ! additional default CL_a, CM_a
+     & DCL_U0, DCM_U0,    ! additional default CL_u, CM_u
+     & XNP,                ! x neutral point
+     & SM,                ! static margin
+     & BB,                ! spiral parameter;
+     & RR,                ! roll parameter
+     & EXEC_TOL           ! tolerance of exec trim solve
+      COMPLEX(kind=avl_real) EVAL, EVEC, EVALDAT
+      COMMON /CASE_Z/
+     &  EVAL(JEMAX,NRMAX),       ! mode eigenvalue
+     &  EVEC(JEMAX,JEMAX,NRMAX), ! mode eigenvector
+     &  EVALDAT(JEMAX,NRMAX)     ! mode eigenvalue reference data
+
+      COMMON /TIME_I/
+     &  ITLEV,           ! current time level
+     &  NTLEV,           ! number of stored time levels
+     &  NTSTEPS          ! default number of time steps to run
+      
+      REAL(kind=avl_real) DELTAT
+      REAL(kind=avl_real) TDER
+      REAL(kind=avl_real) TLEV
+      REAL(kind=avl_real) TPARS
+      REAL(kind=avl_real) TPARV
+      REAL(kind=avl_real) TPARD 
+      COMMON /TIME_R/
+     &  DELTAT,                 ! integration time step
+     &  TDER(3),                ! time-derivative differencing coefficient
+     &  TLEV(NTMAX),            ! time values
+     &  TPARS(KPTOT,NTMAX),     ! scalar parameter time trace
+     &  TPARV(3,KPVTOT,NTMAX),  ! vector parameter time trace
+     &  TPARD(NDMAX,NTMAX)      ! control parameter time traces
+
+      REAL(kind=avl_real) RHO0, GEE0
+      REAL(kind=avl_real) XYZMASS0
+      REAL(kind=avl_real) RMASS0     
+      REAL(kind=avl_real) RINER0
+      REAL(kind=avl_real) AMASS
+      REAL(kind=avl_real) AINER 
+      COMMON /MASS_R/
+     &   RHO0, GEE0,     ! density, gravity   | from .mass file
+     &   XYZMASS0(3),    ! mass centroid      | from .mass file
+     &   RMASS0     ,    ! real mass          | from .mass file
+     &   RINER0(3,3),    ! real inertia       | from .mass file
+     &   AMASS(3,3),     ! apparent mass/rho     | from geometry
+     &   AINER(3,3)      ! apparent inertia/rho  | from geometry
+
+
+      LOGICAL LFWAKE, LFALBE, LFLOAD, LRANGE
+      COMMON /SURF_L/
+     & LFWAKE(NFMAX),   ! T if surface sheds a wake
+     & LFALBE(NFMAX),   ! T if surface is to see freestream alpha,beta
+     & LFLOAD(NFMAX),   ! T if surface contributes to overall loads
+     & LRANGE(NFMAX)    ! T if surface determined using full airfoil range
+
+      COMMON /SURF_I/
+     & NJ(NFMAX),       ! number of elements along span  in surface
+     & NK(NFMAX),       ! number of elements along chord in surface
+     & IFRST(NFMAX),    ! index of first element in surface
+     & JFRST(NFMAX),    ! index of first strip in surface
+     & IMAGS(NFMAX),    ! indicates whether surface is a YDUPlicated one
+cc#ifdef USE_CPOML
+     & LSCOMP(NFMAX),   ! logical surface component index
+     & ICNTFRST(NFMAX), ! index of first section counter in surface
+     & NCNTSEC(NFMAX)   ! number of section counters in surface
+cc#else
+cc     & LSCOMP(NFMAX)    ! logical surface component index
+cc#endif
+
+      REAL(kind=avl_real) CDSURF,CLSURF
+      REAL(kind=avl_real) CXSURF,CYSURF,CZSURF
+      REAL(kind=avl_real) CRSURF,CNSURF,CMSURF
+      REAL(kind=avl_real) CDVSURF, CDISURF
+      REAL(kind=avl_real) CDS_A, CLS_A
+      REAL(kind=avl_real) CDS_U, CLS_U
+      REAL(kind=avl_real) CXS_U, CYS_U, CZS_U
+      REAL(kind=avl_real) CRS_U, CNS_U, CMS_U
+      REAL(kind=avl_real) CDS_D, CLS_D
+      REAL(kind=avl_real) CXS_D, CYS_D, CZS_D
+      REAL(kind=avl_real) CRS_D, CNS_D, CMS_D
+      REAL(kind=avl_real) CDS_G, CLS_G
+      REAL(kind=avl_real) CXS_G, CYS_G, CZS_G
+      REAL(kind=avl_real) CRS_G, CNS_G, CMS_G
+      REAL(kind=avl_real) CF_SRF, CM_SRF
+      REAL(kind=avl_real) CL_SRF, CD_SRF, CMLE_SRF
+      REAL(kind=avl_real) SSURF, CAVESURF
+      REAL(kind=avl_real) VBODY
+      COMMON /SURF_R/
+C   Surface forces and moments referenced to SREF,CREF,BREF about XREF,YREF,ZREF
+     & CDSURF(NFMAX),CLSURF(NFMAX),                ! surface CD,CL
+     & CXSURF(NFMAX),CYSURF(NFMAX),CZSURF(NFMAX),  ! surface Cx,Cy,Cz
+     & CRSURF(NFMAX),CNSURF(NFMAX),CMSURF(NFMAX),  ! surface Cl,Cm,Cn
+     & CDVSURF(NFMAX),CDISURF(NFMAX),              ! surface viscous/invisid CD
+     & CDS_A(NFMAX), CLS_A(NFMAX),                                ! alpha sens.
+     & CDS_U(NFMAX,NUMAX), CLS_U(NFMAX,NUMAX),
+     & CXS_U(NFMAX,NUMAX), CYS_U(NFMAX,NUMAX), CZS_U(NFMAX,NUMAX), ! velocity and rotation sens.
+     & CRS_U(NFMAX,NUMAX), CNS_U(NFMAX,NUMAX), CMS_U(NFMAX,NUMAX),
+     & CDS_D(NFMAX,NDMAX), CLS_D(NFMAX,NDMAX),
+     & CXS_D(NFMAX,NDMAX), CYS_D(NFMAX,NDMAX), CZS_D(NFMAX,NDMAX), ! control sens.
+     & CRS_D(NFMAX,NDMAX), CNS_D(NFMAX,NDMAX), CMS_D(NFMAX,NDMAX),
+     & CDS_G(NFMAX,NGMAX), CLS_G(NFMAX,NGMAX),
+     & CXS_G(NFMAX,NGMAX), CYS_G(NFMAX,NGMAX), CZS_G(NFMAX,NGMAX), ! design (incidence) sens.
+     & CRS_G(NFMAX,NGMAX), CNS_G(NFMAX,NGMAX), CMS_G(NFMAX,NGMAX),
+     & CF_SRF(3,NFMAX), CM_SRF(3,NFMAX),
+     & CL_SRF(NFMAX), CD_SRF(NFMAX), CMLE_SRF(NFMAX),
+     & SSURF(NFMAX), CAVESURF(NFMAX),
+     & VBODY(NBMAX)
+
+C      !start added variables for python geometry minipulation
+
+      LOGICAL LDUPL_B
+      COMMON /BODY_GEOM_L/
+     & LDUPL_B(NBMAX)      ! T if body is a duplicated
+c
+      COMMON /BODY_GEOM_I/
+     & NSEC_B(NBMAX),  ! number of sections in body
+     & NVB(NFMAX)! number of body elements
+
+      REAL(kind=avl_real) XYZSCAL_B
+      REAL(kind=avl_real) XYZTRAN_B
+      REAL(kind=avl_real) YDUPL_B
+      REAL(kind=avl_real) XYZLES_B 
+      REAL(kind=avl_real) BSPACE
+      COMMON /BODY_GEOM_R/
+     & XYZSCAL_B(3, NBMAX), ! scaling factors for XYZ coordinates
+     & XYZTRAN_B(3, NBMAX), ! translation factors for XYZ coordinates
+     & YDUPL_B(NBMAX), ! y duplicate
+     & XYZLES_B(3, NSMAX, NBMAX), ! leading edge cordinate vector
+     & BSPACE(NBMAX) ! body spacing
+c
+      LOGICAL LDUPL
+      LOGICAL LSURFSPACING
+      COMMON /SURF_GEOM_L/
+     & LDUPL(NFMAX),      ! T if surface is a duplicated
+     & LSURFSPACING(NFMAX)   ! surface spacing set under the surface heeading
+
+      COMMON /SURF_GEOM_I/
+     & NSEC(NFMAX),  ! number of sections in surface
+     & NVC(NFMAX), ! number of chordwise elements
+     & NVS(NFMAX), ! number of spanwise elements
+     & NSPANS(NSMAX, NFMAX), ! number of spanwise elements vector
+     & NASEC(NSMAX, NFMAX),
+     & ICONTD(ICONX, NSMAX, NFMAX), ! control variable index
+     & NSCON(NSMAX, NFMAX), ! number of control variables
+     & IDESTD(ICONX, NSMAX, NFMAX), ! design variable index
+     & NSDES(NSMAX, NFMAX) ! number of design variables
+
+      REAL(kind=avl_real) XYZSCAL
+      REAL(kind=avl_real) XYZTRAN
+      REAL(kind=avl_real) YDUPL
+      REAL(kind=avl_real) ADDINC
+      REAL(kind=avl_real) CSPACE
+      REAL(kind=avl_real) SSPACE
+      REAL(kind=avl_real) SSPACES
+      REAL(kind=avl_real) XYZLES
+      REAL(kind=avl_real) XLASEC
+      REAL(kind=avl_real) ZLASEC
+      REAL(kind=avl_real) XUASEC
+      REAL(kind=avl_real) ZUASEC
+      REAL(kind=avl_real) CHORDS
+      REAL(kind=avl_real) AINCS
+      REAL(kind=avl_real) XASEC
+      REAL(kind=avl_real) CASEC
+      REAL(kind=avl_real) SASEC
+      REAL(kind=avl_real) TASEC
+      REAL(kind=avl_real) CLCDSEC
+      REAL(kind=avl_real) CLCDSRF
+      REAL(kind=avl_real) CLAF
+      REAL(kind=avl_real) XHINGED
+      REAL(kind=avl_real) VHINGED
+      REAL(kind=avl_real) GAIND
+      REAL(kind=avl_real) REFLD
+      REAL(kind=avl_real) GAING  
+      COMMON /SURF_GEOM_R/
+     & XYZSCAL(3, NFMAX), ! scaling factors for XYZ coordinates
+     & XYZTRAN(3, NFMAX), ! translation factors for XYZ coordinates
+     & YDUPL(NFMAX), ! y position of duplicate plane
+     & ADDINC(NFMAX), ! additional incidence angle
+     & CSPACE(NFMAX), ! chordwise spacing
+     & SSPACE(NFMAX), ! spanwise spacing
+     & SSPACES(NSMAX, NFMAX), ! spanwise spacing vector
+     & XYZLES(3, NSMAX, NFMAX), ! leading edge cordinate vector
+     & XLASEC(IBX, NSMAX, NFMAX),
+     & ZLASEC(IBX, NSMAX, NFMAX),
+     & XUASEC(IBX, NSMAX, NFMAX),
+     & ZUASEC(IBX, NSMAX, NFMAX),
+     & CHORDS(NSMAX, NFMAX), ! chord length vectorm
+     & AINCS(NSMAX, NFMAX), ! incidence angle vector
+     & XASEC(IBX, NSMAX, NFMAX),  ! the x coordinate aifoil section
+     & CASEC(IBX, NSMAX, NFMAX),  ! camber line at xasec
+     & SASEC(IBX, NSMAX, NFMAX),  ! slope of camber line at xasec
+     & TASEC(IBX, NSMAX, NFMAX),   ! thickness at xasec
+     & CLCDSEC(6, NSMAX, NFMAX),
+     & CLCDSRF(6, NFMAX),
+     & CLAF(NSMAX, NFMAX),
+     & XHINGED(ICONX, NSMAX, NFMAX), ! hinge location
+     & VHINGED(3, ICONX, NSMAX, NFMAX), ! hinge vector
+     & GAIND(ICONX, NSMAX, NFMAX), ! control surface gain
+     & REFLD(ICONX, NSMAX, NFMAX), ! control surface reflection
+     & GAING(ICONX, NSMAX, NFMax)  ! desgin variable gain
+
+
+C      !!--- end added variables for python geometry minipulation ---
+
+      COMMON /STRP_I/
+     & NSURFS(NSMAX),    ! index of surface which contains this strip
+     & IJFRST(NSMAX),    ! index of first element in strip
+     & NVSTRP(NSMAX),    ! number of elements in strip
+     & ICNTSEC(NSMAX)    ! section counters for surface
+
+      LOGICAL LSTRIPOFF,LVISCSTRP,LJ1SECT,LJ2SECT
+      COMMON /STRP_L/
+     & LSTRIPOFF(NSMAX),  ! T if strip is "turned off" (outside of fluid)
+     & LVISCSTRP(NSMAX),  ! T is strip has viscous drag data
+     & LJ1SECT(NSMAX),    ! T if station 1 is a section
+     & LJ2SECT(NSMAX)     ! T if station 2 is a section
+
+      REAL(kind=avl_real) RLE,  CHORD
+      REAL(kind=avl_real) RLE1, CHORD1
+      REAL(kind=avl_real) RLE2, CHORD2
+      REAL(kind=avl_real) WSTRIP
+      REAL(kind=avl_real) TANLE,  TANTE
+      REAL(kind=avl_real) CLCD
+      REAL(kind=avl_real) SAXFR
+      REAL(kind=avl_real) ESS
+      REAL(kind=avl_real) ENSY, ENSZ
+      REAL(kind=avl_real) XSREF,YSREF,ZSREF
+      REAL(kind=avl_real) AINC
+      REAL(kind=avl_real) AINC_G
+      REAL(kind=avl_real) CDSTRP,   CLSTRP
+      REAL(kind=avl_real) CXSTRP,   CYSTRP,   CZSTRP
+      REAL(kind=avl_real) CRSTRP,   CNSTRP,   CMSTRP
+      REAL(kind=avl_real) CDST_A,   CLST_A
+      REAL(kind=avl_real) CDST_U, CLST_U
+      REAL(kind=avl_real) CXST_U, CYST_U, CZST_U
+      REAL(kind=avl_real) CRST_U, CNST_U, CMST_U
+      REAL(kind=avl_real) CDST_D, CLST_D
+      REAL(kind=avl_real) CXST_D, CYST_D, CZST_D
+      REAL(kind=avl_real) CRST_D, CNST_D, CMST_D
+      REAL(kind=avl_real) CDST_G, CLST_G
+      REAL(kind=avl_real) CXST_G, CYST_G, CZST_G
+      REAL(kind=avl_real) CRST_G, CNST_G, CMST_G
+      REAL(kind=avl_real) CF_STRP,   CM_STRP
+      REAL(kind=avl_real) CNRMSTRP,    CAXLSTRP
+      REAL(kind=avl_real) CD_LSTRP,  CL_LSTRP
+      REAL(kind=avl_real) CDV_LSTRP, CLTSTRP, CLASTRP
+      REAL(kind=avl_real) CMC4,        CMLE
+      REAL(kind=avl_real) CNC,         DWWAKE
+      REAL(kind=avl_real) CNC_U
+      REAL(kind=avl_real) CNC_D
+      REAL(kind=avl_real) CNC_G    
+      COMMON /STRP_R/
+     & RLE(3,NSMAX),  CHORD(NSMAX),    ! strip c.p. line LE point, chord
+     & RLE1(3,NSMAX), CHORD1(NSMAX),   ! strip left  end LE point, chord
+     & RLE2(3,NSMAX), CHORD2(NSMAX),   ! strip right end LE point, chord
+     & WSTRIP(NSMAX),                  ! strip y-z width
+     & TANLE(NSMAX),  TANTE(NSMAX),    ! strip LE,TE sweep slopes
+     & CLCD(NUMAX,NSMAX),              ! strip viscous polar
+     & SAXFR,                       ! x/c of spanwise axis for Vperp def
+     & ESS(3,NSMAX),                ! spanwise unit vector for Vperp def
+     & ENSY(NSMAX), ENSZ(NSMAX),    ! strip normal vector in Trefftz-Pln
+     & XSREF(NSMAX),YSREF(NSMAX),ZSREF(NSMAX),   ! strip reference point
+     & AINC(NSMAX),              ! strip's incidence twist angle
+     & AINC_G(NSMAX,NGMAX),      ! dAINC/dG
+C  Strip forces and moments
+     & CDSTRP(NSMAX),   CLSTRP(NSMAX),                   ! strip forces  in stability axes
+     & CXSTRP(NSMAX),   CYSTRP(NSMAX),   CZSTRP(NSMAX),  ! strip forces  in body axes
+     & CRSTRP(NSMAX),   CNSTRP(NSMAX),   CMSTRP(NSMAX),  ! strip moments in body axes about XREF,YREF,ZREF
+C
+     & CDST_A(NSMAX),   CLST_A(NSMAX),                   ! alpha sens.
+     & CDST_U(NSMAX,NUMAX), CLST_U(NSMAX,NUMAX),
+     & CXST_U(NSMAX,NUMAX), CYST_U(NSMAX,NUMAX), CZST_U(NSMAX,NUMAX),   ! freestream velocity and rotation sens.
+     & CRST_U(NSMAX,NUMAX), CNST_U(NSMAX,NUMAX), CMST_U(NSMAX,NUMAX),
+     & CDST_D(NSMAX,NDMAX), CLST_D(NSMAX,NDMAX),
+     & CXST_D(NSMAX,NDMAX), CYST_D(NSMAX,NDMAX), CZST_D(NSMAX,NDMAX),   ! control sens.
+     & CRST_D(NSMAX,NDMAX), CNST_D(NSMAX,NDMAX), CMST_D(NSMAX,NDMAX),
+     & CDST_G(NSMAX,NGMAX), CLST_G(NSMAX,NGMAX),
+     & CXST_G(NSMAX,NGMAX), CYST_G(NSMAX,NGMAX), CZST_G(NSMAX,NGMAX),   ! design (incidence) sens.
+     & CRST_G(NSMAX,NGMAX), CNST_G(NSMAX,NGMAX), CMST_G(NSMAX,NGMAX),
+C
+     & CF_STRP(3,NSMAX),   CM_STRP(3,NSMAX),    ! strip forces in body axes referenced to strip area and 1/4 chord
+     & CNRMSTRP(NSMAX),    CAXLSTRP(NSMAX),     ! strip forces in local dihedral plane (normal and axial forces)
+     & CD_LSTRP(NSMAX),  CL_LSTRP(NSMAX),       ! strip forces in local dihedral plane (lift and drag forces)
+     & CDV_LSTRP(NSMAX),                        ! strip viscous drag in stability axes
+     & CLTSTRP(NSMAX), CLASTRP(NSMAX),          ! strip CL referenced to Vperp, CL referenced to total local velocity
+     & CMC4(NSMAX),        CMLE(NSMAX),         ! strip pitching moment about c/4 and pitching moment about LE vector
+     & CNC(NSMAX),         DWWAKE(NSMAX),       ! strip spanloading and downwash in Trefftz plane
+     & CNC_U(NSMAX,NUMAX),                      ! spanloading sens.
+     & CNC_D(NSMAX,NDMAX),
+     & CNC_G(NSMAX,NGMAX)
+C
+C
+cc#ifdef USE_CPOML
+      REAL(kind=avl_real) AINC1
+      REAL(kind=avl_real) AINC2
+      COMMON /STRP_S/
+     & AINC1(NSMAX), AINC2(NSMAX)  ! left/right strip incidence twist angle
+cc#endif
+C
+      LOGICAL LVNC, LVALBE
+      COMMON /VRTX_L/
+     & LVNC(NVMAX),    ! T if V.n=0 is to be enforced for this c.p.
+     & LVALBE(NVMAX)   ! T if c.p. is to see freestream alpha,beta
+
+      COMMON /VRTX_I/
+     & NSURFV(NVMAX)    ! index of surface which contains vortex element
+
+      REAL(kind=avl_real) RV1
+      REAL(kind=avl_real) RV2
+      REAL(kind=avl_real) RV
+      REAL(kind=avl_real) RC
+      REAL(kind=avl_real) RS
+      REAL(kind=avl_real) RL,RADL
+      REAL(kind=avl_real) DXV
+      REAL(kind=avl_real) CHORDV
+      REAL(kind=avl_real) SLOPEV
+      REAL(kind=avl_real) SLOPEC
+      REAL(kind=avl_real) DCONTROL
+      REAL(kind=avl_real) VHINGE
+      REAL(kind=avl_real) PHINGE
+      REAL(kind=avl_real) VREFL
+      REAL(kind=avl_real) ENC
+      REAL(kind=avl_real) ENV
+      REAL(kind=avl_real) ENC_D
+      REAL(kind=avl_real) ENC_G
+      REAL(kind=avl_real) ENV_D
+      REAL(kind=avl_real) ENV_G
+      REAL(kind=avl_real) DCP
+      REAL(kind=avl_real) DCP_U
+      REAL(kind=avl_real) DCP_D
+      REAL(kind=avl_real) DCP_G
+      REAL(kind=avl_real) GAM
+      REAL(kind=avl_real) GAM_U_0
+      REAL(kind=avl_real) GAM_U_D
+      REAL(kind=avl_real) GAM_U_G
+      REAL(kind=avl_real) GAM_U
+      REAL(kind=avl_real) GAM_D
+      REAL(kind=avl_real) GAM_G
+      REAL(kind=avl_real) SRC
+      REAL(kind=avl_real) DBL
+      REAL(kind=avl_real) SRC_U
+      REAL(kind=avl_real) DBL_U
+      REAL(kind=avl_real) WCSRD_U
+      REAL(kind=avl_real) WVSRD_U
+      REAL(kind=avl_real) RHS
+      REAL(kind=avl_real) RHS_U
+      REAL(kind=avl_real) RES
+      REAL(kind=avl_real) RES_U
+      REAL(kind=avl_real) RES_D
+      REAL(kind=avl_real) CPT
+      COMMON /VRTX_R/
+     & RV1(3,NVMAX),    ! h.v. vortex left  points
+     & RV2(3,NVMAX),    ! h.v. vortex right points
+     & RV(3,NVMAX),     ! h.v. vortex center points
+     & RC(3,NVMAX),     ! h.v. control points
+     & RS(3,NVMAX),     ! h.v. source points
+     & RL(3,NLMAX),RADL(NLMAX),  ! source line node points, body radius
+     & DXV(NVMAX),               ! chord of element
+     & CHORDV(NVMAX),            ! chord of element-containing strip
+     & SLOPEV(NVMAX),            ! camber slopes at h.v. bound leg
+     & SLOPEC(NVMAX),            ! camber slopes at c.p.
+     & DCONTROL(NVMAX,NDMAX),    ! d(normal angle)/dCONTROL
+     & VHINGE(3,NSMAX,NDMAX),    ! hinge vector for CONTROL rot. of normal
+     & PHINGE(3,NSMAX,NDMAX),    ! point on hingeline for hinge moment calculation
+     & VREFL(NSMAX,NDMAX),       ! sign applied to hinge vec. of refl. surface
+     & ENC(3,NVMAX),             ! control point normal vector
+     & ENV(3,NVMAX),             ! horseshoe vortex normal vector
+     & ENC_D(3,NVMAX,NDMAX),     ! control point normal vector sensitivities
+     & ENC_G(3,NVMAX,NGMAX),
+     & ENV_D(3,NVMAX,NDMAX),     ! horseshoe vortex normal vector sensitivities
+     & ENV_G(3,NVMAX,NGMAX),
+     & DCP(NVMAX),               ! delta(Cp) on vortex element
+     & DCP_U(NVMAX,NUMAX),
+     & DCP_D(NVMAX,NDMAX),
+     & DCP_G(NVMAX,NGMAX),
+     & GAM(NVMAX),               ! circulation of horseshoe vortex
+     & GAM_U_0(NVMAX,NUMAX),
+     & GAM_U_D(NVMAX,NUMAX,NDMAX),
+     & GAM_U_G(NVMAX,NUMAX,NGMAX),
+     & GAM_U(NVMAX,NUMAX),       ! circulation sensitivities
+     & GAM_D(NVMAX,NDMAX),
+     & GAM_G(NVMAX,NGMAX),
+     & SRC(NLMAX),               ! source  strength of source+doublet line elem
+     & DBL(3,NLMAX),             ! doublet strength of source+doublet line elem
+     & SRC_U(NLMAX,NUMAX),       ! sensitivities
+     & DBL_U(3,NLMAX,NUMAX),
+     & WCSRD_U(3,NVMAX,NUMAX),
+cc#ifdef USE_CPOML
+     & WVSRD_U(3,NVMAX,NUMAX),
+     & CPT(NVMAX),                ! thickness-based Cp at panel midpoint
+cc#else
+     & RHS(NVMAX),               ! RHS (flow normal to surface) for linear system
+     & RHS_U(NVMAX,NUMAX),               ! RHS (flow normal to surface for each U compt.) for linear system
+     & RES(NVMAX),               ! residual for linear system res = Ax-b
+     & RES_U(NVMAX,NUMAX),               ! residual for gamma_u lin sys
+     & RES_D(NVMAX,NDMAX)        ! residual for gamma_d lin. sys 
+
+cc#ifdef USE_CPOML
+      REAL(kind=avl_real) XYN1
+      REAL(kind=avl_real) XYN2
+      REAL(kind=avl_real) ZLON1
+      REAL(kind=avl_real) ZLON2
+      REAL(kind=avl_real) ZUPN1
+      REAL(kind=avl_real) ZUPN2
+      REAL(kind=avl_real) XYZSURF
+      REAL(kind=avl_real) CPSURF
+      COMMON /VRTX_S/
+     & XYN1(2,NVMAX), XYN2(2,NVMAX),  ! left/right aft-node of element
+     & ZLON1(NVMAX), ZLON2(NVMAX),    ! left/right lower z-coord of aft-node
+     & ZUPN1(NVMAX), ZUPN2(NVMAX),     ! left/right upper z-coord of aft-node
+     & XYZSURF(3, NVMAX, NFMAX),
+     & CPSURF(NVMAX,NFMAX)
+cc#endif
+C
+      COMMON /BODY_I/
+     & NL(NBMAX),       ! number of source-line nodes in body
+     & LFRST(NBMAX)     ! index of first line node in body
+
+      REAL(kind=avl_real) ELBDY
+      REAL(kind=avl_real) SRFBDY
+      REAL(kind=avl_real) VOLBDY
+      REAL(kind=avl_real) DCPB
+      REAL(kind=avl_real) CDBDY,CLBDY
+      REAL(kind=avl_real) CXBDY,CYBDY,CZBDY
+      REAL(kind=avl_real) CRBDY,CNBDY,CMBDY   
+      COMMON /BODY_R/
+     & ELBDY(NBMAX),                            ! body length
+     & SRFBDY(NBMAX),                           ! body surface area
+     & VOLBDY(NBMAX),                           ! body volume
+     & DCPB(3,NLMAX),                           ! dCp loading on sources
+     & CDBDY(NBMAX),CLBDY(NBMAX),               ! body CD,CL
+     & CXBDY(NBMAX),CYBDY(NBMAX),CZBDY(NBMAX),  ! body CX,CY,CZ
+     & CRBDY(NBMAX),CNBDY(NBMAX),CMBDY(NBMAX)   ! body Cl,Cm,Cn
+C
+      COMMON /SOLV_I/
+     & IAPIV(NVMAX)           ! pivot indices for LU solver
+
+      REAL(kind=avl_real) AMACH
+      REAL(kind=avl_real) AICN
+      REAL(kind=avl_real) AICN_LU
+C      REAL(kind=avl_real) WC_GAM
+C      REAL(kind=avl_real) WV_GAM
+      REAL(kind=avl_real) WC
+      REAL(kind=avl_real) WC_U
+      REAL(kind=avl_real) WC_D
+      REAL(kind=avl_real) WC_G
+      REAL(kind=avl_real) WV
+      REAL(kind=avl_real) WV_U
+      REAL(kind=avl_real) WV_D
+      REAL(kind=avl_real) WV_G
+      COMMON /SOLV_R/
+     & AMACH,                 ! Mach number at which AIC matrices were computed
+     & AICN(NVMAX,NVMAX),     ! normalwash AIC matrix (and VL system matrix)
+     & AICN_LU(NVMAX,NVMAX),     ! LU facotrization of AICN
+C     & WC_GAM(3,NVMAX,NVMAX), ! c.p. velocity/Gamma influence matrix
+C     & WV_GAM(3,NVMAX,NVMAX), ! h.v. velocity/Gamma influence matrix
+     & WC(3,NVMAX),           ! total induced velocity at c.p. (used in residual)
+     & WC_U(3,NVMAX,NUMAX),
+     & WC_D(3,NVMAX,NDMAX),
+     & WC_G(3,NVMAX,NGMAX),
+     & WV(3,NVMAX),           ! total induced velocity at h.v. (used in loads)
+     & WV_U(3,NVMAX,NUMAX),
+     & WV_D(3,NVMAX,NDMAX),
+     & WV_G(3,NVMAX,NGMAX)
+C
+      LOGICAL
+     & LWAKEPLT,   LLOADPLT,   LHINGEPLT,
+     & LBOUNDLEG,  LCHORDLINE, LCAMBER,   LCNTLPTS,
+     & LNRMLPLT,   LAXESPLT,   LRREFPLT,
+     & LCLPERPLT,  LDWASHPLT,  LLABSURF,   LTRFORCE,
+     & LABEL_SURF, LABEL_STRP, LABEL_VRTX, LABEL_BODY,
+     & LPLTNEW,
+     & LPLTSURF,
+     & LPLTBODY,
+     & LSVMOV
+      COMMON /PLOT_L/          ! plotting flags
+     & LWAKEPLT,   LLOADPLT,   LHINGEPLT,
+     & LBOUNDLEG,  LCHORDLINE, LCAMBER,   LCNTLPTS,
+     & LNRMLPLT,   LAXESPLT,   LRREFPLT,
+     & LCLPERPLT,  LDWASHPLT,  LLABSURF,   LTRFORCE,
+     & LABEL_SURF, LABEL_STRP, LABEL_VRTX, LABEL_BODY,
+     & LPLTNEW,
+     & LPLTSURF(NFMAX),
+     & LPLTBODY(NBMAX),
+     & LSVMOV
+      COMMON /PLOT_I/ NTRI, IMARKSURF, ICOLORSURF, NAXANN(3),
+     &                IRCOLOR(NRMAX)
+
+      REAL(kind=avl_real)   TRI
+      REAL(kind=avl_real)   AXMIN,AXMAX,AXDEL,AXSPAN
+      REAL(kind=avl_real)   GMIN,GMAX,GMINP,GMAXP
+      REAL(kind=avl_real)   VMIN,VMAX,VMINP,VMAXP
+      REAL(kind=avl_real)   DTMOVIE,TMOVIE, SLOMOF
+      REAL(kind=avl_real)   EPHASE, EIGENF, TMOFAC
+      COMMON /PLOT_R/ TRI(16,ITMAX),
+     &                AXMIN(3),AXMAX(3),AXDEL(3),AXSPAN(3),
+     &                GMIN(3),GMAX(3),GMINP(3),GMAXP(3),
+     &                VMIN(3),VMAX(3),VMINP(3),VMAXP(3),
+     &                DTMOVIE,TMOVIE, SLOMOF,
+     &                EPHASE, EIGENF, TMOFAC
