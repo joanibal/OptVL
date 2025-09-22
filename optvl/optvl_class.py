@@ -460,11 +460,6 @@ class OVLSolver(object):
         self.set_avl_fort_arr("SURF_GEOM_R","CLCDSRF", 0.0, slicer=(slice(0,6), slice(0,self.NFMAX)))
         self.avl.CASE_L.LVISC = False
 
-
-        """ISURF
-        IBODY
-        ILINE"""
-
         #Parse and Load Mandatory General Info
 
         # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
@@ -508,7 +503,7 @@ class OVLSolver(object):
                 self.avl.SURF_I.LSCOMP[i] = i + 1
                 self.avl.SURF_GEOM_I.NSEC[i] = 0
                 self.avl.SURF_GEOM_L.LDUPL[i] = False
-                lhinge = False
+                # lhinge = False Appears in AVL but does nothing
                 self.avl.SURF_L.LFWAKE[i] = True
                 self.avl.SURF_L.LFALBE[i] = True
                 self.avl.SURF_L.LFLOAD[i] = True
@@ -554,43 +549,42 @@ class OVLSolver(object):
                 self.avl.SURF_GEOM_I.NSEC[i] = surf["num_sections"]
                 for j in range(surf["num_sections"]):
                     # Setup section defaults
-                    self.set_avl_fort_arr("SURF_GEOM_I","NASEC", 2, slicer=(slice(i),slice(j)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","XASEC", np.array([[0.0, 1.0]]), slicer=(slice(i),slice(j),slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","SASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","TASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_I","NASEC", 2, slicer=(i,j))
+                    self.set_avl_fort_arr("SURF_GEOM_R","XASEC", np.array([[0.0, 1.0]]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","SASEC", np.array([[0.0, 0.0]]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","TASEC", np.array([[0.0, 0.0]]), slicer=(i,j,slice(0,2)))
 
-                    self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","CASEC", np.array([[0.0, 0.0]]), slicer=(slice(i),slice(j),slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_I","NSCON", 0, slicer=(slice(i),slice(j)))
-                    self.set_avl_fort_arr("SURF_GEOM_I","NSDES", 0, slicer=(slice(i),slice(j)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","CLAF", 1.0, slicer=(slice(i),slice(j)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", np.array([[0.0, 0.0]]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", np.array([[0.0, 0.0]]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", np.array([[0.0, 0.0]]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", np.array([[0.0, 0.0]]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","CASEC", np.array([[0.0, 0.0]]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_I","NSCON", 0, slicer=(i,j))
+                    self.set_avl_fort_arr("SURF_GEOM_I","NSDES", 0, slicer=(i,j))
+                    self.set_avl_fort_arr("SURF_GEOM_R","CLAF", 1.0, slicer=(i,j))
 
 
                     # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
                     sectionFields = {
-                        "xles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), None, (slice(i),slice(j),slice(0)), None),
-                        "yles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), None, (slice(i),slice(j),slice(1)), None),
-                        "zles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), None, (slice(i),slice(j),slice(2)), None),
-                        "chords":  ("SURF_GEOM_R", "CHORDS", (float, np.floating), None, (slice(i),slice(j)), None),
-                        "aincs":  ("SURF_GEOM_R", "AINCS", (float, np.floating), None, (slice(i),slice(j)), None),
-                        "nspans": ("SURF_GEOM_I", "NSPANS", (int, np.integer), 0, (slice(i),slice(j)), None),
-                        "sspaces":  ("SURF_GEOM_R", "SSPACES", (float, np.floating), 0.0, (slice(i),slice(j)), None),
-                        "clcd":  ("SURF_GEOM_R", "CLCDSRF", (float, np.floating), np.array([[[0.,0.,0.,0.,0.,0.]]]), (slice(i),slice(0,6)), lambda v: (operator.setitem(self.avl.CASE_L.LVISC,0,"clcd" in surf.keys()),v)[1]),
-                        "clcdsec":  ("SURF_GEOM_R", "CLCDSEC", (float, np.floating), np.array([[[0.,0.,0.,0.,0.,0.]]]), (slice(i),slice(j),slice(0,6)), lambda v: (operator.setitem(self.avl.CASE_L.LVISC,0,"clcdsec" in surf.keys()),surf["clcd"] if "clcd" in surf.keys() else v)[1]),
-                        "claf":  ("SURF_GEOM_R", "CLAF", (float, np.floating), 0.0, (slice(i),slice(j)), None),
+                        "xles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), [[None]*surf["num_sections"]], (i,j,0), None),
+                        "yles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), [[None]*surf["num_sections"]], (i,j,1), None),
+                        "zles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), [[None]*surf["num_sections"]], (i,j,2), None),
+                        "chords":  ("SURF_GEOM_R", "CHORDS", (float, np.floating), [[None]*surf["num_sections"]], (i,j), None),
+                        "aincs":  ("SURF_GEOM_R", "AINCS", (float, np.floating), [[None]*surf["num_sections"]], (i,j), None),
+                        "nspans": ("SURF_GEOM_I", "NSPANS", (int, np.integer), [np.zeros(surf["num_sections"])], (i,j), None),
+                        "sspaces":  ("SURF_GEOM_R", "SSPACES", (float, np.floating), [np.zeros(surf["num_sections"])], (i,j), None),
+                        "clcd":  ("SURF_GEOM_R", "CLCDSRF", np.ndarray, [[np.array([0.,0.,0.,0.,0.,0.]) for _ in range(surf["num_sections"])]], (i,slice(0,6)), lambda v: (setattr(self.avl.CASE_L,"LVISC","clcd" in surf.keys()),v)[1]),
+                        "clcdsec":  ("SURF_GEOM_R", "CLCDSEC", np.ndarray, [[np.array([0.,0.,0.,0.,0.,0.]) for _ in range(surf["num_sections"])]], (i,j,slice(0,6)), lambda v: (setattr(self.avl.CASE_L,"LVISC","clcdsec" in surf.keys()),surf["clcd"] if "clcd" in surf.keys() else v)[1]),
+                        "claf":  ("SURF_GEOM_R", "CLAF", (float, np.floating), [np.zeros(surf["num_sections"])], (i,j), None),
                     }
 
                     # Load basic surface data into AVL
                     for key, (obj, attr, expected_type, default, slicer, transform) in sectionFields.items():
-                        val = surf.get(key, default)
+                        # Get the val for section j, array are technically 2D with an empty axis so index that first
+                        val = surf.get(key, default)[0][j]
                         if val is None:
                             continue
                         if isinstance(val, expected_type):
-                            # Get the val for section j, array are technically 2D with an empty axis so index that first
-                            val = val[0][j]
                             if transform:
                                 val = transform(val)
                             if slicer is not None:
@@ -598,6 +592,58 @@ class OVLSolver(object):
                             else:
                                 setattr(obj, attr, val)
 
+                    # Load the Airfoil Section into AVL
+                    af_load_ops = ["naca", "airfoils", "afiles"]
+                    manual_af_override = ['xasec','casec','tasec','xuasec','xlasec','zuasec','zlasec']
+
+                    # Basically checks to see that at most only one of the options in af_load_ops or one of the options in manual_af_override is selected
+                    if sum(bool(g) for g in ((af_load_ops & surf.keys()), any(k in manual_af_override for k in surf.keys()))) > 1:
+                        raise RuntimeError("More than one airfoil section specification detected!\n"
+                        "Select only a single approach for specifying airfoil sections!")
+
+                    # Manually Specify Coordiantes (no camberline verification, only use if you know what you're doing)
+                    if set(manual_af_override) & surf.keys():
+                        warnings.warn("OptVL WARNING - Setting airfoil section data directly via the input dictionary is not recommened!\n " \
+                        "OptVL will not verify that the camber line is consistent with the given coordiantes.\n" \
+                        "Specify the coordinates directly in the inputs dictionary with ''airfoils'' or ''afiles'' or use the setSectionMesh function.",stacklevel=2)
+
+                        if "xasec" not in surf.keys():
+                            raise RuntimeError("xasec has to be specified if manually defining sections!")
+
+                        nasec = len(surf["xasec"][0][j])
+                        self.set_avl_fort_arr("SURF_GEOM_I","NASEC", nasec, slicer=(slice(i),slice(j)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","XASEC", surf["xasec"][0][j], slicer=(slice(i),slice(j),slice(0,nasec)))
+
+                        self.set_avl_fort_arr("SURF_GEOM_R","SASEC", surf["sasec"][0][j] if surf["sasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","TASEC", surf["tasec"][0][j] if surf["tasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+
+                        self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", surf["xlasec"][0][j] if surf["xlasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", surf["xuasec"][0][j] if surf["xuasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", surf["zlasec"][0][j] if surf["zlasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", surf["zuasec"][0][j] if surf["zuasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","CASEC", surf["casec"][0][j] if surf["casec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+
+                    # 4 digit NACA airfoil specification
+                    if "naca" in surf.keys():
+                        xfminmax = surf["xfminmax"][0][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
+                        if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
+                            self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
+                        self.set_section_naca(j,i,min(50,self.IBX),surf["naca"][j],xfminmax)
+
+                    # Airfoil coordinates set directly in dictionary
+                    if "airfoils" in surf.keys():
+                        xfminmax = surf["xfminmax"][0][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
+                        if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
+                            self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
+                        self.set_section_coordinates(j,i,min(50,self.IBX),surf["airfoils"][j][0],surf["airfoils"][j][1],xfminmax)
+
+                    # Load airfoil file
+                    if "afiles" in surf.keyes():
+                        xfminmax = surf["xfminmax"][0][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
+                        if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
+                            self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
+                        X = self._readDat(surf["afiles"][j])
+                        self.set_section_coordinates(j,i,min(50,self.IBX),X[:,0],X[:,1],xfminmax)
 
 
         pass
@@ -605,8 +651,129 @@ class OVLSolver(object):
     def check_surface_consistency(self):
         pass
 
-    def generate_naca_four(self,naca: str):
-        pass
+    def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
+        """Sets the airfoil oml points for the specified surface and section. Computes camber lines, thickness, and oml shape from
+        NACA 4-digit specification.
+
+
+        Args:
+            isec: section number to set the airfoil mesh
+            isurf: surface number to set the airfoil mesh
+            nasec: number of points to evaluate the interpolated camber line and thickness curves at
+            naca: 4-digit naca specificaion as a string
+            xfminmax: length 2 array with the min and max x/c to slice the airfoil
+        """
+
+        # Read 4-digit string
+        cam = naca[0]/100.
+        pos = naca[1]/10.
+        thick = naca[2:]/100.
+
+        # Generate airfoil section data
+        xf = xfminmax[0] + np.diff(xfminmax)*np.arange(nasec)/(nasec-1)
+        slopes = np.zeros_like(xf)
+        slopes[xf<pos] = 2.*cam*(pos-xf[xf<pos])/(pos**2)
+        slopes[xf>pos] = 2.*cam*(pos-xf[xf>pos])/(1- pos)**2
+        thickness = 10.*thick*(0.29690*np.sqrt(xf) - 0.12600*xf - 0.35160*xf**2 + 0.28430*xf**3 - 0.10150*xf**4)
+        zf = np.zeros_like(xf)
+        zf[xf<pos] = cam*(2.*pos*xf[xf<pos]- 1.)*xf[xf<pos]/(pos**2)
+        zf[xf>pos] = cam*((1-2.*pos) + (2.*pos - xf[xf>pos])*xf[xf>pos])/(1 - pos)**2
+        theta = np.atan(slopes)
+
+
+        # Set airfoil section
+        self.set_avl_fort_arr("SURF_GEOM_I","NASEC", nasec, slicer=(isurf,isec))
+        self.set_avl_fort_arr("SURF_GEOM_R","XASEC", (xf-xf[0])/(xf[-1]-xf[0]), slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","SASEC", slopes, slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","TASEC", thickness, slicer=(isurf,isec,slice(0,nasec)))
+
+        self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", xf + 0.5*thickness*np.sin(theta), slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", xf - 0.5*thickness*np.sin(theta), slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", zf - 0.5*thickness*np.cos(theta), slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", zf + 0.5*thickness*np.cos(theta), slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","CASEC", zf, slicer=(isurf,isec,slice(0,nasec)))
+
+    def set_section_coordinates(self,isec: int, isurf: int, nasec: int, x: np.ndarray, y: np.ndarray, xfminmax: np.ndarray):
+        """Sets the airfoil oml points for the specified surface and section. Computes the camber line and interpolates it
+        with AVL's 1D Akima Spline implementation.
+
+
+        Args:
+            isec: section number to set the airfoil mesh
+            isurf: surface number to set the airfoil mesh
+            nasec: number of points to evaluate the interpolated camber line and thickness curves at
+            x: airfoil x-coordinate array
+            y: airfoil y-coodinate array
+            xfminmax: length 2 array with the min and max x/c to slice the airfoil
+        """
+
+        if ((len(x) > self.IBX) or (len(y) > self.IBX)):
+            raise RuntimeError(f"Airfoil array overflow! Increase IBX to {len(x) if len(x)>len(y) else len(y)}")
+        if len(x) != len(y):
+            raise RuntimeError(f"x and y array lengths do not match! len x: {len(x)}, len y: {len(y)}")
+
+        xf = xfminmax[0] + np.diff(xfminmax)*np.arange(nasec)/(nasec-1)
+
+        xin,yin,tin,nasec = self.avl.getcam(x,y,len(x),nasec,True)
+
+        xasec = xin[0] + xf*(xin[-1] -xin[0])
+
+        zc = np.zeros(nasec)
+        slopes = np.zeros(nasec)
+        thickness = np.zeros(nasec)
+
+        # Use the original AVL akima, not vectorized
+        for i in range(nasec):
+            zc[i], slopes[i] = self.avl.akima(xin, yin, nasec, xasec) # USE_CPOML always on in OptVL
+            thickness[i], _ = self.avl.akima(xin, tin, nasec, xasec)
+
+        # Set airfoil section
+        self.set_avl_fort_arr("SURF_GEOM_I","NASEC", nasec, slicer=(isurf,isec))
+        self.set_avl_fort_arr("SURF_GEOM_R","XASEC", (xasec-xasec[0])/(xasec[-1]-xasec[0]), slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","SASEC", slopes, slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","TASEC", thickness, slicer=(isurf,isec,slice(0,nasec)))
+
+        self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", xasec, slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", xasec, slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", zc - 0.5*thickness, slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", zc + 0.5*thickness, slicer=(isurf,isec,slice(0,nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R","CASEC", zc, slicer=(isurf,isec,slice(0,nasec)))
+
+
+    @staticmethod
+    def _readDat(filename, headerlines=0):
+        """
+        Reads a '.dat' style airfoil coordinate file,
+        with each coordinate on a new line and each
+        line containing an xy pair separate by whitespace.
+
+        Parameters
+        ----------
+        filename : str
+            dat file from which to read data
+        headerlines : int
+            the number of lines to skip at the beginning of the file to reach the coordinates
+
+        Returns
+        -------
+        X : Ndarray [N,2]
+            The coordinates read from the file
+        """
+        with open(filename, "r") as f:
+            for _i in range(headerlines):
+                f.readline()
+            r = []
+            while True:
+                line = f.readline()
+                if not line:
+                    break  # end of file
+                if line.isspace():
+                    break  # blank line
+                r.append([float(s) for s in line.split()])
+
+                X = np.array(r)
+
+        return X
 
 
     # region -- analysis api
@@ -826,7 +993,7 @@ class OVLSolver(object):
         if slicer is None:
             setattr(common_block_obj, variable.upper(), val)
         else:
-            if isinstance(slicer,np.ndarray):
+            if isinstance(slicer,(np.ndarray,tuple)):
                 # flip the order of the slicer to match the cordinates of the val
                 new_slicer = slicer[::-1]
             else:

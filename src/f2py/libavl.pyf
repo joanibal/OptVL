@@ -45,7 +45,7 @@ python module libavl ! in
 
         
         subroutine conset(comand, comarg) ! in :libavl:aoper.f
-              character*(*) comand, comarg
+            character*(*) comand, comarg
         end subroutine conset
 
         subroutine trmset(comand, comarg, com, carg) ! in :libavl:aoper.f
@@ -102,6 +102,7 @@ python module libavl ! in
             logical :: add_time
             real*8 :: solution_time
         end subroutine write_tecplot
+
         subroutine mode
         end subroutine mode
         
@@ -113,6 +114,20 @@ python module libavl ! in
             integer :: ir
             real*8, intent(inout) :: asys(jemax,jemax)
         end subroutine get_system_matrix
+
+        subroutine getcam(x,y,n,xc,yc,tc,nc,lnorm) ! in :libavl:airutil.f
+            real*(*), intent(in) :: x, y
+            real*(*), intent(out) :: xc, yc, tc
+            integer, intent(in) :: n
+            integer, intent(inout) :: nc
+            logical, intent(in) :: lnorm
+        end subroutine getcam
+
+        subroutine akima(x, y, n, xx, yy, slp) ! in :libavl:sgutil.f
+            real*(*), intent(in) :: x, y, xx
+            real*(*), intent(out) :: yy, slp
+            integer, intent(in) :: n
+        end subroutine akima
         
     end interface 
 end python module libavl
