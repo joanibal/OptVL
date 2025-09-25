@@ -115,19 +115,32 @@ python module libavl ! in
             real*8, intent(inout) :: asys(jemax,jemax)
         end subroutine get_system_matrix
 
-        subroutine getcam(x,y,n,xc,yc,tc,nc,lnorm) ! in :libavl:airutil.f
-            real*(*), intent(in) :: x, y
-            real*(*), intent(out) :: xc, yc, tc
-            integer, intent(in) :: n
-            integer, intent(inout) :: nc
-            logical, intent(in) :: lnorm
-        end subroutine getcam
+        !subroutine getcam(x, y, n, xc, yc, tc, nc, lnorm) ! in :libavl:airutil.f
+            !integer, intent(in) :: n
+            !integer, intent(inout) :: nc
+            !real, dimension(nc), intent(out) :: xc, yc, tc
+            !real, dimension(n), intent(in) :: x, y
+            !logical, intent(in) :: lnorm
+        !end subroutine getcam
 
-        subroutine akima(x, y, n, xx, yy, slp) ! in :libavl:sgutil.f
-            real*(*), intent(in) :: x, y, xx
-            real*(*), intent(out) :: yy, slp
-            integer, intent(in) :: n
-        end subroutine akima
+        !subroutine getcam(x, y, n, xc, yc, tc, nc, lnorm) ! in :libavl:airutil.f
+            !integer, intent(inout) :: nc
+            !integer n
+            !real*8 x(n), y(n), xc(nc), yc(nc), tc(nc)
+            !logical lnorm
+        !end subroutine getcam
+
+        !subroutine akima(x, y, n, xx, yy, slp) ! in :libavl:sgutil.f
+            !integer, intent(in) :: n
+            !real, dimension(n), intent(in) :: x, y
+            !real, dimension(*), intent(in) ::  xx
+            !real, dimension(*), intent(out) :: yy, slp
+        !end subroutine akima
+
+        subroutine set_section_coordinates(isec, isurf, x, y, n, nin, xfmin, xfmax) ! in :libavl:amake.f
+            integer :: isec, isurf, n, nin
+            real*8 :: x(n), y(n), xfmin, xfmax
+        end subroutine set_section_coordinates
         
     end interface 
 end python module libavl

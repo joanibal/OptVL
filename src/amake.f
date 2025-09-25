@@ -834,6 +834,49 @@ C------ set thread line y, and thickness t ( = 2r)
       
       end subroutine update_bodies
 
+      subroutine  set_section_coordinates(isec,isurf,x,y,n,nin,xfmin,
+     &       xfmax)
+c--------------------------------------------------------------
+c     Sets the airfoil coodinate data for the given section and surface
+c--------------------------------------------------------------
+      include 'AVL.INC'
+      integer isec, isurf, n, nin
+      real x(n), y(n)
+      real xin(IBX), yin(IBX), tin(IBX)
+      real xfmin, xfmax
+
+        if((xfmin .gt. 0.01) .or. (xfmax .lt. 0.99)) then
+          write(*,*) 'aifoil Lrange false', isurf, isec
+          write(*,*) (xfmin .gt. 0.01)
+          write(*,*) (xfmax .lt. 0.99)
+          LRANGE(isurf) = .false.
+        else
+          LRANGE(isurf) = .true.
+        end if
+
+        call GETCAM(x,y,n,xin,yin,tin,nin,.true.)
+
+        NASEC(isec,isurf) = nin
+
+        do i = 1, nin
+          xf = xfmin + 
+     &         (xfmax-xfmin)*float(i-1)/float(NASEC(isec,isurf)-1)
+          XASEC(i,isec,isurf) = xin(1) + xf*(xin(nin)-xin(1))
+          call AKIMA(xin,yin,nin,XASEC(i,isec,isurf),zc,
+     &               SASEC(i,isec,isurf))
+          call AKIMA(xin,tin,nin,XASEC(i,isec,isurf),
+     &               TASEC(i,isec,isurf),dummy)
+          XLASEC(i,isec,isurf) = XASEC(i,isec,isurf)
+          XUASEC(i,isec,isurf) = XASEC(i,isec,isurf)
+          ZLASEC(i,isec,isurf) = zc - 0.5*TASEC(i,isec,isurf)
+          ZUASEC(i,isec,isurf) = zc + 0.5*TASEC(i,isec,isurf)
+          CASEC(i,isec,isurf) = zc
+
+        end do
+        call NRMLIZ(NASEC(isec,isurf),XASEC(1,isec,isurf))
+      
+      end subroutine set_section_coordinates
+
 
       SUBROUTINE SDUPL(NN, Ypt,MSG)
 C-----------------------------------
