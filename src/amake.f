@@ -681,15 +681,15 @@ c--------------------------------------------------------------
             
 
 
-      SUBROUTINE MAKEBODY(IBODY,
-     &       XBOD,YBOD,TBOD,NBOD)
+      SUBROUTINE MAKEBODY(IBODY)
+C     &       XBOD,YBOD,TBOD,NBOD)
 C--------------------------------------------------------------
 C     Sets up all stuff for body IBODY,
 C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
 C
-      REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
+C      REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
 C
       PARAMETER (KLMAX=101)
       REAL XPT(KLMAX), FSPACE(KLMAX)
@@ -739,13 +739,14 @@ C---- set body nodes and radii
       DO IVB = 1, NVB(IBODY)+1
         NLNODE = NLNODE + 1
 C
-        XVB = XBOD(1) + (XBOD(NBOD)-XBOD(1))*XPT(IVB)
-        CALL AKIMA(XBOD,YBOD,NBOD,XVB,YVB,DYDX)
+        XVB = XBOD(1, IBODY) + (XBOD(NBOD(IBODY), IBODY)-XBOD(1,IBODY))
+     &  *XPT(IVB)
+        CALL AKIMA(XBOD(1,IBODY),YBOD(1,IBODY),NBOD(IBODY),XVB,YVB,DYDX)
         RL(1,NLNODE) = XYZTRAN_B(1,IBODY) + XYZSCAL_B(1,IBODY)*XVB
         RL(2,NLNODE) = XYZTRAN_B(2,IBODY)
         RL(3,NLNODE) = XYZTRAN_B(3,IBODY) + XYZSCAL_B(3,IBODY)*YVB
 C
-        CALL AKIMA(XBOD,TBOD,NBOD,XVB,TVB,DRDX)
+        CALL AKIMA(XBOD(1,IBODY),TBOD(1,IBODY),NBOD(IBODY),XVB,TVB,DRDX)
         RADL(NLNODE) = SQRT(XYZSCAL_B(2,IBODY)*XYZSCAL_B(3,IBODY)) 
      & * 0.5*TVB
       ENDDO
@@ -785,42 +786,28 @@ c--------------------------------------------------------------
       
       include 'AVL.INC'
       integer IBODY, NBOD, NBLDS
-      real XBOD(IBX), YBOD(IBX), TBOD(IBX), XB(IBX), YB(IBX)
+C      real XBOD(IBX), YBOD(IBX), TBOD(IBX), XB(IBX), YB(IBX)
       character*120 upname
-      
-      
+
       do IBODY=1,NBODY
-       if (lverbose) then 
+      if (lverbose) then 
         write(*,*) 'Updating body ',IBODY
-       end if
-       NBLDS = 1
-       call READBL(BFILES(IBODY),IBX,NBLDS,XB,YB,NB,NBL,
-     & upname,XINL,XOUT,YBOT,YTOP)
-
-      if(NB.LE.2) then
-       write(*,*)    '** Error reading body from ', BFILES(IBODY)
-       write(*,*)    '   Body not defined'
-       continue
-      else
-C------ set thread line y, and thickness t ( = 2r)
-       nbod = min( 50 , ibx )
-       call getcam(xb,yb,nb,xbod,ybod,tbod,nbod,.false.)
-      endif
-            
-
+      end if
+C-----This routine bypasses getting xbod, ybod, and tbod from getcam
+C-----Call a routine that sets those prior to calling this
       if (IBODY.ne.1) then
        if(ldupl_b(ibody-1)) then 
         ! this body has already been created
         ! it was probably duplicated from the previous one
         cycle
        end if
-       call makebody(IBODY,XBOD,YBOD,TBOD,NBOD)
+       call makebody(IBODY)
       else
-       call makebody(IBODY,XBOD,YBOD,TBOD,NBOD)
+       call makebody(IBODY)
       endif
       
       if(ldupl_b(ibody)) then
-       call bdupl(ibody,ydupl(ibody),'ydup')
+       call bdupl(ibody,ydupl_b(ibody),'ydup')
       endif
       end do 
       
@@ -877,6 +864,21 @@ c--------------------------------------------------------------
       
       end subroutine set_section_coordinates
 
+      subroutine set_body_coordinates(ibod,xb,yb,nb,nin)
+c--------------------------------------------------------------
+c     Sets the body oml coodinate data for the given section and surface
+c--------------------------------------------------------------
+      include 'AVL.INC'
+      integer ibod, nb, nin
+      real xb(nb), yb(nb)
+C      real xin(ibx), yin(ibx), tin(ibx)
+C------ xfmin and xfmax don't appear to be supported for bodies?
+
+C------ set thread line y, and thickness t ( = 2r)
+      nbod = MIN( 50 , IBX )
+      call GETCAM(xb,yb,nb,xbod(1,ibod),ybod(1,ibod),tbod(1,ibod),nin,
+     & .false.)
+      end subroutine set_body_coordinates
 
       SUBROUTINE SDUPL(NN, Ypt,MSG)
 C-----------------------------------

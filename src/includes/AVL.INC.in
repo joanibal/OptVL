@@ -391,19 +391,26 @@ C      !start added variables for python geometry minipulation
 c
       COMMON /BODY_GEOM_I/
      & NSEC_B(NBMAX),  ! number of sections in body
-     & NVB(NFMAX)! number of body elements
+     & NVB(NFMAX),     ! number of body elements
+     & NBOD(NBMAX)    ! number of body oml points
 
       REAL(kind=avl_real) XYZSCAL_B
       REAL(kind=avl_real) XYZTRAN_B
       REAL(kind=avl_real) YDUPL_B
       REAL(kind=avl_real) XYZLES_B 
       REAL(kind=avl_real) BSPACE
+      REAL(kind=avl_real) XBOD
+      REAL(kind=avl_real) YBOD
+      REAL(kind=avl_real) TBOD
       COMMON /BODY_GEOM_R/
      & XYZSCAL_B(3, NBMAX), ! scaling factors for XYZ coordinates
      & XYZTRAN_B(3, NBMAX), ! translation factors for XYZ coordinates
      & YDUPL_B(NBMAX), ! y duplicate
      & XYZLES_B(3, NSMAX, NBMAX), ! leading edge cordinate vector
-     & BSPACE(NBMAX) ! body spacing
+     & BSPACE(NBMAX), ! body spacing
+     & XBOD(IBX, NBMAX), ! body oml x-coordinates
+     & YBOD(IBX, NBMAX), ! body oml y-coordinates
+     & TBOD(IBX, NBMAX) ! body oml thickness
 c
       LOGICAL LDUPL
       LOGICAL LSURFSPACING

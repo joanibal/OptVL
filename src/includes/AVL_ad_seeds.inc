@@ -351,12 +351,18 @@ C
       real(kind=avl_real) YDUPL_B_DIFF
       real(kind=avl_real) XYZLES_B_DIFF
       real(kind=avl_real) BSPACE_DIFF
+      real(kind=avl_real) XBOD_DIFF
+      real(kind=avl_real) YBOD_DIFF
+      real(kind=avl_real) TBOD_DIFF
       COMMON /BODY_GEOM_R_DIFF/
      & XYZSCAL_B_DIFF(3, NBMAX),
      & XYZTRAN_B_DIFF(3, NBMAX),
      & YDUPL_B_DIFF(NBMAX),
      & XYZLES_B_DIFF(3, NSMAX, NBMAX),
-     & BSPACE_DIFF(NBMAX)
+     & BSPACE_DIFF(NBMAX),
+     & XBOD_DIFF(IBX, NBMAX),
+     & YBOD_DIFF(IBX, NBMAX),
+     & TBOD_DIFF(IBX, NBMAX)
 C
       real(kind=avl_real) XYZSCAL_DIFF
       real(kind=avl_real) XYZTRAN_DIFF

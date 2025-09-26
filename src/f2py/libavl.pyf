@@ -142,5 +142,9 @@ python module libavl ! in
             real*8 :: x(n), y(n), xfmin, xfmax
         end subroutine set_section_coordinates
         
+        subroutine set_body_coordinates(ibod,xb,yb,nb,nbod,xfmin,xfmax) ! in :libavl:amake.f
+            integer :: ibod, nb, nbod
+            real*8 :: xb(nb), yb(nb), xfmin, xfmax
+        end subroutine set_body_coordinates
     end interface 
 end python module libavl

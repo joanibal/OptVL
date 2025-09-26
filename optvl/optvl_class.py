@@ -466,7 +466,7 @@ class OVLSolver(object):
 
         # Perform pre-check of user's input dictionary before loading into AVL
         if preCheck:
-            pre_check_input_dict(input)
+            input = pre_check_input_dict(input)
 
         #Parse and Load Mandatory General Info
         # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
@@ -658,8 +658,66 @@ class OVLSolver(object):
                         xfminmax = surf["xfminmax"][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
                         # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
                         #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
+                        self.avl.CASE_C.AFILES[i,j] = surf['afiles'][0][j]
                         X = self._readDat(surf["afiles"][0][j])
                         self.set_section_coordinates(j,i,min(50,self.IBX),X[:,0],X[:,1],xfminmax)
+
+        # Set total number of bodies in one shot
+        if len(input["bodies"]) < self.NBMAX:
+            self.avl.CASE_I.NBODY = len(input["bodies"])
+        else:
+            raise RuntimeError(f"Number of specified surfaces exceeds {self.NBMAX}. Raise NBMAX!")
+
+        # Parse and load bodies
+        if len(input["bodies"]) > 0:
+            body_names = list(input["bodies"].keys())
+            for i in range(len(input["bodies"])):
+                # Setup body
+                # initialize default values for body
+                self.avl.BODY_GEOM_I.NSEC_B[i] = 0
+                self.avl.BODY_GEOM_L.LDUPL_B[i] = False
+                self.set_avl_fort_arr("BODY_GEOM_R","XYZSCAL_B", 1.0, slicer=(i, slice(0, 3)))
+                self.set_avl_fort_arr("BODY_GEOM_R","XYZTRAN_B", 0, slicer=(i, slice(0, 3)))
+
+                # Set body name
+                self.avl.CASE_C.BTITLE[i] = body_names[i] #self._createFortranStringArray([body_names[i]], num_max_char=40) idk why this doesn't work
+
+                # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
+                bodyFields = {
+                    "nvb":  ("BODY_GEOM_I", "NVB", (int, np.integer), 1, i, None),
+                    "bspace": ("BODY_GEOM_R", "BSPACE", (float, np.floating), 0.0, i, None),
+                    "yduplicate":  ("BODY_GEOM_R", "YDUPL_B", (float, np.floating), None, i, lambda v: (operator.setitem(self.avl.BODY_GEOM_L.LDUPL_B, i, v is not None),v)[1]),
+                    "scale":  ("BODY_GEOM_R", "XYZSCAL_B", np.ndarray, np.array([[1.,1.,1.]]), (slice(i), slice(0, 3)), None),
+                    "translate":  ("BODY_GEOM_R", "XYZTRAN_B", np.ndarray, np.array([[0.,0.,0.]]), (slice(i), slice(0, 3)), None),
+                }
+
+                # Starting reading the dict for loading the body dict into AVL
+                body = input["bodies"][body_names[i]]
+                for key, (obj, attr, expected_type, default, slicer, transform) in bodyFields.items():
+                    val = body.get(key, default)
+                    if val is None:
+                        continue
+                    if isinstance(val, expected_type):
+                        if transform:
+                            val = transform(val)
+                        if slicer is not None:
+                            self.set_avl_fort_arr(obj,attr, val, slicer=slicer)
+                        else:
+                            setattr(obj, attr, val)
+                    else:
+                        raise ValueError(f"Variable {key} is of type {type(val)}, expected {expected_type}!")
+
+                # Load airfoil file
+                if "body_oml" in body.keys():
+                    self.set_body_coordinates(i,min(50,self.IBX),body["body_oml"][0],body["body_oml"][1])
+                if "bfile" in body.keys():
+                    # xfminmax doesn't appear to be supported for bodies and the fact that the bfil input routine in the fortran layer takes them at all is a bug?
+                    # xfminmax = body["xfminmax"][j] if "xfminmax" in body.keys() else np.array([0., 1.])
+                    # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
+                    #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
+                    self.avl.CASE_C.BFILES[i] = surf['bfile'][i]
+                    X = self._readDat(surf["bfile"])
+                    self.set_body_coordinates(i,min(50,self.IBX),X[:,0],X[:,1])
 
         if postCheck:
             self.post_check_input(input)
@@ -723,6 +781,8 @@ class OVLSolver(object):
 
         if ((len(x) > self.IBX) or (len(y) > self.IBX)):
             raise RuntimeError(f"Airfoil array overflow! Increase IBX to {len(x) if len(x)>len(y) else len(y)}")
+        if ((len(x) < 2) or (len(y) < 2)):
+            raise RuntimeError("Airfoil shape not defined. Too few points!")
         if len(x) != len(y):
             raise RuntimeError(f"x and y array lengths do not match! len x: {len(x)}, len y: {len(y)}")
         if isurf+1 > self.get_num_surfaces():
@@ -731,6 +791,32 @@ class OVLSolver(object):
         #     raise RuntimeError(f"section {isec} in surface {isurf} does not exist!")
 
         self.avl.set_section_coordinates(isec+1,isurf+1,x,y,nasec,xfminmax[0],xfminmax[1])
+
+    def set_body_coordinates(self,ibod: int, nasec: int, x: np.ndarray, y: np.ndarray):
+        """Sets the body of revolution oml points for the specified body. Computes the camber line and interpolates it
+        with AVL's 1D Akima Spline implementation.
+
+
+        Args:
+            ibod: body number to set the outer mold line too
+            nasec: number of points to evaluate the interpolated camber line and thickness curves at
+            x: oml x-coordinate array
+            y: oml y-coodinate array
+            xfminmax: length 2 array with the min and max x/c to slice the oml
+        """
+
+        if ((len(x) > self.IBX) or (len(y) > self.IBX)):
+            raise RuntimeError(f"Body oml array overflow! Increase IBX to {len(x) if len(x)>len(y) else len(y)}")
+        if ((len(x) < 2) or (len(y) < 2)):
+            raise RuntimeError("Airfoil shape not defined. Too few points!")
+        if len(x) != len(y):
+            raise RuntimeError(f"x and y array lengths do not match! len x: {len(x)}, len y: {len(y)}")
+        if ibod+1 > self.get_num_surfaces():
+            raise RuntimeError(f"body {ibod} does not exist!")
+        # if isec+1 > self.get_num_sections(self.get_surface_names(remove_dublicated=True)[isec]):
+        #     raise RuntimeError(f"section {isec} in surface {isurf} does not exist!")
+
+        self.avl.set_body_coordinates(ibod+1,x,y,nasec)
 
     # MOVED TO FORTRAN...amake.f
     # def set_section_coordinates(self,isec: int, isurf: int, nasec: int, x: np.ndarray, y: np.ndarray, xfminmax: np.ndarray):

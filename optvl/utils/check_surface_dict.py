@@ -1,4 +1,5 @@
 import warnings
+import numpy as np
 
 
 def pre_check_input_dict(inputDict:dict):
@@ -19,8 +20,13 @@ def pre_check_input_dict(inputDict:dict):
 
     Parameters
     ----------
-    surface : dict
+    inputDict : dict
         User-defined OptVL input dict
+
+    Returns
+    ----------
+    inputDict : dict
+        Return a modified input dict with dummy surface and bodies keys if they were not detected
     """
 
     # NOTE: make sure this is consistent to the documentation  page
@@ -99,6 +105,13 @@ def pre_check_input_dict(inputDict:dict):
 
     # NOTE: make sure this is consistent to the documentation  page
     keys_implemented_body = [
+        "nvb", # number of sources
+        "bspace", # source spacing
+        "yduplicate", # duplicate body over y-axis
+        "scale", # scaling factors applied to all x,y,z coordinates
+        'translate', # offset added on to all X,Y,Z values in this body
+        "body_oml",
+        "bfile",
     ]
 
     multi_section_keys = [
@@ -172,20 +185,29 @@ def pre_check_input_dict(inputDict:dict):
                             category=RuntimeWarning,
                             stacklevel=2,
                         )
+    else:
+        # Add dummy entry to make later code simpler
+        inputDict["surfaces"] = {}
 
     if ("bodies" in inputDict.keys()):
         if (len(inputDict["bodies"])>0):
             for body in inputDict["bodies"].keys():
+
+                # Check that only one body oml input is selected
+                if ("body_oml" in inputDict["bodies"][body].keys()) and ("bfile" in inputDict["bodies"][body].keys()):
+                    raise RuntimeError("Select only one body oml definition!")
+                elif ("body_oml" not in inputDict["bodies"][body].keys()) and ("bfile" not in inputDict["bodies"][body].keys()):
+                    raise RuntimeError("Must define a oml for a body!")
+
                 for key in inputDict["bodies"][body].keys():
                     # Check to verify if redundant y-symmetry specification are not made
                     if ("ydupl" in key) and ("iysym" in inputDict.keys()):
                         if (inputDict["bodies"][body]["yduplicate"] == 0.0) and (inputDict["iysym"] != 0):
                             raise RuntimeError(f"ERROR: Redundant y-symmetry specifications in body {body} \nIYSYM /= 0 \nYDUPLICATE  0.0. \nCan use one or the other, but not both!")
 
-                    # Basically checks to see that at most only one of the options in af_load_ops or one of the options in manual_af_override is selected
-                    if sum(bool(g) for g in ((af_load_ops & inputDict["bodies"][body].keys())|{any(k in manual_af_override for k in inputDict["bodies"][body].keys())})) > 1:
-                        raise RuntimeError("More than one airfoil section specification detected in input dictionary!\n"
-                        "Select only a single approach for specifying airfoil sections!")
+                    # Check if user tried to use body sections
+                    if isinstance(inputDict["bodies"][body][key],np.ndarray):
+                        raise RuntimeError("Body sections are a cut feature from AVL and are hence not support in OptVL.")
 
                     # Check for keys not implemented
                     if key not in keys_implemented_body:
@@ -194,4 +216,8 @@ def pre_check_input_dict(inputDict:dict):
                             category=RuntimeWarning,
                             stacklevel=2,
                         )
+    else:
+        # Add dummy entry to make later code simpler
+        inputDict["bodies"] = {}
 
+    return inputDict
