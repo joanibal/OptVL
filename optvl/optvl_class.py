@@ -715,8 +715,8 @@ class OVLSolver(object):
                     # xfminmax = body["xfminmax"][j] if "xfminmax" in body.keys() else np.array([0., 1.])
                     # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
                     #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
-                    self.avl.CASE_C.BFILES[i] = surf['bfile'][i]
-                    X = self._readDat(surf["bfile"])
+                    self.avl.CASE_C.BFILES[i] = body['bfile'][i]
+                    X = self._readDat(body["bfile"])
                     self.set_body_coordinates(i,min(50,self.IBX),X[:,0],X[:,1])
 
         if postCheck:
@@ -893,12 +893,12 @@ class OVLSolver(object):
                 raise RuntimeError(f"Mismatch: NBODY = {self.avl.CASE_I.NBODY}, Dictionary: {len(inputDict['bodies'])}")
 
             # check number of body sections
-            if len(inputDict["bodies"]) > 0:
-                body_names = list(inputDict["bodies"].keys())
-                for i in range(len(inputDict["bodies"])):
-                    body = inputDict["bodies"][body_names[i]]
-                    if self.avl.BODY_GEOM_I.NSEC_B[i] != body["num_sections"]:
-                        raise RuntimeError(f"Mismatch: NSEC_B[i] = {self.avl.BODY_GEOM_I.NSEC_B[i]}, Dictionary: {body['num_sections']}")
+            # if len(inputDict["bodies"]) > 0:
+            #     body_names = list(inputDict["bodies"].keys())
+            #     for i in range(len(inputDict["bodies"])):
+            #         body = inputDict["bodies"][body_names[i]]
+            #         if self.avl.BODY_GEOM_I.NSEC_B[i] != body["num_sections"]:
+            #             raise RuntimeError(f"Mismatch: NSEC_B[i] = {self.avl.BODY_GEOM_I.NSEC_B[i]}, Dictionary: {body['num_sections']}")
 
 
 

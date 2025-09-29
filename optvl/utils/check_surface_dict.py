@@ -206,7 +206,7 @@ def pre_check_input_dict(inputDict:dict):
                             raise RuntimeError(f"ERROR: Redundant y-symmetry specifications in body {body} \nIYSYM /= 0 \nYDUPLICATE  0.0. \nCan use one or the other, but not both!")
 
                     # Check if user tried to use body sections
-                    if isinstance(inputDict["bodies"][body][key],np.ndarray):
+                    if key == "num_sections":
                         raise RuntimeError("Body sections are a cut feature from AVL and are hence not support in OptVL.")
 
                     # Check for keys not implemented
