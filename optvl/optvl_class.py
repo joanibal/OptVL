@@ -184,7 +184,7 @@ class OVLSolver(object):
     else:
         NVMAX = 6000 # number of horseshoe vortices
 
-
+    debug = True
 
 
     def __init__(
@@ -258,9 +258,18 @@ class OVLSolver(object):
             if mass_file is not None:
                 self.avl.loadmass(mass_file)
         elif (input_dict is not None):
+            self.avl.avl()
+            if debug:
+                self.set_avl_fort_arr("CASE_L", "LVERBOSE", True)
+
+            if timing:
+                self.set_avl_fort_arr("CASE_L", "LTIMING", True)
             self.load_input_dict(input_dict,postCheck=True)
+            self.avl.loadgeo('')
         else:
             raise ValueError("neither a geometry file nor an input options dictionary was given")
+
+        self.debug = debug
 
         # todo store the default dict somewhere else
         # the control surface contraints get added to this array in the __init__
@@ -509,8 +518,11 @@ class OVLSolver(object):
 
         # Parse and load surfaces
         if len(input["surfaces"]) > 0:
+            num_dup_surfs = 0
             surf_names = list(input["surfaces"].keys())
             for i in range(len(input["surfaces"])):
+                # HACK: AVL inserts dup surfaces right after the original one so the real i needs to be advanced by the number of dup surfaces we've had so far
+                i += num_dup_surfs
                 # Setup surface
                 # initialize default values for surface
                 self.avl.SURF_I.LSCOMP[i] = i + 1
@@ -535,13 +547,13 @@ class OVLSolver(object):
                     "sspace":  ("SURF_GEOM_R", "SSPACE", (float, np.floating), 0.0, i, None),
                     "use surface spacing": ("SURF_GEOM_L", "LSURFSPACING", (bool, int, np.int32), False, i, None),
                     "yduplicate":  ("SURF_GEOM_R", "YDUPL", (float, np.floating), None, i, lambda v: (operator.setitem(self.avl.SURF_GEOM_L.LDUPL, i, v is not None),v)[1]),
-                    "component":  ("SURF_I", "LSCOMP", (int, np.integer), None, i, None),
-                    "scale":  ("SURF_GEOM_R", "XYZSCAL", np.ndarray, np.array([[1.,1.,1.]]), (slice(i), slice(0, 3)), None),
-                    "translate":  ("SURF_GEOM_R", "XYZTRAN", np.ndarray, np.array([[0.,0.,0.]]), (slice(i), slice(0, 3)), None),
+                    "component":  ("SURF_I", "LSCOMP", (int, np.integer), i+1, i, None),
+                    "scale":  ("SURF_GEOM_R", "XYZSCAL", np.ndarray, np.array([1.,1.,1.]), (slice(i), slice(0, 3)), None),
+                    "translate":  ("SURF_GEOM_R", "XYZTRAN", np.ndarray, np.array([0.,0.,0.]), (slice(i), slice(0, 3)), None),
                     "angle":  ("SURF_GEOM_R", "ADDINC", (float, np.floating), 0.0, i, None),
-                    "nowake":  ("SURF_L","LFWAKE", (bool, int, np.int32), False, i, None),
-                    "noalbe":  ("SURF_L","LFALBE", (bool, int, np.int32), False, i, None),
-                    "noload":  ("SURF_L","LFLOAD", (bool, int, np.int32), False, i, None),
+                    "wake":  ("SURF_L","LFWAKE", (bool, int, np.int32), True, i, None),
+                    "albe":  ("SURF_L","LFALBE", (bool, int, np.int32), True, i, None),
+                    "load":  ("SURF_L","LFLOAD", (bool, int, np.int32), True, i, None),
                 }
 
                 # Starting reading the dict for loading the surface dict into AVL
@@ -590,12 +602,12 @@ class OVLSolver(object):
                         "yles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), [[None]*surf["num_sections"]], (i,j,1), None),
                         "zles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), [[None]*surf["num_sections"]], (i,j,2), None),
                         "chords":  ("SURF_GEOM_R", "CHORDS", (float, np.floating), [[None]*surf["num_sections"]], (i,j), None),
-                        "aincs":  ("SURF_GEOM_R", "AINCS", (float, np.floating), [[None]*surf["num_sections"]], (i,j), None),
-                        "nspans": ("SURF_GEOM_I", "NSPANS", (int, np.integer), [np.zeros(surf["num_sections"])], (i,j), None),
+                        "aincs":  ("SURF_GEOM_R", "AINCS", (float, np.floating), [np.zeros(surf["num_sections"])], (i,j), None),
+                        "nspans": ("SURF_GEOM_I", "NSPANS", (int, np.integer), [np.zeros(surf["num_sections"],dtype=np.int32)], (i,j), None),
                         "sspaces":  ("SURF_GEOM_R", "SSPACES", (float, np.floating), [np.zeros(surf["num_sections"])], (i,j), None),
                         "clcd":  ("SURF_GEOM_R", "CLCDSRF", np.ndarray, [[np.array([0.,0.,0.,0.,0.,0.]) for _ in range(surf["num_sections"])]], (i,slice(0,6)), lambda v: (setattr(self.avl.CASE_L,"LVISC","clcd" in surf.keys()),v)[1]),
                         "clcdsec":  ("SURF_GEOM_R", "CLCDSEC", np.ndarray, [[np.array([0.,0.,0.,0.,0.,0.]) for _ in range(surf["num_sections"])]], (i,j,slice(0,6)), lambda v: (setattr(self.avl.CASE_L,"LVISC","clcdsec" in surf.keys()),surf["clcd"] if "clcd" in surf.keys() else v)[1]),
-                        "claf":  ("SURF_GEOM_R", "CLAF", (float, np.floating), [np.zeros(surf["num_sections"])], (i,j), None),
+                        "claf":  ("SURF_GEOM_R", "CLAF", (float, np.floating), [np.ones(surf["num_sections"])], (i,j), None),
                     }
 
                     # Load basic section data into AVL
@@ -626,25 +638,25 @@ class OVLSolver(object):
                         if "xasec" not in surf.keys():
                             raise RuntimeError("xasec has to be specified if manually defining sections!")
 
-                        nasec = len(surf["xasec"][0][j])
+                        nasec = len(surf["xasec"][j])
                         self.set_avl_fort_arr("SURF_GEOM_I","NASEC", nasec, slicer=(slice(i),slice(j)))
                         self.set_avl_fort_arr("SURF_GEOM_R","XASEC", surf["xasec"][0][j], slicer=(slice(i),slice(j),slice(0,nasec)))
 
-                        self.set_avl_fort_arr("SURF_GEOM_R","SASEC", surf["sasec"][0][j] if surf["sasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
-                        self.set_avl_fort_arr("SURF_GEOM_R","TASEC", surf["tasec"][0][j] if surf["tasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","SASEC", surf["sasec"][0][j] if "sasec" in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","TASEC", surf["tasec"][0][j] if "tasec" in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
 
-                        self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", surf["xlasec"][0][j] if surf["xlasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
-                        self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", surf["xuasec"][0][j] if surf["xuasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
-                        self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", surf["zlasec"][0][j] if surf["zlasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
-                        self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", surf["zuasec"][0][j] if surf["zuasec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
-                        self.set_avl_fort_arr("SURF_GEOM_R","CASEC", surf["casec"][0][j] if surf["casec"] in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", surf["xlasec"][0][j] if "xlasec" in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", surf["xuasec"][0][j] if "xuasec" in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", surf["zlasec"][0][j] if "zlasec" in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", surf["zuasec"][0][j] if "zuasec" in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
+                        self.set_avl_fort_arr("SURF_GEOM_R","CASEC", surf["casec"][0][j] if "casec" in surf.keys() else np.zeros_like(surf["xasec"][0][j]), slicer=(slice(i),slice(j),slice(0,nasec)))
 
                     # 4 digit NACA airfoil specification
                     if "naca" in surf.keys():
                         xfminmax = surf["xfminmax"][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
                         if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
                             self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
-                        self.set_section_naca(j,i,min(50,self.IBX),surf["naca"][j][0],xfminmax)
+                        self.set_section_naca(j,i,min(50,self.IBX),surf["naca"][0][j][0],xfminmax)
 
                     # Airfoil coordinates set directly in dictionary
                     if "airfoils" in surf.keys():
@@ -707,7 +719,7 @@ class OVLSolver(object):
                                 else:
                                     raise ValueError(f"Variable {key} is of type {type(val)}, expected {expected_type}!")
 
-                    if surf["idestd"] is not None:
+                    if "idestd" in surf.keys():
                          # Parse control variables
                         if surf["num_design_vars"][0][j] <= self.ICONX:
                             self.avl.SURF_GEOM_I.NSDES[i,j] = surf["num_design_vars"][0][j]
@@ -752,6 +764,9 @@ class OVLSolver(object):
                     self.avl.sdupl(i+1,surf["yduplicate"],'YDUP')
                     self.avl.CASE_I.NSURF += 1
 
+                    # HACK: Keep python data consistent with Fortran
+                    surf_names.insert(i + 1, surf_names[i])
+                    num_dup_surfs += 1
 
         # Set total number of bodies in one shot
         if len(input["bodies"]) < self.NBMAX:
@@ -762,7 +777,10 @@ class OVLSolver(object):
         # Parse and load bodies
         if len(input["bodies"]) > 0:
             body_names = list(input["bodies"].keys())
+            num_dup_bodies = 0
             for i in range(len(input["bodies"])):
+                # HACK: AVL inserts dup surfaces right after the original one so the real i needs to be advanced by the number of dup surfaces we've had so far
+                i += num_dup_bodies
                 # Setup body
                 # initialize default values for body
                 self.avl.BODY_GEOM_I.NSEC_B[i] = 0
@@ -815,9 +833,36 @@ class OVLSolver(object):
                 if "yduplicate" in body.keys():
                     self.avl.bdupl(i+1,body["yduplicate"],'YDUP')
 
+                    # HACK: Keep python data consistent with Fortran
+                    body_names.insert(i + 1, body_names[i])
+                    num_dup_bodies += 1
+
         if postCheck:
             self.post_check_input(input)
-        pass
+
+        if self.debug :
+            print(f"Mach: {self.avl.CASE_R.MACH0}")
+            print(f"Number of Bodies: {self.avl.CASE_I.NBODY}")
+            print(f"Number of Surfaces: {self.avl.CASE_I.NSURF}")
+            print(f"Number of Strips: {self.avl.CASE_I.NSTRIP}")
+            print(f"Number of Horseshoe Vortices: {self.avl.CASE_I.NVOR}")
+            print(f"Number of Control Surfaces: {self.avl.CASE_I.NCONTROL}")
+            print(f"Number of Design Parameters (AVL): {self.avl.CASE_I.NDESIGN}")
+
+            if (self.avl.CASE_I.IYSYM > 0):
+                print(f"Y Symmetry: Wall plane  at Ysym = {self.avl.CASE_R.YSYM}")
+            elif (self.avl.CASE_I.IYSYM < 0):
+                print(f"Y Symmetry: Free surface at Ysym = {self.avl.CASE_R.YSYM}")
+
+            if (self.avl.CASE_I.IZSYM > 0):
+                print(f"Z Symmetry: Ground plane at Zsym = {self.avl.CASE_R.ZSYM}")
+            elif (self.avl.CASE_I.IZSYM < 0):
+                print(f"Z Symmetry: Free surface at Zsym = {self.avl.CASE_R.ZSYM}")
+
+
+        # Tell AVL that geometry exists now and is ready for analysis
+        self.avl.CASE_L.LGEO = True
+
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
         """Sets the airfoil oml points for the specified surface and section. Computes camber lines, thickness, and oml shape from
@@ -996,10 +1041,12 @@ class OVLSolver(object):
                             raise RuntimeError(f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[i,j]}, Dictionary: {surf["num_design_vars"][0][j]}")
 
                 # Check the global control and design var count
-                if len(inputDict["dname"]) != self.avl.CASE_I.NCONTROL:
-                    raise RuntimeError(f"Mismatch: NCONTROL = {self.avl.CASE_I.NCONTROL}, Dictionary: {inputDict['dname']}")
-                if len(inputDict["gname"]) != self.avl.CASE_I.NDESIGN:
-                    raise RuntimeError(f"Mismatch: NDESIGN = {self.avl.CASE_I.NDESIGN}, Dictionary: {inputDict['gname']}")
+                if "dname" in inputDict.keys():
+                    if len(inputDict["dname"]) != self.avl.CASE_I.NCONTROL:
+                        raise RuntimeError(f"Mismatch: NCONTROL = {self.avl.CASE_I.NCONTROL}, Dictionary: {inputDict['dname']}")
+                if "gname" in inputDict.keys():
+                    if len(inputDict["gname"]) != self.avl.CASE_I.NDESIGN:
+                        raise RuntimeError(f"Mismatch: NDESIGN = {self.avl.CASE_I.NDESIGN}, Dictionary: {inputDict['gname']}")
 
         # Body checks
         if "bodies" in inputDict.keys():
@@ -1012,8 +1059,6 @@ class OVLSolver(object):
             # check number of bodies
             if dict_num_bodies != self.avl.CASE_I.NBODY:
                 raise RuntimeError(f"Mismatch: NBODY = {self.avl.CASE_I.NBODY}, Dictionary: {len(inputDict['bodies'])}")
-
-
 
 
     @staticmethod
@@ -3218,7 +3263,7 @@ class OVLSolver(object):
 
             if show_mesh:
                 for idx_strip in range(strip_st, strip_end):
-                    if idx_strip != strip_st:
+                    if ((imags[idx_surf] > 0) and (idx_strip != strip_st)) or ((imags[idx_surf] < 0) and (idx_strip != strip_end)):
                         pts = {
                             "x": [rle1[idx_strip, 0], rle1[idx_strip, 0] + chord1[idx_strip]],
                             "y": [rle1[idx_strip, 1], rle1[idx_strip, 1]],
