@@ -598,7 +598,7 @@ class OVLSolver(object):
                         "claf":  ("SURF_GEOM_R", "CLAF", (float, np.floating), [np.zeros(surf["num_sections"])], (i,j), None),
                     }
 
-                    # Load basic surface data into AVL
+                    # Load basic section data into AVL
                     for key, (obj, attr, expected_type, default, slicer, transform) in sectionFields.items():
                         # Get the val for section j, array are technically 2D with an empty axis so index that first
                         val = surf.get(key, default)[0][j]
@@ -662,6 +662,97 @@ class OVLSolver(object):
                         X = self._readDat(surf["afiles"][0][j])
                         self.set_section_coordinates(j,i,min(50,self.IBX),X[:,0],X[:,1],xfminmax)
 
+
+                    if "icontd" in surf.keys():
+                        # Assign the control names for the surface if any and increment NCONTROL
+                        if surf["num_controls"][0][j] <= self.ICONX:
+                            self.avl.SURF_GEOM_I.NSCON[i,j] = surf["num_controls"][0][j]
+                        else:
+                            raise RuntimeError(f"Number of specified controls for section {j} exceeds {self.ICONX}. Raise ICONX!")
+
+                        # Overwrite this on each section and surface on purpose. After looping over all surfaces this will end up being the right value
+                        self.avl.CASE_I.NCONTROL = np.max(surf["icontd"])+1
+                        if self.avl.CASE_I.NCONTROL > self.NDMAX:
+                            raise RuntimeError(f"Number of specified controls exceeds {self.NDMAX}. Raise NDMAX!")
+
+                        if surf["num_controls"][0][j] != 0:
+                            for k in surf["icontd"][0][j]:
+                                self.avl.CASE_C.DNAME[k] = input["dname"][0][k]
+
+                        # Parse control surface information
+                        for k in range(surf["num_controls"][0][j]):
+                            # Setup control for the section
+                            # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
+                            controlFields = {
+                                "icontd":  ("SURF_GEOM_I", "ICONTD", (int, np.int32), [[None]*surf["num_sections"]], (i,j,k), lambda v: v + 1),
+                                "xhinged":  ("SURF_GEOM_R", "XHINGED", (float, np.floating), [[None]*surf["num_sections"]], (i,j,k), None),
+                                "vhinged":  ("SURF_GEOM_R", "VHINGED", (np.ndarray), [[None]*surf["num_sections"]], (i,j,k,slice(0,3)), None),
+                                "gaind":  ("SURF_GEOM_R", "GAIND", (float, np.floating), [[None]*surf["num_sections"]], (i,j,k), None),
+                                "refld":  ("SURF_GEOM_R", "REFLD", (float, np.floating), [[None]*surf["num_sections"]], (i,j,k), None),
+                            }
+
+                            # Load control data into AVL
+                            for key, (obj, attr, expected_type, default, slicer, transform) in controlFields.items():
+                                # Get the val for section j var k, array are technically 2D with an empty axis so index that first
+                                val = surf.get(key, default)[0][j][k]
+                                if val is None:
+                                    continue
+                                if isinstance(val, expected_type):
+                                    if transform:
+                                        val = transform(val)
+                                    if slicer is not None:
+                                        self.set_avl_fort_arr(obj,attr, val, slicer=slicer)
+                                    else:
+                                        setattr(obj, attr, val)
+                                else:
+                                    raise ValueError(f"Variable {key} is of type {type(val)}, expected {expected_type}!")
+
+                    if surf["idestd"] is not None:
+                         # Parse control variables
+                        if surf["num_design_vars"][0][j] <= self.ICONX:
+                            self.avl.SURF_GEOM_I.NSDES[i,j] = surf["num_design_vars"][0][j]
+                        else:
+                            raise RuntimeError(f"Number of specified design variables for section {j} exceeds {self.ICONX}. Raise ICONX!")
+
+                        # Overwrite this on each section and surface on purpose. After looping over all surfaces this will end up being the right value
+                        self.avl.CASE_I.NDESIGN = np.max(surf["idestd"])+1
+                        if self.avl.CASE_I.NDESIGN > self.NGMAX:
+                            raise RuntimeError(f"Number of specified design variables exceeds {self.NGMAX}. Raise NGMAX!")
+
+                        if surf["num_design_vars"][0][j] != 0:
+                            for ell in surf["idestd"]:
+                                self.avl.CASE_C.GNAME[ell] = input["gname"][0][ell]
+
+                        for ell in range(surf["num_design_vars"][0][j]):
+                            # Setup control for the section
+                            # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
+                            designFields = {
+                                "idestd":  ("SURF_GEOM_I", "IDESTD", (int, np.int32), [[None]*surf["num_sections"]], (i,j,ell), lambda v: v + 1),
+                                "gaing":  ("SURF_GEOM_R", "GAING", (float, np.floating), [[None]*surf["num_sections"]], (i,j,ell), None),
+                            }
+
+                            # Load design var data into AVL
+                            for key, (obj, attr, expected_type, default, slicer, transform) in designFields.items():
+                                # Get the val for section j var ell, array are technically 2D with an empty axis so index that first
+                                val = surf.get(key, default)[0][j][ell]
+                                if val is None:
+                                    continue
+                                if isinstance(val, expected_type):
+                                    if transform:
+                                        val = transform(val)
+                                    if slicer is not None:
+                                        self.set_avl_fort_arr(obj,attr, val, slicer=slicer)
+                                    else:
+                                        setattr(obj, attr, val)
+                                else:
+                                    raise ValueError(f"Variable {key} is of type {type(val)}, expected {expected_type}!")
+                # Make the surface
+                self.avl.makesurf(i+1)
+                if "yduplicate" in surf.keys():
+                    self.avl.sdupl(i+1,surf["yduplicate"],'YDUP')
+                    self.avl.CASE_I.NSURF += 1
+
+
         # Set total number of bodies in one shot
         if len(input["bodies"]) < self.NBMAX:
             self.avl.CASE_I.NBODY = len(input["bodies"])
@@ -718,6 +809,11 @@ class OVLSolver(object):
                     self.avl.CASE_C.BFILES[i] = body['bfile'][i]
                     X = self._readDat(body["bfile"])
                     self.set_body_coordinates(i,min(50,self.IBX),X[:,0],X[:,1])
+
+                # Make the body
+                self.avl.makebody(i+1)
+                if "yduplicate" in body.keys():
+                    self.avl.bdupl(i+1,body["yduplicate"],'YDUP')
 
         if postCheck:
             self.post_check_input(input)
@@ -873,12 +969,18 @@ class OVLSolver(object):
         """
 
         # Surface checks
-        if "surface" in inputDict.keys():
+        if "surfaces" in inputDict.keys():
             # check number of surfaces
-            if len(inputDict["surfaces"]) != self.avl.CASE_I.NSURF:
+            dict_num_surfaces  = len(inputDict["surfaces"])
+            surf_names = list(inputDict["surfaces"].keys())
+            for i in range(len(inputDict["surfaces"])):
+                surf = inputDict["surfaces"][surf_names[i]]
+                if "yduplicate" in surf.keys():
+                    dict_num_surfaces += 1
+            if dict_num_surfaces != self.avl.CASE_I.NSURF:
                 raise RuntimeError(f"Mismatch: NSURF = {self.avl.CASE_I.NSURF}, Dictionary: {len(inputDict['surfaces'])}")
 
-            # check number of sections
+            # check number of sections, controls, and dvs
             if len(inputDict["surfaces"]) > 0:
                 surf_names = list(inputDict["surfaces"].keys())
                 for i in range(len(inputDict["surfaces"])):
@@ -886,19 +988,31 @@ class OVLSolver(object):
                     if self.avl.SURF_GEOM_I.NSEC[i] != surf["num_sections"]:
                         raise RuntimeError(f"Mismatch: NSEC[i] = {self.avl.SURF_GEOM_I.NSEC[i]}, Dictionary: {surf['num_sections']}")
 
+                    # Check controls and design variables per section
+                    for j in range(surf["num_sections"]):
+                        if self.avl.SURF_GEOM_I.NSCON[i,j] != surf["num_controls"][0][j]:
+                            raise RuntimeError(f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[i,j]}, Dictionary: {surf["num_controls"][0][j]}")
+                        if self.avl.SURF_GEOM_I.NSDES[i,j] != surf["num_design_vars"][0][j]:
+                            raise RuntimeError(f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[i,j]}, Dictionary: {surf["num_design_vars"][0][j]}")
+
+                # Check the global control and design var count
+                if len(inputDict["dname"]) != self.avl.CASE_I.NCONTROL:
+                    raise RuntimeError(f"Mismatch: NCONTROL = {self.avl.CASE_I.NCONTROL}, Dictionary: {inputDict['dname']}")
+                if len(inputDict["gname"]) != self.avl.CASE_I.NDESIGN:
+                    raise RuntimeError(f"Mismatch: NDESIGN = {self.avl.CASE_I.NDESIGN}, Dictionary: {inputDict['gname']}")
+
         # Body checks
         if "bodies" in inputDict.keys():
+            dict_num_bodies  = len(inputDict["bodies"])
+            body_names = list(inputDict["bodies"].keys())
+            for i in range(len(inputDict["bodies"])):
+                body = inputDict["bodies"][body_names[i]]
+                if "yduplicate" in body.keys():
+                    dict_num_bodies += 1
             # check number of bodies
-            if len(inputDict["bodies"]) != self.avl.CASE_I.NBODY:
+            if dict_num_bodies != self.avl.CASE_I.NBODY:
                 raise RuntimeError(f"Mismatch: NBODY = {self.avl.CASE_I.NBODY}, Dictionary: {len(inputDict['bodies'])}")
 
-            # check number of body sections
-            # if len(inputDict["bodies"]) > 0:
-            #     body_names = list(inputDict["bodies"].keys())
-            #     for i in range(len(inputDict["bodies"])):
-            #         body = inputDict["bodies"][body_names[i]]
-            #         if self.avl.BODY_GEOM_I.NSEC_B[i] != body["num_sections"]:
-            #             raise RuntimeError(f"Mismatch: NSEC_B[i] = {self.avl.BODY_GEOM_I.NSEC_B[i]}, Dictionary: {body['num_sections']}")
 
 
 

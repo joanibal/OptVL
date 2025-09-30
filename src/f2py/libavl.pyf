@@ -57,6 +57,26 @@ python module libavl ! in
 
         subroutine calcst ! in :libavl:aoper.f
         end subroutine calcst
+
+        subroutine makesurf(isurf) ! in :libavl:amake.f
+            integer :: isurf
+        end subroutine makesurf
+
+        subroutine makebody(ibody) ! in :libavl:amake.f
+            integer :: ibody
+        end subroutine makebody
+
+        subroutine sdupl(nn,ypt,msg) ! in :libavl:amake.f
+            integer :: nn
+            real :: ypt
+            character*(*) msg
+        end subroutine sdupl
+
+        subroutine bdupl(nn,ypt,msg) ! in :libavl:amake.f
+            integer :: nn
+            real :: ypt
+            character*(*) msg
+        end subroutine bdupl
         
         subroutine update_surfaces ! in :libavl:amake.f
         end subroutine update_surfaces

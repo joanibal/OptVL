@@ -138,6 +138,19 @@ def pre_check_input_dict(inputDict:dict):
         'sspaces',
     ]
 
+    control_keys = [
+        'icontd', # control variable index
+        'xhinged', # x/c location of hinge
+        'vhinged',  # vector giving hinge axis about which surface rotates
+        'gaind', # control surface gain
+        'refld', # control surface reflection, sign of deflection for duplicated surface
+    ]
+
+    design_var_keys = [
+        'idestd',
+        'gaing'
+    ]
+
     # NOTE: make sure this is consistent to the documentation  page
     # Options used to specify airfoil sections for surfaces
     af_load_ops = ["naca", "airfoils", "afiles"]
@@ -157,7 +170,11 @@ def pre_check_input_dict(inputDict:dict):
     if ("surfaces" in inputDict.keys()):
         if (len(inputDict["surfaces"])>0):
             for surface in inputDict["surfaces"].keys():
+                #Verify at least two section
+                if (inputDict["surfaces"][surface]["num_sections"]< 2):
+                    raise RuntimeError("Must have at least two sections per surface!")
                 for key in inputDict["surfaces"][surface].keys():
+
                     # Check to verify if redundant y-symmetry specification are not made
                     if ("ydupl" in key) and ("iysym" in inputDict.keys()):
                         if (inputDict["surfaces"][surface]["yduplicate"] == 0.0) and (inputDict["iysym"] != 0):
@@ -185,6 +202,33 @@ def pre_check_input_dict(inputDict:dict):
                             category=RuntimeWarning,
                             stacklevel=2,
                         )
+
+                    # Check if controls defined correctly
+                    if key in control_keys:
+                        for j in range(inputDict["surfaces"][surface]["num_sections"]):
+                            for _ in range(inputDict["surfaces"][surface]["num_controls"][0][j]):
+                                if inputDict["surfaces"][surface][key][0][j].shape[0] != inputDict["surfaces"][surface]["num_controls"][0][j]:
+                                    raise ValueError(f"Key {key} does not have entries corresponding to each control for this section!")
+
+                    # Accumulate icont max
+                    total_global_control = np.max(inputDict["surfaces"][surface]["icontd"])+1
+
+                    # Check if dvs defined correctly
+                    if key in control_keys:
+                        for j in range(inputDict["surfaces"][surface]["num_sections"]):
+                            for _ in range(inputDict["surfaces"][surface]["num_design_vars"][0][j]):
+                                if inputDict["surfaces"][surface][key][0][j].shape[0] != inputDict["surfaces"][surface]["num_design_vars"][0][j]:
+                                    raise ValueError(f"Key {key} does not have entries corresponding to each design var for this section!")
+
+                    # Accumulate idestd max
+                    total_global_design_var = np.max(inputDict["surfaces"][surface]["idestd"])+1
+
+
+            if len(inputDict["dname"][0]) != (total_global_control):
+                raise ValueError("Number of unique control names does not match the number of unique controls defined!")
+
+            if len(inputDict["gname"][0]) != (total_global_design_var):
+                raise ValueError("Number of unique design vars does not match the number of unique controls defined!")
     else:
         # Add dummy entry to make later code simpler
         inputDict["surfaces"] = {}
