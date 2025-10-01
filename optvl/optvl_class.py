@@ -81,17 +81,17 @@ class OVLSolver(object):
         "CL": ["CASE_R", "CLTOT"],
         "CD": ["CASE_R", "CDTOT"],
         "CDv": ["CASE_R", "CDVTOT"], # viscous drag
-        
+
         # lift and drag calculated from farfield integration
         "CLff": ["CASE_R", "CLFF"],
         "CYff": ["CASE_R", "CYFF"],
         "CDi": ["CASE_R", "CDFF"], # induced drag
-        
-        # non-dimensionalized forces 
-        "CX": ["CASE_R", "CXTOT"], 
-        "CY": ["CASE_R", "CYTOT"], 
-        "CZ": ["CASE_R", "CZTOT"],   
-        
+
+        # non-dimensionalized forces
+        "CX": ["CASE_R", "CXTOT"],
+        "CY": ["CASE_R", "CYTOT"],
+        "CZ": ["CASE_R", "CZTOT"],
+
         # non-dimensionalized moments (body frame)
         "CR BA": ["CASE_R", "CRTOT"],
         "CM": ["CASE_R", "CMTOT"],
@@ -101,7 +101,7 @@ class OVLSolver(object):
         "CR SA": ["CASE_R", "CRSAX"],
         # "CM SA": ["CASE_R", "CMSAX"], # This is the same in both frames
         "CN SA": ["CASE_R", "CNSAX"],
-        
+
         # spanwise efficiency
         "e": ["CASE_R", "SPANEF"],
     }
@@ -131,26 +131,25 @@ class OVLSolver(object):
         "CL": ["SURF_R", "CLSURF"],
         "CD": ["SURF_R", "CDSURF"],
         "CDv": ["SURF_R", "CDVSURF"],  # viscous drag
-        
-        # non-dimensionalized forces 
-        "CX": ["SURF_R", "CXSURF"], 
-        "CY": ["SURF_R", "CYSURF"], 
-        "CZ": ["SURF_R", "CZSURF"],   
-        
+
+        # non-dimensionalized forces
+        "CX": ["SURF_R", "CXSURF"],
+        "CY": ["SURF_R", "CYSURF"],
+        "CZ": ["SURF_R", "CZSURF"],
+
         # non-dimensionalized moments (body frame)
         "CR": ["SURF_R", "CRSURF"],
         "CM": ["SURF_R", "CMSURF"],
         "CN": ["SURF_R", "CNSURF"],
-        
+
         # forces non-dimentionalized by surface quantities
         # uses surface area instead of sref and takes moments about leading edge
         "CL surf" : ["SURF_R", "CL_SRF"],
         "CD surf" : ["SURF_R", "CD_SRF"],
         "CMLE surf" : ["SURF_R", "CMLE_SRF"],
-        
+
         #TODO: add CF_SRF(3,NFMAX), CM_SRF(3,NFMAX)
     }
-
 
     body_geom_to_fort_var = {
         "scale": ["BODY_GEOM_R", "XYZSCAL_B"],
@@ -184,8 +183,6 @@ class OVLSolver(object):
     else:
         NVMAX = 6000 # number of horseshoe vortices
 
-    debug = True
-
 
     def __init__(
         self,
@@ -207,6 +204,8 @@ class OVLSolver(object):
 
         if timing:
             start_time = time.time()
+
+        self.debug = debug
 
         # MExt is important for creating multiple instances of the AVL solver that do not share memory
         # It is very gross, but I cannot figure out a better way (maybe use install_name_tool to change the dynamic library path to absolute).
@@ -230,6 +229,14 @@ class OVLSolver(object):
         # from . import libavl
         # self.avl = libavl
 
+        # Initialize AVL
+        self.avl.avl()
+        if debug:
+            self.set_avl_fort_arr("CASE_L", "LVERBOSE", True)
+
+        if timing:
+            self.set_avl_fort_arr("CASE_L", "LTIMING", True)
+
         if not (geo_file is None):
             try:
                 # check to make sure files exist
@@ -243,33 +250,17 @@ class OVLSolver(object):
                     f.close()
             except FileNotFoundError:
                 raise FileNotFoundError(
-                    f"Could not open the file '{file}' from python. This is usually an issue with the specified file path"
-                )
-
-            self.avl.avl()
-            if debug:
-                self.set_avl_fort_arr("CASE_L", "LVERBOSE", True)
-
-            if timing:
-                self.set_avl_fort_arr("CASE_L", "LTIMING", True)
+                    f"Could not open the file '{file}' from python. This is usually an issue with the specified file path")
 
             self.avl.loadgeo(geo_file)
 
             if mass_file is not None:
                 self.avl.loadmass(mass_file)
         elif (input_dict is not None):
-            self.avl.avl()
-            if debug:
-                self.set_avl_fort_arr("CASE_L", "LVERBOSE", True)
-
-            if timing:
-                self.set_avl_fort_arr("CASE_L", "LTIMING", True)
-            self.load_input_dict(input_dict,postCheck=True)
+            self.load_input_dict(input_dict, postCheck=True)
             self.avl.loadgeo('')
         else:
-            raise ValueError("neither a geometry file nor an input options dictionary was given")
-
-        self.debug = debug
+            raise ValueError("neither a geometry file nor an input options dictionary was specified")
 
         # todo store the default dict somewhere else
         # the control surface contraints get added to this array in the __init__
@@ -447,7 +438,7 @@ class OVLSolver(object):
 
     def load_input_dict(self, input:dict, preCheck:bool = True, postCheck:bool = False):
         """Reads and loads the input dictionary data into optvl.
-        Equivalent to loadgeo operation.
+        Equivalent to INPUT routine in AVL.
 
         Args:
             input: input dictionary in optvl format
@@ -516,7 +507,7 @@ class OVLSolver(object):
         else:
             raise RuntimeError(f"Number of specified surfaces exceeds {self.NFMAX}. Raise NFMAX!")
 
-        # Parse and load surfaces
+        # Load surfaces
         if len(input["surfaces"]) > 0:
             num_dup_surfs = 0
             surf_names = list(input["surfaces"].keys())
@@ -572,7 +563,7 @@ class OVLSolver(object):
                     else:
                         raise ValueError(f"Variable {key} is of type {type(val)}, expected {expected_type}!")
 
-                # Parse sections
+                # Load sections
                 # Set total number of surfaces in one shot
                 if surf["num_sections"] < self.NSMAX:
                     self.avl.SURF_GEOM_I.NSEC[i] = surf["num_sections"]
@@ -612,7 +603,7 @@ class OVLSolver(object):
 
                     # Load basic section data into AVL
                     for key, (obj, attr, expected_type, default, slicer, transform) in sectionFields.items():
-                        # Get the val for section j, array are technically 2D with an empty axis so index that first
+                        # Get the val for section j, vectors are technically 2D with an empty axis so index that first
                         val = surf.get(key, default)[0][j]
                         if val is None:
                             continue
