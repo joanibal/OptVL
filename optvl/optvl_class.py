@@ -447,6 +447,7 @@ class OVLSolver(object):
         """
 
         # Initialize Variables and Counters
+        # Techincally the dictionary defaults set these too but these set the entire array
         self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=slice(0, self.NFMAX))
         self.avl.CASE_R.DCL_A0 = 0.
         self.avl.CASE_R.DCM_A0 = 0.
@@ -454,10 +455,8 @@ class OVLSolver(object):
         self.avl.CASE_R.DCM_U0 = 0.
         self.set_avl_fort_arr("SURF_GEOM_I","NSEC", 0, slicer=slice(0, self.NFMAX))
         self.set_avl_fort_arr("BODY_GEOM_I","NSEC_B", 0, slicer=slice(0, self.NBMAX))
-        self.avl.CASE_I.NSURF = 0
         self.avl.CASE_I.NVOR = 0
         self.avl.CASE_I.NSTRIP = 0
-        self.avl.CASE_I.NBODY = 0
         self.avl.CASE_I.NLNODE = 0
         self.avl.CASE_I.NCONTROL = 0
         self.avl.CASE_I.NDESIGN = 0
@@ -515,17 +514,8 @@ class OVLSolver(object):
                 # HACK: AVL inserts dup surfaces right after the original one so the real i needs to be advanced by the number of dup surfaces we've had so far
                 i += num_dup_surfs
                 # Setup surface
-                # initialize default values for surface
-                self.avl.SURF_I.LSCOMP[i] = i + 1
-                self.avl.SURF_GEOM_I.NSEC[i] = 0
                 self.avl.SURF_GEOM_L.LDUPL[i] = False
                 # lhinge = False Appears in AVL but does nothing
-                self.avl.SURF_L.LFWAKE[i] = True
-                self.avl.SURF_L.LFALBE[i] = True
-                self.avl.SURF_L.LFLOAD[i] = True
-                self.set_avl_fort_arr("SURF_GEOM_R","XYZSCAL", 1.0, slicer=(i, slice(0, 3)))
-                self.set_avl_fort_arr("SURF_GEOM_R","XYZTRAN", 0, slicer=(i, slice(0, 3)))
-                self.avl.SURF_GEOM_R.ADDINC[i] = 0.0
 
                 # Set surface name
                 self.avl.CASE_C.STITLE[i] = surf_names[i] #self._createFortranStringArray([surf_names[i]], num_max_char=40) idk why this doesn't work
@@ -539,8 +529,8 @@ class OVLSolver(object):
                     "use surface spacing": ("SURF_GEOM_L", "LSURFSPACING", (bool, int, np.int32), False, i, None),
                     "yduplicate":  ("SURF_GEOM_R", "YDUPL", (float, np.floating), None, i, lambda v: (operator.setitem(self.avl.SURF_GEOM_L.LDUPL, i, v is not None),v)[1]),
                     "component":  ("SURF_I", "LSCOMP", (int, np.integer), i+1, i, None),
-                    "scale":  ("SURF_GEOM_R", "XYZSCAL", np.ndarray, np.array([1.,1.,1.]), (slice(i), slice(0, 3)), None),
-                    "translate":  ("SURF_GEOM_R", "XYZTRAN", np.ndarray, np.array([0.,0.,0.]), (slice(i), slice(0, 3)), None),
+                    "scale":  ("SURF_GEOM_R", "XYZSCAL", np.ndarray, np.array([1.,1.,1.]), (slice(i,i+1), slice(0, 3)), None),
+                    "translate":  ("SURF_GEOM_R", "XYZTRAN", np.ndarray, np.array([0.,0.,0.]), (slice(i,i+1), slice(0, 3)), None),
                     "angle":  ("SURF_GEOM_R", "ADDINC", (float, np.floating), 0.0, i, None),
                     "wake":  ("SURF_L","LFWAKE", (bool, int, np.int32), True, i, None),
                     "albe":  ("SURF_L","LFALBE", (bool, int, np.int32), True, i, None),
@@ -571,22 +561,6 @@ class OVLSolver(object):
                     raise RuntimeError(f"Number of specified section for surface {surf_names[i]} exceeds {self.NSMAX}. Raise NSMAX!")
 
                 for j in range(surf["num_sections"]):
-                    # Setup section defaults
-                    self.set_avl_fort_arr("SURF_GEOM_I","NASEC", 2, slicer=(i,j))
-                    self.set_avl_fort_arr("SURF_GEOM_R","XASEC", np.array([0.0, 1.0]), slicer=(i,j,slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","SASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","TASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
-
-                    self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_R","CASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
-                    self.set_avl_fort_arr("SURF_GEOM_I","NSCON", 0, slicer=(i,j))
-                    self.set_avl_fort_arr("SURF_GEOM_I","NSDES", 0, slicer=(i,j))
-                    self.set_avl_fort_arr("SURF_GEOM_R","CLAF", 1.0, slicer=(i,j))
-
-
                     # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
                     sectionFields = {
                         "xles":  ("SURF_GEOM_R", "XYZLES", (float, np.floating), [[None]*surf["num_sections"]], (i,j,0), None),
@@ -618,8 +592,19 @@ class OVLSolver(object):
                             raise ValueError(f"Variable {key} is of type {type(val)}, expected {expected_type}!")
 
                     # Load the Airfoil Section into AVL
-                    manual_af_override = ['xasec','casec','tasec','xuasec','xlasec','zuasec','zlasec']
+                    # Always set a flat camberline in case the user doesn't specify anything for it
+                    self.set_avl_fort_arr("SURF_GEOM_I","NASEC", 2, slicer=(i,j))
+                    self.set_avl_fort_arr("SURF_GEOM_R","XASEC", np.array([0.0, 1.0]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","SASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","TASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
 
+                    self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
+                    self.set_avl_fort_arr("SURF_GEOM_R","CASEC", np.array([0.0, 0.0]), slicer=(i,j,slice(0,2)))
+
+                    manual_af_override = ['xasec','casec','tasec','xuasec','xlasec','zuasec','zlasec']
                     # Manually Specify Coordiantes (no camberline verification, only use if you know what you're doing)
                     if set(manual_af_override) & surf.keys():
                         warnings.warn("OptVL WARNING - Setting airfoil section data directly via the input dictionary is not recommened!\n " \
@@ -652,20 +637,24 @@ class OVLSolver(object):
                     # Airfoil coordinates set directly in dictionary
                     if "airfoils" in surf.keys():
                         xfminmax = surf["xfminmax"][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
-                        # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
+                        # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)): # Set in Fortran layer
                         #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
                         self.set_section_coordinates(j,i,min(50,self.IBX),surf["airfoils"][j][0],surf["airfoils"][j][1],xfminmax)
 
                     # Load airfoil file
                     if "afiles" in surf.keys():
                         xfminmax = surf["xfminmax"][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
-                        # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
+                        # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)): # Set in Fortran layer
                         #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
                         self.avl.CASE_C.AFILES[i,j] = surf['afiles'][0][j]
                         X = self._readDat(surf["afiles"][0][j])
                         self.set_section_coordinates(j,i,min(50,self.IBX),X[:,0],X[:,1],xfminmax)
 
+                    # Set control and design variable defaults
+                    self.set_avl_fort_arr("SURF_GEOM_I","NSCON", 0, slicer=(i,j))
+                    self.set_avl_fort_arr("SURF_GEOM_I","NSDES", 0, slicer=(i,j))
 
+                    # Load control surfaces
                     if "icontd" in surf.keys():
                         # Assign the control names for the surface if any and increment NCONTROL
                         if surf["num_controls"][0][j] <= self.ICONX:
@@ -678,20 +667,20 @@ class OVLSolver(object):
                         if self.avl.CASE_I.NCONTROL > self.NDMAX:
                             raise RuntimeError(f"Number of specified controls exceeds {self.NDMAX}. Raise NDMAX!")
 
-                        if surf["num_controls"][0][j] != 0:
+                        if surf["num_controls"][0][j] > 0:
                             for k in surf["icontd"][0][j]:
                                 self.avl.CASE_C.DNAME[k] = input["dname"][0][k]
 
-                        # Parse control surface information
+                        # Load control surface information
                         for k in range(surf["num_controls"][0][j]):
                             # Setup control for the section
                             # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
                             controlFields = {
                                 "icontd":  ("SURF_GEOM_I", "ICONTD", (int, np.int32), [[None]*surf["num_sections"]], (i,j,k), lambda v: v + 1),
-                                "xhinged":  ("SURF_GEOM_R", "XHINGED", (float, np.floating), [[None]*surf["num_sections"]], (i,j,k), None),
-                                "vhinged":  ("SURF_GEOM_R", "VHINGED", (np.ndarray), [[None]*surf["num_sections"]], (i,j,k,slice(0,3)), None),
-                                "gaind":  ("SURF_GEOM_R", "GAIND", (float, np.floating), [[None]*surf["num_sections"]], (i,j,k), None),
-                                "refld":  ("SURF_GEOM_R", "REFLD", (float, np.floating), [[None]*surf["num_sections"]], (i,j,k), None),
+                                "xhinged":  ("SURF_GEOM_R", "XHINGED", (float, np.floating), [[[0.0]*surf["num_controls"][0][j]]*surf["num_sections"]], (i,j,k), None),
+                                "vhinged":  ("SURF_GEOM_R", "VHINGED", (np.ndarray), [[[np.zeros(3)]*surf["num_controls"][0][j]]*surf["num_sections"]], (i,j,k,slice(0,3)), None),
+                                "gaind":  ("SURF_GEOM_R", "GAIND", (float, np.floating), [[[1.0]*surf["num_controls"][0][j]]*surf["num_sections"]], (i,j,k), None),
+                                "refld":  ("SURF_GEOM_R", "REFLD", (float, np.floating), [[[1.0]*surf["num_controls"][0][j]]*surf["num_sections"]], (i,j,k), None),
                             }
 
                             # Load control data into AVL
@@ -710,8 +699,8 @@ class OVLSolver(object):
                                 else:
                                     raise ValueError(f"Variable {key} is of type {type(val)}, expected {expected_type}!")
 
+                    # Load design variables
                     if "idestd" in surf.keys():
-                         # Parse control variables
                         if surf["num_design_vars"][0][j] <= self.ICONX:
                             self.avl.SURF_GEOM_I.NSDES[i,j] = surf["num_design_vars"][0][j]
                         else:
@@ -722,7 +711,7 @@ class OVLSolver(object):
                         if self.avl.CASE_I.NDESIGN > self.NGMAX:
                             raise RuntimeError(f"Number of specified design variables exceeds {self.NGMAX}. Raise NGMAX!")
 
-                        if surf["num_design_vars"][0][j] != 0:
+                        if surf["num_design_vars"][0][j] > 0:
                             for ell in surf["idestd"]:
                                 self.avl.CASE_C.GNAME[ell] = input["gname"][0][ell]
 
@@ -731,7 +720,7 @@ class OVLSolver(object):
                             # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
                             designFields = {
                                 "idestd":  ("SURF_GEOM_I", "IDESTD", (int, np.int32), [[None]*surf["num_sections"]], (i,j,ell), lambda v: v + 1),
-                                "gaing":  ("SURF_GEOM_R", "GAING", (float, np.floating), [[None]*surf["num_sections"]], (i,j,ell), None),
+                                "gaing":  ("SURF_GEOM_R", "GAING", (float, np.floating), [[[1.0]*surf["num_design_vars"][0][j]]*surf["num_sections"]], (i,j,ell), None),
                             }
 
                             # Load design var data into AVL
@@ -750,6 +739,8 @@ class OVLSolver(object):
                                 else:
                                     raise ValueError(f"Variable {key} is of type {type(val)}, expected {expected_type}!")
                 # Make the surface
+                if self.debug:
+                    print(f"Building surface: {surf_names[i]}")
                 self.avl.makesurf(i+1)
                 if "yduplicate" in surf.keys():
                     self.avl.sdupl(i+1,surf["yduplicate"],'YDUP')
@@ -765,7 +756,7 @@ class OVLSolver(object):
         else:
             raise RuntimeError(f"Number of specified surfaces exceeds {self.NBMAX}. Raise NBMAX!")
 
-        # Parse and load bodies
+        # Load bodies
         if len(input["bodies"]) > 0:
             body_names = list(input["bodies"].keys())
             num_dup_bodies = 0
@@ -773,11 +764,8 @@ class OVLSolver(object):
                 # HACK: AVL inserts dup surfaces right after the original one so the real i needs to be advanced by the number of dup surfaces we've had so far
                 i += num_dup_bodies
                 # Setup body
-                # initialize default values for body
-                self.avl.BODY_GEOM_I.NSEC_B[i] = 0
+                self.avl.BODY_GEOM_I.NSEC_B[i] = 0 # Body sections not used but set to 0 just in case
                 self.avl.BODY_GEOM_L.LDUPL_B[i] = False
-                self.set_avl_fort_arr("BODY_GEOM_R","XYZSCAL_B", 1.0, slicer=(i, slice(0, 3)))
-                self.set_avl_fort_arr("BODY_GEOM_R","XYZTRAN_B", 0, slicer=(i, slice(0, 3)))
 
                 # Set body name
                 self.avl.CASE_C.BTITLE[i] = body_names[i] #self._createFortranStringArray([body_names[i]], num_max_char=40) idk why this doesn't work
@@ -787,8 +775,8 @@ class OVLSolver(object):
                     "nvb":  ("BODY_GEOM_I", "NVB", (int, np.integer), 1, i, None),
                     "bspace": ("BODY_GEOM_R", "BSPACE", (float, np.floating), 0.0, i, None),
                     "yduplicate":  ("BODY_GEOM_R", "YDUPL_B", (float, np.floating), None, i, lambda v: (operator.setitem(self.avl.BODY_GEOM_L.LDUPL_B, i, v is not None),v)[1]),
-                    "scale":  ("BODY_GEOM_R", "XYZSCAL_B", np.ndarray, np.array([[1.,1.,1.]]), (slice(i), slice(0, 3)), None),
-                    "translate":  ("BODY_GEOM_R", "XYZTRAN_B", np.ndarray, np.array([[0.,0.,0.]]), (slice(i), slice(0, 3)), None),
+                    "scale":  ("BODY_GEOM_R", "XYZSCAL_B", np.ndarray, np.array([[1.,1.,1.]]), (slice(i,i+1), slice(0, 3)), None),
+                    "translate":  ("BODY_GEOM_R", "XYZTRAN_B", np.ndarray, np.array([[0.,0.,0.]]), (slice(i,i+1), slice(0, 3)), None),
                 }
 
                 # Starting reading the dict for loading the body dict into AVL
@@ -820,6 +808,8 @@ class OVLSolver(object):
                     self.set_body_coordinates(i,min(50,self.IBX),X[:,0],X[:,1])
 
                 # Make the body
+                if self.debug:
+                    print(f"Building body: {body_names[i]}")
                 self.avl.makebody(i+1)
                 if "yduplicate" in body.keys():
                     self.avl.bdupl(i+1,body["yduplicate"],'YDUP')
