@@ -158,7 +158,22 @@ class OVLSolver(object):
         "bfile": ["CASE_C", "BFILES"],
         "nvb": ["BODY_GEOM_I", "NVB"],
         "bspace": ["BODY_GEOM_R", "BSPACE"],
+    }
 
+
+    general_to_fort_var = {
+        "title": ["CASE_R", "TITLE"],
+        "mach":  ["CASE_R", "MACH0"],
+        "iysym": ["CASE_I", "IYSYM"],
+        "izsym": ["CASE_I", "IZSYM"],
+        "zsym":  ["CASE_R", "ZSYM"],
+        "Sref":  ["CASE_R", "SREF"],
+        "Cref":  ["CASE_R", "CREF"],
+        "Bref":  ["CASE_R", "BREF"],
+        "Xref":  ["CASE_R","XYZREF0"],
+        "Yref":  ["CASE_R","XYZREF0"],
+        "Zref":  ["CASE_R","XYZREF0"],
+        "CDp":   ["CASE_R", "CDREF0"],
     }
 
     # fmt: on
@@ -328,7 +343,7 @@ class OVLSolver(object):
     def _init_surf_data(self):
         """Used in the __init__ method to allocate the slice data for the surfaces"""
         self.surf_geom_to_fort_var = {}
-
+        self.surf_section_geom_to_fort_var = {}
         self.surf_pannel_to_fort_var = {}
         self.con_surf_to_fort_var = {}
 
@@ -377,15 +392,8 @@ class OVLSolver(object):
                 "zles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_z],
                 "chords": ["SURF_GEOM_R", "CHORDS", slice_surf_secs],
                 "aincs": ["SURF_GEOM_R", "AINCS", slice_surf_secs],
-                "xasec": ["SURF_GEOM_R", "XASEC", slice_surf_secs_nasec],
-                # "sasec": ["SURF_GEOM_R", "SASEC", slice_surf_secs_nasec],
-                "casec": ["SURF_GEOM_R", "CASEC", slice_surf_secs_nasec],
-                "tasec": ["SURF_GEOM_R", "TASEC", slice_surf_secs_nasec],
-                "xuasec": ["SURF_GEOM_R", "XUASEC", slice_surf_secs_nasec],
-                "xlasec": ["SURF_GEOM_R", "XLASEC", slice_surf_secs_nasec],
-                "zuasec": ["SURF_GEOM_R", "ZUASEC", slice_surf_secs_nasec],
-                "zlasec": ["SURF_GEOM_R", "ZLASEC", slice_surf_secs_nasec],
                 "clcdsec": ["SURF_GEOM_R", "CLCDSEC", slice_surf_secs_all],
+                "clcd": ["SURF_GEOM_R", "CLCDSRF", slice_surf_all], # NEW
                 "claf": ["SURF_GEOM_R", "CLAF", slice_surf_secs],
             }
             self.surf_pannel_to_fort_var[surf_name] = {
@@ -398,6 +406,20 @@ class OVLSolver(object):
                 "yduplicate": ["SURF_GEOM_R", "YDUPL", slice_idx_surf],
                 "use surface spacing": ["SURF_GEOM_L", "LSURFSPACING", slice_idx_surf],
                 "component": ["SURF_I", "LSCOMP", slice_idx_surf],
+                "wake" : ["SURF_L", "LFWAKE", slice_idx_surf], # NEW
+                "able" : ["SURF_L", "LFALBE", slice_idx_surf], # NEW
+                "load" : ["SURF_L", "LFLOAD", slice_idx_surf], # NEW
+            }
+            self.surf_section_geom_to_fort_var[surf_name] = {
+                "nasec": ["SURF_GEOM_I", "NASEC", slice_surf_secs], # NEW
+                "xasec": ["SURF_GEOM_R", "XASEC", slice_surf_secs_nasec],
+                "sasec": ["SURF_GEOM_R", "SASEC", slice_surf_secs_nasec], # TODO: Ask Josh why this was commented out?
+                "casec": ["SURF_GEOM_R", "CASEC", slice_surf_secs_nasec],
+                "tasec": ["SURF_GEOM_R", "TASEC", slice_surf_secs_nasec],
+                "xuasec": ["SURF_GEOM_R", "XUASEC", slice_surf_secs_nasec],
+                "xlasec": ["SURF_GEOM_R", "XLASEC", slice_surf_secs_nasec],
+                "zuasec": ["SURF_GEOM_R", "ZUASEC", slice_surf_secs_nasec],
+                "zlasec": ["SURF_GEOM_R", "ZLASEC", slice_surf_secs_nasec],
             }
 
             icontd_slices = []
@@ -803,7 +825,7 @@ class OVLSolver(object):
                     # xfminmax = body["xfminmax"][j] if "xfminmax" in body.keys() else np.array([0., 1.])
                     # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
                     #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
-                    self.avl.CASE_C.BFILES[i] = body['bfile'][i]
+                    self.avl.CASE_C.BFILES[i] = body['bfile']
                     X = self._readDat(body["bfile"])
                     self.set_body_coordinates(i,min(50,self.IBX),X[:,0],X[:,1])
 
@@ -1600,7 +1622,7 @@ class OVLSolver(object):
 
     # region --- geometry api
     def get_control_names(self) -> List[str]:
-        """get the names of the control surfaces
+        """Get the names of the control surfaces
 
         Returns:
             control_names: list of control surface names
@@ -1610,7 +1632,7 @@ class OVLSolver(object):
         return control_names
 
     def get_surface_names(self, remove_dublicated: Optional[bool] = False) -> List[str]:
-        """get the surface names from the geometry
+        """Get the surface names from the geometry
 
         Args:
             remove_dublicated: remove the surface that were created by duplication about symmetry planes
@@ -1634,7 +1656,7 @@ class OVLSolver(object):
             return surf_names
 
     def get_body_names(self, remove_dublicated: Optional[bool] = False) -> List[str]:
-        """get the body names from the geometry
+        """Get the body names from the geometry
 
         Args:
             remove_dublicated: remove the body that were created by duplication about symmetry planes
@@ -1663,7 +1685,7 @@ class OVLSolver(object):
             return body_names
 
     def get_con_surf_param(self, surf_name: str, idx_slice: int, param: str) -> np.ndarray:
-        """returns the parameters that define the control surface
+        """Returns the parameters that define the control surface
 
         Args:
             surf_name: the name of the surface containing the control surface
@@ -1686,7 +1708,7 @@ class OVLSolver(object):
     def set_con_surf_param(
         self, surf_name: str, idx_slice: int, param: str, val: float, update_geom: Optional[bool] = True
     ):
-        """returns the parameters that define the control surface
+        """Returns the parameters that define the control surface
 
         Args:
             surf_name: the name of the surface containing the control surface
@@ -1724,6 +1746,8 @@ class OVLSolver(object):
         # check that param is in self.surf_geom_to_fort_var
         if param in self.surf_geom_to_fort_var[surf_name].keys():
             fort_var = self.surf_geom_to_fort_var[surf_name][param]
+        elif param in self.surf_section_geom_to_fort_var[surf_name].keys():
+            fort_var = self.surf_section_geom_to_fort_var[surf_name][param]
         elif param in self.surf_pannel_to_fort_var[surf_name].keys():
             fort_var = self.surf_pannel_to_fort_var[surf_name][param]
         else:
@@ -1752,18 +1776,30 @@ class OVLSolver(object):
 
         if param in self.surf_geom_to_fort_var[surf_name].keys():
             fort_var = self.surf_geom_to_fort_var[surf_name][param]
+            self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
+        elif param in self.surf_section_geom_to_fort_var[surf_name].keys():
+            warnings.warn("OptVL WARNING - Updating section geometry data directly is not recommened!\n " \
+                        "OptVL will not verify that the camber line is consistent with the given coordiantes.\n" \
+                        "Use the set_section_coordinates function.",stacklevel=2)
+            fort_var = self.surf_section_geom_to_fort_var[surf_name][param]
+            self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
         elif param in self.surf_pannel_to_fort_var[surf_name].keys():
             fort_var = self.surf_pannel_to_fort_var[surf_name][param]
+            self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
+        elif param in ["afiles","airfoils","naca"]:
+            warnings.warn("OptVL WARNING - Updating section geometry data with using airfoils, afiles, or naca is not supported with this function.\n" \
+                          "Use the set_section_coordinates function.",stacklevel=2)
+            pass
         elif param in self.con_surf_to_fort_var[surf_name].keys():
             # the control surface and design variables need to be handeled differently because the number at each section is variable
+            warnings.warn("OptVL WARNING - Updating control surface and design variables is not supported with this function.\n" \
+                          "Use the set_con_surf_param function.",stacklevel=2)
             pass
-
         else:
             raise ValueError(
                 f"param, {param}, not in found for {surf_name}, that has geom data {list(self.surf_geom_to_fort_var[surf_name].keys()) + list(self.surf_pannel_to_fort_var[surf_name].keys())}"
             )
 
-        self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
 
         if update_geom:
             self.avl.update_surfaces()
@@ -1771,11 +1807,12 @@ class OVLSolver(object):
     def get_surface_params(
         self,
         include_geom: bool = True,
+        include_section_geom: bool = False,
         include_paneling: bool = False,
         include_con_surf: bool = False,
         include_airfoils: bool = False,
     ) -> Dict[str, Dict[str, Any]]:
-        """get all the surface level parameters for each suface
+        """Get all the surface level parameters for each suface
 
         Args:
             include_geom: flag to include geometry data in the output. The data is ["scale", "translate", "angle", "xles", "yles", "zles", "chords", "aincs", "xasec", "sasec", "tasec", "clcdsec", "claf"]
@@ -1792,6 +1829,10 @@ class OVLSolver(object):
             surf_data[surf_name] = {}
             if include_geom:
                 for var in self.surf_geom_to_fort_var[surf_name]:
+                    surf_data[surf_name][var] = self.get_surface_param(surf_name, var)
+
+            if include_section_geom:
+                for var in self.surf_section_geom_to_fort_var[surf_name]:
                     surf_data[surf_name][var] = self.get_surface_param(surf_name, var)
 
             idx_surf = self.surface_names.index(surf_name)
@@ -1828,7 +1869,7 @@ class OVLSolver(object):
         return surf_data
 
     def set_surface_params(self, surf_data: Dict[str, Dict[str, any]]):
-        """set the given data of the current geometry.
+        """Set the given data of the current geometry.
         ASSUMES THE CONTROL SURFACE DATA STAYS AT THE SAME LOCATION
 
         Args:
@@ -1846,9 +1887,9 @@ class OVLSolver(object):
 
             for var in surf_data[surf_name]:
                 # do not set the data this way if it is a control surface
-                if var not in self.con_surf_to_fort_var[surf_name]:
+                if var not in [self.con_surf_to_fort_var[surf_name],"airfoils","afiles","naca"]:
                     self.set_surface_param(surf_name, var, surf_data[surf_name][var], update_geom=False)
-                else:
+                elif var in [self.con_surf_to_fort_var[surf_name]]:
                     idx_surf = self.surface_names.index(surf_name)
                     num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
                     slice_data = []
@@ -1856,6 +1897,8 @@ class OVLSolver(object):
                         self.set_con_surf_param(
                             surf_name, idx_sec, var, surf_data[surf_name][var][idx_sec], update_geom=False
                         )
+                else:
+                    pass
 
         # update the geometry once at the end
         self.avl.update_surfaces()
@@ -1896,7 +1939,7 @@ class OVLSolver(object):
 
         return copy.deepcopy(val)  # return the value of the array, but not a reference to avoid sideffects
 
-    def set_body_param(self, body_name: str, param: str, val: float, update_geom: bool = True):
+    def set_body_param(self, body_name: str, param: str, val, update_geom: bool = True):
         """Set a parameter of a specified body
 
         Args:
@@ -1924,7 +1967,17 @@ class OVLSolver(object):
                 f"param, {param}, not in found for {body_name}, that has geom data {list(self.body_geom_to_fort_var.keys())}"
             )
 
-        self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=idx_body)
+        # Set the slicer
+        if isinstance(val,np.ndarray):
+            slicer = (idx_body, slice(0,len(val)))
+        else:
+            slicer = idx_body
+
+        # Handle strings differently
+        if isinstance(val,str):
+            operator.setitem(getattr(getattr(self.avl,fort_var[0]),fort_var[1]),idx_body,val)
+        else:
+            self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=slicer)
 
         if update_geom:
             self.avl.update_bodies()
@@ -1956,8 +2009,8 @@ class OVLSolver(object):
 
         return body_data
 
-    def set_body_params(self, body_data: Dict[str, Dict[str, any]]):
-        """set the give body data of the current geometry.
+    def set_body_params(self, body_data: Dict[str, Dict[str, Any]]):
+        """Set the give body data of the current geometry.
 
         Args:
             body_data: Nested dictionary where the 1st key is the body name and the 2nd key is the parameter.
@@ -1966,7 +2019,7 @@ class OVLSolver(object):
         body_names = self.get_body_names()
         unique_body_names = self.get_body_names(remove_dublicated=True)
         for body_name in body_data:
-            if body_name not in self.unique_body_names:
+            if body_name not in unique_body_names:
                 raise ValueError(
                     f"""body name, {body_name}, not found in the current avl object."
                         Note duplicated bodies can not be set directly.
@@ -2195,6 +2248,7 @@ class OVLSolver(object):
 
     def __decodeFortranString(self, fort_string: str) -> str:
         # TODO: need a more general solution for |S<variable> type
+        # SB: This should fix it but keep things commented out in case
 
         if fort_string.dtype == np.dtype("|S0"):
             # there are no characters in the sting to add
@@ -2203,16 +2257,18 @@ class OVLSolver(object):
             py_string = b"".join(fort_string).decode().strip()
         elif fort_string.dtype == np.dtype("<U1"):
             py_string = "".join(fort_string).strip()
-        elif fort_string.dtype == np.dtype("|S4"):
+        elif fort_string.dtype.str.startswith("|S"):
             py_string = fort_string.decode().strip()
-        elif fort_string.dtype == np.dtype("|S16"):
-            py_string = fort_string.decode().strip()
-        elif fort_string.dtype == np.dtype("|S40"):
-            py_string = fort_string.decode().strip()
-        elif fort_string.dtype == np.dtype("|S80"):
-            py_string = fort_string.decode().strip()
-        elif fort_string.dtype == np.dtype("|S120"):
-            py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S4"):
+        #     py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S16"):
+        #     py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S40"):
+        #     py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S80"):
+        #     py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S120"):
+        #     py_string = fort_string.decode().strip()
         else:
             raise TypeError(f"Unable to convert {fort_string} of type {fort_string.dtype} to string")
 

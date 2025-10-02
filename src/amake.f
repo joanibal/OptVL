@@ -783,18 +783,16 @@ C
 c--------------------------------------------------------------
 c     Updates all bodies, using the stored data.
 c--------------------------------------------------------------
-      
       include 'AVL.INC'
       integer IBODY, NBOD, NBLDS
-C      real XBOD(IBX), YBOD(IBX), TBOD(IBX), XB(IBX), YB(IBX)
       character*120 upname
+
+      NLNODE = 0
 
       do IBODY=1,NBODY
       if (lverbose) then 
         write(*,*) 'Updating body ',IBODY
       end if
-C-----This routine bypasses getting xbod, ybod, and tbod from getcam
-C-----Call a routine that sets those prior to calling this
       if (IBODY.ne.1) then
        if(ldupl_b(ibody-1)) then 
         ! this body has already been created
