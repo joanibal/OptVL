@@ -151,9 +151,16 @@ def pre_check_input_dict(inputDict:dict):
         'gaing'
     ]
 
-    dim_3_keys = [
+    dim_2_keys = [
         "clcdsec",
-        "naca"
+        "xfminmax",
+        'xasec',
+        'casec',
+        'tasec',
+        'xuasec',
+        'xlasec',
+        'zuasec',
+        'zlasec',
     ]
 
     # NOTE: make sure this is consistent to the documentation  page
@@ -193,12 +200,12 @@ def pre_check_input_dict(inputDict:dict):
 
                     # Check the surface input size is a 2D array with second dim equal to num_sections
                     if key in multi_section_keys:
-                        if (key in dim_3_keys) and (inputDict["surfaces"][surface][key].ndim != 3):
-                            raise ValueError(f"Key {key} is of dimension {inputDict['surfaces'][surface][key].ndim}, expected 3!")
-                        if (key not in dim_3_keys) and  inputDict["surfaces"][surface][key].ndim != 2:
+                        if (key in dim_2_keys) and (inputDict["surfaces"][surface][key].ndim != 2):
                             raise ValueError(f"Key {key} is of dimension {inputDict['surfaces'][surface][key].ndim}, expected 2!")
+                        if (key not in dim_2_keys) and  inputDict["surfaces"][surface][key].ndim != 1:
+                            raise ValueError(f"Key {key} is of dimension {inputDict['surfaces'][surface][key].ndim}, expected 1!")
 
-                        if inputDict["surfaces"][surface][key].shape[1] != inputDict["surfaces"][surface]["num_sections"]:
+                        if inputDict["surfaces"][surface][key].shape[0] != inputDict["surfaces"][surface]["num_sections"]:
                             raise ValueError(f"Key {key} does not have entries corresponding to each section!s")
 
                     # Check for keys not implemented
@@ -212,31 +219,37 @@ def pre_check_input_dict(inputDict:dict):
                     # Check if controls defined correctly
                     if key in control_keys:
                         for j in range(inputDict["surfaces"][surface]["num_sections"]):
-                            for _ in range(inputDict["surfaces"][surface]["num_controls"][0][j]):
-                                if inputDict["surfaces"][surface][key][0][j].shape[0] != inputDict["surfaces"][surface]["num_controls"][0][j]:
+                            for _ in range(inputDict["surfaces"][surface]["num_controls"][j]):
+                                if inputDict["surfaces"][surface][key][j].shape[0] != inputDict["surfaces"][surface]["num_controls"][j]:
                                     raise ValueError(f"Key {key} does not have entries corresponding to each control for this section!")
 
                     # Accumulate icont max
                     if "icontd" in inputDict["surfaces"][surface].keys():
-                        total_global_control = np.max(inputDict["surfaces"][surface]["icontd"])+1
+                        arr = inputDict["surfaces"][surface]["icontd"]
+                        vals = [a.max()+1 for a in arr if a.size > 0]
+                        total_global_control = max(vals) if vals else None
+                        #total_global_control = np.max(inputDict["surfaces"][surface]["icontd"])+1
 
                     # Check if dvs defined correctly
                     if key in control_keys:
                         for j in range(inputDict["surfaces"][surface]["num_sections"]):
-                            for _ in range(inputDict["surfaces"][surface]["num_design_vars"][0][j]):
-                                if inputDict["surfaces"][surface][key][0][j].shape[0] != inputDict["surfaces"][surface]["num_design_vars"][0][j]:
+                            for _ in range(inputDict["surfaces"][surface]["num_design_vars"][j]):
+                                if inputDict["surfaces"][surface][key][j].shape[0] != inputDict["surfaces"][surface]["num_design_vars"][j]:
                                     raise ValueError(f"Key {key} does not have entries corresponding to each design var for this section!")
 
                     # Accumulate idestd max
                     if "idestd" in inputDict["surfaces"][surface].keys():
-                        total_global_design_var = np.max(inputDict["surfaces"][surface]["idestd"])+1
+                        arr = inputDict["surfaces"][surface]["idestd"]
+                        vals = [a.max()+1 for a in arr if a.size > 0]
+                        total_global_design_var = max(vals) if vals else None
+                        # total_global_design_var = np.max(inputDict["surfaces"][surface]["idestd"])+1
 
             if "icontd" in inputDict["surfaces"][surface].keys():
-                if len(inputDict["dname"][0]) != (total_global_control):
+                if len(inputDict["dname"]) != (total_global_control):
                     raise ValueError("Number of unique control names does not match the number of unique controls defined!")
 
             if "idestd" in inputDict["surfaces"][surface].keys():
-                if len(inputDict["gname"][0]) != (total_global_design_var):
+                if len(inputDict["gname"]) != (total_global_design_var):
                     raise ValueError("Number of unique design vars does not match the number of unique controls defined!")
     else:
         # Add dummy entry to make later code simpler
