@@ -37,16 +37,13 @@ class TestGeom(unittest.TestCase):
                 "sspaces": np.array([-1.0, 0.0, 1.0, 2.0, 3.0]),
                 "aincs": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
                 "chords": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
-                "xles" : np.array([0, 0.1, 0.2, 0.3, 0.4]),
-                "yles" : np.array([0, 1.0, 2.0, 3.0, 4.0]),
-                "zles" : np.array([0, 0.01, 0.02, 0.03, 0.04])
+                "xles": np.array([0, 0.1, 0.2, 0.3, 0.4]),
+                "yles": np.array([0, 1.0, 2.0, 3.0, 4.0]),
+                "zles": np.array([0, 0.01, 0.02, 0.03, 0.04]),
             },
         }
 
         data = self.ovl_solver.get_surface_params(include_geom=True, include_paneling=True, include_con_surf=True)
-        
-        from pprint import pprint
-        
 
         for surf in reference_data:
             for key in reference_data[surf]:
@@ -60,7 +57,7 @@ class TestGeom(unittest.TestCase):
         self.ovl_solver.set_constraint("alpha", 6.00)
         self.ovl_solver.set_constraint("beta", 2.00)
         self.ovl_solver.execute_run()
-        
+
         assert self.ovl_solver.get_num_surfaces() == 5
         assert self.ovl_solver.get_num_strips() == 90
         assert self.ovl_solver.get_mesh_size() == 780
@@ -75,7 +72,7 @@ class TestGeom(unittest.TestCase):
             2.0,
             rtol=1e-8,
         )
-        
+
         coefs = self.ovl_solver.get_total_forces()
         np.testing.assert_allclose(
             coefs["CL"],
@@ -84,7 +81,6 @@ class TestGeom(unittest.TestCase):
         )
 
         self.ovl_solver.set_surface_params(data)
-        
 
         assert self.ovl_solver.get_num_surfaces() == 5
         assert self.ovl_solver.get_num_strips() == 90
@@ -104,7 +100,7 @@ class TestGeom(unittest.TestCase):
             2.0,
             rtol=1e-8,
         )
-        
+
         coefs = self.ovl_solver.get_total_forces()
         np.testing.assert_allclose(
             coefs["CL"],
@@ -113,41 +109,28 @@ class TestGeom(unittest.TestCase):
         )
 
     def test_surface_mirroring(self):
-        
         # Take the one wing and streach out the tip
         new_data = {
             "Wing": {
-                "yles" : np.array([0, 1.0, 2.0, 3.0, 10.0]),
+                "yles": np.array([0, 1.0, 2.0, 3.0, 10.0]),
             },
         }
-        
+
         self.ovl_solver.set_constraint("alpha", 10.00)
         self.ovl_solver.set_surface_params(new_data)
-        
+
         self.ovl_solver.execute_run()
-        
+
         run_data = self.ovl_solver.get_total_forces()
-        
+
         # if only one wing was updated then will have unbalanced yaw and roll moments
-        np.testing.assert_allclose(
-            run_data["CR SA"],
-            0.0,
-            atol=1e-12
-        )
-        
-        np.testing.assert_allclose(
-            run_data["CN SA"],
-            0.0,
-            atol=1e-12
-        )
-        
+        np.testing.assert_allclose(run_data["CR SA"], 0.0, atol=1e-12)
+
+        np.testing.assert_allclose(run_data["CN SA"], 0.0, atol=1e-12)
+
         updated_data = self.ovl_solver.get_surface_params(include_geom=True)
-        
-        np.testing.assert_allclose(
-            updated_data["Wing"]["yles"],
-            new_data["Wing"]["yles"],
-            atol=1e-16
-        )
+
+        np.testing.assert_allclose(updated_data["Wing"]["yles"], new_data["Wing"]["yles"], atol=1e-16)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ import shutil
 import sys
 import platform
 
+
 def _tmp_pkg(tempDir):
     """
     Create a temporary package.
@@ -36,16 +37,15 @@ class MExt(object):
     """
 
     def __init__(self, libName, packageName, pip_name, lib_so_file=None, debug=False):
-        
         if lib_so_file is None:
             lib_so_file = f"{libName}.so"
-        
+
         tmpdir = tempfile.gettempdir()
         self.name = libName
         self.debug = debug
         # first find the "real" module on the "real" syspath
         spec = find_spec(packageName)
-        srcpath = os.path.join(spec.submodule_search_locations[0],  lib_so_file)
+        srcpath = os.path.join(spec.submodule_search_locations[0], lib_so_file)
         # now create a temp directory for the bogus package
         self._pkgname, self._pkgdir = _tmp_pkg(tmpdir)
         # copy the original module to the new package
@@ -71,13 +71,13 @@ class MExt(object):
         else:
             # raise NotImplementedError("platform not supported")
             print(tmpdir)
-            srcpath = os.path.join(spec.submodule_search_locations[0],  "libavl.cp39-win_amd64.dll.a")
-            pass            
+            srcpath = os.path.join(spec.submodule_search_locations[0], "libavl.cp39-win_amd64.dll.a")
+            pass
         # add the directory containing the new package to the search path
         sys.path.append(tmpdir)
         # import the module
         # __import__ returns the package, not the sub-module
-        
+
         self._pkg = __import__(self._pkgname, globals(), locals(), [self.name])
         # remove the bogus directory from sys.path
         sys.path.remove(tmpdir)
@@ -89,9 +89,8 @@ class MExt(object):
     def __del__(self):
         # remove module if not in debug mode
         if not self.debug:
-            
             # if the module was imported, remove it from sys.modules
-            if hasattr(self,"_pkg"):
+            if hasattr(self, "_pkg"):
                 del sys.modules[self._module.__name__]
                 del sys.modules[self._pkg.__name__]
 
