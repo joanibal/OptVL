@@ -66,7 +66,7 @@ class TestConstraints(unittest.TestCase):
         self.ovl_solver.set_constraint("D2", 5.00)
         self.ovl_solver.execute_run()
         run_data = self.ovl_solver.get_total_forces()
-        
+
         np.testing.assert_allclose(
             run_data["CL"],
             1.0106168310619361,
