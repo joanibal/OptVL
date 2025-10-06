@@ -162,7 +162,7 @@ class OVLSolver(object):
 
 
     general_to_fort_var = {
-        "title": ["CASE_R", "TITLE"],
+        # "title": ["CASE_R", "TITLE"],
         "mach":  ["CASE_R", "MACH0"],
         "iysym": ["CASE_I", "IYSYM"],
         "izsym": ["CASE_I", "IZSYM"],
@@ -492,8 +492,8 @@ class OVLSolver(object):
         #Parse and Load Mandatory General Info
         # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
         generalFields = {
-            "title": (self.avl.CASE_R, "TITLE", str, "Case", None,
-                    lambda v: self._createFortranStringArray([v], num_max_char=120)),
+            "title": (self.avl.CASE_R, "TITLE", str, "Case", None, None),
+                    #lambda v: self._createFortranStringArray([v], num_max_char=120)), # this causes issues
             "mach":  (self.avl.CASE_R, "MACH0", (float,np.float64), 0.0, None, None),
             "iysym": (self.avl.CASE_I, "IYSYM", (int,np.int32), 0, None, np.sign),
             "izsym": (self.avl.CASE_I, "IZSYM", (int,np.int32), 0, None, np.sign),
@@ -654,6 +654,10 @@ class OVLSolver(object):
                         xfminmax = surf["xfminmax"][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
                         if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
                             self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
+                        # Store this stuff so we can read it later
+                        self.avl.CASE_C.NACA[j,i] =  surf["naca"][j]
+                        self.avl.SURF_GEOM_R.XFMIN_R[j,i] = xfminmax[0]
+                        self.avl.SURF_GEOM_R.XFMAX_R[j,i] = xfminmax[1]
                         self.set_section_naca(j,i,min(50,self.IBX),surf["naca"][j],xfminmax)
 
                     # Airfoil coordinates set directly in dictionary
@@ -661,16 +665,16 @@ class OVLSolver(object):
                         xfminmax = surf["xfminmax"][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
                         # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)): # Set in Fortran layer
                         #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
-                        self.set_section_coordinates(j,i,min(50,self.IBX),surf["airfoils"][j][0],surf["airfoils"][j][1],xfminmax)
+                        self.set_section_coordinates(j,i,min(50,self.IBX),surf["airfoils"][j][0],surf["airfoils"][j][1],xfminmax, True)
 
                     # Load airfoil file
                     if "afiles" in surf.keys():
                         xfminmax = surf["xfminmax"][j] if "xfminmax" in surf.keys() else np.array([0., 1.])
                         # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)): # Set in Fortran layer
                         #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
-                        self.avl.CASE_C.AFILES[i,j] = surf['afiles'][0][j]
-                        X = self._readDat(surf["afiles"][0][j])
-                        self.set_section_coordinates(j,i,min(50,self.IBX),X[:,0],X[:,1],xfminmax)
+                        self.avl.CASE_C.AFILES[j,i] = surf['afiles'][j]
+                        X = self._readDat(surf["afiles"][j])
+                        self.set_section_coordinates(j,i,min(50,self.IBX),X[:,0],X[:,1],xfminmax, True)
 
                     # Set control and design variable defaults
                     self.set_avl_fort_arr("SURF_GEOM_I","NSCON", 0, slicer=(i,j))
@@ -819,7 +823,7 @@ class OVLSolver(object):
 
                 # Load airfoil file
                 if "body_oml" in body.keys():
-                    self.set_body_coordinates(i,min(50,self.IBX),body["body_oml"][0],body["body_oml"][1])
+                    self.set_body_coordinates(i,min(50,self.IBX),body["body_oml"][0,:],body["body_oml"][1,:],True)
                 if "bfile" in body.keys():
                     # xfminmax doesn't appear to be supported for bodies and the fact that the bfil input routine in the fortran layer takes them at all is a bug?
                     # xfminmax = body["xfminmax"][j] if "xfminmax" in body.keys() else np.array([0., 1.])
@@ -827,7 +831,7 @@ class OVLSolver(object):
                     #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
                     self.avl.CASE_C.BFILES[i] = body['bfile']
                     X = self._readDat(body["bfile"])
-                    self.set_body_coordinates(i,min(50,self.IBX),X[:,0],X[:,1])
+                    self.set_body_coordinates(i,min(50,self.IBX),X[:,0],X[:,1],True)
 
                 # Make the body
                 if self.debug:
@@ -909,7 +913,7 @@ class OVLSolver(object):
         self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", zf + 0.5*thickness*np.cos(theta), slicer=(isurf,isec,slice(0,nasec)))
         self.set_avl_fort_arr("SURF_GEOM_R","CASEC", zf, slicer=(isurf,isec,slice(0,nasec)))
 
-    def set_section_coordinates(self,isec: int, isurf: int, nasec: int, x: np.ndarray, y: np.ndarray, xfminmax: np.ndarray):
+    def set_section_coordinates(self,isec: int, isurf: int, nasec: int, x: np.ndarray, y: np.ndarray, xfminmax: np.ndarray, storecoords: bool = False):
         """Sets the airfoil oml points for the specified surface and section. Computes the camber line and interpolates it
         with AVL's 1D Akima Spline implementation.
 
@@ -921,6 +925,7 @@ class OVLSolver(object):
             x: airfoil x-coordinate array
             y: airfoil y-coodinate array
             xfminmax: length 2 array with the min and max x/c to slice the airfoil
+            storecoords: store the raw input coordinates in common block
         """
 
         if ((len(x) > self.IBX) or (len(y) > self.IBX)):
@@ -934,9 +939,9 @@ class OVLSolver(object):
         # if isec+1 > self.get_num_sections(self.get_surface_names(remove_dublicated=True)[isec]):
         #     raise RuntimeError(f"section {isec} in surface {isurf} does not exist!")
 
-        self.avl.set_section_coordinates(isec+1,isurf+1,x,y,nasec,xfminmax[0],xfminmax[1])
+        self.avl.set_section_coordinates(isec+1,isurf+1,x,y,nasec,xfminmax[0],xfminmax[1],storecoords)
 
-    def set_body_coordinates(self,ibod: int, nasec: int, x: np.ndarray, y: np.ndarray):
+    def set_body_coordinates(self,ibod: int, nasec: int, x: np.ndarray, y: np.ndarray, storecoords: bool = False):
         """Sets the body of revolution oml points for the specified body. Computes the camber line and interpolates it
         with AVL's 1D Akima Spline implementation.
 
@@ -947,6 +952,7 @@ class OVLSolver(object):
             x: oml x-coordinate array
             y: oml y-coodinate array
             xfminmax: length 2 array with the min and max x/c to slice the oml
+            storecoords: store the raw input coordinates in common block
         """
 
         if ((len(x) > self.IBX) or (len(y) > self.IBX)):
@@ -955,12 +961,12 @@ class OVLSolver(object):
             raise RuntimeError("Airfoil shape not defined. Too few points!")
         if len(x) != len(y):
             raise RuntimeError(f"x and y array lengths do not match! len x: {len(x)}, len y: {len(y)}")
-        if ibod+1 > self.get_num_surfaces():
+        if ibod+1 > self.avl.CASE_I.NBODY:
             raise RuntimeError(f"body {ibod} does not exist!")
         # if isec+1 > self.get_num_sections(self.get_surface_names(remove_dublicated=True)[isec]):
         #     raise RuntimeError(f"section {isec} in surface {isurf} does not exist!")
 
-        self.avl.set_body_coordinates(ibod+1,x,y,nasec)
+        self.avl.set_body_coordinates(ibod+1,x,y,nasec,storecoords)
 
     # MOVED TO FORTRAN...amake.f
     # def set_section_coordinates(self,isec: int, isurf: int, nasec: int, x: np.ndarray, y: np.ndarray, xfminmax: np.ndarray):
@@ -1039,9 +1045,9 @@ class OVLSolver(object):
                     # Check controls and design variables per section
                     for j in range(surf["num_sections"]):
                         if self.avl.SURF_GEOM_I.NSCON[i,j] != surf["num_controls"][j]:
-                            raise RuntimeError(f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[i,j]}, Dictionary: {surf["num_controls"][j]}")
+                            raise RuntimeError(f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[i,j]}, Dictionary: {surf['num_controls'][j]}")
                         if self.avl.SURF_GEOM_I.NSDES[i,j] != surf["num_design_vars"][j]:
-                            raise RuntimeError(f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[i,j]}, Dictionary: {surf["num_design_vars"][j]}")
+                            raise RuntimeError(f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[i,j]}, Dictionary: {surf['num_design_vars'][j]}")
 
                 # Check the global control and design var count
                 if "dname" in inputDict.keys():
@@ -1764,7 +1770,7 @@ class OVLSolver(object):
             warnings.warn("OptVL WARNING - Getting control surface and design variables is not supported with this function.\n" \
                           "Use the get_con_surf_param function.",stacklevel=2)
         elif param in ["afiles","airfoils","naca"]:
-            warnings.warn("OptVL WARNING - Getting section geometry data with using airfoils, afiles, or naca is not supported.",stacklevel=2)
+            warnings.warn("OptVL WARNING - Getting section geometry data using airfoils, afiles, or naca with this function is not supported.",stacklevel=2)
         else:
             raise ValueError(
                 f"param, {param}, not in found for {surf_name}, that has geom data {list(self.surf_geom_to_fort_var[surf_name].keys()) + list(self.surf_section_geom_to_fort_var[surf_name].keys()) + list(self.surf_pannel_to_fort_var[surf_name].keys())}"
@@ -1835,9 +1841,10 @@ class OVLSolver(object):
         """Get all the surface level parameters for each suface
 
         Args:
-            include_geom: flag to include geometry data in the output. The data is ["scale", "translate", "angle", "xles", "yles", "zles", "chords", "aincs", "xasec", "sasec", "tasec", "clcdsec", "claf"]
-            include_paneling:  flag to include paneling information in the output. The data ["nchordwise", "cspace","nspan", "sspace","sspaces","nspans","yduplicate", "use surface spacing", "component"]
-            include_con_surf:  flag to include control surface data in the output. This is data like the hinge vector and gain.
+            include_geom: flag to include geometry data in the output. The data is ["scale", "translate", "angle", "xles", "yles", "zles", "chords", "aincs", "clcdsec", "claf"]
+            include_section_geom: flag to include section geometry data in the output. The data is ["xasec", "sasec", "tasec", xuasec, xlasec, zlasec, zuasec, casec, nasec]
+            include_paneling:  flag to include paneling information in the output. The data ["nchordwise", "cspace","nspan", "sspace","sspaces","nspans","yduplicate", "wake", "able", "load", "use surface spacing", "component"]
+            include_con_surf:  flag to include control surface and design variable data in the output. This is data like the hinge vector and gain.
             include_airfoils:  flag to include airfoil file data in the output
 
         Return:
@@ -1878,21 +1885,43 @@ class OVLSolver(object):
                     surf_data[surf_name][var] = slice_data
 
             if include_airfoils:
-                # add airfoil files names if requested NOTE: Only returns airfoil file names if set that way. NACA and dictionary coordinates not directly stored.
+                # add airfoil files/coordinates/naca names if requested
+                # NOTE: If section geometry was modified NACA and afile data won't be accurate
+                # NOTE: If NACA is set then airfoil will be zeros. Check the raw section data instead
                 afiles = []
-                num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
+                nacas = []
+                airfoils = []
+                xfminmax = []
 
+                num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
                 for idx_sec in range(num_sec):
                     afile = self.__decodeFortranString(self.avl.CASE_C.AFILES[idx_sec, idx_surf])
                     afiles.append(afile)
 
+                    naca = self.__decodeFortranString(self.avl.CASE_C.NACA[idx_sec, idx_surf])
+                    nacas.append(naca)
+
+                    airfoilx = np.trim_zeros(self.get_avl_fort_arr("SURF_GEOM_R", "XSEC")[idx_surf, idx_sec, slice(None)])
+                    airfoily = np.trim_zeros(self.get_avl_fort_arr("SURF_GEOM_R", "YSEC")[idx_surf, idx_sec, slice(None)])
+
+                    airfoils.append([airfoilx,airfoily])
+
+                    xfmin = self.get_avl_fort_arr("SURF_GEOM_R", "XFMIN_R")[idx_surf, idx_sec]
+                    xfmax = self.get_avl_fort_arr("SURF_GEOM_R", "XFMAX_R")[idx_surf, idx_sec]
+
+                    xfminmax.append([xfmin,xfmax])
+
+                surf_data[surf_name]["naca"] = nacas
+                surf_data[surf_name]["airfoils"] = np.array(airfoils)
                 surf_data[surf_name]["afiles"] = afiles
+                surf_data[surf_name]["xfminmax"] = np.array(xfminmax)
 
         return surf_data
 
     def set_surface_params(self, surf_data: Dict[str, Dict[str, any]]):
         """Set the given data of the current geometry.
         ASSUMES THE CONTROL SURFACE DATA STAYS AT THE SAME LOCATION
+        (i.e  you didn't move the control surfaces to new sections or surfaces. If so re-initialize OptVL)
 
         Args:
             surf_data: Nested dictionary where the 1st key is the surface name and the 2nd key is the parameter.
@@ -2008,8 +2037,11 @@ class OVLSolver(object):
         if update_geom:
             self.avl.update_bodies()
 
-    def get_body_params(self) -> Dict[str, Dict[str, Any]]:
+    def get_body_params(self, include_body_oml: bool = False, ) -> Dict[str, Dict[str, Any]]:
         """Get the parameters of the bodies
+
+        Args:
+            include_body_oml: include the raw oml coordinates in the output dict
 
         Returns:
             body_data: Nested dictionary where the 1st key is the body name and the 2nd key is the parameter.
@@ -2033,6 +2065,9 @@ class OVLSolver(object):
             if not self.get_avl_fort_arr(self.body_geom_to_fort_var["yduplicate"][0],self.body_geom_to_fort_var["yduplicate"][1])[idx_body]:
                 body_data[body_name].pop("yduplicate")
 
+            if include_body_oml:
+                body_data[body_name]["body_oml"] = np.array([np.trim_zeros(self.get_avl_fort_arr("BODY_GEOM_R","XBOD_R")[idx_body,slice(None)]), np.trim_zeros(self.get_avl_fort_arr("BODY_GEOM_R","YBOD_R")[idx_body,slice(None)])])
+
         return body_data
 
     def set_body_params(self, body_data: Dict[str, Dict[str, Any]]):
@@ -2054,33 +2089,55 @@ class OVLSolver(object):
                 )
 
             for var in body_data[body_name]:
+                if var == "body_oml":
+                    raise RuntimeError("The body oml cannot be set with this function! Use set_body_coordinates.")
                 self.set_body_param(body_name, var, body_data[body_name][var], update_geom=False)
 
         # update the geometry once at the end
         self.avl.update_bodies()
 
-    def set_general_param(self, body_name: str, param: str, val, update_geom: bool = True):
-        pass
+    def get_general_params(self) -> Dict:
+        """Gets the general input settings in AVL and returns them in a dictionary.
 
-    def get_general_params(self, general_data : Dict):
-        """Set the general data in AVL.
+        Returns:
+            Dict[str]: Dictionary containing the general input settings in AVL
+        """
+        general_data = {}
+
+        general_data["title"] = self.avl.CASE_R.TITLE
+
+        for var, fort_var in self.general_to_fort_var.items():
+            val = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=None)
+            general_data[var] = val
+
+        return general_data
+
+    def get_input_dict(self, include_surfaces:bool = True, include_section_geom:bool = False, include_bodies:bool = True) -> Dict[str, Dict[str, Any]]:
+        """Returns all input information from AVL in input dictionary format.
 
         Args:
-            general_data: Dictionary where the keys correspond to each parameter.
+            include_surfaces (bool, optional): Include all surfaces in the dictionary. Defaults to True.
+            include_section_geom (bool, optional): Include all the section geometry information for each surface. Defaults to False.
+            include_bodies (bool, optional): Include all bodies in the dictionary. Defaults to True.
 
+        Returns:
+            Dict[str, Dict[str, Any]]: OptVL input dictionary
         """
-        for var in general_data:
-            self.set_general_param()
 
-    def set_general_params(self, general_data : Dict):
-        """Set the general data in AVL.
+        input_dict = self.get_general_params()
 
-        Args:
-            general_data: Dictionary where the keys correspond to each parameter.
+        if include_surfaces:
+            input_dict["surfaces"] = self.get_surface_params(include_paneling=True, include_airfoils=True, include_con_surf=True, include_section_geom=include_section_geom)
+        else:
+            input_dict["surfaces"] = {}
 
-        """
-        for var in general_data:
-            self.set_general_param()
+        if include_bodies:
+            input_dict["bodies"] = self.get_body_params(include_body_oml=True)
+        else:
+            input_dict["bodies"] = {}
+
+        return input_dict
+
 
     # region --- geometry file writing api
     def write_geom_file(self, filename: str):
@@ -2147,7 +2204,7 @@ class OVLSolver(object):
         self._write_fort_vars(fid, "case_r", "bref")
 
         fid.write("#Xref    Yref    Zref\n")
-        self._write_fort_vars(fid, "case_r", "XYZREF")
+        self._write_fort_vars(fid, "case_r", "XYZREF0") # The inpute routine reads the defaults
 
         fid.write("#CD0\n")
         self._write_fort_vars(fid, "case_r", "CDREF0")
@@ -2162,9 +2219,9 @@ class OVLSolver(object):
         banner = f"#{'=' * (width)}\n#{header.center(width, '-')}\n#{'=' * (width)}\n"
         fid.write(banner)
 
-        # ======================================================
-        # ------------------- Geometry File --------------------
-        # ======================================================
+    # ====================================================== #TODO: Ask Josh if this was for anything?
+    # ------------------- Geometry File --------------------
+    # ======================================================
 
     def _write_body(self, fid: TextIO, body_name: str, data: Dict[str, float]):
         self._write_banner(fid, body_name)
@@ -2172,6 +2229,9 @@ class OVLSolver(object):
         fid.write(f"{body_name}\n")
         fid.write(f"#N  Bspace\n")
         fid.write(f"{data['nvb']} {data['bspace']}\n")
+        if "yduplicate" in data.keys():
+            fid.write("YDUPLICATE\n")
+            fid.write(f"{data['yduplicate']}\n")
         fid.write("SCALE\n")
         fid.write(f"{data['scale'][0]} {data['scale'][1]} {data['scale'][2]}\n")
         fid.write("TRANSLATE\n")
@@ -2219,6 +2279,13 @@ class OVLSolver(object):
             fid.write("YDUPLICATE\n")
             _write_data(["yduplicate"])
 
+        if not data["wake"]:
+            fid.write("NOWAKE\n")
+        if not data["able"]:
+            fid.write("NOABLE\n")
+        if not data["load"]:
+            fid.write("NOLOAD\n")
+
         idx_surf = self.get_surface_index(surf_name)
         if idx_surf + 1 != data["component"]:
             # only add component keys if we have to to avoid freaking
@@ -2235,10 +2302,23 @@ class OVLSolver(object):
         fid.write("ANGLE\n")
         _write_data(["angle"])
 
+        if (data["clcd"] != 0.0).any():
+            fid.write(" CDCL\n")
+            fid.write(
+                f" {data['clcd'][0]:.6f} "
+                f" {data['clcd'][1]:.6f} "
+                f" {data['clcd'][2]:.6f} "
+                f" {data['clcd'][3]:.6f} "
+                f" {data['clcd'][4]:.6f} "
+                f" {data['clcd'][5]:.6f}\n"
+            )
+
+
         fid.write("#---------------------------------------\n")
 
         num_sec = data["chords"].size
         control_names = self.get_control_names()
+        design_var_names = self.get_design_var_names()
 
         for idx_sec in range(num_sec):
             fid.write("SECTION\n")
@@ -2263,10 +2343,25 @@ class OVLSolver(object):
                 )
 
             afile = data["afiles"][idx_sec]
+            naca = data["naca"][idx_sec]
+            airfoil = data["airfoils"][idx_sec]
+
+            if naca:
+                fid.write("#NACA | X1 X2\n")
+                fid.write(f" NACA   {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]}\n")
+                fid.write(f" {naca}\n")
+
+            if airfoil.all():
+                fid.write("#AIRFOIL | X1 X2\n")
+                fid.write(f"AIRFOIL   {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]}\n")
+                for i in range(0,min(self.IBX,len(airfoil[0,:]))):
+                    fid.write(f" {airfoil[0,i]} {airfoil[1,i]}\n")
 
             if afile:
-                fid.write(" AFILE\n")
+                fid.write("#AFILE | X1 X2\n")
+                fid.write(f" AFILE {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]} \n")
                 fid.write(f" {afile}\n")
+
             # output claf and  clcd if not default
             if data["claf"][idx_sec] != 1.0:
                 fid.write(" CLAF\n")
@@ -2284,7 +2379,6 @@ class OVLSolver(object):
                 )
 
             # check for control surfaces
-
             for idx_local_cont_surf, idx_cont_surf in enumerate(data["icontd"][idx_sec]):
                 fid.write(" CONTROL\n")
                 fid.write("#surface   gain xhinge       hvec       SgnDup\n")
@@ -2294,6 +2388,13 @@ class OVLSolver(object):
                 vhinge = data["vhinged"][idx_sec][idx_local_cont_surf]
                 fid.write(f" {vhinge[0]:.6f} {vhinge[1]:.6f} {vhinge[2]:.6f}")
                 fid.write(f" {data['refld'][idx_sec][idx_local_cont_surf]}\n")
+
+            # check for design variables
+            for idx_local_des_var, idx_des_var in enumerate(data["idestd"][idx_sec]):
+                fid.write(" DESIGN\n")
+                fid.write("#surface   gain\n")
+                fid.write(f" {design_var_names[idx_des_var - 1]} ")
+                fid.write(f" {data['gaing'][idx_sec][idx_local_des_var]}\n")
 
     def __decodeFortranString(self, fort_string: str) -> str:
         # TODO: need a more general solution for |S<variable> type

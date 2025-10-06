@@ -820,7 +820,7 @@ c--------------------------------------------------------------
       end subroutine update_bodies
 
       subroutine  set_section_coordinates(isec,isurf,x,y,n,nin,xfmin,
-     &       xfmax)
+     &       xfmax, storecoords)
 c--------------------------------------------------------------
 c     Sets the airfoil coodinate data for the given section and surface
 c--------------------------------------------------------------
@@ -829,6 +829,19 @@ c--------------------------------------------------------------
       real x(n), y(n)
       real xin(IBX), yin(IBX), tin(IBX)
       real xfmin, xfmax
+      logical storecoords
+
+        if (storecoords) then
+c--------------------------------------------------------------
+c     Store the raw input data into the common block for general purposes
+c--------------------------------------------------------------
+        do i = 1,n
+          XSEC(i,isec, isurf) = x(i)
+          YSEC(i,isec, isurf) = y(i)
+        end do
+        XFMIN_R(isec,isurf) = xfmin
+        XFMAX_R(isec,isurf) = xfmax
+        end if
 
         if((xfmin .gt. 0.01) .or. (xfmax .lt. 0.99)) then
           write(*,*) 'aifoil Lrange false', isurf, isec
@@ -862,15 +875,26 @@ c--------------------------------------------------------------
       
       end subroutine set_section_coordinates
 
-      subroutine set_body_coordinates(ibod,xb,yb,nb,nin)
+      subroutine set_body_coordinates(ibod,xb,yb,nb,nin,storecoords)
 c--------------------------------------------------------------
 c     Sets the body oml coodinate data for the given section and surface
 c--------------------------------------------------------------
       include 'AVL.INC'
       integer ibod, nb, nin
       real xb(nb), yb(nb)
+      logical storecoords
 C      real xin(ibx), yin(ibx), tin(ibx)
 C------ xfmin and xfmax don't appear to be supported for bodies?
+
+      if (storecoords) then
+c--------------------------------------------------------------
+c     Store the raw input data into the common block for general purposes
+c--------------------------------------------------------------
+      do i = 1,nb
+      XBOD_R(i,ibod) = xb(i)
+      YBOD_R(i,ibod) = yb(i)
+      end do
+      end if
 
 C------ set thread line y, and thickness t ( = 2r)
       nbod = MIN( 50 , IBX )

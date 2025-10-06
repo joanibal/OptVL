@@ -59,6 +59,7 @@ C
       CHARACTER*40 STITLE, BTITLE, RTITLE
       CHARACTER*120 AFILES
       CHARACTER*120 BFILES
+      CHARACTER*4 NACA
       
       CHARACTER*16 DNAME, GNAME
       CHARACTER*12 VARNAM, CONNAM
@@ -77,6 +78,7 @@ C
      & AFILES(NSMAX,NFMAX),  ! airfoil file names
      & BTITLE(NBMAX),  ! body title
      & BFILES(NBMAX),  ! body file names
+     & NACA(NSMAX,NFMAX),  ! naca section names
      & RTITLE(NRMAX),  ! run case title
      & DNAME(NDMAX),   ! control variable name
      & GNAME(NGMAX),   ! design  variable name
@@ -402,6 +404,8 @@ c
       REAL(kind=avl_real) XBOD
       REAL(kind=avl_real) YBOD
       REAL(kind=avl_real) TBOD
+      REAL(kind=avl_real) XBOD_R
+      REAL(kind=avl_real) YBOD_R
       COMMON /BODY_GEOM_R/
      & XYZSCAL_B(3, NBMAX), ! scaling factors for XYZ coordinates
      & XYZTRAN_B(3, NBMAX), ! translation factors for XYZ coordinates
@@ -410,7 +414,9 @@ c
      & BSPACE(NBMAX), ! body spacing
      & XBOD(IBX, NBMAX), ! body oml x-coordinates
      & YBOD(IBX, NBMAX), ! body oml y-coordinates
-     & TBOD(IBX, NBMAX) ! body oml thickness
+     & TBOD(IBX, NBMAX), ! body oml thickness
+     & XBOD_R(IBX, NBMAX), ! raw input oml x-coordinates
+     & YBOD_R(IBX, NBMAX) ! raw input oml y-coordinates
 c
       LOGICAL LDUPL
       LOGICAL LSURFSPACING
@@ -437,6 +443,10 @@ c
       REAL(kind=avl_real) SSPACE
       REAL(kind=avl_real) SSPACES
       REAL(kind=avl_real) XYZLES
+      REAL(kind=avl_real) XSEC
+      REAL(kind=avl_real) YSEC
+      REAL(kind=avl_real) XFMIN_R
+      REAL(kind=avl_real) XFMAX_R
       REAL(kind=avl_real) XLASEC
       REAL(kind=avl_real) ZLASEC
       REAL(kind=avl_real) XUASEC
@@ -464,6 +474,10 @@ c
      & SSPACE(NFMAX), ! spanwise spacing
      & SSPACES(NSMAX, NFMAX), ! spanwise spacing vector
      & XYZLES(3, NSMAX, NFMAX), ! leading edge cordinate vector
+     & XSEC(IBX, NSMAX, NFMAX), ! raw section input x coordinates
+     & YSEC(IBX, NSMAX, NFMAX), ! raw section input y coordinates
+     & XFMIN_R(NSMAX, NFMAX), ! section input lower x bound 
+     & XFMAX_R(NSMAX, NFMAX), ! section input upper x bound 
      & XLASEC(IBX, NSMAX, NFMAX), ! airfoil lower surface x-coords
      & ZLASEC(IBX, NSMAX, NFMAX), ! airfoil lower surface z-coords
      & XUASEC(IBX, NSMAX, NFMAX), ! airfoil upper surface x-coords

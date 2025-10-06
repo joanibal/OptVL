@@ -35,7 +35,7 @@ def pre_check_input_dict(inputDict:dict):
             "mach",
             "iysym",
             "izsym",
-            "zsym",
+            "zsymm",
             "Sref",
             "Cref",
             "Bref",
@@ -45,17 +45,21 @@ def pre_check_input_dict(inputDict:dict):
             "CDp",
             "surfaces",
             "bodies",
+            "dname",
+            "gname",
     ]
 
     # NOTE: make sure this is consistent to the documentation  page
     keys_implemented_surface = [
             #General
             "num_sections",
+            "num_controls",
+            "num_design_vars",
             'component', # logical surface component index (for grouping interacting surfaces, see AVL manual)
             'yduplicate', # surface is duplicated over the ysymm plane
-            'nowake', # specifies that this surface is to NOT shed a wake, so that its strips will not have their Kutta conditions imposed
-            'noalbe', # specifies that this surface is unaffected by freestream direction changes specified by the alpha,beta angles and p,q,r rotation rates
-            'noload', # specifies that the force and moment on this surface is to NOT be included in the overall forces and moments of the configuration
+            'wake', # specifies that this surface is to NOT shed a wake, so that its strips will not have their Kutta conditions imposed
+            'albe', # specifies that this surface is unaffected by freestream direction changes specified by the alpha,beta angles and p,q,r rotation rates
+            'load', # specifies that the force and moment on this surface is to NOT be included in the overall forces and moments of the configuration
             'clcdsec', # profile-drag CD(CL) function for each section in this surface
             'cdcl', # profile-drag CD(CL) function for all sections in this surface, overrides clcdsec.
             'claf', # CL alpha (dCL/da) scaling factor per section
