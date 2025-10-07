@@ -1245,7 +1245,7 @@ class OVLSolver(object):
         return deriv_data
 
     def get_stab_derivs(self) -> Dict[str, Dict[str, float]]:
-        """gets the stability derivates after an analysis run
+        """Gets the stability derivates after an analysis run
 
         Returns:
             stab_deriv_dict: Dictionary of stability derivatives.
@@ -1274,7 +1274,7 @@ class OVLSolver(object):
         return ref_data
 
     def get_avl_fort_arr(self, common_block: str, variable: str, slicer: Optional[slice] = None) -> np.ndarray:
-        """get data from the Fortran level common block data structure. see AVL.INC for all availible variables
+        """Get data from the Fortran level common block data structure. see AVL.INC for all availible variables
 
         Args:
             common_block: Name of the common block of the variable like `CASE_R`
@@ -1303,7 +1303,7 @@ class OVLSolver(object):
         return val
 
     def set_avl_fort_arr(self, common_block: str, variable: str, val: float, slicer: Optional[slice] = None) -> None:
-        """set data from the Fortran level common block data structure. see AVL.INC for all availible variables
+        """Set data from the Fortran level common block data structure. see AVL.INC for all availible variables
 
         Args:
             common_block: Name of the common block of the variable like `CASE_R`
@@ -1338,7 +1338,7 @@ class OVLSolver(object):
         return
 
     def get_surface_forces(self) -> Dict[str, Dict[str, float]]:
-        """returns the force data from each surface (including mirriored surfaces)
+        """Returns the force data from each surface (including mirriored surfaces)
 
         Returns:
             surf_data_dict: a dictionary of surface data where the first key is the surface and the second is the force coefficient
@@ -1360,7 +1360,7 @@ class OVLSolver(object):
 
     def get_parameter(self, param_key: str) -> float:
         """
-        analogous to ruinont Modify parameters for the OPER menu to view parameters.
+        Analogous to ruinont Modify parameters for the OPER menu to view parameters.
 
         Args:
             param_key: the name of the parameter to return
@@ -1387,7 +1387,7 @@ class OVLSolver(object):
         return param_val
 
     def get_constraint(self, con_key: str) -> float:
-        """get the value of a constraint
+        """Get the value of a constraint
 
         Args:
             con_key: name of the constraint. Options are ["alpha","beta","roll rate","pitch rate","yaw rate","CL","CY","CR BA","CM","CR"]
@@ -1403,7 +1403,7 @@ class OVLSolver(object):
         return con_val
 
     def set_parameter(self, param_key: str, param_val: float) -> None:
-        """modify a parameter of the run (analogous to M from the OPER menu in AVL).
+        """Modify a parameter of the run (analogous to M from the OPER menu in AVL).
 
         Args:
             param_key: parameter to modify. Options are ["alpha", "beta", "pb/2V", "qc/2V", "rb/2V", "CL"]
@@ -1575,7 +1575,7 @@ class OVLSolver(object):
         self.avl.execute_eigenmode_calc()
 
     def get_eigenvalues(self) -> np.ndarray:
-        """after running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL
+        """After running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL
 
         Returns:
             eig_vals: array of eigen values
@@ -2241,7 +2241,7 @@ class OVLSolver(object):
             fid.write(f"{data['bfile']}\n")
 
     def _write_surface(self, fid: TextIO, surf_name: str, data: Dict[str, float]):
-        """write a surface to a file"""
+        """Write a surface to a file"""
         # TODO add NACA and CLAF keyword support
 
         def _write_data(key_list: List[str], newline: bool = True):
@@ -2265,10 +2265,10 @@ class OVLSolver(object):
 
         # start with the banner
         self._write_banner(fid, surf_name)
-        fid.write(f"SURFACE\n")
+        fid.write("SURFACE\n")
         fid.write(f"{surf_name}\n")
 
-        fid.write(f"#Nchordwise  Cspace  [Nspanwise  Sspace]\n")
+        fid.write("#Nchordwise  Cspace  [Nspanwise  Sspace]\n")
         _write_data(["nchordwise", "cspace"], newline=False)
         if data["use surface spacing"]:
             _write_data(["nspan", "sspace"])
@@ -2435,7 +2435,7 @@ class OVLSolver(object):
         return self.get_avl_fort_arr("CASE_I", "NSURF")
 
     def get_surface_index(self, surf_name: str) -> int:
-        """given a surface name returns the index
+        """Given a surface name returns the index
 
         Args:
             surf_name: name of the surface
@@ -2485,7 +2485,8 @@ class OVLSolver(object):
 
     def _createFortranStringArray(self, strList, num_max_char):
         """Setting arrays of strings in Fortran can be kinda nasty. This
-        takesa list of strings and returns the array"""
+        takes a list of strings and returns the array.
+        """
 
         arr = np.zeros((len(strList), num_max_char), dtype="str")
         arr[:] = " "
@@ -3361,7 +3362,7 @@ class OVLSolver(object):
         mesh_linewidth=0.3,
         show_mesh: bool = True,
     ):
-        """adds a plot of the aircraft mesh to the axis
+        """Adds a plot of the aircraft mesh to the axis
 
         Args:
             axis: axis to add the plot to
@@ -3473,7 +3474,7 @@ class OVLSolver(object):
                         axis.plot(pts[xaxis], pts[yaxis], mesh_style, color=color, alpha=0.7, linewidth=mesh_linewidth)
 
     def plot_geom(self, axes=None):
-        """generate a matplotlib plot of geometry
+        """Generate a matplotlib plot of geometry
 
         Args:
             axes: Matplotlib axis object to add the plots too. If none are given, the axes will be generated.
@@ -3543,7 +3544,7 @@ class OVLSolver(object):
         return xyz_list, cp_list
 
     def plot_cp(self):
-        """create a matplotlib plot of the surface and cp distribution"""
+        """Create a matplotlib plot of the surface and cp distribution"""
         import matplotlib.pyplot as plt
         from matplotlib import cm
 
