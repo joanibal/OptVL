@@ -733,7 +733,7 @@ class OVLSolver(object):
                             raise RuntimeError(f"Number of specified design variables for section {j} exceeds {self.ICONX}. Raise ICONX!")
 
                         # Overwrite this on each section and surface on purpose. After looping over all surfaces this will end up being the right value
-                        self.avl.CASE_I.NDESIGN = max([a.max()+1 for a in surf["icontd"] if a.size > 0]) if [a.max()+1 for a in surf["idestd"] if a.size > 0] else 0
+                        self.avl.CASE_I.NDESIGN = max([a.max()+1 for a in surf["idestd"] if a.size > 0]) if [a.max()+1 for a in surf["idestd"] if a.size > 0] else 0
                         if self.avl.CASE_I.NDESIGN > self.NGMAX:
                             raise RuntimeError(f"Number of specified design variables exceeds {self.NGMAX}. Raise NGMAX!")
 
@@ -1769,7 +1769,7 @@ class OVLSolver(object):
         elif param in self.con_surf_to_fort_var[surf_name].keys():
             warnings.warn("OptVL WARNING - Getting control surface and design variables is not supported with this function.\n" \
                           "Use the get_con_surf_param function.",stacklevel=2)
-        elif param in ["afiles","airfoils","naca"]:
+        elif param in ["afiles","airfoils","naca", "xfminmax"]:
             warnings.warn("OptVL WARNING - Getting section geometry data using airfoils, afiles, or naca with this function is not supported.",stacklevel=2)
         else:
             raise ValueError(
@@ -1811,7 +1811,7 @@ class OVLSolver(object):
             # Set surface panelling variables
             fort_var = self.surf_pannel_to_fort_var[surf_name][param]
             self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
-        elif param in ["afiles","airfoils","naca"]:
+        elif param in ["afiles","airfoils","naca","xfminmax"]:
             # Cannot indirectly update the cross sections like this. Would over complicate this function when it can easily be handled by set_section_coordinates
             warnings.warn("OptVL WARNING - Updating section geometry data with using airfoils, afiles, or naca is not supported with this function.\n" \
                           "Use the set_section_coordinates function.",stacklevel=2)
