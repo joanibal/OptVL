@@ -480,9 +480,9 @@ class TestGeom(unittest.TestCase):
         #TODO : Fix file writing
         # Solvers loaded with inputs files (case 4 and 5 use the same file)
         self.ovl_solver_f1 = OVLSolver(geo_file=geom_file1)
-        # self.ovl_solver_f2 = OVLSolver(geo_file=geom_file2)
-        # self.ovl_solver_f3 = OVLSolver(geo_file=geom_file3)
-        # self.ovl_solver_f4 = OVLSolver(geo_file=geom_file4)
+        self.ovl_solver_f2 = OVLSolver(geo_file=geom_file2)
+        self.ovl_solver_f3 = OVLSolver(geo_file=geom_file3)
+        self.ovl_solver_f4 = OVLSolver(geo_file=geom_file4)
 
         self.solvers = [self.ovl_solver_1,self.ovl_solver_2,self.ovl_solver_3,self.ovl_solver_4,self.ovl_solver_5]
         self.solvers_f = [self.ovl_solver_f1,self.ovl_solver_f2,self.ovl_solver_f3,self.ovl_solver_f4]
