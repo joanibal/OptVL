@@ -477,7 +477,6 @@ class TestGeom(unittest.TestCase):
         self.ovl_solver_4 = OVLSolver(input_dict=input_dict4)
         self.ovl_solver_5 = OVLSolver(input_dict=input_dict5)
 
-        #TODO : Fix file writing
         # Solvers loaded with inputs files (case 4 and 5 use the same file)
         self.ovl_solver_f1 = OVLSolver(geo_file=geom_file1)
         self.ovl_solver_f2 = OVLSolver(geo_file=geom_file2)
@@ -488,12 +487,11 @@ class TestGeom(unittest.TestCase):
         self.solvers_f = [self.ovl_solver_f1,self.ovl_solver_f2,self.ovl_solver_f3,self.ovl_solver_f4]
 
     def test_surface_params(self):
+        # Check surface params from the input dictionary match up with the reference values
         data = []
 
         for solver in self.solvers:
             data.append(solver.get_surface_params(include_geom=True, include_paneling=True, include_con_surf=True))
-
-        from pprint import pprint
 
         for i in range(len(self.solvers)):
             for s in surf:
@@ -505,61 +503,75 @@ class TestGeom(unittest.TestCase):
                         err_msg=f"Surface `{s}` key `{key}` does not match reference data",
                     )
 
-        # self.ovl_solver.set_constraint("alpha", 6.00)
-        # self.ovl_solver.set_constraint("beta", 2.00)
-        # self.ovl_solver.execute_run()
-        
-        # assert self.ovl_solver.get_num_surfaces() == 5
-        # assert self.ovl_solver.get_num_strips() == 90
-        # assert self.ovl_solver.get_mesh_size() == 780
+    def test_comp_input_file(self):
+        # Check if input dictionary gets same results as input files
 
-        # np.testing.assert_allclose(
-        #     self.ovl_solver.get_constraint("alpha"),
-        #     6.0,
-        #     rtol=1e-8,
-        # )
-        # np.testing.assert_allclose(
-        #     self.ovl_solver.get_constraint("beta"),
-        #     2.0,
-        #     rtol=1e-8,
-        # )
-        
-        # coefs = self.ovl_solver.get_total_forces()
-        # np.testing.assert_allclose(
-        #     coefs["CL"],
-        #     5.407351081559913,
-        #     rtol=1e-8,
-        # )
+        coefs = []
+        coefs_f = []
 
-        # self.ovl_solver.set_surface_params(data)
-        
+        for solver in self.solvers+self.solvers_f:
+            solver.set_constraint("alpha", 6.00)
+            solver.set_constraint("beta", 2.00)
+            solver.execute_run()
 
-        # assert self.ovl_solver.get_num_surfaces() == 5
-        # assert self.ovl_solver.get_num_strips() == 90
-        # assert self.ovl_solver.get_mesh_size() == 780
+        for i in range(len(self.solvers)):
+            # Cases 4 and 5 use the same file
+            if i < 4:
+                assert self.solvers[i].get_num_surfaces() == self.solvers_f[i].get_num_surfaces()
+                assert self.solvers[i].get_num_strips() == self.solvers_f[i].get_num_strips()
+                assert self.solvers[i].get_mesh_size() == self.solvers_f[i].get_mesh_size()
 
-        # self.ovl_solver.set_constraint("alpha", 6.00)
-        # self.ovl_solver.set_constraint("beta", 2.00)
-        # self.ovl_solver.execute_run()
+                np.testing.assert_allclose(
+                    self.solvers[i].get_constraint("alpha"),
+                    self.solvers_f[i].get_constraint("alpha"),
+                    rtol=1e-8,
+                )
+                np.testing.assert_allclose(
+                    self.solvers[i].get_constraint("beta"),
+                    self.solvers_f[i].get_constraint("beta"),
+                    rtol=1e-8,
+                )
 
-        # np.testing.assert_allclose(
-        #     self.ovl_solver.get_constraint("alpha"),
-        #     6.0,
-        #     rtol=1e-8,
-        # )
-        # np.testing.assert_allclose(
-        #     self.ovl_solver.get_constraint("beta"),
-        #     2.0,
-        #     rtol=1e-8,
-        # )
-        
-        # coefs = self.ovl_solver.get_total_forces()
-        # np.testing.assert_allclose(
-        #     coefs["CL"],
-        #     5.407351081559913,
-        #     rtol=1e-8,
-        # )
+                coefs.append(self.solvers[i].get_total_forces())
+                coefs_f.append(self.solvers_f[i].get_total_forces())
+                np.testing.assert_allclose(
+                    coefs[i]["CL"],
+                    coefs_f[i]["CL"],
+                    rtol=1e-8,
+                )
+                np.testing.assert_allclose(
+                    coefs[i]["CD"],
+                    coefs_f[i]["CD"],
+                    rtol=1e-8,
+                )
 
+            else:
+                assert self.solvers[i].get_num_surfaces() == self.solvers_f[i-1].get_num_surfaces()
+                assert self.solvers[i].get_num_strips() == self.solvers_f[i-1].get_num_strips()
+                assert self.solvers[i].get_mesh_size() == self.solvers_f[i-1].get_mesh_size()
+
+                np.testing.assert_allclose(
+                    self.solvers[i].get_constraint("alpha"),
+                    self.solvers_f[i-1].get_constraint("alpha"),
+                    rtol=1e-8,
+                )
+                np.testing.assert_allclose(
+                    self.solvers[i].get_constraint("beta"),
+                    self.solvers_f[i-1].get_constraint("beta"),
+                    rtol=1e-8,
+                )
+
+                coefs.append(self.solvers[i].get_total_forces())
+                np.testing.assert_allclose(
+                    coefs[i]["CL"],
+                    coefs_f[i-1]["CL"],
+                    rtol=1e-8,
+                )
+                np.testing.assert_allclose(
+                    coefs[i]["CD"],
+                    coefs_f[i-1]["CD"],
+                    rtol=1e-8,
+                )
 
 
 if __name__ == "__main__":
