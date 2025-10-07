@@ -102,7 +102,7 @@ body = {
 }
 
 
-geom = {
+inputDict = {
     "title": "Aircraft", # Aicraft name (MUST BE SET)
     "mach": np.float64(0.0), # Reference Mach number
     "iysym": np.int32(0), # y-symmetry settings
@@ -122,13 +122,16 @@ geom = {
     "gname": np.array(["des"]),  # Name of design var for each corresonding index
 }
 
-ovl = OVLSolver(input_dict=geom, debug=True, timing=True)
+ovl = OVLSolver(input_dict=inputDict, debug=True, timing=True)
 
 # look at the geometry to see that everything is right
 ovl.plot_geom()
 
 # set the angle of attack
 ovl.set_constraint("alpha", 2.0)
+
+# set the deflection of the trailing edge flap
+ovl.set_constraint("flap", 2.0)
 
 # set mach number
 ovl.set_parameter("Mach", 0.3)
