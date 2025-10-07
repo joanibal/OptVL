@@ -2206,7 +2206,7 @@ class OVLSolver(object):
         fid.write("#Xref    Yref    Zref\n")
         self._write_fort_vars(fid, "case_r", "XYZREF0") # The inpute routine reads the defaults
 
-        fid.write("CD0\n")
+        fid.write("#CD0\n")
         self._write_fort_vars(fid, "case_r", "CDREF0")
 
         # fid.write(f" {self.get_avl_fort_arr('case_r', 'sref')}")
