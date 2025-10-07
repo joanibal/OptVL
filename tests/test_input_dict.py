@@ -120,6 +120,7 @@ section_geom_afiles = {
     'afiles': np.array([['ag40d.dat','ag40d.dat']]), # airfoil file names
 }
 
+# fmt: off
 section_geom_airfoils = {
     'airfoils': np.array([[[ 9.999910e-01,  9.941530e-01,  9.823030e-01,  9.688910e-01,
           9.552570e-01,  9.415770e-01,  9.279160e-01,  9.142470e-01,
@@ -295,7 +296,7 @@ section_geom_airfoils = {
           2.940000e-04,  1.800000e-04,  4.800000e-05, -9.000000e-05,
          -2.500000e-04, -4.030000e-04, -4.780000e-04]]]),
 }
-
+# fmt: on
 fuselage = {
         # General
         # 'yduplicate': np.float64(0), # body is duplicated over the ysymm plane
@@ -314,7 +315,7 @@ body = {"Fuselage": {}}
 body_oml_file = {
     "bfile": "fuseSupra.dat",  # body oml file name
 }
-
+# fmt: off
 body_oml = {
     'body_oml': np.array([[ 5.1000000e+01,  1.3000000e+01,  1.2501041e+01,  1.1990128e+01,
          1.1478845e+01,  1.0967545e+01,  1.0456449e+01,  9.9455080e+00,
@@ -394,7 +395,7 @@ body_oml = {
         -4.2500000e-01, -2.5000000e-01]]) # raw body oml coords
 }
 
-
+# fmt: on
 input_dict = {
     "title": "Aircraft",
     "mach": np.float64(0.0),
