@@ -23,72 +23,72 @@ geom_file4 = os.path.join(base_dir, "aircraft_wing_body_afile.avl")
 
 
 wing = {
-        # General
-        "num_sections": np.int32(2),
-        "num_controls": np.array([1, 0], dtype=np.int32),
-        "num_design_vars": np.array([1, 0], dtype=np.int32),
-        "component": np.int32(1),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
-        "yduplicate": np.float64(0.0),  # surface is duplicated over the ysymm plane
-        "wake": np.int32(
-            1
-        ),  # specifies that this surface is to NOT shed a wake, so that its strips will not have their Kutta conditions imposed
-        "albe": np.int32(
-            1
-        ),  # specifies that this surface is unaffected by freestream direction changes specified by the alpha,beta angles and p,q,r rotation rates
-        "load": np.int32(
-            1
-        ),  # specifies that the force and moment on this surface is to NOT be included in the overall forces and moments of the configuration
-        "clcdsec": np.array(
-            [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
-        ),  # profile-drag CD(CL) function for each section in this surface
-        "cdcl": np.array(
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        ),  # profile-drag CD(CL) function for all sections in this surface, overrides Tahnks.
-        "claf": np.array([1.0, 1.0]),  # CL alpha (dCL/da) scaling factor per section
-        # Geometry
-        "scale": np.array(
-            [1.0, 1.0, 1.0], dtype=np.float64
-        ),  # scaling factors applied to all x,y,z coordinates (chords arealso scaled by Xscale)
-        "translate": np.array(
-            [0.0, 0.0, 0.0], dtype=np.float64
-        ),  # offset added on to all X,Y,Z values in this surface
-        "angle": np.float64(0.0),  # offset added on to the Ainc values for all the defining sections in this surface
-        "xles": np.array([0.0, 0.0]),  # leading edge cordinate vector(x component)
-        "yles": np.array([-5.0, 0.0]),  # leading edge cordinate vector(y component)
-        "zles": np.array([0.0, 0.0]),  # leading edge cordinate vector(z component)
-        "chords": np.array([1.0, 1.0]),  # chord length vector
-        "aincs": np.array([0.0, 0.0]),  # incidence angle vector
-        # Geometry: Cross Sections
-        "xfminmax": np.array([[0.0, 1.0], [0.0, 1.0]]),  # airfoil x/c limits
-        # Paneling
-        "nchordwise": np.int32(1),  # number of chordwise horseshoe vortice s placed on the surface
-        "cspace": np.float64(0.0),  # chordwise vortex spacing parameter
-        "nspan": np.int32(2),  # number of spanwise horseshoe vortices placed on the entire surface
-        "sspace": np.float64(0.0),  # spanwise vortex spacing parameter for entire surface
-        "nspans": np.array([5, 5], dtype=np.int32),  # number of spanwise elements vector
-        "sspaces": np.array([3.0, 3.0], dtype=np.float64),  # spanwise spacing vector (for each section)
-        "use surface spacing": np.int32(
-            1
-        ),  # surface spacing set under the surface heeading (known as LSURFSPACING in AVL)
-    }
-
-surf = {
-    "Wing": {}
+    # General
+    "num_sections": np.int32(2),
+    "num_controls": np.array([1, 0], dtype=np.int32),
+    "num_design_vars": np.array([1, 0], dtype=np.int32),
+    "component": np.int32(1),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
+    "yduplicate": np.float64(0.0),  # surface is duplicated over the ysymm plane
+    "wake": np.int32(
+        1
+    ),  # specifies that this surface is to NOT shed a wake, so that its strips will not have their Kutta conditions imposed
+    "albe": np.int32(
+        1
+    ),  # specifies that this surface is unaffected by freestream direction changes specified by the alpha,beta angles and p,q,r rotation rates
+    "load": np.int32(
+        1
+    ),  # specifies that the force and moment on this surface is to NOT be included in the overall forces and moments of the configuration
+    "clcdsec": np.array(
+        [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
+    ),  # profile-drag CD(CL) function for each section in this surface
+    "cdcl": np.array(
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ),  # profile-drag CD(CL) function for all sections in this surface, overrides Tahnks.
+    "claf": np.array([1.0, 1.0]),  # CL alpha (dCL/da) scaling factor per section
+    # Geometry
+    "scale": np.array(
+        [1.0, 1.0, 1.0], dtype=np.float64
+    ),  # scaling factors applied to all x,y,z coordinates (chords arealso scaled by Xscale)
+    "translate": np.array([0.0, 0.0, 0.0], dtype=np.float64),  # offset added on to all X,Y,Z values in this surface
+    "angle": np.float64(0.0),  # offset added on to the Ainc values for all the defining sections in this surface
+    "xles": np.array([0.0, 0.0]),  # leading edge cordinate vector(x component)
+    "yles": np.array([-5.0, 0.0]),  # leading edge cordinate vector(y component)
+    "zles": np.array([0.0, 0.0]),  # leading edge cordinate vector(z component)
+    "chords": np.array([1.0, 1.0]),  # chord length vector
+    "aincs": np.array([0.0, 0.0]),  # incidence angle vector
+    # Geometry: Cross Sections
+    "xfminmax": np.array([[0.0, 1.0], [0.0, 1.0]]),  # airfoil x/c limits
+    # Paneling
+    "nchordwise": np.int32(1),  # number of chordwise horseshoe vortice s placed on the surface
+    "cspace": np.float64(0.0),  # chordwise vortex spacing parameter
+    "nspan": np.int32(2),  # number of spanwise horseshoe vortices placed on the entire surface
+    "sspace": np.float64(0.0),  # spanwise vortex spacing parameter for entire surface
+    "nspans": np.array([5, 5], dtype=np.int32),  # number of spanwise elements vector
+    "sspaces": np.array([3.0, 3.0], dtype=np.float64),  # spanwise spacing vector (for each section)
+    "use surface spacing": np.int32(1),  # surface spacing set under the surface heeading (known as LSURFSPACING in AVL)
 }
 
+surf = {"Wing": {}}
+
 cont_surfs = {
-     # Control Surfaces
-    "icontd": [np.array([0],dtype=np.int32), np.array([],dtype=np.int32)],  # control variable index
-    "xhinged": [np.array([0.8]), np.array([],dtype=np.float64)],  # x/c location of hinge
-    "vhinged": [np.array([[0.0, 0.0, 0.0]]), np.array([],dtype=np.float64)],  # vector giving hinge axis about which surface rotates
-    "gaind": [np.array([1.0]), np.array([],dtype=np.float64)],  # control surface gain
-    "refld": [np.array([1.0]), np.array([],dtype=np.float64)],  # control surface reflection, sign of deflection for duplicated surface
+    # Control Surfaces
+    "icontd": [np.array([0], dtype=np.int32), np.array([], dtype=np.int32)],  # control variable index
+    "xhinged": [np.array([0.8]), np.array([], dtype=np.float64)],  # x/c location of hinge
+    "vhinged": [
+        np.array([[0.0, 0.0, 0.0]]),
+        np.array([], dtype=np.float64),
+    ],  # vector giving hinge axis about which surface rotates
+    "gaind": [np.array([1.0]), np.array([], dtype=np.float64)],  # control surface gain
+    "refld": [
+        np.array([1.0]),
+        np.array([], dtype=np.float64),
+    ],  # control surface reflection, sign of deflection for duplicated surface
 }
 
 des_var = {
     # Design Variables (AVL)
-    "idestd": [np.array([0],dtype=np.int32), np.array([],dtype=np.int32)],  # design variable index
-    "gaing": [np.array([1.0]), np.array([],dtype=np.float64)],  # desgin variable gain
+    "idestd": [np.array([0], dtype=np.int32), np.array([], dtype=np.int32)],  # design variable index
+    "gaing": [np.array([1.0]), np.array([], dtype=np.float64)],  # desgin variable gain
 }
 
 cont_surf_names = {
@@ -101,23 +101,31 @@ des_var_names = {
 
 section_geom_naca = {
     # NACA
-    'naca' : np.array(['2412','2412']), # 4-digit NACA airfoil
+    "naca": np.array(["2412", "2412"]),  # 4-digit NACA airfoil
 }
 
 section_geom_raw = {
     # Coordinates
-    'xasec': np.array([[0., 1.], [0., 1.]]), # the x coordinate aifoil section
-    'casec': np.array([[0., 0.], [0., 0.]]), # camber line at xasec
-    'tasec': np.array([[0., 0.], [0., 0.]]), # thickness at xasec
-    'xuasec': np.array([[0., 0.], [0., 0.]]), # airfoil upper surface x-coords (alternative to specifying camber line)
-    'xlasec': np.array([[0., 0.], [0., 0.]]),  # airfoil lower surface x-coords (alternative to specifying camber line)
-    'zuasec': np.array([[0., 0.], [0., 0.]]),  # airfoil upper surface z-coords (alternative to specifying camber line)
-    'zlasec': np.array([[0., 0.], [0., 0.]]),  # airfoil lower surface z-coords (alternative to specifying camber line)
+    "xasec": np.array([[0.0, 1.0], [0.0, 1.0]]),  # the x coordinate aifoil section
+    "casec": np.array([[0.0, 0.0], [0.0, 0.0]]),  # camber line at xasec
+    "tasec": np.array([[0.0, 0.0], [0.0, 0.0]]),  # thickness at xasec
+    "xuasec": np.array(
+        [[0.0, 0.0], [0.0, 0.0]]
+    ),  # airfoil upper surface x-coords (alternative to specifying camber line)
+    "xlasec": np.array(
+        [[0.0, 0.0], [0.0, 0.0]]
+    ),  # airfoil lower surface x-coords (alternative to specifying camber line)
+    "zuasec": np.array(
+        [[0.0, 0.0], [0.0, 0.0]]
+    ),  # airfoil upper surface z-coords (alternative to specifying camber line)
+    "zlasec": np.array(
+        [[0.0, 0.0], [0.0, 0.0]]
+    ),  # airfoil lower surface z-coords (alternative to specifying camber line)
 }
 
 section_geom_afiles = {
     # Airfoil Files
-    'afiles': np.array([['ag40d.dat','ag40d.dat']]), # airfoil file names
+    "afiles": np.array([["ag40d.dat", "ag40d.dat"]]),  # airfoil file names
 }
 
 # fmt: off
@@ -298,17 +306,17 @@ section_geom_airfoils = {
 }
 # fmt: on
 fuselage = {
-        # General
-        # 'yduplicate': np.float64(0), # body is duplicated over the ysymm plane
-        # Geometry
-        "scale": np.array(
-            [[1.0, 1.0, 1.0]]
-        ),  # scaling factors applied to all x,y,z coordinates (chords areal so scaled by Xscale)
-        "translate": np.array([[0.0, 0.0, 0.0]]),  # offset added on to all X,Y,Z values in this surface
-        # Discretization
-        "nvb": np.int32(10),  # number of source-line nodes
-        "bspace": np.float64(0.0),  # lengthwise node spacing parameter
-    }
+    # General
+    # 'yduplicate': np.float64(0), # body is duplicated over the ysymm plane
+    # Geometry
+    "scale": np.array(
+        [[1.0, 1.0, 1.0]]
+    ),  # scaling factors applied to all x,y,z coordinates (chords areal so scaled by Xscale)
+    "translate": np.array([[0.0, 0.0, 0.0]]),  # offset added on to all X,Y,Z values in this surface
+    # Discretization
+    "nvb": np.int32(10),  # number of source-line nodes
+    "bspace": np.float64(0.0),  # lengthwise node spacing parameter
+}
 
 body = {"Fuselage": {}}
 
@@ -414,8 +422,6 @@ input_dict = {
 }
 
 
-
-
 class TestGeom(unittest.TestCase):
     def setUp(self):
         # Setup all 5 cases for testing
@@ -423,53 +429,52 @@ class TestGeom(unittest.TestCase):
         # Flat Camberline
         input_dict1 = deepcopy(input_dict)
         surf1 = deepcopy(surf)
-        surf1["Wing"] = wing|cont_surfs|des_var
+        surf1["Wing"] = wing | cont_surfs | des_var
         body1 = deepcopy(body)
-        body1["Fuselage"] = fuselage|body_oml
-        input_dict1 = input_dict1|cont_surf_names|des_var_names
+        body1["Fuselage"] = fuselage | body_oml
+        input_dict1 = input_dict1 | cont_surf_names | des_var_names
         input_dict1["surfaces"] = surf1
         input_dict1["bodies"] = body1
 
         # NACA 2412
         input_dict2 = deepcopy(input_dict)
         surf2 = deepcopy(surf)
-        surf2["Wing"] = wing|section_geom_naca|cont_surfs|des_var
+        surf2["Wing"] = wing | section_geom_naca | cont_surfs | des_var
         body1 = deepcopy(body)
-        body1["Fuselage"] = fuselage|body_oml
-        input_dict2 = input_dict2|cont_surf_names|des_var_names
+        body1["Fuselage"] = fuselage | body_oml
+        input_dict2 = input_dict2 | cont_surf_names | des_var_names
         input_dict2["surfaces"] = surf2
         input_dict2["bodies"] = body1
 
         # Airfoil Coordinates
         input_dict3 = deepcopy(input_dict)
         surf3 = deepcopy(surf)
-        surf3["Wing"] = wing|section_geom_airfoils|cont_surfs|des_var
+        surf3["Wing"] = wing | section_geom_airfoils | cont_surfs | des_var
         body1 = deepcopy(body)
-        body1["Fuselage"] = fuselage|body_oml
-        input_dict3 = input_dict3|cont_surf_names|des_var_names
+        body1["Fuselage"] = fuselage | body_oml
+        input_dict3 = input_dict3 | cont_surf_names | des_var_names
         input_dict3["surfaces"] = surf3
         input_dict3["bodies"] = body1
 
         # Airfoil Files
         input_dict4 = deepcopy(input_dict)
         surf4 = deepcopy(surf)
-        surf4["Wing"] = wing|section_geom_airfoils|cont_surfs|des_var
+        surf4["Wing"] = wing | section_geom_airfoils | cont_surfs | des_var
         body1 = deepcopy(body)
-        body1["Fuselage"] = fuselage|body_oml
-        input_dict4 = input_dict4|cont_surf_names|des_var_names
+        body1["Fuselage"] = fuselage | body_oml
+        input_dict4 = input_dict4 | cont_surf_names | des_var_names
         input_dict4["surfaces"] = surf4
         input_dict4["bodies"] = body1
 
         # Body Files + Airfoil Files
         input_dict5 = deepcopy(input_dict)
         surf5 = deepcopy(surf)
-        surf5["Wing"] = wing|section_geom_airfoils|cont_surfs|des_var
+        surf5["Wing"] = wing | section_geom_airfoils | cont_surfs | des_var
         body2 = deepcopy(body)
-        body2["Fuselage"] = fuselage|body_oml_file
-        input_dict5 = input_dict5|cont_surf_names|des_var_names
+        body2["Fuselage"] = fuselage | body_oml_file
+        input_dict5 = input_dict5 | cont_surf_names | des_var_names
         input_dict5["surfaces"] = surf5
         input_dict5["bodies"] = body2
-
 
         # Solvers loaded with inputs dicts
         self.ovl_solver_1 = OVLSolver(input_dict=input_dict1)
@@ -484,8 +489,8 @@ class TestGeom(unittest.TestCase):
         self.ovl_solver_f3 = OVLSolver(geo_file=geom_file3)
         self.ovl_solver_f4 = OVLSolver(geo_file=geom_file4)
 
-        self.solvers = [self.ovl_solver_1,self.ovl_solver_2,self.ovl_solver_3,self.ovl_solver_4,self.ovl_solver_5]
-        self.solvers_f = [self.ovl_solver_f1,self.ovl_solver_f2,self.ovl_solver_f3,self.ovl_solver_f4]
+        self.solvers = [self.ovl_solver_1, self.ovl_solver_2, self.ovl_solver_3, self.ovl_solver_4, self.ovl_solver_5]
+        self.solvers_f = [self.ovl_solver_f1, self.ovl_solver_f2, self.ovl_solver_f3, self.ovl_solver_f4]
 
     def test_surface_params(self):
         # Check surface params from the input dictionary match up with the reference values
@@ -510,7 +515,7 @@ class TestGeom(unittest.TestCase):
         coefs = []
         coefs_f = []
 
-        for solver in self.solvers+self.solvers_f:
+        for solver in self.solvers + self.solvers_f:
             solver.set_constraint("alpha", 6.00)
             solver.set_constraint("beta", 2.00)
             solver.execute_run()
@@ -547,30 +552,30 @@ class TestGeom(unittest.TestCase):
                 )
 
             else:
-                assert self.solvers[i].get_num_surfaces() == self.solvers_f[i-1].get_num_surfaces()
-                assert self.solvers[i].get_num_strips() == self.solvers_f[i-1].get_num_strips()
-                assert self.solvers[i].get_mesh_size() == self.solvers_f[i-1].get_mesh_size()
+                assert self.solvers[i].get_num_surfaces() == self.solvers_f[i - 1].get_num_surfaces()
+                assert self.solvers[i].get_num_strips() == self.solvers_f[i - 1].get_num_strips()
+                assert self.solvers[i].get_mesh_size() == self.solvers_f[i - 1].get_mesh_size()
 
                 np.testing.assert_allclose(
                     self.solvers[i].get_constraint("alpha"),
-                    self.solvers_f[i-1].get_constraint("alpha"),
+                    self.solvers_f[i - 1].get_constraint("alpha"),
                     rtol=1e-8,
                 )
                 np.testing.assert_allclose(
                     self.solvers[i].get_constraint("beta"),
-                    self.solvers_f[i-1].get_constraint("beta"),
+                    self.solvers_f[i - 1].get_constraint("beta"),
                     rtol=1e-8,
                 )
 
                 coefs.append(self.solvers[i].get_total_forces())
                 np.testing.assert_allclose(
                     coefs[i]["CL"],
-                    coefs_f[i-1]["CL"],
+                    coefs_f[i - 1]["CL"],
                     rtol=1e-8,
                 )
                 np.testing.assert_allclose(
                     coefs[i]["CD"],
-                    coefs_f[i-1]["CD"],
+                    coefs_f[i - 1]["CD"],
                     rtol=1e-8,
                 )
 
