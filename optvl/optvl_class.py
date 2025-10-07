@@ -8,7 +8,6 @@ This module contains the OVLSolver, which is the main wrapper for the Fortran le
 import os
 import time
 import copy
-from pprint import pprint
 from typing import Dict, List, Tuple, Any, TextIO
 import warnings
 import glob
@@ -251,14 +250,14 @@ class OVLSolver(object):
         if timing:
             self.set_avl_fort_arr("CASE_L", "LTIMING", True)
 
-        if not (geo_file is None):
+        if geo_file is not None:
             try:
                 # check to make sure files exist
                 file = geo_file
                 f = open(geo_file, "r")
                 f.close()
 
-                if not (mass_file is None):
+                if mass_file is not None:
                     file = mass_file
                     f = open(mass_file, "r")
                     f.close()
@@ -1271,7 +1270,7 @@ class OVLSolver(object):
             "Z cg": ["Z"],
         }
 
-        if not (variable in options):
+        if variable not in options:
             raise ValueError(
                 f"constraint variable `{variable}` not a valid option. Must be one of the following {[key for key in options]} "
             )
@@ -1281,7 +1280,8 @@ class OVLSolver(object):
     def get_total_forces(self) -> Dict[str, float]:
         """Get the aerodynamic data for the last run case and return it as a dictionary.
 
-        Returns:
+        Returns
+        -------
             Dict[str, float]: Dictionary of aerodynamic data. The keys the aerodyanmic coefficients.
         """
 
@@ -1300,7 +1300,8 @@ class OVLSolver(object):
         """Get the control surface derivative data, i.e. dCL/dElevator,
         for the current analysis run
 
-        Returns:
+        Returns
+        -------
             stab_deriv_dict: The dictionary of control surface derivatives, d{force coefficent}/d{control surface}.
         """
 
@@ -1320,7 +1321,8 @@ class OVLSolver(object):
     def get_stab_derivs(self) -> Dict[str, Dict[str, float]]:
         """Gets the stability derivates after an analysis run
 
-        Returns:
+        Returns
+        -------
             stab_deriv_dict: Dictionary of stability derivatives.
         """
         deriv_data = {}
@@ -1354,7 +1356,8 @@ class OVLSolver(object):
             variable: Name of the variable to retrive
             slicer: slice applied to the common block variable to return a subset of the data. i.e. (100) or slice(2, 5)
 
-        Returns:
+        Returns
+        -------
             val: value of variable after applying the slice (if present)
         """
         # this had to be split up into two steps to work
@@ -1413,7 +1416,8 @@ class OVLSolver(object):
     def get_surface_forces(self) -> Dict[str, Dict[str, float]]:
         """Returns the force data from each surface (including mirriored surfaces)
 
-        Returns:
+        Returns
+        -------
             surf_data_dict: a dictionary of surface data where the first key is the surface and the second is the force coefficient
         """
 
@@ -1438,7 +1442,8 @@ class OVLSolver(object):
         Args:
             param_key: the name of the parameter to return
 
-        Returns:
+        Returns
+        -------
             param_val: the value of the parameter
 
         """
@@ -1465,7 +1470,8 @@ class OVLSolver(object):
         Args:
             con_key: name of the constraint. Options are ["alpha","beta","roll rate","pitch rate","yaw rate","CL","CY","CR BA","CM","CR"]
 
-        Returns:
+        Returns
+        -------
             con_val: value of the constraint
         """
         convals = self.get_avl_fort_arr("CASE_R", "CONVAL")
@@ -1504,7 +1510,8 @@ class OVLSolver(object):
     def get_control_deflections(self) -> Dict[str, float]:
         """Get the deflections of all the control surfaces
 
-        Returns:
+        Returns
+        -------
             def_dict: dictionary of control surfaces as the keys and deflections as the values
         """
         control_surfaces = self.get_control_names()
@@ -1520,7 +1527,8 @@ class OVLSolver(object):
     def get_hinge_moments(self) -> Dict[str, float]:
         """Get the hinge moments from the fortran layer and return them as a dictionary
 
-        Returns:
+        Returns
+        -------
             hinge_moments: array of control surface moments. The order the control surfaces are declared are the indices,
         """
         hinge_moments = {}
@@ -1536,7 +1544,8 @@ class OVLSolver(object):
     def get_strip_forces(self) -> Dict[str, Dict[str, np.ndarray]]:
         """Get force data for each strip (chordwise segment) of the mesh.
 
-        Returns:
+        Returns
+        -------
             strip_data: dictionary of strip data. The keys are ["chord", "width", "X LE", "Y LE", "Z LE", "twist","CL", "CD", "CDv", "downwash", "CX", "CY", "CZ","CM", "CN", "CR","CL strip", "CD strip", "CF strip", "CM strip","CL perp","CM c/4,"CM LE"]
 
         """
@@ -1578,7 +1587,7 @@ class OVLSolver(object):
             "CL perp" : ["STRP_R", "CLTSTRP"], # strip CL referenced to Vperp,
             "CM c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
             "CM LE" : ["STRP_R","CMLE"],  # strip pitching moment about LE vector
-            "spanloading" : ["STRP_R","CNC"],   # strip spanloading 
+            "spanloading" : ["STRP_R","CNC"],   # strip spanloading
 
         }
         # fmt: on
@@ -1650,7 +1659,8 @@ class OVLSolver(object):
     def get_eigenvalues(self) -> np.ndarray:
         """After running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL
 
-        Returns:
+        Returns
+        -------
             eig_vals: array of eigen values
         """
 
@@ -1667,7 +1677,8 @@ class OVLSolver(object):
     def get_eigenvectors(self) -> np.ndarray:
         """After running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL
 
-        Returns:
+        Returns
+        -------
             eig_vec: 2D array of eigen vectors
         """
 
@@ -1684,7 +1695,8 @@ class OVLSolver(object):
     def get_system_matrix(self) -> np.ndarray:
         """Returns the system matrix used for the eigenmode calculation
 
-        Returns:
+        Returns
+        -------
             asys: 2D array representing the system matrix for the eigen value analysis
         """
 
@@ -1703,7 +1715,8 @@ class OVLSolver(object):
     def get_control_names(self) -> List[str]:
         """Get the names of the control surfaces
 
-        Returns:
+        Returns
+        -------
             control_names: list of control surface names
         """
         fort_names = self.get_avl_fort_arr("CASE_C", "DNAME")
@@ -1713,7 +1726,8 @@ class OVLSolver(object):
     def get_design_var_names(self) -> List[str]:
         """Get the names of the design_var surfaces
 
-        Returns:
+        Returns
+        -------
             design_var_names: list of design_var surface names
         """
         fort_names = self.get_avl_fort_arr("CASE_C", "GNAME")
@@ -1726,7 +1740,8 @@ class OVLSolver(object):
         Args:
             remove_dublicated: remove the surface that were created by duplication about symmetry planes
 
-        Returns:
+        Returns
+        -------
             surf_names: list of surface names
         """
         fort_names = self.get_avl_fort_arr("CASE_C", "STITLE")
@@ -1750,7 +1765,8 @@ class OVLSolver(object):
         Args:
             remove_dublicated: remove the body that were created by duplication about symmetry planes
 
-        Returns:
+        Returns
+        -------
             body_names: list of body names
         """
         fort_names = self.get_avl_fort_arr("CASE_C", "BTITLE")
@@ -1781,7 +1797,8 @@ class OVLSolver(object):
             idx_slice: the section index of the control surface data
             param: control surface parameter to get
 
-        Returns:
+        Returns
+        -------
             parm: parameter value
         """
         # the control surface and design variables need to be handeled differently because the number at each section is variable
@@ -1828,7 +1845,8 @@ class OVLSolver(object):
             param: the surface parameter to return. Could be either geometric or paneling
 
 
-        Returns:
+        Returns
+        -------
             param: the parameter of the surface
         """
 
@@ -1870,7 +1888,7 @@ class OVLSolver(object):
         """
 
         # check that the surface is in the set of unique surfaces and not duplicated
-        if not surf_name in self.unique_surface_names:
+        if surf_name not in self.unique_surface_names:
             raise ValueError(
                 f"Only non-duplicates surface parameters can be set, {surf_name} not found in {self.unique_surface_names}"
             )
@@ -2060,7 +2078,8 @@ class OVLSolver(object):
             param: the body parameter to return. Could be either geometric or paneling
 
 
-        Returns:
+        Returns
+        -------
             val: the val of parameter of the body
         """
 
@@ -2142,7 +2161,8 @@ class OVLSolver(object):
         Args:
             include_body_oml: include the raw oml coordinates in the output dict
 
-        Returns:
+        Returns
+        -------
             body_data: Nested dictionary where the 1st key is the body name and the 2nd key is the parameter.
         """
 
@@ -2205,7 +2225,8 @@ class OVLSolver(object):
     def get_general_params(self) -> Dict:
         """Gets the general input settings in AVL and returns them in a dictionary.
 
-        Returns:
+        Returns
+        -------
             Dict[str]: Dictionary containing the general input settings in AVL
         """
         general_data = {}
@@ -2228,7 +2249,8 @@ class OVLSolver(object):
             include_section_geom (bool, optional): Include all the section geometry information for each surface. Defaults to False.
             include_bodies (bool, optional): Include all bodies in the dictionary. Defaults to True.
 
-        Returns:
+        Returns
+        -------
             Dict[str, Dict[str, Any]]: OptVL input dictionary
         """
 
@@ -2298,7 +2320,7 @@ class OVLSolver(object):
         fid.write(out_str)
 
     def _write_header(self, fid: TextIO):
-        """write the header to a file"""
+        """Write the header to a file"""
         # write the name of the aircraft
 
         self._write_banner(fid, "Header")
@@ -2341,9 +2363,9 @@ class OVLSolver(object):
 
     def _write_body(self, fid: TextIO, body_name: str, data: Dict[str, float]):
         self._write_banner(fid, body_name)
-        fid.write(f"BODY\n")
+        fid.write("BODY\n")
         fid.write(f"{body_name}\n")
-        fid.write(f"#N  Bspace\n")
+        fid.write("#N  Bspace\n")
         fid.write(f"{data['nvb']} {data['bspace']}\n")
         if "yduplicate" in data.keys():
             fid.write("YDUPLICATE\n")
@@ -2353,7 +2375,7 @@ class OVLSolver(object):
         fid.write("TRANSLATE\n")
         fid.write(f"{data['translate'][0]} {data['translate'][1]} {data['translate'][2]}\n")
         if data["bfile"] != "":
-            fid.write(f"BFILE\n")
+            fid.write("BFILE\n")
             fid.write(f"{data['bfile']}\n")
 
     def _write_surface(self, fid: TextIO, surf_name: str, data: Dict[str, float]):
@@ -2543,7 +2565,8 @@ class OVLSolver(object):
     def get_num_surfaces(self) -> int:
         """Returns the number of surface including duplicated
 
-        Returns:
+        Returns
+        -------
             val: number of surfaces
         """
         """Get the number of surfaces in the geometry"""
@@ -2555,7 +2578,8 @@ class OVLSolver(object):
         Args:
             surf_name: name of the surface
 
-        Returns:
+        Returns
+        -------
             idx_surf: index of the surface
         """
         surf_names = self.surface_names
@@ -2568,7 +2592,8 @@ class OVLSolver(object):
         Args:
             surf_name: name of the surface
 
-        Returns:
+        Returns
+        -------
             nsec: numer of sections
         """
         idx_surf = self.get_surface_index(surf_name)
@@ -2585,7 +2610,8 @@ class OVLSolver(object):
     def get_num_control_surfs(self) -> int:
         """Get the number of control surfaces
 
-        Returns:
+        Returns
+        -------
             val: number of control surfaces
         """
         return self.get_avl_fort_arr("CASE_I", "NCONTROL")
@@ -2593,7 +2619,8 @@ class OVLSolver(object):
     def get_mesh_size(self) -> int:
         """Get the number of vortices in the mesh
 
-        Returns:
+        Returns
+        -------
             val: the number of vortices
         """
         return int(self.get_avl_fort_arr("CASE_I", "NVOR"))
@@ -3047,7 +3074,8 @@ class OVLSolver(object):
             mode: Either AD or FD. FD is mostly for testing
             step: Step size to use for the FD mode
 
-        Returns:
+        Returns
+        -------
             func_seeds: force coifficent AD seeds
             res_seeds:  residual AD seeds
             consurf_derivs_seeds: Control surface derivatives AD seeds
@@ -3217,7 +3245,8 @@ class OVLSolver(object):
             res_u_seeds: dResidual/d(flight condition) AD seeds
             print_timings: flag to show timing data
 
-        Returns:
+        Returns
+        -------
             con_seeds: Case constraint AD seeds
             geom_seeds: Geometric AD seeds in the same format as the geometric data
             gamma_seeds: Circulation AD seeds
@@ -3326,7 +3355,8 @@ class OVLSolver(object):
             consurf_derivs: control surface derivates to compute the sensitivities with respect to
             print_timings: flag to print timing information
 
-        Returns:
+        Returns
+        -------
             sens: a nested dictionary of sensitivities. The first key is the function and the next keys are for the design variables.
         """
         sens = {}
@@ -3624,7 +3654,8 @@ class OVLSolver(object):
     def get_cp_data(self) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """Gets the current surface mesh and cp distribution
 
-        Returns:
+        Returns
+        -------
             xyz_list: list of surface mesh points
             cp_list: list of cp points
         """
