@@ -162,7 +162,7 @@ class OVLSolver(object):
 
 
     general_to_fort_var = {
-        # "title": ["CASE_R", "TITLE"],
+        # "title": ["CASE_C", "TITLE"],
         "mach":  ["CASE_R", "MACH0"],
         "iysym": ["CASE_I", "IYSYM"],
         "izsym": ["CASE_I", "IZSYM"],
@@ -492,7 +492,7 @@ class OVLSolver(object):
         #Parse and Load Mandatory General Info
         # Define mapping: key -> (target_object, attr, type, default, slicer, transform)
         generalFields = {
-            "title": (self.avl.CASE_R, "TITLE", str, "Case", None, None),
+            "title": (self.avl.CASE_C, "TITLE", str, "Case", None, None),
                     #lambda v: self._createFortranStringArray([v], num_max_char=120)), # this causes issues
             "mach":  (self.avl.CASE_R, "MACH0", (float,np.float64), 0.0, None, None),
             "iysym": (self.avl.CASE_I, "IYSYM", (int,np.int32), 0, None, np.sign),
@@ -2104,7 +2104,7 @@ class OVLSolver(object):
         """
         general_data = {}
 
-        general_data["title"] = self.avl.CASE_R.TITLE
+        general_data["title"] = self.avl.CASE_C.TITLE
 
         for var, fort_var in self.general_to_fort_var.items():
             val = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=None)

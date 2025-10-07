@@ -479,35 +479,15 @@ class TestGeom(unittest.TestCase):
 
         #TODO : Fix file writing
         # Solvers loaded with inputs files (case 4 and 5 use the same file)
-        # self.ovl_solver_f1 = OVLSolver(geo_file=geom_file1)
+        self.ovl_solver_f1 = OVLSolver(geo_file=geom_file1)
         # self.ovl_solver_f2 = OVLSolver(geo_file=geom_file2)
         # self.ovl_solver_f3 = OVLSolver(geo_file=geom_file3)
         # self.ovl_solver_f4 = OVLSolver(geo_file=geom_file4)
 
         self.solvers = [self.ovl_solver_1,self.ovl_solver_2,self.ovl_solver_3,self.ovl_solver_4,self.ovl_solver_5]
-        # self.solvers_f = [self.ovl_solver_f1,self.ovl_solver_f2,self.ovl_solver_f3,self.ovl_solver_f4]
+        self.solvers_f = [self.ovl_solver_f1,self.ovl_solver_f2,self.ovl_solver_f3,self.ovl_solver_f4]
 
     def test_surface_params(self):
-        # reference_data = {
-        #     "Wing": {
-        #         "nchordwise": 7,
-        #         "cspace": 1.0,
-        #         "nspan": 20,
-        #         "sspace": -2.0,
-        #         "yduplicate": 0.0,
-        #         "scale": np.array([1.1, 1.2, 1.3]),
-        #         "translate": np.array([0.1, 0.2, 0.3]),
-        #         "angle": 1.23,
-        #         "nspans": np.array([5, 4, 3, 2, 1]),
-        #         "sspaces": np.array([-1.0, 0.0, 1.0, 2.0, 3.0]),
-        #         "aincs": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
-        #         "chords": np.array([0.5, 0.4, 0.3, 0.2, 0.1]),
-        #         "xles" : np.array([0, 0.1, 0.2, 0.3, 0.4]),
-        #         "yles" : np.array([0, 1.0, 2.0, 3.0, 4.0]),
-        #         "zles" : np.array([0, 0.01, 0.02, 0.03, 0.04])
-        #     },
-        # }
-
         data = []
 
         for solver in self.solvers:
