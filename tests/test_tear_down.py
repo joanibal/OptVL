@@ -2,7 +2,6 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
-import copy
 
 # =============================================================================
 # Standard Python Modules
@@ -14,7 +13,6 @@ import psutil
 # External Python modules
 # =============================================================================
 import unittest
-import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
@@ -26,7 +24,7 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 class TestCaseDerivs(unittest.TestCase):
     def setUp(self) -> None:
         self.ovl_solver = OVLSolver(geo_file=geom_file)
-    
+
     def tearDown(self):
         # Get the memory usage of the current process using psutil
         process = psutil.Process()

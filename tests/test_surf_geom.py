@@ -44,9 +44,8 @@ class TestGeom(unittest.TestCase):
         }
 
         data = self.ovl_solver.get_surface_params(include_geom=True, include_paneling=True, include_con_surf=True)
-        
-        from pprint import pprint
-        
+
+
 
         for surf in reference_data:
             for key in reference_data[surf]:
@@ -60,7 +59,7 @@ class TestGeom(unittest.TestCase):
         self.ovl_solver.set_constraint("alpha", 6.00)
         self.ovl_solver.set_constraint("beta", 2.00)
         self.ovl_solver.execute_run()
-        
+
         assert self.ovl_solver.get_num_surfaces() == 5
         assert self.ovl_solver.get_num_strips() == 90
         assert self.ovl_solver.get_mesh_size() == 780
@@ -75,7 +74,7 @@ class TestGeom(unittest.TestCase):
             2.0,
             rtol=1e-8,
         )
-        
+
         coefs = self.ovl_solver.get_total_forces()
         np.testing.assert_allclose(
             coefs["CL"],
@@ -84,7 +83,7 @@ class TestGeom(unittest.TestCase):
         )
 
         self.ovl_solver.set_surface_params(data)
-        
+
 
         assert self.ovl_solver.get_num_surfaces() == 5
         assert self.ovl_solver.get_num_strips() == 90
@@ -104,7 +103,7 @@ class TestGeom(unittest.TestCase):
             2.0,
             rtol=1e-8,
         )
-        
+
         coefs = self.ovl_solver.get_total_forces()
         np.testing.assert_allclose(
             coefs["CL"],
@@ -113,36 +112,36 @@ class TestGeom(unittest.TestCase):
         )
 
     def test_surface_mirroring(self):
-        
+
         # Take the one wing and streach out the tip
         new_data = {
             "Wing": {
                 "yles" : np.array([0, 1.0, 2.0, 3.0, 10.0]),
             },
         }
-        
+
         self.ovl_solver.set_constraint("alpha", 10.00)
         self.ovl_solver.set_surface_params(new_data)
-        
+
         self.ovl_solver.execute_run()
-        
+
         run_data = self.ovl_solver.get_total_forces()
-        
+
         # if only one wing was updated then will have unbalanced yaw and roll moments
         np.testing.assert_allclose(
             run_data["CR SA"],
             0.0,
             atol=1e-12
         )
-        
+
         np.testing.assert_allclose(
             run_data["CN SA"],
             0.0,
             atol=1e-12
         )
-        
+
         updated_data = self.ovl_solver.get_surface_params(include_geom=True)
-        
+
         np.testing.assert_allclose(
             updated_data["Wing"]["yles"],
             new_data["Wing"]["yles"],

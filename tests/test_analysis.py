@@ -125,7 +125,7 @@ class TestAnalysisSweep(unittest.TestCase):
 class TestBodyAnalysis(unittest.TestCase):
     def setUp(self):
         self.ovl_solver = OVLSolver(geo_file="supra.avl",debug=False)
-    
+
     def test_coefs(self):
         self.ovl_solver.set_constraint("alpha", 5.00)
         self.ovl_solver.execute_run()
