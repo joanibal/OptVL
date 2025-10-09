@@ -11,8 +11,6 @@ import os
 # External Python modules
 # =============================================================================
 import unittest
-import numpy as np
-import sys
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_file = os.path.join(base_dir, "aircraft.avl")
@@ -23,6 +21,7 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 class TestImport(unittest.TestCase):
     # TODO: add test for expected input output errors
     def test_instances(self):
+
         from optvl import OVLSolver
 
         ovl_solver1 = OVLSolver(geo_file=geom_file)
