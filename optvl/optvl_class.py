@@ -109,6 +109,7 @@ class OVLSolver(object):
         "Sref": ["CASE_R", "SREF"],
         "Cref": ["CASE_R", "CREF"],
         "Bref": ["CASE_R", "BREF"],
+        "XYZref": ["CASE_R", "XYZREF"],
     }
 
     case_derivs_to_fort_var = {
