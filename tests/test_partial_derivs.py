@@ -310,7 +310,6 @@ class TestFunctionPartials(unittest.TestCase):
     def test_rev_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             self.ovl_solver.clear_ad_seeds_fast()
-
             func_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[0]
             self.ovl_solver.clear_ad_seeds_fast()
 
@@ -491,7 +490,9 @@ class TestResidualPartials(unittest.TestCase):
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[1]
-            res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7)[1]
+            res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
+                ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7
+            )[1]
 
             # print(f"res wrt {ref_key}", np.linalg.norm(res_seeds), np.linalg.norm(res_seeds_FD))
             np.testing.assert_allclose(res_seeds, res_seeds_FD, atol=1e-6, err_msg=f"d(res) w.r.t.{ref_key}")
