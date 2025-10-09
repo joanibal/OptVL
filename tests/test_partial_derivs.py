@@ -2,8 +2,6 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
-import copy
-import platform
 
 # =============================================================================
 # Standard Python Modules

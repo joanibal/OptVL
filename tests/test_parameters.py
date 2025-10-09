@@ -13,7 +13,6 @@ import copy
 # External Python modules
 # =============================================================================
 import unittest
-import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
@@ -69,7 +68,7 @@ class TestParameterAPI(unittest.TestCase):
         """
             test that the parameter changes effect the correct fortran variables
         """
-        
+
         for key in self.params_baseline:
             # add each key to the update dict one at a time
 
@@ -77,12 +76,12 @@ class TestParameterAPI(unittest.TestCase):
 
         # other parameters only get updated in exec subroutine
         self.ovl_solver.execute_run()
-        
-        self.assertEqual(self.ovl_solver.get_avl_fort_arr("CASE_R", "MACH"), 
+
+        self.assertEqual(self.ovl_solver.get_avl_fort_arr("CASE_R", "MACH"),
                          self.params_baseline["Mach"] + 0.1)
-        self.assertEqual(self.ovl_solver.get_avl_fort_arr("CASE_R", "CDREF"), 
+        self.assertEqual(self.ovl_solver.get_avl_fort_arr("CASE_R", "CDREF"),
                          self.params_baseline["CD0"] + 0.1)
-        
+
         xyz_ref = self.ovl_solver.get_avl_fort_arr("CASE_R", "XYZREF")
         self.assertEqual(xyz_ref[0], self.params_baseline["X cg"] + 0.1)
         self.assertEqual(xyz_ref[1], self.params_baseline["Y cg"] + 0.1)
@@ -94,7 +93,7 @@ class TestReferenceAPI(unittest.TestCase):
         self.ref_data_baseline = {
             # "bank": 0.0,
             # "elevation": 0,
-            "Sref": 1.13047707106, 
+            "Sref": 1.13047707106,
             "Cref": 0.361159860776,
             "Bref": 5.99996825959,
         }
@@ -125,5 +124,4 @@ class TestReferenceAPI(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-    
- 
+
