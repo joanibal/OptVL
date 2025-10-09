@@ -170,7 +170,10 @@ def om_set_avl_inputs(sys, inputs):
     # add the parameters to the run
     for ref in sys.ovl.ref_var_to_fort_var:
         if ref in inputs:
-            val = inputs[ref][0]
+            if ref == "XYZref":
+                val = inputs[ref][0:3]
+            else:
+                val = inputs[ref][0]
             sys.ovl.set_reference_data({ref: val})
     
 

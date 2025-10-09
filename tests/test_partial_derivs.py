@@ -289,8 +289,7 @@ class TestFunctionPartials(unittest.TestCase):
 
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            ref_seeds = np.ones(3) if ref_key == "XYZref" else 1.0
-            func_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seeds})[0]
+            func_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[0]
 
             func_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7
@@ -318,8 +317,7 @@ class TestFunctionPartials(unittest.TestCase):
     def test_rev_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             self.ovl_solver.clear_ad_seeds_fast()
-            ref_seeds = np.ones(3) if ref_key == "XYZref" else 1.0
-            func_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seeds})[0]
+            func_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[0]
             self.ovl_solver.clear_ad_seeds_fast()
 
             for func_key in self.ovl_solver.case_var_to_fort_var:
@@ -514,8 +512,7 @@ class TestResidualPartials(unittest.TestCase):
 
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            ref_seeds = np.ones(3) if ref_key == "XYZref" else 1.0
-            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seeds})[1]
+            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[1]
             res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7
             )[1]
@@ -536,8 +533,7 @@ class TestResidualPartials(unittest.TestCase):
         self.ovl_solver.clear_ad_seeds_fast()
 
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            ref_seeds = np.ones(3) if ref_key == "XYZref" else 1.0
-            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seeds})[1]
+            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[1]
             # do dot product
             res_sum = np.sum(res_seeds_rev * res_seeds_fwd)
             ref_sum = np.sum(ref_seeds_rev[ref_key])
