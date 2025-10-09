@@ -108,7 +108,6 @@ class OVLSolver(object):
         "Sref": ["CASE_R", "SREF"],
         "Cref": ["CASE_R", "CREF"],
         "Bref": ["CASE_R", "BREF"],
-        "XYZref":["CASE_R", "XYZREF"],
     }
 
     case_derivs_to_fort_var = {
@@ -160,18 +159,16 @@ class OVLSolver(object):
     }
 
 
-    general_to_fort_var = {
+    ref_var_no_ad_to_fort_var = {
         # "title": ["CASE_C", "TITLE"],
         "mach":  ["CASE_R", "MACH0"],
         "iysym": ["CASE_I", "IYSYM"],
         "izsym": ["CASE_I", "IZSYM"],
         "zsym":  ["CASE_R", "ZSYM"],
-        "Sref":  ["CASE_R", "SREF"],
-        "Cref":  ["CASE_R", "CREF"],
-        "Bref":  ["CASE_R", "BREF"],
-        "Xref":  ["CASE_R","XYZREF0"],
-        "Yref":  ["CASE_R","XYZREF0"],
-        "Zref":  ["CASE_R","XYZREF0"],
+        "Sref": ["CASE_R", "SREF"],
+        "Cref": ["CASE_R", "CREF"],
+        "Bref": ["CASE_R", "BREF"],
+        "XYZref":  ["CASE_R","XYZREF0"],
         "CDp":   ["CASE_R", "CDREF0"],
     }
 
@@ -501,9 +498,7 @@ class OVLSolver(object):
             "Sref":  (self.avl.CASE_R, "SREF", (float,np.float64), 1.0, None, lambda v: v if v > 0 else 1.0),
             "Cref":  (self.avl.CASE_R, "CREF", (float,np.float64), 1.0, None, lambda v: v if v > 0 else 1.0),
             "Bref":  (self.avl.CASE_R, "BREF", (float,np.float64), 1.0, None, lambda v: v if v > 0 else 1.0),
-            "Xref":  ("CASE_R","XYZREF0", (float,np.float64), 0.0, 0, None),
-            "Yref":  ("CASE_R","XYZREF0", (float,np.float64), 0.0, 1, None),
-            "Zref":  ("CASE_R","XYZREF0", (float,np.float64), 0.0, 2, None),
+            "XYZref":  ("CASE_R","XYZREF0", (np.ndarray), 0.0, slice(0,3), None),
             "CDp":   (self.avl.CASE_R, "CDREF0", (float,np.float64), 0.0, None, None),
         }
         # fmt: on
@@ -2233,7 +2228,7 @@ class OVLSolver(object):
 
         general_data["title"] = self.avl.CASE_C.TITLE
 
-        for var, fort_var in self.general_to_fort_var.items():
+        for var, fort_var in self.ref_var_no_ad_to_fort_var.items():
             val = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=None)
             general_data[var] = val
 

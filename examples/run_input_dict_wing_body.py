@@ -111,9 +111,7 @@ inputDict = {
     "Sref": np.float64(10.0), # Reference planform area
     "Cref": np.float64(1.0), # Reference chord area
     "Bref": np.float64(10.0), # Reference span length
-    "Xref": np.float64(0.25), # Reference x position
-    "Yref": np.float64(0.0), # Reference y position
-    "Zref": np.float64(0.0), # Reference z position
+    "XYZref": np.array([0.25, 0, 0],dtype=np.float64), # Reference x,y,z position
     "CDp": np.float64(0.0), # Reference profile drag adjustment
     "surfaces": surf, # dictionary of surface dictionaries
     "bodies": body, # dictionary of body dictionaries
