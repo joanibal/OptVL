@@ -32,7 +32,7 @@ class TestFunctionPartials(unittest.TestCase):
         self.ovl_solver.set_constraint("alpha", 25.0)
         self.ovl_solver.set_constraint("beta", 5.0)
         self.ovl_solver.execute_run()
-        
+
     def tearDown(self):
         # Get the memory usage of the current process using psutil
         process = psutil.Process()
@@ -289,7 +289,8 @@ class TestFunctionPartials(unittest.TestCase):
 
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            func_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[0]
+            ref_seeds = np.ones(3) if ref_key == "XYZref" else 1.0
+            func_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seeds})[0]
 
             func_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7
@@ -317,13 +318,13 @@ class TestFunctionPartials(unittest.TestCase):
     def test_rev_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             self.ovl_solver.clear_ad_seeds_fast()
-
-            func_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[0]
+            ref_seeds = np.ones(3) if ref_key == "XYZref" else 1.0
+            func_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seeds})[0]
             self.ovl_solver.clear_ad_seeds_fast()
 
             for func_key in self.ovl_solver.case_var_to_fort_var:
                 ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})[6]
-                
+
                 # print(f"{func_key} wrt {ref_key}", "fwd ", func_seeds_fwd[func_key], "rev", ref_seeds_rev[ref_key])
                 tol = 1e-14
 
@@ -356,7 +357,7 @@ class TestResidualPartials(unittest.TestCase):
         mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
         print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
 
-    
+
     def tearDown(self):
         # Get the memory usage of the current process using psutil
         process = psutil.Process()
@@ -369,7 +370,7 @@ class TestResidualPartials(unittest.TestCase):
             res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, geom_seeds={}, mode="FD", step=1e-8
             )[1]
-            
+
             res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})[1]
 
 
@@ -509,11 +510,12 @@ class TestResidualPartials(unittest.TestCase):
                 atol=1e-14,
                 err_msg=f"func_key res w.r.t. {param_key}",
             )
-            
+
 
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[1]
+            ref_seeds = np.ones(3) if ref_key == "XYZref" else 1.0
+            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seeds})[1]
             res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7
             )[1]
@@ -534,7 +536,8 @@ class TestResidualPartials(unittest.TestCase):
         self.ovl_solver.clear_ad_seeds_fast()
 
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[1]
+            ref_seeds = np.ones(3) if ref_key == "XYZref" else 1.0
+            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seeds})[1]
             # do dot product
             res_sum = np.sum(res_seeds_rev * res_seeds_fwd)
             ref_sum = np.sum(ref_seeds_rev[ref_key])
@@ -546,7 +549,7 @@ class TestResidualPartials(unittest.TestCase):
                 atol=1e-14,
                 err_msg=f"func_key res w.r.t. {ref_key}",
             )
-            
+
 
 
 
