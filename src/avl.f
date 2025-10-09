@@ -434,12 +434,14 @@ C       GO TO 500
       LOGICAL ERROR
 C     
       FILDEF = geom_file
+      if (FILDEF .NE. '') then
        CALL INPUT(LUINP,FILDEF,ERROR)
        IF(ERROR) THEN
         WRITE(*,*) 
      &    '** File not processed. Current geometry may be corrupted.'
 C        GO TO 500
        ENDIF
+      endif
 C
        CALL PARSET
 C

@@ -351,12 +351,18 @@ C
       real(kind=avl_real) YDUPL_B_DIFF
       real(kind=avl_real) XYZLES_B_DIFF
       real(kind=avl_real) BSPACE_DIFF
+      real(kind=avl_real) XBOD_DIFF
+      real(kind=avl_real) YBOD_DIFF
+      real(kind=avl_real) TBOD_DIFF
       COMMON /BODY_GEOM_R_DIFF/
      & XYZSCAL_B_DIFF(3, NBMAX),
      & XYZTRAN_B_DIFF(3, NBMAX),
      & YDUPL_B_DIFF(NBMAX),
      & XYZLES_B_DIFF(3, NSMAX, NBMAX),
-     & BSPACE_DIFF(NBMAX)
+     & BSPACE_DIFF(NBMAX),
+     & XBOD_DIFF(IBX, NBMAX),
+     & YBOD_DIFF(IBX, NBMAX),
+     & TBOD_DIFF(IBX, NBMAX)
 C
       real(kind=avl_real) XYZSCAL_DIFF
       real(kind=avl_real) XYZTRAN_DIFF
@@ -366,6 +372,10 @@ C
       real(kind=avl_real) SSPACE_DIFF
       real(kind=avl_real) SSPACES_DIFF
       real(kind=avl_real) XYZLES_DIFF
+      real(kind=avl_real) XSEC_DIFF
+      real(kind=avl_real) YSEC_DIFF
+      real(kind=avl_real) XFMIN_DIFF
+      real(kind=avl_real) XFMAX_DIFF
       real(kind=avl_real) XLASEC_DIFF
       real(kind=avl_real) ZLASEC_DIFF
       real(kind=avl_real) XUASEC_DIFF
@@ -393,6 +403,10 @@ C
      & SSPACE_DIFF(NFMAX),
      & SSPACES_DIFF(NSMAX, NFMAX),
      & XYZLES_DIFF(3, NSMAX, NFMAX),
+     & XSEC_DIFF(IBX, NSMAX, NFMAX),
+     & YSEC_DIFF(IBX, NSMAX, NFMAX),
+     & XFMIN_DIFF(NSMAX, NFMAX),
+     & XFMAX_DIFF(NSMAX, NFMAX),
      & XLASEC_DIFF(IBX, NSMAX, NFMAX),
      & ZLASEC_DIFF(IBX, NSMAX, NFMAX),
      & XUASEC_DIFF(IBX, NSMAX, NFMAX),
