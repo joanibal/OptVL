@@ -2483,7 +2483,7 @@ class OVLSolver(object):
                 fid.write(f" NACA   {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]}\n")
                 fid.write(f" {naca}\n")
 
-            if airfoil.all():
+            if np.any(airfoil):
                 fid.write("#AIRFOIL | X1 X2\n")
                 fid.write(f"AIRFOIL   {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]}\n")
                 for i in range(0, min(self.IBX, len(airfoil[0, :]))):
