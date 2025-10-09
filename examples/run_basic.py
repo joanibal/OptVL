@@ -16,11 +16,9 @@ ovl.set_parameter("Mach", 0.3)
 # This is the method that acutally runs the analysis
 ovl.execute_run()
 
-# print data about the run 
+# print data about the run
 force_data = ovl.get_total_forces()
-print(
-    f'CL:{force_data["CL"]:10.6f}   CD:{force_data["CD"]:10.6f}   CM:{force_data["CM"]:10.6f}'
-)
+print(f"CL:{force_data['CL']:10.6f}   CD:{force_data['CD']:10.6f}   CM:{force_data['CM']:10.6f}")
 
-# lets look at the cp countours 
+# lets look at the cp countours
 ovl.plot_cp()

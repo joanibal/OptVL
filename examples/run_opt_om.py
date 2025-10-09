@@ -1,4 +1,5 @@
 """A openmdao based optimization for an aicraft using optvl"""
+
 import openmdao.api as om
 from optvl import OVLGroup
 
@@ -19,23 +20,23 @@ model.add_objective("ovlsolver.CD", scaler=1e3)
 prob = om.Problem(model)
 
 prob.driver = om.ScipyOptimizeDriver()
-prob.driver.options['optimizer'] = 'SLSQP'
-prob.driver.options['debug_print'] = ["desvars", "ln_cons", "nl_cons", "objs"]
-prob.driver.options['tol'] = 1e-10
-prob.driver.options['disp'] = True
+prob.driver.options["optimizer"] = "SLSQP"
+prob.driver.options["debug_print"] = ["desvars", "ln_cons", "nl_cons", "objs"]
+prob.driver.options["tol"] = 1e-10
+prob.driver.options["disp"] = True
 
-prob.setup(mode='rev')
+prob.setup(mode="rev")
 # this causes and error with OpenMDAO 3.38 (https://github.com/OpenMDAO/OpenMDAO/issues/3521)
-# om.n2(prob, show_browser=False, outfile="vlm_opt.html") 
+# om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 prob.run_driver()
-om.n2(prob, show_browser=False, outfile="vlm_opt.html") 
+om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 
-del_ele = prob.get_val('ovlsolver.Elevator')
-print(f'ovlsolver.Elevator {del_ele}')
-aincs = prob.get_val('ovlsolver.Wing:aincs')
-print(f'ovlsolver.Wing:aincs {aincs}')
-cd = prob.get_val('ovlsolver.CD')
-print(f'ovlsolver.CD {cd}')
+del_ele = prob.get_val("ovlsolver.Elevator")
+print(f"ovlsolver.Elevator {del_ele}")
+aincs = prob.get_val("ovlsolver.Wing:aincs")
+print(f"ovlsolver.Wing:aincs {aincs}")
+cd = prob.get_val("ovlsolver.CD")
+print(f"ovlsolver.CD {cd}")
 # do this instead if you want to check derivatives
 # prob.run_model()
 # prob.check_totals()
