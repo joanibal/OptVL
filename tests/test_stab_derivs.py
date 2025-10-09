@@ -2,7 +2,6 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
-import copy
 import psutil
 # =============================================================================
 # Standard Python Modules
@@ -95,20 +94,20 @@ class TestStabDerivs(unittest.TestCase):
             self.ovl_solver.execute_run()
             perb_data = self.ovl_solver.get_total_forces()
             self.ovl_solver.set_constraint(con_key, val)
-            
+
             for func_key in func_keys:
                 key = self.ovl_solver._get_deriv_key(con_key, func_key)
-                ad_dot = stab_derivs[key] 
-                
+                ad_dot = stab_derivs[key]
+
                 if func_key in ["CR","CN"]:
                     func_key += ' SA'
-                
-                fd_dot = (perb_data[func_key] - base_data[func_key]) / h 
-                
+
+                fd_dot = (perb_data[func_key] - base_data[func_key]) / h
+
                 if con_key in ['alpha', 'beta']:
-                   fd_dot *= 180/np.pi 
+                   fd_dot *= 180/np.pi
                    # convert to radians from degrees!
-                
+
                 rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
                 # print(f"{key:5}  | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
@@ -127,9 +126,9 @@ class TestStabDerivs(unittest.TestCase):
                         fd_dot,
                         rtol=5e-5,
                         err_msg=f"func_key {key}",
-                    )   
-            
-            
+                    )
+
+
 
 
 if __name__ == "__main__":

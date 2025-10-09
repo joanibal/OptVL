@@ -2,7 +2,6 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
-import copy
 
 # =============================================================================
 # Standard Python Modules
@@ -46,7 +45,7 @@ class TestTotals(unittest.TestCase):
 
         for con in con_list:
             con_seeds[con] = 1.0
-            
+
         self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
         self.ovl_solver.set_parameter_ad_seeds(param_seeds, mode="FD", scale=step)
@@ -147,7 +146,7 @@ class TestTotals(unittest.TestCase):
                     # print(
                     #     f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                     # )
-                    
+
                     tol = 1e-8
                     if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
                         # If either value is basically zero, use an absolute tolerance
@@ -164,7 +163,7 @@ class TestTotals(unittest.TestCase):
                             rtol=1e-4,
                             err_msg=f"{func_key} wrt {con_key}",
                         )
-                    
+
     def test_geom(self):
         # compare the analytical gradients with finite difference for each
         # geometric variable and function
@@ -176,8 +175,8 @@ class TestTotals(unittest.TestCase):
         consurf_vars = []
         for func_key in self.ovl_solver.case_derivs_to_fort_var:
             consurf_vars.append(self.ovl_solver._get_deriv_key(cs_names[0], func_key))
-   
-            
+
+
         stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
         # sens = self.ovl_solver.execute_run_sensitivities(func_vars)
         func_vars = self.ovl_solver.case_var_to_fort_var
@@ -231,7 +230,7 @@ class TestTotals(unittest.TestCase):
                     # print(
                     #     f"{func_key} wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                     # )
-                    
+
                     tol = 1e-8
                     if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
                         # If either value is basically zero, use an absolute tolerance
@@ -248,7 +247,7 @@ class TestTotals(unittest.TestCase):
                             rtol=3e-3,
                             err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                         )
-                        
+
                 for func_key in stab_derivs_seeds:
                         geom_dot = np.sum(sens[func_key][surf_key][geom_key] * rand_arr)
                         func_dot = stab_derivs_seeds[func_key]
@@ -259,7 +258,7 @@ class TestTotals(unittest.TestCase):
                         # print(
                         #     f"{func_key}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                         # )
-                        
+
                         tol = 1e-10
                         if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
                             # If either value is basically zero, use an absolute tolerance
@@ -275,7 +274,7 @@ class TestTotals(unittest.TestCase):
                                 func_dot,
                                 rtol=3e-3,
                                 err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
-                            )                
+                            )
 
     def test_params(self):
         # compare the analytical gradients with finite difference for each constraint and function
@@ -323,7 +322,7 @@ class TestTotals(unittest.TestCase):
                     # print(
                     #     f"{func_key}   wrt {param_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                     # )
-                    
+
                     tol = 1e-8
                     if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
                         # If either value is basically zero, use an absolute tolerance
@@ -378,7 +377,7 @@ class TestTotals(unittest.TestCase):
                         rtol=5e-4,
                         err_msg=f"func_key {func_key} w.r.t. {ref_key}",
                     )
-            
+
             for func_key in stab_derivs_seeds:
                 ad_dot = sens[func_key][ref_key]
                 func_dot = stab_derivs_seeds[func_key]
