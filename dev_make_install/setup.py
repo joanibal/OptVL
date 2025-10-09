@@ -5,12 +5,12 @@ import os
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
 project_directory = os.path.dirname(this_directory)
-optvl_directory = os.path.join(project_directory, "optvl")
-sym_link = os.path.join(this_directory, "optvl")
+optvl_directory  = os.path.join(project_directory, 'optvl')
+sym_link = os.path.join(this_directory, 'optvl')
 
 with open(os.path.join(project_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
-
+    
 
 if not os.path.exists(sym_link):
     # Try to create a relative symlink (POSIX-friendly)
@@ -21,11 +21,11 @@ if not os.path.exists(sym_link):
         # print a helpful message only once
         print(f"Could not create symlink {sym_link} -> {optvl_directory}: {exc}\n")
         exit
-
+        
 
 def get_version_from_pyproject():
-    path = os.path.join(project_directory, "pyproject.toml")
-    with open(path, "r", encoding="utf-8") as f:
+    path  = os.path.join(project_directory, "pyproject.toml")
+    with open(path, 'r', encoding='utf-8') as f:
         text = f.read()
 
     match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
@@ -37,6 +37,7 @@ def get_version_from_pyproject():
 if __name__ == "__main__":
     # after running make in the top
     # `pip install`
+
 
     setup(
         name="optvl",

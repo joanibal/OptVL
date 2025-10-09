@@ -7,7 +7,7 @@ ovl_solver.set_constraint("alpha", alpha)
 ovl_solver.execute_run()
 run_data = ovl_solver.get_total_forces()
 stab_derivs = ovl_solver.get_stab_derivs()
-print("stability deriv", stab_derivs["dCL/dalpha"])
+print('stability deriv', stab_derivs['dCL/dalpha'])
 
 step = 1e-6
 ovl_solver.set_constraint("alpha", alpha + step)

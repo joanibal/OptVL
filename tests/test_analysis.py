@@ -124,8 +124,8 @@ class TestAnalysisSweep(unittest.TestCase):
 
 class TestBodyAnalysis(unittest.TestCase):
     def setUp(self):
-        self.ovl_solver = OVLSolver(geo_file="supra.avl", debug=False)
-
+        self.ovl_solver = OVLSolver(geo_file="supra.avl",debug=False)
+    
     def test_coefs(self):
         self.ovl_solver.set_constraint("alpha", 5.00)
         self.ovl_solver.execute_run()
@@ -135,7 +135,6 @@ class TestBodyAnalysis(unittest.TestCase):
         np.testing.assert_allclose(coef_data["CL"], 0.636031170179549, rtol=1e-8)
         np.testing.assert_allclose(coef_data["CD"], 3.6953247032454204, rtol=1e-8)
         np.testing.assert_allclose(coef_data["CM"], -0.5736410313952236, rtol=1e-8)
-
 
 class TestHingeMom(unittest.TestCase):
     def setUp(self):

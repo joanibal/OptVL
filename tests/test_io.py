@@ -42,7 +42,7 @@ class TestInput(unittest.TestCase):
 class TestOutput(unittest.TestCase):
     def test_write_geom(self):
         """check that the file written by OptVL is the same as the original file"""
-        ovl_solver = OVLSolver(geo_file="supra.avl")
+        ovl_solver = OVLSolver(geo_file='supra.avl')
         ovl_solver.write_geom_file(geom_output_file)
         baseline_data = ovl_solver.get_surface_params()
         baseline_data_body = ovl_solver.get_body_params()
@@ -66,7 +66,7 @@ class TestOutput(unittest.TestCase):
                         atol=1e-8,
                         err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
                     )
-
+    
         for body in baseline_data_body:
             for key in baseline_data_body[body]:
                 data = new_data_body[body][key]
@@ -80,15 +80,15 @@ class TestOutput(unittest.TestCase):
                         atol=1e-8,
                         err_msg=f"bodyace `{body}` key `{key}` does not match reference data",
                     )
-
+    
     def test_write_panneling_params(self):
         # test that the surface is output correctly when only section or surface
         # panneling is given
         ovl_solver = OVLSolver(geo_file=rect_geom_file)
-        ovl_solver.write_geom_file(rect_geom_output_file)
+        ovl_solver.write_geom_file(rect_geom_output_file)   
         baseline_data = ovl_solver.get_surface_params(include_paneling=True, include_geom=False)
-        assert baseline_data["Wing"]["use surface spacing"]
-
+        assert baseline_data['Wing']['use surface spacing'] == True
+        
         del ovl_solver
         ovl_solver = OVLSolver(geo_file=rect_geom_output_file)
         new_data = baseline_data = ovl_solver.get_surface_params()
