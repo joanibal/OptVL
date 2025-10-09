@@ -1,5 +1,4 @@
 import warnings
-import numpy as np
 
 
 def pre_check_input_dict(inputDict: dict):
@@ -24,7 +23,7 @@ def pre_check_input_dict(inputDict: dict):
         User-defined OptVL input dict
 
     Returns
-    ----------
+    -------
     inputDict : dict
         Return a modified input dict with dummy surface and bodies keys if they were not detected
     """
@@ -150,7 +149,6 @@ def pre_check_input_dict(inputDict: dict):
         "refld",  # control surface reflection, sign of deflection for duplicated surface
     ]
 
-    design_var_keys = ["idestd", "gaing"]
 
     dim_2_keys = [
         "clcdsec",
