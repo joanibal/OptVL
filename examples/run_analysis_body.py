@@ -12,8 +12,5 @@ for alpha in range(10):
     ovl_solver.execute_run()
     run_data = ovl_solver.get_total_forces()
     print(
-        f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["CM"]:10.6f}'
+        f" {alpha:10.6f}   {run_data['CL']:10.6f}   {run_data['CD']:10.6f}   {run_data['CDi']:10.6f}   {run_data['CDv']:10.6f}   {run_data['CM']:10.6f}"
     )
-
-
-

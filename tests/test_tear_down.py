@@ -31,13 +31,11 @@ class TestCaseDerivs(unittest.TestCase):
         mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
         print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
 
-
     def test_1(self):
         self.ovl_solver.execute_run()
 
     def test_2(self):
         self.ovl_solver.execute_run()
-
 
 
 if __name__ == "__main__":

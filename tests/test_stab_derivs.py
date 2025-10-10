@@ -3,6 +3,7 @@
 # =============================================================================
 from optvl import OVLSolver
 import psutil
+
 # =============================================================================
 # Standard Python Modules
 # =============================================================================
@@ -84,9 +85,9 @@ class TestStabDerivs(unittest.TestCase):
         base_data = self.ovl_solver.get_total_forces()
         stab_derivs = self.ovl_solver.get_stab_derivs()
 
-        con_keys =  ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"]
+        con_keys = ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"]
         func_keys = ["CL", "CD", "CY", "CR", "CM", "CN"]
-        # con_keys =  ["alpha", "beta", 'roll rate']
+
         for con_key in con_keys:
             h = 1e-8
             val = self.ovl_solver.get_constraint(con_key)
@@ -99,16 +100,16 @@ class TestStabDerivs(unittest.TestCase):
                 key = self.ovl_solver._get_deriv_key(con_key, func_key)
                 ad_dot = stab_derivs[key]
 
-                if func_key in ["CR","CN"]:
-                    func_key += ' SA'
+                if func_key in ["CR", "CN"]:
+                    func_key += " SA"
 
                 fd_dot = (perb_data[func_key] - base_data[func_key]) / h
 
-                if con_key in ['alpha', 'beta']:
-                   fd_dot *= 180/np.pi
-                   # convert to radians from degrees!
+                if con_key in ["alpha", "beta"]:
+                    fd_dot *= 180 / np.pi
+                    # convert to radians from degrees!
 
-                rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
+                # rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
                 # print(f"{key:5}  | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
                 tol = 1e-13
@@ -127,8 +128,6 @@ class TestStabDerivs(unittest.TestCase):
                         rtol=5e-5,
                         err_msg=f"func_key {key}",
                     )
-
-
 
 
 if __name__ == "__main__":

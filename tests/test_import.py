@@ -21,7 +21,6 @@ geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 class TestImport(unittest.TestCase):
     # TODO: add test for expected input output errors
     def test_instances(self):
-
         from optvl import OVLSolver
 
         ovl_solver1 = OVLSolver(geo_file=geom_file)

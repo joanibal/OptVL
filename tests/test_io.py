@@ -42,7 +42,7 @@ class TestInput(unittest.TestCase):
 class TestOutput(unittest.TestCase):
     def test_write_geom(self):
         """check that the file written by OptVL is the same as the original file"""
-        ovl_solver = OVLSolver(geo_file='supra.avl')
+        ovl_solver = OVLSolver(geo_file="supra.avl")
         ovl_solver.write_geom_file(geom_output_file)
         baseline_data = ovl_solver.get_surface_params()
         baseline_data_body = ovl_solver.get_body_params()
@@ -87,7 +87,7 @@ class TestOutput(unittest.TestCase):
         ovl_solver = OVLSolver(geo_file=rect_geom_file)
         ovl_solver.write_geom_file(rect_geom_output_file)
         baseline_data = ovl_solver.get_surface_params(include_paneling=True, include_geom=False)
-        assert baseline_data['Wing']['use surface spacing'] == True
+        assert baseline_data["Wing"]["use surface spacing"]
 
         del ovl_solver
         ovl_solver = OVLSolver(geo_file=rect_geom_output_file)
