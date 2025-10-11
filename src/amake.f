@@ -651,7 +651,7 @@ c--------------------------------------------------------------
       
       do ISURF=1,NSURF
             if (lverbose) then 
-                  write(*,*) 'Updating surface ',ISURF
+                  write(*,*) ISURF, 'Update surf:'//trim(STITLE(ISURF))
             end if
             if (ISURF.ne.1) then
                   if(ldupl(isurf-1)) then 
@@ -825,6 +825,7 @@ c--------------------------------------------------------------
 c     Sets the airfoil coodinate data for the given section and surface
 c--------------------------------------------------------------
       include 'AVL.INC'
+c      input
       integer isec, isurf, n, nin
       real x(n), y(n)
       real xin(IBX), yin(IBX), tin(IBX)
@@ -835,18 +836,20 @@ c--------------------------------------------------------------
 c--------------------------------------------------------------
 c     Store the raw input data into the common block for general purposes
 c--------------------------------------------------------------
-        do i = 1,n
-          XSEC(i,isec, isurf) = x(i)
-          YSEC(i,isec, isurf) = y(i)
-        end do
-        XFMIN_R(isec,isurf) = xfmin
-        XFMAX_R(isec,isurf) = xfmax
+            do i = 1,n
+                  XSEC(i,isec, isurf) = x(i)
+                  YSEC(i,isec, isurf) = y(i)
+            end do
+            XFMIN_R(isec,isurf) = xfmin
+            XFMAX_R(isec,isurf) = xfmax
         end if
 
         if((xfmin .gt. 0.01) .or. (xfmax .lt. 0.99)) then
-          write(*,*) 'aifoil Lrange false', isurf, isec
-          write(*,*) (xfmin .gt. 0.01)
-          write(*,*) (xfmax .lt. 0.99)
+            if (lverbose) then 
+                  write(*,*) 'aifoil Lrange false', isurf, isec
+                  write(*,*) (xfmin .gt. 0.01)
+                  write(*,*) (xfmax .lt. 0.99)
+            endif
           LRANGE(isurf) = .false.
         else
           LRANGE(isurf) = .true.

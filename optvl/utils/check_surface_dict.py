@@ -34,7 +34,7 @@ def pre_check_input_dict(inputDict: dict):
         "mach",
         "iysym",
         "izsym",
-        "zsymm",
+        "zsym",
         "Sref",
         "Cref",
         "Bref",
