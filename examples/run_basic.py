@@ -1,6 +1,7 @@
 from optvl import OVLSolver
 
 ovl = OVLSolver(geo_file="aircraft.avl", debug=False)
+import pdb; pdb.set_trace()
 
 # look at the geometry to see that everything is right
 ovl.plot_geom()

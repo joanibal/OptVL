@@ -13,4 +13,4 @@ exec(import_cmd)
 #     sys.exit(1)
 # end try
 
-print("\033[1;32mModule %s was passed import test.\033[0m" % name)
+print("\033[1;32mModule %s has passed import test.\033[0m" % name)

@@ -11,8 +11,6 @@ import os
 # External Python modules
 # =============================================================================
 import unittest
-import numpy as np
-import sys
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_file = os.path.join(base_dir, "aircraft.avl")
