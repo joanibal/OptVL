@@ -162,8 +162,7 @@ def pre_check_input_dict(inputDict: dict):
 
     # NOTE: make sure this is consistent to the documentation  page
     # Options used to specify airfoil sections for surfaces
-    af_load_ops = ["naca", "airfoils", "afiles"]
-    manual_af_override = ["xasec", "casec", "tasec", "xuasec", "xlasec", "zuasec", "zlasec"]
+    airfoil_spec_keys = ["naca", "airfoils", "afiles", "xasec"]
 
     for key in inputDict.keys():
         # Check for keys not implemented
@@ -178,32 +177,26 @@ def pre_check_input_dict(inputDict: dict):
     if "surfaces" in inputDict.keys():
         if len(inputDict["surfaces"]) > 0:
             for surface in inputDict["surfaces"].keys():
+
                 # Verify at least two section
                 if inputDict["surfaces"][surface]["num_sections"] < 2:
                     raise RuntimeError("Must have at least two sections per surface!")
+                
+                #Checks to see that at most only one of the options in af_load_ops or one of the options in manual_af_override is selected
+                if len(airfoil_spec_keys & inputDict["surfaces"][surface].keys()) > 1:
+                    raise RuntimeError(
+                        "More than one airfoil section specification detected in input dictionary!\n"
+                        "Select only a single approach for specifying airfoil sections!")
+
+                
                 for key in inputDict["surfaces"][surface].keys():
+
                     # Check to verify if redundant y-symmetry specification are not made
                     if ("ydupl" in key) and ("iysym" in inputDict.keys()):
                         if (inputDict["surfaces"][surface]["yduplicate"] == 0.0) and (inputDict["iysym"] != 0):
                             raise RuntimeError(
                                 f"ERROR: Redundant y-symmetry specifications in surface {surface} \nIYSYM /= 0 \nYDUPLICATE  0.0. \nCan use one or the other, but not both!"
                             )
-
-                    # Basically checks to see that at most only one of the options in af_load_ops or one of the options in manual_af_override is selected
-                    if (
-                        sum(
-                            bool(g)
-                            for g in (
-                                (af_load_ops & inputDict["surfaces"][surface].keys())
-                                | {any(k in manual_af_override for k in inputDict["surfaces"][surface].keys())}
-                            )
-                        )
-                        > 1
-                    ):
-                        raise RuntimeError(
-                            "More than one airfoil section specification detected in input dictionary!\n"
-                            "Select only a single approach for specifying airfoil sections!"
-                        )
 
                     # Check the surface input size is a 2D array with second dim equal to num_sections
                     if key in multi_section_keys:
@@ -282,7 +275,7 @@ def pre_check_input_dict(inputDict: dict):
                         "Number of unique design vars does not match the number of unique controls defined!"
                     )
     else:
-        # Add dummy entry to make later code simpler
+        # Add dummy entry if surfaces are not defined
         inputDict["surfaces"] = {}
 
     if "bodies" in inputDict.keys():
@@ -320,7 +313,7 @@ def pre_check_input_dict(inputDict: dict):
                             stacklevel=2,
                         )
     else:
-        # Add dummy entry to make later code simpler
+        # Add dummy entry if bodies are not defined
         inputDict["bodies"] = {}
 
     return inputDict
