@@ -165,6 +165,14 @@ def pre_check_input_dict(inputDict: dict):
     airfoil_spec_keys = ["naca", "airfoils", "afiles", "xasec"]
 
     for key in inputDict.keys():
+
+        # Check if the user provided negative reference values
+        if key in ["Bref", "Sref", "Cref"]:
+            if inputDict[key] < 0.0:
+                raise ValueError(f"Reference value {key} cannot be negative!")
+            
+        # TODO-SB: Apply the np.sign function to symmetry plane specifications if needed
+            
         # Check for keys not implemented
         if key not in keys_implemented_general:
             warnings.warn(
