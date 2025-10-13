@@ -179,17 +179,4 @@ py3.extension_module('libavl',
                    
 )
 
-py3.install_sources([
-  'optvl/__init__.py',
-  'optvl/optvl_class.py',
-  'optvl/MExt.py',
-  'optvl/om_wrapper.py',
-  'optvl/utils/__init__.py',
-  'optvl/utils/check_surface_dict.py',
-  'optvl/utils/airfoil_utils.py',
-],
-  subdir: 'optvl'
-)
-
-
-        
+install_subdir('optvl', install_dir: py3.get_install_dir())
