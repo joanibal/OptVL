@@ -379,8 +379,16 @@ class OVLSolver(object):
             self._setup_body_maps(body_name, idx_body)
             
             
-    def _setup_surface_maps(self, surf_name, idx_surf, num_sec):
-    
+    def _setup_surface_maps(self, surf_name:str, idx_surf:int, num_sec:int):
+        """Used by the init_map_data and load_input_dict functions to generate which slices of the Fortran array for a
+        given geometry, panneling, control surface, or design variable correspond to the given surface. This data is
+        stored the surf_geom_to_fort_var dictionary.
+
+        Args:
+            surf_name: The name of the surface
+            idx_surf: The index of the surface (Fortran indexing)
+            num_sec: The number of sections in the surface
+        """
         slice_idx_surf = (idx_surf,)
         slice_surf_all = (idx_surf, slice(None))
         slice_surf_secs = (idx_surf, slice(None, num_sec))
@@ -459,8 +467,15 @@ class OVLSolver(object):
         }
 
             
-    def _setup_body_maps(self, body_name, idx_body):
-    
+    def _setup_body_maps(self, body_name:str, idx_body:int):
+        """Used by the init_map_data and load_input_dict functions to generate which slices of the Fortran array for a
+        given geometry or discretization variable correspond to the given body. This data is stored the
+        body_param_to_fort_var dictionary.
+
+        Args:
+            body_name: The name of the body
+            idx_body: The index of the body (Fortran indexing)
+        """
         slice_idx_body = (idx_body,)
         slice_body_all = (idx_body, slice(None))
 
@@ -474,10 +489,17 @@ class OVLSolver(object):
         }
 
     
-    def _setup_section_maps(self, surf_name, idx_surf, num_sec, nasec_arr):
-        
-        
-        
+    def _setup_section_maps(self, surf_name:str, idx_surf:int, num_sec:int, nasec_arr:np.ndarray):
+        """Used by the init_map_data and load_input_dict functions to generate which slices of the Fortran array for a
+        given section geometry variable correspond to the given surface and section. This data is stored the
+        surf_section_geom_to_fort_var dictionary.
+
+        Args:
+            surf_name: The name of the surface
+            idx_surf: The index of the surface (Fortran indexing)
+            num_sec: The number of sections
+            nasec_arr: The number of array points used to define the section geometry
+        """
         xasec_slices = []
         sasec_slices = []
         casec_slices = []
@@ -525,27 +547,35 @@ class OVLSolver(object):
         """
 
         # Initialize Variables and Counters
-        # Techincally the dictionary defaults set these too but these set the entire array
-        self.set_avl_fort_arr("SURF_L", "LRANGE", True, slicer=slice(0, self.NFMAX))
-        self.avl.CASE_R.DCL_A0 = 0.0
-        self.avl.CASE_R.DCM_A0 = 0.0
-        self.avl.CASE_R.DCL_U0 = 0.0
-        self.avl.CASE_R.DCM_U0 = 0.0
-        self.set_avl_fort_arr("SURF_GEOM_I", "NSEC", 0, slicer=slice(0, self.NFMAX))
-        self.set_avl_fort_arr("BODY_GEOM_I", "NSEC_B", 0, slicer=slice(0, self.NBMAX))
         self.avl.CASE_I.NVOR = 0
         self.avl.CASE_I.NSTRIP = 0
         self.avl.CASE_I.NLNODE = 0
         self.avl.CASE_I.NCONTROL = 0
         self.avl.CASE_I.NDESIGN = 0
-        self.set_avl_fort_arr("SURF_GEOM_R", "CLCDSRF", 0.0, slicer=(slice(0, 6), slice(0, self.NFMAX)))
+        self.set_avl_fort_arr("SURF_GEOM_I", "NSEC", 0, slicer=slice(None, self.NFMAX))
+        self.set_avl_fort_arr("BODY_GEOM_I", "NSEC_B", 0, slicer=slice(None, self.NBMAX))
+        self.avl.CASE_R.DCL_A0 = 0.0
+        self.avl.CASE_R.DCM_A0 = 0.0
+        self.avl.CASE_R.DCL_U0 = 0.0
+        self.avl.CASE_R.DCM_U0 = 0.0
+        self.set_avl_fort_arr("SURF_GEOM_R", "CLCDSRF", 0.0, slicer=(slice(None, 6), slice(None, self.NFMAX)))
         self.avl.CASE_L.LVISC = False
-
+        self.set_avl_fort_arr("SURF_L", "LRANGE", True, slicer=slice(None, self.NFMAX))
+        
         # Perform pre-check of user's input dictionary before loading into AVL
         if preCheck:
             input_dict = pre_check_input_dict(input_dict)
         
         def get_types_from_blk(common_blk):
+            """Determines the variable type a common block uses from
+            its name
+
+            Args:
+                common_blk: Name of the common block
+
+            Returns:
+                Python type equivalent used by the common block
+            """
             last_char = common_blk[-1]
             
             if last_char == 'C':
@@ -556,19 +586,26 @@ class OVLSolver(object):
                 return (int,np.int32)
             elif last_char == 'L':
                 return (bool, int,np.int32)
-            else: 
+            else:
                 raise ValueError(f'type not able to be infered from common block {common_blk}')
             
-        def check_type(key, avl_var, given_val):
+        def check_type(key, avl_vars, given_val):
+            """Checks the type for a given AVL Fortran Common Block var against a given value
 
-            # get the type that it should be 
+            Args:
+                key: OptVL input variable dictionary key
+                avl_vars: AVL Common Block variable name array
+                given_val: Input value to check type against
+
+            """
+            # get the type that it should be
             expected_type = get_types_from_blk(avl_vars[0])
             
-            # if the expected type is a str 
+            # if the expected type is a str
             if expected_type is str:
                 # check the type of the scaler
                 if not isinstance(given_val, expected_type):
-                    raise TypeError(f"Variable {key} is of type {type(given_val)} but expected {expected_type}")    
+                    raise TypeError(f"Variable {key} is of type {type(given_val)} but expected {expected_type}")
                 
                 # for strings no further checks are required
                 return
@@ -594,21 +631,20 @@ class OVLSolver(object):
                 if not isinstance(given_val, expected_type):
                     raise TypeError(f"Variable {key} is a scalar of type {type(given_val)} but expected {expected_type}")
             
-
-        # CDp is the only optional input
+        # Set AVL header variables
+        # CDp is the only optional input for the AVL header
         optional_header_defaults = {
             "CDp": 0.0
         }
         
-
         for key, avl_vars in self.header_var_to_fort_var.items():
-            
+
             if key not in input_dict:
                 if key in optional_header_defaults: 
                     val = optional_header_defaults[key]
                 else:
                     raise ValueError(f"Key {key} not found in input dictionary but is required")
-            else: 
+            else:
                 val = input_dict[key]
                 
             check_type(key, avl_vars, val)
@@ -618,7 +654,7 @@ class OVLSolver(object):
         
         self.set_avl_fort_arr("CASE_R", "YSYM", 0.0) # YSYM Hardcoded to 0
         
-        # set the global the control variable options
+        # set the global control variable options
         ncontrol = len(input_dict.get("dname", []))
         if ncontrol > self.NDMAX:
             raise RuntimeError(f"Number of specified controls exceeds {self.NDMAX}. Raise NDMAX!")
@@ -647,17 +683,15 @@ class OVLSolver(object):
         
         # Load surfaces
         if num_surfs > 0:
-            num_dup_surfs = 0
             surf_names = list(input_dict["surfaces"].keys())
-            # # setup surface data 
-            
+
+            # setup surface data for initial input
             self.surf_geom_to_fort_var = {}
             self.surf_section_geom_to_fort_var = {}
             self.surf_pannel_to_fort_var = {}
             self.con_surf_to_fort_var = {}
             self.des_var_to_fort_var = {}
 
-            
             idx_surf = 0
             
             for surf_name  in input_dict["surfaces"]:
@@ -673,20 +707,14 @@ class OVLSolver(object):
                         f"Number of specified sections for surface {surf_name} exceeds {self.NSMAX}. Raise NSMAX!"
                     )
                 
-                for j in range(num_secs):
-                    # Set control and design variable defaults
-                    self.set_avl_fort_arr("SURF_GEOM_I", "NSCON", surf_dict["num_controls"][j], slicer=(idx_surf, j))
-                    self.set_avl_fort_arr("SURF_GEOM_I", "NSDES", surf_dict["num_design_vars"][j], slicer=(idx_surf, j))
+                # Set the number of control and design variables for the surface
+                for idx_sec in range(num_secs):
+                    self.set_avl_fort_arr("SURF_GEOM_I", "NSCON", surf_dict["num_controls"][idx_sec], slicer=(idx_surf, idx_sec))
+                    self.set_avl_fort_arr("SURF_GEOM_I", "NSDES", surf_dict["num_design_vars"][idx_sec], slicer=(idx_surf, idx_sec))
                     
                 
                 self._setup_surface_maps(surf_name, idx_surf, num_secs)
-                
-                
-                # # HACK: AVL inserts dup surfaces right after the original one so the real i needs to be advanced by the number of dup surfaces we've had so far
-                # i += num_dup_surfs
-                # # Setup surface
-                
-
+            
                 # Set surface name
                 self.avl.CASE_C.STITLE[idx_surf] = self._str_to_fort_str(surf_name, num_max_char=40)
                 
@@ -713,10 +741,9 @@ class OVLSolver(object):
                 
                 # set some flags based on the options used for this surface
                 if "sspace" in surf_dict:
-                    use_surface_spacing = True
+                    self.set_avl_fort_arr("SURF_GEOM_L", "LSURFSPACING", True, slicer=idx_surf)
                 else:
-                    use_surface_spacing = False
-                self.set_avl_fort_arr("SURF_GEOM_L", "LSURFSPACING", use_surface_spacing, slicer=idx_surf)
+                    self.set_avl_fort_arr("SURF_GEOM_L", "LSURFSPACING", False, slicer=idx_surf)
                 
                 if "yduplicate" in surf_dict:
                     self.set_avl_fort_arr("SURF_GEOM_L", "LDUPL", True, slicer=idx_surf)
@@ -748,7 +775,6 @@ class OVLSolver(object):
 
                 # determine what method of airfoil definition we are using
                 # check to make sure we don't have multiple airfoil definitions used for this surface
-                
                 airfoil_spec_keys = {"naca", "airfoils", "afiles", "xasec"} & surf_dict.keys()
                 
                 if len(airfoil_spec_keys) > 1:
@@ -890,9 +916,8 @@ class OVLSolver(object):
                     self.avl.CASE_I.NSURF += 1
                     idx_surf += 1
 
-                    # HACK: Keep python data consistent with Fortran
+                    # Keep python data consistent with Fortran
                     surf_names.insert(idx_surf + 1, surf_name)
-                    num_dup_surfs += 1
                 
                 idx_surf += 1
 

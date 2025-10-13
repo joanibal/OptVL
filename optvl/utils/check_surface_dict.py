@@ -1,7 +1,7 @@
 import warnings
 
 
-def pre_check_input_dict(inputDict: dict):
+def pre_check_input_dict(input_dict: dict):
     """
     This routine performs some verifications on a user's input diciontary to OptVL.
     It checks to see if any unsupported keys are in the inputs dictionary and the surface and body subdictionaries and issues a warning if any are detected.
@@ -19,12 +19,12 @@ def pre_check_input_dict(inputDict: dict):
 
     Parameters
     ----------
-    inputDict : dict
+    input_dict : dict
         User-defined OptVL input dict
 
     Returns
     -------
-    inputDict : dict
+    input_dict : dict
         Return a modified input dict with dummy surface and bodies keys if they were not detected
     """
 
@@ -162,10 +162,17 @@ def pre_check_input_dict(inputDict: dict):
 
     # NOTE: make sure this is consistent to the documentation  page
     # Options used to specify airfoil sections for surfaces
-    af_load_ops = ["naca", "airfoils", "afiles"]
-    manual_af_override = ["xasec", "casec", "tasec", "xuasec", "xlasec", "zuasec", "zlasec"]
+    airfoil_spec_keys = ["naca", "airfoils", "afiles", "xasec"]
 
-    for key in inputDict.keys():
+    for key in input_dict.keys():
+
+        # Check if the user provided negative reference values
+        if key in ["Bref", "Sref", "Cref"]:
+            if input_dict[key] < 0.0:
+                raise ValueError(f"Reference value {key} cannot be negative!")
+            
+        # TODO-SB: Apply the np.sign function to symmetry plane specifications if needed
+            
         # Check for keys not implemented
         if key not in keys_implemented_general:
             warnings.warn(
@@ -175,50 +182,44 @@ def pre_check_input_dict(inputDict: dict):
             )
     total_global_control = 0
     total_global_design_var = 0
-    if "surfaces" in inputDict.keys():
-        if len(inputDict["surfaces"]) > 0:
-            for surface in inputDict["surfaces"].keys():
+    if "surfaces" in input_dict.keys():
+        if len(input_dict["surfaces"]) > 0:
+            for surface in input_dict["surfaces"].keys():
+
                 # Verify at least two section
-                if inputDict["surfaces"][surface]["num_sections"] < 2:
+                if input_dict["surfaces"][surface]["num_sections"] < 2:
                     raise RuntimeError("Must have at least two sections per surface!")
-                for key in inputDict["surfaces"][surface].keys():
+                
+                #Checks to see that at most only one of the options in af_load_ops or one of the options in manual_af_override is selected
+                if len(airfoil_spec_keys & input_dict["surfaces"][surface].keys()) > 1:
+                    raise RuntimeError(
+                        "More than one airfoil section specification detected in input dictionary!\n"
+                        "Select only a single approach for specifying airfoil sections!")
+
+                
+                for key in input_dict["surfaces"][surface].keys():
+
                     # Check to verify if redundant y-symmetry specification are not made
-                    if ("ydupl" in key) and ("iysym" in inputDict.keys()):
-                        if (inputDict["surfaces"][surface]["yduplicate"] == 0.0) and (inputDict["iysym"] != 0):
+                    if ("ydupl" in key) and ("iysym" in input_dict.keys()):
+                        if (input_dict["surfaces"][surface]["yduplicate"] == 0.0) and (input_dict["iysym"] != 0):
                             raise RuntimeError(
                                 f"ERROR: Redundant y-symmetry specifications in surface {surface} \nIYSYM /= 0 \nYDUPLICATE  0.0. \nCan use one or the other, but not both!"
                             )
 
-                    # Basically checks to see that at most only one of the options in af_load_ops or one of the options in manual_af_override is selected
-                    if (
-                        sum(
-                            bool(g)
-                            for g in (
-                                (af_load_ops & inputDict["surfaces"][surface].keys())
-                                | {any(k in manual_af_override for k in inputDict["surfaces"][surface].keys())}
-                            )
-                        )
-                        > 1
-                    ):
-                        raise RuntimeError(
-                            "More than one airfoil section specification detected in input dictionary!\n"
-                            "Select only a single approach for specifying airfoil sections!"
-                        )
-
                     # Check the surface input size is a 2D array with second dim equal to num_sections
                     if key in multi_section_keys:
-                        if (key in dim_2_keys) and (inputDict["surfaces"][surface][key].ndim != 2):
+                        if (key in dim_2_keys) and (input_dict["surfaces"][surface][key].ndim != 2):
                             raise ValueError(
-                                f"Key {key} is of dimension {inputDict['surfaces'][surface][key].ndim}, expected 2!"
+                                f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 2!"
                             )
-                        if (key not in dim_2_keys) and inputDict["surfaces"][surface][key].ndim != 1:
+                        if (key not in dim_2_keys) and input_dict["surfaces"][surface][key].ndim != 1:
                             raise ValueError(
-                                f"Key {key} is of dimension {inputDict['surfaces'][surface][key].ndim}, expected 1!"
+                                f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 1!"
                             )
 
                         if (
-                            inputDict["surfaces"][surface][key].shape[0]
-                            != inputDict["surfaces"][surface]["num_sections"]
+                            input_dict["surfaces"][surface][key].shape[0]
+                            != input_dict["surfaces"][surface]["num_sections"]
                         ):
                             raise ValueError(f"Key {key} does not have entries corresponding to each section!s")
 
@@ -234,72 +235,72 @@ def pre_check_input_dict(inputDict: dict):
 
                     # Check if controls defined correctly
                     if key in control_keys:
-                        for j in range(inputDict["surfaces"][surface]["num_sections"]):
-                            for _ in range(inputDict["surfaces"][surface]["num_controls"][j]):
+                        for j in range(input_dict["surfaces"][surface]["num_sections"]):
+                            for _ in range(input_dict["surfaces"][surface]["num_controls"][j]):
                                 if (
-                                    inputDict["surfaces"][surface][key][j].shape[0]
-                                    != inputDict["surfaces"][surface]["num_controls"][j]
+                                    input_dict["surfaces"][surface][key][j].shape[0]
+                                    != input_dict["surfaces"][surface]["num_controls"][j]
                                 ):
                                     raise ValueError(
                                         f"Key {key} does not have entries corresponding to each control for this section!"
                                     )
 
                     # Accumulate icont max
-                    if "icontd" in inputDict["surfaces"][surface].keys():
-                        arr = inputDict["surfaces"][surface]["icontd"]
+                    if "icontd" in input_dict["surfaces"][surface].keys():
+                        arr = input_dict["surfaces"][surface]["icontd"]
                         vals = [a.max() + 1 for a in arr if a.size > 0]
                         total_global_control = max(vals) if vals else None
-                        # total_global_control = np.max(inputDict["surfaces"][surface]["icontd"])+1
+                        # total_global_control = np.max(input_dict["surfaces"][surface]["icontd"])+1
 
                     # Check if dvs defined correctly
                     if key in control_keys:
-                        for j in range(inputDict["surfaces"][surface]["num_sections"]):
-                            for _ in range(inputDict["surfaces"][surface]["num_design_vars"][j]):
+                        for j in range(input_dict["surfaces"][surface]["num_sections"]):
+                            for _ in range(input_dict["surfaces"][surface]["num_design_vars"][j]):
                                 if (
-                                    inputDict["surfaces"][surface][key][j].shape[0]
-                                    != inputDict["surfaces"][surface]["num_design_vars"][j]
+                                    input_dict["surfaces"][surface][key][j].shape[0]
+                                    != input_dict["surfaces"][surface]["num_design_vars"][j]
                                 ):
                                     raise ValueError(
                                         f"Key {key} does not have entries corresponding to each design var for this section!"
                                     )
 
                     # Accumulate idestd max
-                    if "idestd" in inputDict["surfaces"][surface].keys():
-                        arr = inputDict["surfaces"][surface]["idestd"]
+                    if "idestd" in input_dict["surfaces"][surface].keys():
+                        arr = input_dict["surfaces"][surface]["idestd"]
                         vals = [a.max() + 1 for a in arr if a.size > 0]
                         total_global_design_var = max(vals) if vals else None
-                        # total_global_design_var = np.max(inputDict["surfaces"][surface]["idestd"])+1
+                        # total_global_design_var = np.max(input_dict["surfaces"][surface]["idestd"])+1
 
-            if "icontd" in inputDict["surfaces"][surface].keys():
-                if len(inputDict["dname"]) != (total_global_control):
+            if "icontd" in input_dict["surfaces"][surface].keys():
+                if len(input_dict["dname"]) != (total_global_control):
                     raise ValueError(
                         "Number of unique control names does not match the number of unique controls defined!"
                     )
 
-            if "idestd" in inputDict["surfaces"][surface].keys():
-                if len(inputDict["gname"]) != (total_global_design_var):
+            if "idestd" in input_dict["surfaces"][surface].keys():
+                if len(input_dict["gname"]) != (total_global_design_var):
                     raise ValueError(
                         "Number of unique design vars does not match the number of unique controls defined!"
                     )
     else:
-        # Add dummy entry to make later code simpler
-        inputDict["surfaces"] = {}
+        # Add dummy entry if surfaces are not defined
+        input_dict["surfaces"] = {}
 
-    if "bodies" in inputDict.keys():
-        if len(inputDict["bodies"]) > 0:
-            for body in inputDict["bodies"].keys():
+    if "bodies" in input_dict.keys():
+        if len(input_dict["bodies"]) > 0:
+            for body in input_dict["bodies"].keys():
                 # Check that only one body oml input is selected
-                if ("body_oml" in inputDict["bodies"][body].keys()) and ("bfile" in inputDict["bodies"][body].keys()):
+                if ("body_oml" in input_dict["bodies"][body].keys()) and ("bfile" in input_dict["bodies"][body].keys()):
                     raise RuntimeError("Select only one body oml definition!")
-                elif ("body_oml" not in inputDict["bodies"][body].keys()) and (
-                    "bfile" not in inputDict["bodies"][body].keys()
+                elif ("body_oml" not in input_dict["bodies"][body].keys()) and (
+                    "bfile" not in input_dict["bodies"][body].keys()
                 ):
                     raise RuntimeError("Must define a oml for a body!")
 
-                for key in inputDict["bodies"][body].keys():
+                for key in input_dict["bodies"][body].keys():
                     # Check to verify if redundant y-symmetry specification are not made
-                    if ("ydupl" in key) and ("iysym" in inputDict.keys()):
-                        if (inputDict["bodies"][body]["yduplicate"] == 0.0) and (inputDict["iysym"] != 0):
+                    if ("ydupl" in key) and ("iysym" in input_dict.keys()):
+                        if (input_dict["bodies"][body]["yduplicate"] == 0.0) and (input_dict["iysym"] != 0):
                             raise RuntimeError(
                                 f"ERROR: Redundant y-symmetry specifications in body {body} \nIYSYM /= 0 \nYDUPLICATE  0.0. \nCan use one or the other, but not both!"
                             )
@@ -320,7 +321,7 @@ def pre_check_input_dict(inputDict: dict):
                             stacklevel=2,
                         )
     else:
-        # Add dummy entry to make later code simpler
-        inputDict["bodies"] = {}
+        # Add dummy entry if bodies are not defined
+        input_dict["bodies"] = {}
 
-    return inputDict
+    return input_dict
