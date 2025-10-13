@@ -184,6 +184,8 @@ py3.install_sources([
   'optvl/optvl_class.py',
   'optvl/MExt.py',
   'optvl/om_wrapper.py',
+  'optvl/utils/check_surface_dict.py',
+  'optvl/utils/airfoil_utils.py',
 ],
   subdir: 'optvl'
 )
