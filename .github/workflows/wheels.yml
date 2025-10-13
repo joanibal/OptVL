@@ -146,6 +146,7 @@ jobs:
         run: bash tools/wheels/move_wheels.sh
 
       - name: Publish distribution 📦 to Test PyPI
+        if: github.event.pull_request.head.repo.fork == false && secrets.TEST_PYPI_API_TOKEN != ''
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           # packages-dir: wheelhouse/
