@@ -1,12 +1,29 @@
+"""
+This module contains the routines, for pre-checking OptVL input dictionaries for errors.
+"""
+
+# =============================================================================
+# Standard Python modules
+# =============================================================================
 import warnings
+
+# =============================================================================
+# External Python modules
+# =============================================================================
+import numpy as np
+
+
+# =============================================================================
+# Extension modules
+# =============================================================================
 
 
 def pre_check_input_dict(input_dict: dict):
     """
     This routine performs some verifications on a user's input diciontary to OptVL.
-    It checks to see if any unsupported keys are in the inputs dictionary and the surface and body subdictionaries and issues a warning if any are detected.
-    Additionally, we verify that the users has not specified redundant inputs for airfoil cross-section specification and y-symmetry sepcification and raise errors if any are detected.
-
+    It veries that geometry and control surfaces are specified in the correct format.
+    Also checks to see if any unsupported keys are in the inputs dictionary and the surface and body subdictionaries and issues a warning if any are detected.
+    
     This routine does NOT type check inputs as that is handled in the load routine itself.
 
     NOTE: There are other redundant specifications in AVL where specifying one option will override what is specified in another.
@@ -17,15 +34,11 @@ def pre_check_input_dict(input_dict: dict):
     2. 'cdcl' overrides 'cdclsec'
 
 
-    Parameters
-    ----------
-    input_dict : dict
-        User-defined OptVL input dict
+    Args:
+        input_dict : dict
 
-    Returns
-    -------
-    input_dict : dict
-        Return a modified input dict with dummy surface and bodies keys if they were not detected
+    Returns:
+        input_dict : dict
     """
 
     # NOTE: make sure this is consistent to the documentation  page
@@ -170,9 +183,17 @@ def pre_check_input_dict(input_dict: dict):
         if key in ["Bref", "Sref", "Cref"]:
             if input_dict[key] < 0.0:
                 raise ValueError(f"Reference value {key} cannot be negative!")
-            
-        # TODO-SB: Apply the np.sign function to symmetry plane specifications if needed
-            
+        
+        # Correct incorrect symmetry plane defs with warning
+        if key in ["iysym", "izsym"]:
+            if input_dict[key] not in [-1,0,1]:
+                warnings.warn(
+                    f"OptVL WARNING - Option {key} needs to be -1, 0, or 1!\n "
+                    f"Correcting by setting based on sign to {np.sign(input_dict[key])}.\n",
+                    stacklevel=2,
+                )
+                input_dict[key] = np.sign(input_dict[key])
+                
         # Check for keys not implemented
         if key not in keys_implemented_general:
             warnings.warn(
