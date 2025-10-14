@@ -15,7 +15,6 @@ import unittest
 import numpy as np
 import openmdao.api as om
 import warnings
-import numpy as np
 
 # Set DeprecationWarning to be treated as an error
 warnings.simplefilter("error", DeprecationWarning)

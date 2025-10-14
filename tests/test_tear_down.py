@@ -2,7 +2,6 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
-import copy
 
 # =============================================================================
 # Standard Python Modules
@@ -14,7 +13,6 @@ import psutil
 # External Python modules
 # =============================================================================
 import unittest
-import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder

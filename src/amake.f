@@ -651,7 +651,7 @@ c--------------------------------------------------------------
       
       do ISURF=1,NSURF
             if (lverbose) then 
-                  write(*,*) 'Updating surface ',ISURF
+                  write(*,*) ISURF, 'Update surf:'//trim(STITLE(ISURF))
             end if
             if (ISURF.ne.1) then
                   if(ldupl(isurf-1)) then 
@@ -681,15 +681,15 @@ c--------------------------------------------------------------
             
 
 
-      SUBROUTINE MAKEBODY(IBODY,
-     &       XBOD,YBOD,TBOD,NBOD)
+      SUBROUTINE MAKEBODY(IBODY)
+C     &       XBOD,YBOD,TBOD,NBOD)
 C--------------------------------------------------------------
 C     Sets up all stuff for body IBODY,
 C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
 C
-      REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
+C      REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
 C
       PARAMETER (KLMAX=101)
       REAL XPT(KLMAX), FSPACE(KLMAX)
@@ -739,13 +739,14 @@ C---- set body nodes and radii
       DO IVB = 1, NVB(IBODY)+1
         NLNODE = NLNODE + 1
 C
-        XVB = XBOD(1) + (XBOD(NBOD)-XBOD(1))*XPT(IVB)
-        CALL AKIMA(XBOD,YBOD,NBOD,XVB,YVB,DYDX)
+        XVB = XBOD(1, IBODY) + (XBOD(NBOD(IBODY), IBODY)-XBOD(1,IBODY))
+     &  *XPT(IVB)
+        CALL AKIMA(XBOD(1,IBODY),YBOD(1,IBODY),NBOD(IBODY),XVB,YVB,DYDX)
         RL(1,NLNODE) = XYZTRAN_B(1,IBODY) + XYZSCAL_B(1,IBODY)*XVB
         RL(2,NLNODE) = XYZTRAN_B(2,IBODY)
         RL(3,NLNODE) = XYZTRAN_B(3,IBODY) + XYZSCAL_B(3,IBODY)*YVB
 C
-        CALL AKIMA(XBOD,TBOD,NBOD,XVB,TVB,DRDX)
+        CALL AKIMA(XBOD(1,IBODY),TBOD(1,IBODY),NBOD(IBODY),XVB,TVB,DRDX)
         RADL(NLNODE) = SQRT(XYZSCAL_B(2,IBODY)*XYZSCAL_B(3,IBODY)) 
      & * 0.5*TVB
       ENDDO
@@ -778,8 +779,131 @@ C
       RETURN
       END ! MAKEBODY
 
+      subroutine update_bodies()
+c--------------------------------------------------------------
+c     Updates all bodies, using the stored data.
+c--------------------------------------------------------------
+      include 'AVL.INC'
+      integer IBODY, NBOD, NBLDS
+      character*120 upname
 
+      NLNODE = 0
 
+      do IBODY=1,NBODY
+      if (lverbose) then 
+        write(*,*) 'Updating body ',IBODY
+      end if
+      if (IBODY.ne.1) then
+       if(ldupl_b(ibody-1)) then 
+        ! this body has already been created
+        ! it was probably duplicated from the previous one
+        cycle
+       end if
+       call makebody(IBODY)
+      else
+       call makebody(IBODY)
+      endif
+      
+      if(ldupl_b(ibody)) then
+       call bdupl(ibody,ydupl_b(ibody),'ydup')
+      endif
+      end do 
+      
+      CALL ENCALC
+      
+      LAIC = .FALSE.
+      LSRD = .FALSE.
+      LVEL = .FALSE.
+      LSOL = .FALSE.
+      LSEN = .FALSE.
+      
+      end subroutine update_bodies
+
+      subroutine  set_section_coordinates(isec,isurf,x,y,n,nin,xfmin,
+     &       xfmax, storecoords)
+c--------------------------------------------------------------
+c     Sets the airfoil coodinate data for the given section and surface
+c--------------------------------------------------------------
+      include 'AVL.INC'
+c      input
+      integer isec, isurf, n, nin
+      real x(n), y(n)
+      real xin(IBX), yin(IBX), tin(IBX)
+      real xfmin, xfmax
+      logical storecoords
+
+        if (storecoords) then
+c--------------------------------------------------------------
+c     Store the raw input data into the common block for general purposes
+c--------------------------------------------------------------
+            do i = 1,n
+                  XSEC(i,isec, isurf) = x(i)
+                  YSEC(i,isec, isurf) = y(i)
+            end do
+            XFMIN_R(isec,isurf) = xfmin
+            XFMAX_R(isec,isurf) = xfmax
+        end if
+
+        if((xfmin .gt. 0.01) .or. (xfmax .lt. 0.99)) then
+            if (lverbose) then 
+                  write(*,*) 'aifoil Lrange false', isurf, isec
+                  write(*,*) (xfmin .gt. 0.01)
+                  write(*,*) (xfmax .lt. 0.99)
+            endif
+          LRANGE(isurf) = .false.
+        else
+          LRANGE(isurf) = .true.
+        end if
+
+        call GETCAM(x,y,n,xin,yin,tin,nin,.true.)
+
+        NASEC(isec,isurf) = nin
+
+        do i = 1, nin
+          xf = xfmin + 
+     &         (xfmax-xfmin)*float(i-1)/float(NASEC(isec,isurf)-1)
+          XASEC(i,isec,isurf) = xin(1) + xf*(xin(nin)-xin(1))
+          call AKIMA(xin,yin,nin,XASEC(i,isec,isurf),zc,
+     &               SASEC(i,isec,isurf))
+          call AKIMA(xin,tin,nin,XASEC(i,isec,isurf),
+     &               TASEC(i,isec,isurf),dummy)
+          XLASEC(i,isec,isurf) = XASEC(i,isec,isurf)
+          XUASEC(i,isec,isurf) = XASEC(i,isec,isurf)
+          ZLASEC(i,isec,isurf) = zc - 0.5*TASEC(i,isec,isurf)
+          ZUASEC(i,isec,isurf) = zc + 0.5*TASEC(i,isec,isurf)
+          CASEC(i,isec,isurf) = zc
+
+        end do
+        call NRMLIZ(NASEC(isec,isurf),XASEC(1,isec,isurf))
+      
+      end subroutine set_section_coordinates
+
+      subroutine set_body_coordinates(ibod,xb,yb,nb,nin,storecoords)
+c--------------------------------------------------------------
+c     Sets the body oml coodinate data for the given section and surface
+c--------------------------------------------------------------
+      include 'AVL.INC'
+      integer ibod, nb, nin
+      real xb(nb), yb(nb)
+      logical storecoords
+C      real xin(ibx), yin(ibx), tin(ibx)
+C------ xfmin and xfmax don't appear to be supported for bodies?
+
+      if (storecoords) then
+c--------------------------------------------------------------
+c     Store the raw input data into the common block for general purposes
+c--------------------------------------------------------------
+      do i = 1,nb
+      XBOD_R(i,ibod) = xb(i)
+      YBOD_R(i,ibod) = yb(i)
+      end do
+      end if
+
+C------ set thread line y, and thickness t ( = 2r)
+      nbod = MIN( 50 , IBX )
+      call GETCAM(xb,yb,nb,xbod(1,ibod),ybod(1,ibod),tbod(1,ibod),nin,
+     & .false.)
+      end subroutine set_body_coordinates
 
       SUBROUTINE SDUPL(NN, Ypt,MSG)
 C-----------------------------------

@@ -8,12 +8,13 @@ This module contains the OVLSolver, which is the main wrapper for the Fortran le
 import os
 import time
 import copy
-from pprint import pprint
 from typing import Dict, List, Tuple, Any, TextIO
 import warnings
 import glob
 from typing import Optional
 import platform
+import operator
+from itertools import chain
 
 # =============================================================================
 # External Python modules
@@ -25,6 +26,8 @@ import numpy as np
 # Extension modules
 # =============================================================================
 from . import MExt
+from .utils.check_surface_dict import pre_check_input_dict
+from .utils.airfoil_utils import read_coordinates_files
 
 
 class OVLSolver(object):
@@ -78,17 +81,17 @@ class OVLSolver(object):
         "CL": ["CASE_R", "CLTOT"],
         "CD": ["CASE_R", "CDTOT"],
         "CDv": ["CASE_R", "CDVTOT"], # viscous drag
-        
+
         # lift and drag calculated from farfield integration
         "CLff": ["CASE_R", "CLFF"],
         "CYff": ["CASE_R", "CYFF"],
         "CDi": ["CASE_R", "CDFF"], # induced drag
-        
-        # non-dimensionalized forces 
-        "CX": ["CASE_R", "CXTOT"], 
-        "CY": ["CASE_R", "CYTOT"], 
-        "CZ": ["CASE_R", "CZTOT"],   
-        
+
+        # non-dimensionalized forces
+        "CX": ["CASE_R", "CXTOT"],
+        "CY": ["CASE_R", "CYTOT"],
+        "CZ": ["CASE_R", "CZTOT"],
+
         # non-dimensionalized moments (body frame)
         "CR BA": ["CASE_R", "CRTOT"],
         "CM": ["CASE_R", "CMTOT"],
@@ -98,7 +101,7 @@ class OVLSolver(object):
         "CR SA": ["CASE_R", "CRSAX"],
         # "CM SA": ["CASE_R", "CMSAX"], # This is the same in both frames
         "CN SA": ["CASE_R", "CNSAX"],
-        
+
         # spanwise efficiency
         "e": ["CASE_R", "SPANEF"],
     }
@@ -127,26 +130,25 @@ class OVLSolver(object):
         "CL": ["SURF_R", "CLSURF"],
         "CD": ["SURF_R", "CDSURF"],
         "CDv": ["SURF_R", "CDVSURF"],  # viscous drag
-        
-        # non-dimensionalized forces 
-        "CX": ["SURF_R", "CXSURF"], 
-        "CY": ["SURF_R", "CYSURF"], 
-        "CZ": ["SURF_R", "CZSURF"],   
-        
+
+        # non-dimensionalized forces
+        "CX": ["SURF_R", "CXSURF"],
+        "CY": ["SURF_R", "CYSURF"],
+        "CZ": ["SURF_R", "CZSURF"],
+
         # non-dimensionalized moments (body frame)
         "CR": ["SURF_R", "CRSURF"],
         "CM": ["SURF_R", "CMSURF"],
         "CN": ["SURF_R", "CNSURF"],
-        
+
         # forces non-dimentionalized by surface quantities
         # uses surface area instead of sref and takes moments about leading edge
         "CL surf" : ["SURF_R", "CL_SRF"],
         "CD surf" : ["SURF_R", "CD_SRF"],
         "CMLE surf" : ["SURF_R", "CMLE_SRF"],
-        
+
         #TODO: add CF_SRF(3,NFMAX), CM_SRF(3,NFMAX)
     }
-
 
     body_geom_to_fort_var = {
         "scale": ["BODY_GEOM_R", "XYZSCAL_B"],
@@ -155,19 +157,49 @@ class OVLSolver(object):
         "bfile": ["CASE_C", "BFILES"],
         "nvb": ["BODY_GEOM_I", "NVB"],
         "bspace": ["BODY_GEOM_R", "BSPACE"],
+    }
 
+
+    header_var_to_fort_var = {
+        "title": ["CASE_C", "TITLE"],
+        "mach":  ["CASE_R", "MACH0"],
+        "iysym": ["CASE_I", "IYSYM"],
+        "izsym": ["CASE_I", "IZSYM"],
+        "zsym":  ["CASE_R", "ZSYM"],
+        "Sref": ["CASE_R", "SREF"],
+        "Cref": ["CASE_R", "CREF"],
+        "Bref": ["CASE_R", "BREF"],
+        "XYZref":  ["CASE_R","XYZREF0"],
+        "CDp":   ["CASE_R", "CDREF0"],
     }
 
     # fmt: on
 
     ad_suffix = "_DIFF"
 
-    NUMAX = 6
+    # Primary array limits: These also need to updated in the Fortran layer if changed
+    NSMAX = 400  # number of chord strips
+    NFMAX = 30  # number of surfaces
+    NLMAX = 500  # number of source/doublet line nodes
+    NBMAX = 20  # number of bodies
+    NUMAX = 6  # number of freestream parameters (V,Omega)
+    NDMAX = 30  # number of control deflection parameters
+    NGMAX = 20  # number of design variables
+    NRMAX = 25  # number of stored run cases
+    NTMAX = 5000  # number of stored time levels
+    IBX = 300
+    ICONX = 20
+
+    if platform.system == "Windows":
+        NVMAX = 5000  # number of horseshoe vortices
+    else:
+        NVMAX = 6000  # number of horseshoe vortices
 
     def __init__(
         self,
-        geo_file: str,
+        geo_file: Optional[str] = None,
         mass_file: Optional[str] = None,
+        input_dict: Optional[dict] = None,
         debug: Optional[bool] = False,
         timing: Optional[bool] = False,
     ):
@@ -183,6 +215,8 @@ class OVLSolver(object):
 
         if timing:
             start_time = time.time()
+
+        self.debug = debug
 
         # MExt is important for creating multiple instances of the AVL solver that do not share memory
         # It is very gross, but I cannot figure out a better way (maybe use install_name_tool to change the dynamic library path to absolute).
@@ -206,6 +240,14 @@ class OVLSolver(object):
         # from . import libavl
         # self.avl = libavl
 
+        # Initialize AVL
+        self.avl.avl()
+        if debug:
+            self.set_avl_fort_arr("CASE_L", "LVERBOSE", True)
+
+        if timing:
+            self.set_avl_fort_arr("CASE_L", "LTIMING", True)
+
         if geo_file is not None:
             try:
                 # check to make sure files exist
@@ -222,20 +264,15 @@ class OVLSolver(object):
                     f"Could not open the file '{file}' from python. This is usually an issue with the specified file path"
                 )
 
-            self.avl.avl()
-            if debug:
-                self.set_avl_fort_arr("CASE_L", "LVERBOSE", True)
-
-            if timing:
-                self.set_avl_fort_arr("CASE_L", "LTIMING", True)
-
             self.avl.loadgeo(geo_file)
 
             if mass_file is not None:
                 self.avl.loadmass(mass_file)
-
+        elif input_dict is not None:
+            self.load_input_dict(input_dict, postCheck=True)
+            self.avl.loadgeo("")
         else:
-            raise ValueError("neither a geometry file or aircraft object was given")
+            raise ValueError("neither a geometry file nor an input options dictionary was specified")
 
         # todo store the default dict somewhere else
         # the control surface contraints get added to this array in the __init__
@@ -292,7 +329,7 @@ class OVLSolver(object):
 
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
-        self._init_surf_data()
+        self._init_map_data()
 
         # set the default solver tolerance
         self.set_avl_fort_arr("CASE_R", "EXEC_TOL", 2e-5)
@@ -300,12 +337,14 @@ class OVLSolver(object):
         if timing:
             print(f"AVL init took {time.time() - start_time} seconds")
 
-    def _init_surf_data(self):
+    def _init_map_data(self):
         """Used in the __init__ method to allocate the slice data for the surfaces"""
         self.surf_geom_to_fort_var = {}
-
+        self.surf_section_geom_to_fort_var = {}
         self.surf_pannel_to_fort_var = {}
         self.con_surf_to_fort_var = {}
+        self.des_var_to_fort_var = {}
+        self.body_param_to_fort_var = {}
 
         self.surface_names = self.get_surface_names()
         self.unique_surface_names = self.get_surface_names(remove_dublicated=True)
@@ -316,104 +355,906 @@ class OVLSolver(object):
         # for the mirrored surface
         for surf_name in self.unique_surface_names:
             idx_surf = self.get_surface_index(surf_name)
-            slice_idx_surf = (idx_surf,)
-            slice_surf_all = (idx_surf, slice(None))
-
+        
             # only set unduplicated sufaces
-            if self.get_avl_fort_arr("SURF_I", "IMAGS", slicer=slice_idx_surf) < 0:
+            if self.get_avl_fort_arr("SURF_I", "IMAGS", slicer=idx_surf) < 0:
                 # this is a duplicated surface, skip it
                 raise ValueError("Only non-duplicated surfaces have geom data. Internal list of unique surfaces wrong")
+            
+            
+            num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC", slicer=idx_surf)
+            nasec_arr = self.get_avl_fort_arr("SURF_GEOM_I", "NASEC", slicer=(idx_surf, slice(None,num_sec)))
+            
+            self._setup_surface_maps(surf_name, idx_surf, num_sec)
+            
+            self._setup_section_maps(surf_name, idx_surf, num_sec, nasec_arr)
+            
+        self.body_names = self.get_body_names()
+        self.unique_body_names = self.get_body_names(remove_dublicated=True)
+        
+        for body_name in self.unique_body_names:
+            idx_body = self.get_body_index(body_name)
+            
+            self._setup_body_maps(body_name, idx_body)
+            
+            
+    def _setup_surface_maps(self, surf_name:str, idx_surf:int, num_sec:int):
+        """Used by the init_map_data and load_input_dict functions to generate which slices of the Fortran array for a
+        given geometry, panneling, control surface, or design variable correspond to the given surface. This data is
+        stored the surf_geom_to_fort_var dictionary.
 
-            num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC", slicer=slice_idx_surf)
+        Args:
+            surf_name: The name of the surface
+            idx_surf: The index of the surface (Fortran indexing)
+            num_sec: The number of sections in the surface
+        """
+        slice_idx_surf = (idx_surf,)
+        slice_surf_all = (idx_surf, slice(None))
+        slice_surf_secs = (idx_surf, slice(None, num_sec))
+        slice_surf_secs_all = slice_surf_secs + (slice(None),)
+        slice_surf_secs_x = slice_surf_secs + (0,)
+        slice_surf_secs_y = slice_surf_secs + (1,)
+        slice_surf_secs_z = slice_surf_secs + (2,)
 
-            slice_surf_secs = (idx_surf, slice(None, num_sec))
-            slice_surf_secs_all = slice_surf_secs + (slice(None),)
-            slice_surf_secs_x = slice_surf_secs + (0,)
-            slice_surf_secs_y = slice_surf_secs + (1,)
-            slice_surf_secs_z = slice_surf_secs + (2,)
+        
 
-            nasec = self.get_avl_fort_arr("SURF_GEOM_I", "NASEC", slicer=slice_surf_secs)
-            # I don't see a case in the code where nasec is not the same for all sections
-            # but just in case, we'll do a test and throw an error if not
-            if np.unique(nasec).size != 1:
-                raise RuntimeError("nasec is not the same for all sections")
+        self.surf_geom_to_fort_var[surf_name] = {
+            "scale": ["SURF_GEOM_R", "XYZSCAL", slice_surf_all],
+            "translate": ["SURF_GEOM_R", "XYZTRAN", slice_surf_all],
+            "angle": ["SURF_GEOM_R", "ADDINC", slice_idx_surf],
+            # "xyzles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_all],
+            "xles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_x],
+            "yles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_y],
+            "zles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_z],
+            "chords": ["SURF_GEOM_R", "CHORDS", slice_surf_secs],
+            "aincs": ["SURF_GEOM_R", "AINCS", slice_surf_secs],
+            "clcdsec": ["SURF_GEOM_R", "CLCDSEC", slice_surf_secs_all],
+            "clcd": ["SURF_GEOM_R", "CLCDSRF", slice_surf_all],  # NEW
+            "claf": ["SURF_GEOM_R", "CLAF", slice_surf_secs],
+        }
+        self.surf_pannel_to_fort_var[surf_name] = {
+            "nchordwise": ["SURF_GEOM_I", "NVC", slice_idx_surf],
+            "cspace": ["SURF_GEOM_R", "CSPACE", slice_idx_surf],
+            "nspan": ["SURF_GEOM_I", "NVS", slice_idx_surf],
+            "sspace": ["SURF_GEOM_R", "SSPACE", slice_idx_surf],
+            "sspaces": ["SURF_GEOM_R", "SSPACES", slice_surf_secs],
+            "nspans": ["SURF_GEOM_I", "NSPANS", slice_surf_secs],
+            "yduplicate": ["SURF_GEOM_R", "YDUPL", slice_idx_surf],
+            "use surface spacing": ["SURF_GEOM_L", "LSURFSPACING", slice_idx_surf],
+            "component": ["SURF_I", "LSCOMP", slice_idx_surf],
+            "wake": ["SURF_L", "LFWAKE", slice_idx_surf],
+            "albe": ["SURF_L", "LFALBE", slice_idx_surf],
+            "load": ["SURF_L", "LFLOAD", slice_idx_surf],
+        }
+        
+        icontd_slices = []
+        idestd_slices = []
+        xhinged_slices = []
+        vhinged_slices = []
+        gaind_slices = []
+        refld_slices = []
+        gaing_slices = []
 
-            nasec = nasec[0]
+        for idx_sec in range(num_sec):
+            slice_sec = (idx_surf, idx_sec)
 
+            num_con_surf = self.get_avl_fort_arr("SURF_GEOM_I", "NSCON", slicer=slice_sec)
+            slice_sec_con = slice_sec + (slice(None, num_con_surf),)
+            slice_sec_con_hinge = slice_sec_con + (slice(None),)
+
+            num_des_var = self.get_avl_fort_arr("SURF_GEOM_I", "NSDES", slicer=slice_sec)
+            slice_sec_des_var = slice_sec + (slice(None, num_des_var),)
+
+            icontd_slices.append(slice_sec_con)
+            xhinged_slices.append(slice_sec_con)
+            vhinged_slices.append(slice_sec_con_hinge)
+            gaind_slices.append(slice_sec_con)
+            refld_slices.append(slice_sec_con)
+            idestd_slices.append(slice_sec_des_var)
+            gaing_slices.append(slice_sec_des_var)
+
+        self.con_surf_to_fort_var[surf_name] = {
+            "icontd": ["SURF_GEOM_I", "ICONTD", icontd_slices],
+            "xhinged": ["SURF_GEOM_R", "XHINGED", xhinged_slices],
+            "vhinged": ["SURF_GEOM_R", "VHINGED", vhinged_slices],
+            "gaind": ["SURF_GEOM_R", "GAIND", gaind_slices],
+            "refld": ["SURF_GEOM_R", "REFLD", refld_slices]
+        }
+        self.des_var_to_fort_var[surf_name] = {
+            "idestd": ["SURF_GEOM_I", "IDESTD", idestd_slices],
+            "gaing": ["SURF_GEOM_R", "GAING", gaing_slices],
+        }
+
+            
+    def _setup_body_maps(self, body_name:str, idx_body:int):
+        """Used by the init_map_data and load_input_dict functions to generate which slices of the Fortran array for a
+        given geometry or discretization variable correspond to the given body. This data is stored the
+        body_param_to_fort_var dictionary.
+
+        Args:
+            body_name: The name of the body
+            idx_body: The index of the body (Fortran indexing)
+        """
+        slice_idx_body = (idx_body,)
+        slice_body_all = (idx_body, slice(None))
+
+
+        self.body_param_to_fort_var[body_name] = {
+            "nvb": ["BODY_GEOM_I", "NVB", slice_idx_body],
+            "bspace": ["BODY_GEOM_R", "BSPACE", slice_idx_body],
+            "yduplicate": ["BODY_GEOM_R", "YDUPL_B", slice_idx_body],
+            "scale":  ["BODY_GEOM_R", "XYZSCAL_B",     slice_body_all ],
+            "translate":  ["BODY_GEOM_R", "XYZTRAN_B", slice_body_all ],
+        }
+
+    
+    def _setup_section_maps(self, surf_name:str, idx_surf:int, num_sec:int, nasec_arr:np.ndarray):
+        """Used by the init_map_data and load_input_dict functions to generate which slices of the Fortran array for a
+        given section geometry variable correspond to the given surface and section. This data is stored the
+        surf_section_geom_to_fort_var dictionary.
+
+        Args:
+            surf_name: The name of the surface
+            idx_surf: The index of the surface (Fortran indexing)
+            num_sec: The number of sections
+            nasec_arr: The number of array points used to define the section geometry
+        """
+        xasec_slices = []
+        sasec_slices = []
+        casec_slices = []
+        tasec_slices = []
+        xuasec_slices = []
+        xlasec_slices = []
+        zuasec_slices = []
+        zlasec_slices = []
+        
+        
+        for idx_sec in range(num_sec):
+            nasec = nasec_arr[idx_sec]
+            slice_surf_secs = (idx_surf, idx_sec)
             slice_surf_secs_nasec = slice_surf_secs + (slice(None, nasec),)
+            xasec_slices.append(slice_surf_secs_nasec)
+            sasec_slices.append(slice_surf_secs_nasec)
+            casec_slices.append(slice_surf_secs_nasec)
+            tasec_slices.append(slice_surf_secs_nasec)
+            xuasec_slices.append(slice_surf_secs_nasec)
+            xlasec_slices.append(slice_surf_secs_nasec)
+            zuasec_slices.append(slice_surf_secs_nasec)
+            zlasec_slices.append(slice_surf_secs_nasec)
+            
+        
+        self.surf_section_geom_to_fort_var[surf_name] = {
+            # "nasec": [],
+            "xasec": ["SURF_GEOM_R", "XASEC", xasec_slices],
+            "sasec": ["SURF_GEOM_R", "SASEC", sasec_slices],
+            "casec": ["SURF_GEOM_R", "CASEC", casec_slices],
+            "tasec": ["SURF_GEOM_R", "TASEC", tasec_slices],
+            "xuasec":["SURF_GEOM_R", "XUASEC", xuasec_slices],
+            "xlasec":["SURF_GEOM_R", "XLASEC", xlasec_slices],
+            "zuasec":["SURF_GEOM_R", "ZUASEC", zuasec_slices],
+            "zlasec":["SURF_GEOM_R", "ZLASEC", zlasec_slices],
+        }
 
-            self.surf_geom_to_fort_var[surf_name] = {
-                "scale": ["SURF_GEOM_R", "XYZSCAL", slice_surf_all],
-                "translate": ["SURF_GEOM_R", "XYZTRAN", slice_surf_all],
-                "angle": ["SURF_GEOM_R", "ADDINC", slice_idx_surf],
-                # "xyzles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_all],
-                "xles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_x],
-                "yles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_y],
-                "zles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_z],
-                "chords": ["SURF_GEOM_R", "CHORDS", slice_surf_secs],
-                "aincs": ["SURF_GEOM_R", "AINCS", slice_surf_secs],
-                "xasec": ["SURF_GEOM_R", "XASEC", slice_surf_secs_nasec],
-                # "sasec": ["SURF_GEOM_R", "SASEC", slice_surf_secs_nasec],
-                "casec": ["SURF_GEOM_R", "CASEC", slice_surf_secs_nasec],
-                "tasec": ["SURF_GEOM_R", "TASEC", slice_surf_secs_nasec],
-                "xuasec": ["SURF_GEOM_R", "XUASEC", slice_surf_secs_nasec],
-                "xlasec": ["SURF_GEOM_R", "XLASEC", slice_surf_secs_nasec],
-                "zuasec": ["SURF_GEOM_R", "ZUASEC", slice_surf_secs_nasec],
-                "zlasec": ["SURF_GEOM_R", "ZLASEC", slice_surf_secs_nasec],
-                "clcdsec": ["SURF_GEOM_R", "CLCDSEC", slice_surf_secs_all],
-                "claf": ["SURF_GEOM_R", "CLAF", slice_surf_secs],
-            }
-            self.surf_pannel_to_fort_var[surf_name] = {
-                "nchordwise": ["SURF_GEOM_I", "NVC", slice_idx_surf],
-                "cspace": ["SURF_GEOM_R", "CSPACE", slice_idx_surf],
-                "nspan": ["SURF_GEOM_I", "NVS", slice_idx_surf],
-                "sspace": ["SURF_GEOM_R", "SSPACE", slice_idx_surf],
-                "sspaces": ["SURF_GEOM_R", "SSPACES", slice_surf_secs],
-                "nspans": ["SURF_GEOM_I", "NSPANS", slice_surf_secs],
-                "yduplicate": ["SURF_GEOM_R", "YDUPL", slice_idx_surf],
-                "use surface spacing": ["SURF_GEOM_L", "LSURFSPACING", slice_idx_surf],
-                "component": ["SURF_I", "LSCOMP", slice_idx_surf],
-            }
+    def load_input_dict(self, input_dict: dict, preCheck: bool = True, postCheck: bool = False):
+        """Reads and loads the input dictionary data into optvl.
+        Equivalent to INPUT routine in AVL.
 
-            icontd_slices = []
-            idestd_slices = []
-            xhinged_slices = []
-            vhinged_slices = []
-            gaind_slices = []
-            refld_slices = []
-            gaing_slices = []
+        Args:
+            input_dict: input dictionary in optvl format
+            preCheck: perform additional verification of the user's input dictionary before loading into AVL
+            postCheck: verify certain inputs values are correctly reflected in the Fortran layer
+        """
 
-            for idx_sec in range(num_sec):
-                slice_surf = (idx_surf, idx_sec)
+        # Initialize Variables and Counters
+        self.avl.CASE_I.NVOR = 0
+        self.avl.CASE_I.NSTRIP = 0
+        self.avl.CASE_I.NLNODE = 0
+        self.avl.CASE_I.NCONTROL = 0
+        self.avl.CASE_I.NDESIGN = 0
+        self.set_avl_fort_arr("SURF_GEOM_I", "NSEC", 0, slicer=slice(None, self.NFMAX))
+        self.set_avl_fort_arr("BODY_GEOM_I", "NSEC_B", 0, slicer=slice(None, self.NBMAX))
+        self.avl.CASE_R.DCL_A0 = 0.0
+        self.avl.CASE_R.DCM_A0 = 0.0
+        self.avl.CASE_R.DCL_U0 = 0.0
+        self.avl.CASE_R.DCM_U0 = 0.0
+        self.set_avl_fort_arr("SURF_GEOM_R", "CLCDSRF", 0.0, slicer=(slice(None, 6), slice(None, self.NFMAX)))
+        self.avl.CASE_L.LVISC = False
+        self.set_avl_fort_arr("SURF_L", "LRANGE", True, slicer=slice(None, self.NFMAX))
+        
+        # Perform pre-check of user's input dictionary before loading into AVL
+        if preCheck:
+            input_dict = pre_check_input_dict(input_dict)
+        
+        def get_types_from_blk(common_blk):
+            """Determines the variable type a common block uses from
+            its name
 
-                num_con_surf = self.get_avl_fort_arr("SURF_GEOM_I", "NSCON", slicer=slice_surf)
-                slice_surf_con = slice_surf + (slice(None, num_con_surf),)
-                slice_surf_con_hinge = slice_surf_con + (slice(None),)
+            Args:
+                common_blk: Name of the common block
 
-                num_des_var = self.get_avl_fort_arr("SURF_GEOM_I", "NSDES", slicer=slice_surf)
-                slice_surf_des_var = slice_surf + (slice(None, num_des_var),)
+            Returns:
+                Python type equivalent used by the common block
+            """
+            last_char = common_blk[-1]
+            
+            if last_char == 'C':
+                return str
+            elif last_char == 'R':
+                return (float, np.float64)
+            elif last_char == 'I':
+                return (int,np.int32)
+            elif last_char == 'L':
+                return (bool, int,np.int32)
+            else:
+                raise ValueError(f'type not able to be infered from common block {common_blk}')
+            
+        def check_type(key, avl_vars, given_val):
+            """Checks the type for a given AVL Fortran Common Block var against a given value
 
-                icontd_slices.append(slice_surf_con)
-                xhinged_slices.append(slice_surf_con)
-                vhinged_slices.append(slice_surf_con_hinge)
-                gaind_slices.append(slice_surf_con)
-                refld_slices.append(slice_surf_con)
-                idestd_slices.append(slice_surf_des_var)
-                gaing_slices.append(slice_surf_des_var)
+            Args:
+                key: OptVL input variable dictionary key
+                avl_vars: AVL Common Block variable name array
+                given_val: Input value to check type against
 
-            self.con_surf_to_fort_var[surf_name] = {
-                "icontd": ["SURF_GEOM_I", "ICONTD", icontd_slices],
-                "xhinged": ["SURF_GEOM_R", "XHINGED", xhinged_slices],
-                "vhinged": ["SURF_GEOM_R", "VHINGED", vhinged_slices],
-                "gaind": ["SURF_GEOM_R", "GAIND", gaind_slices],
-                "refld": ["SURF_GEOM_R", "REFLD", refld_slices],
-                "idestd": ["SURF_GEOM_I", "IDESTD", idestd_slices],
-                "gaing": ["SURF_GEOM_R", "GAING", gaing_slices],
-            }
+            """
+            # get the type that it should be
+            expected_type = get_types_from_blk(avl_vars[0])
+            
+            # if the expected type is a str
+            if expected_type is str:
+                # check the type of the scaler
+                if not isinstance(given_val, expected_type):
+                    raise TypeError(f"Variable {key} is of type {type(given_val)} but expected {expected_type}")
+                
+                # for strings no further checks are required
+                return
+            
+            
+            # --- test shape and type of numeric vales---
+            current_val = self.get_avl_fort_arr(*avl_vars)
+            
+            # is the current value a scalar or a numpy array?
+            if isinstance(current_val, np.ndarray):
+                if not isinstance(given_val, np.ndarray):
+                    raise ValueError(f"Variable {key} is scalar, but optvl expected an array of shape {current_val.shape}")
+                
+                # compare the shapes
+                if current_val.shape != val.shape:
+                    raise ValueError(f"Variable {key} is shape {given_val.shape}, but optvl expected an array of shape {current_val.shape}")
+                
+                # check that the type of the array matches the expectation
+                if not isinstance(given_val.flatten()[0], expected_type):
+                    raise TypeError(f"Variable {key} is an array of type {given_val.dtype} but expected {expected_type}")
+            else:
+                # check the type of the scaler
+                if not isinstance(given_val, expected_type):
+                    raise TypeError(f"Variable {key} is a scalar of type {type(given_val)} but expected {expected_type}")
+            
+        # Set AVL header variables
+        # CDp is the only optional input for the AVL header
+        optional_header_defaults = {
+            "CDp": 0.0
+        }
+        
+        for key, avl_vars in self.header_var_to_fort_var.items():
+
+            if key not in input_dict:
+                if key in optional_header_defaults: 
+                    val = optional_header_defaults[key]
+                else:
+                    raise ValueError(f"Key {key} not found in input dictionary but is required")
+            else:
+                val = input_dict[key]
+                
+            check_type(key, avl_vars, val)
+            
+            self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val)
+  
+        
+        self.set_avl_fort_arr("CASE_R", "YSYM", 0.0) # YSYM Hardcoded to 0
+        
+        # set the global control variable options
+        ncontrol = len(input_dict.get("dname", []))
+        if ncontrol > self.NDMAX:
+            raise RuntimeError(f"Number of specified controls exceeds {self.NDMAX}. Raise NDMAX!")
+        self.set_avl_fort_arr("CASE_I","NCONTROL", ncontrol)
+
+        for k in range(ncontrol):
+            self.avl.CASE_C.DNAME[k] = input_dict["dname"][k]
+        
+        # set the gloabl design variable options
+        ndesign = len(input_dict.get("gname", []))
+        self.set_avl_fort_arr("CASE_I","NDESIGN", ncontrol)
+        if ndesign > self.NGMAX:
+            raise RuntimeError(f"Number of specified design variables exceeds {self.NGMAX}. Raise NGMAX!")
+
+        for k in range(ncontrol):
+            self.avl.CASE_C.GNAME[k] = input_dict["gname"][k]
+        
+
+        # Set total number of surfaces in one shot
+        num_surfs = len(input_dict["surfaces"])
+        if num_surfs < self.NFMAX:
+            self.set_avl_fort_arr("CASE_I", "NSURF", num_surfs) # YSYM Hardcoded to 0
+        else:
+            raise RuntimeError(f"Number of specified surfaces, {num_surfs}, exceeds {self.NFMAX}. Raise NFMAX!")
+        
+        
+        # Load surfaces
+        if num_surfs > 0:
+            surf_names = list(input_dict["surfaces"].keys())
+
+            # setup surface data for initial input
+            self.surf_geom_to_fort_var = {}
+            self.surf_section_geom_to_fort_var = {}
+            self.surf_pannel_to_fort_var = {}
+            self.con_surf_to_fort_var = {}
+            self.des_var_to_fort_var = {}
+
+            idx_surf = 0
+            
+            for surf_name  in input_dict["surfaces"]:
+                
+                surf_dict = input_dict["surfaces"][surf_name]
+                
+                num_secs = surf_dict["num_sections"]
+                # Set total number of sections in one shot
+                if num_secs < self.NSMAX:
+                    self.set_avl_fort_arr("SURF_GEOM_I", "NSEC", num_secs, slicer=idx_surf)
+                else:
+                    raise RuntimeError(
+                        f"Number of specified sections for surface {surf_name} exceeds {self.NSMAX}. Raise NSMAX!"
+                    )
+                
+                # Set the number of control and design variables for the surface
+                for idx_sec in range(num_secs):
+                    self.set_avl_fort_arr("SURF_GEOM_I", "NSCON", surf_dict["num_controls"][idx_sec], slicer=(idx_surf, idx_sec))
+                    self.set_avl_fort_arr("SURF_GEOM_I", "NSDES", surf_dict["num_design_vars"][idx_sec], slicer=(idx_surf, idx_sec))
+                    
+                
+                self._setup_surface_maps(surf_name, idx_surf, num_secs)
+            
+                # Set surface name
+                self.avl.CASE_C.STITLE[idx_surf] = self._str_to_fort_str(surf_name, num_max_char=40)
+                
+                # fmt: off
+                
+                optional_surface_defaults = {
+                    "nspan":                  0,                      
+                    "sspace":                 0.0,                    
+                    "use surface spacing":   False,                   
+                    "component":              idx_surf+1, # +1 for 1-based indexing in fortran
+                    "scale":                  np.array([1.,1.,1.]),   
+                    "translate":              np.array([0.,0.,0.]),   
+                    "angle":                  0.0,                    
+                    "wake":                   True,                   
+                    "albe":                   True,                   
+                    "load":                   True,                   
+                    "clcd":                   np.zeros(6, dtype=np.float64),
+                    "nspans":                 np.zeros(num_secs, dtype=int),
+                    "sspaces":                np.zeros(num_secs, dtype=int),
+                    "clcdsec":                np.zeros((num_secs,6)),
+                    "claf":                   np.ones(num_secs),
+                }
+                # fmt: on
+                
+                # set some flags based on the options used for this surface
+                if "sspace" in surf_dict:
+                    self.set_avl_fort_arr("SURF_GEOM_L", "LSURFSPACING", True, slicer=idx_surf)
+                else:
+                    self.set_avl_fort_arr("SURF_GEOM_L", "LSURFSPACING", False, slicer=idx_surf)
+                
+                if "yduplicate" in surf_dict:
+                    self.set_avl_fort_arr("SURF_GEOM_L", "LDUPL", True, slicer=idx_surf)
+                else:
+                    self.set_avl_fort_arr("SURF_GEOM_L", "LDUPL", False, slicer=idx_surf)
+                
+                if "clcd" in surf_dict or 'clcdsec' in surf_dict:
+                    # if any of the surfaces use clcd then turn on viscous loads
+                    self.set_avl_fort_arr("CASE_L", "LVISC", True)
+                
+                # lhinge = False Appears in AVL but does nothing
+
+                for key, avl_vars in chain(
+                    self.surf_geom_to_fort_var[surf_name].items(),
+                    self.surf_pannel_to_fort_var[surf_name].items()
+                ):
+                    
+                    if key not in surf_dict:
+                        if key in optional_surface_defaults: 
+                            val = optional_surface_defaults[key]
+                        else:
+                            raise ValueError(f"Key {key} not found in surface dictionary, {surf_name}, but is required")
+                    else: 
+                        val = surf_dict[key]
+                    
+                    check_type(key, avl_vars, val)    
+                    
+                    self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
+
+                # determine what method of airfoil definition we are using
+                # check to make sure we don't have multiple airfoil definitions used for this surface
+                airfoil_spec_keys = {"naca", "airfoils", "afiles", "xasec"} & surf_dict.keys()
+                
+                if len(airfoil_spec_keys) > 1:
+                    raise KeyError(f'OptVL can only have one method of specifing airfoil geometry per surface, found {airfoil_spec_keys} in surface {surf_name}')
+                
+                xfminmax_arr = surf_dict.get("xfminmax", np.array([0.0, 1.0]*num_secs))
+                num_pts = min(50, self.IBX)
+                
+                # setup for manually specifying coordinates
+                if "xasec" in surf_dict.keys():
+                    warnings.warn(
+                        "OptVL WARNING - Setting airfoil section data directly via the input dictionary is not recommened!\n "
+                        "OptVL will not verify that the camber line is consistent with the given coordiantes.\n"
+                        "Specify the coordinates directly in the inputs dictionary with ''airfoils'' or ''afiles'' or use the set_section_coordinates function.",
+                        stacklevel=2,
+                    )
+
+                    # do we have section data?
+                    nasec_list  = [len(x) for x in surf_dict["xasec"]]
+                    self._setup_section_maps(surf_name, idx_surf, num_secs, nasec_list)
+
+
+                # Load airfoil data sections
+                # Load the Airfoil Section into AVL
+                for j in range(num_secs):
+                    xfminmax = xfminmax_arr[j]           
+                    
+                    # Manually Specify Coordiantes (no camberline verification, only use if you know what you're doing)
+                    if "xasec" in surf_dict.keys():
+                        self.set_avl_fort_arr("SURF_GEOM_I", "NASEC", nasec_list[j], slicer=(idx_surf, j))
+                        
+                        # TODO-JLA: a user should not have to spcify XLASEC, XUASEC, ZLASEC, ZUASEC
+                        # since these can be calculated from the other inputs
+                        
+                        for key in self.surf_section_geom_to_fort_var[surf_name]:
+                            avl_vars_secs = self.surf_section_geom_to_fort_var[surf_name][key]
+                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
+                            
+                            
+                            if key not in surf_dict:
+                                raise ValueError(f"Key `{key}` not found in surface dictionary, `{surf_name}`, but is required when manually specifing airfoil coordinates")
+                            
+                            val = surf_dict[key][j]
+                            
+                            check_type(key, avl_vars, val)    
+                            self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
+                    
+                    # 4 digit NACA airfoil specification
+                    elif "naca" in surf_dict.keys():
+                        if (xfminmax[0] > 0.01) or (xfminmax[1] < 0.99):
+                            self.set_avl_fort_arr("SURF_L", "LRANGE", True, slicer=idx_surf)
+                                
+                        # Store this stuff so we can read it later
+                        self.avl.CASE_C.NACA[j, idx_surf] = surf_dict["naca"][j]
+                        self.avl.SURF_GEOM_R.XFMIN_R[j, idx_surf] = xfminmax[0]
+                        self.avl.SURF_GEOM_R.XFMAX_R[j, idx_surf] = xfminmax[1]
+                        self.set_section_naca(j, idx_surf, num_pts, surf_dict["naca"][j], xfminmax)
+
+                    # Airfoil coordinates set directly in dictionary
+                    elif "airfoils" in surf_dict.keys():
+                        self.set_section_coordinates(
+                            j, idx_surf, num_pts, surf_dict["airfoils"][j][0], surf_dict["airfoils"][j][1], xfminmax, storecoords=True
+                        )
+
+                    # Load airfoil file
+                    elif "afiles" in surf_dict.keys():
+                        self.avl.CASE_C.AFILES[j, idx_surf] = surf_dict["afiles"][j]
+                        X = read_coordinates_files(surf_dict["afiles"][j])
+                        self.set_section_coordinates(j, idx_surf, num_pts, X[:, 0], X[:, 1], xfminmax, storecoords=True)
+
+                    else:
+                        # apply a flat camber line
+                        slicer_airfoil_flat = (idx_surf, j, slice(0, 2))
+                        self.set_avl_fort_arr("SURF_GEOM_I", "NASEC", 2, slicer=(idx_surf, j))
+                        self.set_avl_fort_arr("SURF_GEOM_R", "XASEC", np.array([0.0, 1.0]), slicer=slicer_airfoil_flat)
+                        self.set_avl_fort_arr("SURF_GEOM_R", "SASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
+                        self.set_avl_fort_arr("SURF_GEOM_R", "TASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
+
+                        self.set_avl_fort_arr("SURF_GEOM_R", "XLASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
+                        self.set_avl_fort_arr("SURF_GEOM_R", "XUASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
+                        self.set_avl_fort_arr("SURF_GEOM_R", "ZLASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
+                        self.set_avl_fort_arr("SURF_GEOM_R", "ZUASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
+                        self.set_avl_fort_arr("SURF_GEOM_R", "CASEC",  np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
+
+
+                        
+                        
+                # --- setup control variables for each section ---
+                # Load control surfaces
+                if "icontd" in surf_dict.keys():
+                    for j in range(num_secs):
+                        # check to make sure this section has control vars 
+                        if surf_dict["num_controls"][j] == 0:
+                            continue
+                        
+                        for key, avl_vars in self.con_surf_to_fort_var[surf_name].items():
+                            avl_vars_secs = self.con_surf_to_fort_var[surf_name][key]
+                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
+        
+                            if key not in surf_dict:
+                                    raise ValueError(f"Key {key} not found in surf dictionary, `{surf_name}` but is required")
+                            else: 
+                                val = surf_dict[key][j]
+                                
+                            check_type(key, avl_vars, val)
+                            self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
+
+                        
+
+                # --- setup design variables for each section ---
+                # Load design variables
+                if "idestd" in surf_dict.keys():
+                    for j in range(num_secs):
+                        # check to make sure this section has control vars 
+                        if surf_dict["num_design_vars"][j] == 0:
+                            continue
+                        
+                        for key, avl_vars in self.des_var_to_fort_var[surf_name].items():
+                            avl_vars_secs = self.des_var_to_fort_var[surf_name][key]
+                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
+        
+                            if key not in surf_dict:
+                                    raise ValueError(f"Key {key} not found in surf dictionary, `{surf_name}` but is required")
+                            else: 
+                                val = surf_dict[key][j]
+                                
+                            check_type(key, avl_vars, val)
+                            self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
+
+                    
+                    
+                # Make the surface
+                if self.debug:
+                    print(f"Building surface: {surf_name}")
+                self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
+                
+                if "yduplicate" in surf_dict.keys():
+                    self.avl.sdupl(idx_surf + 1, surf_dict["yduplicate"], "YDUP")
+                    self.avl.CASE_I.NSURF += 1
+                    idx_surf += 1
+
+                    # Keep python data consistent with Fortran
+                    surf_names.insert(idx_surf + 1, surf_name)
+                
+                idx_surf += 1
+
+        # Set total number of bodies in one shot
+        if len(input_dict["bodies"]) < self.NBMAX:
+            self.avl.CASE_I.NBODY = len(input_dict["bodies"])
+        else:
+            raise RuntimeError(f"Number of specified surfaces exceeds {self.NBMAX}. Raise NBMAX!")
+
+        # Load bodies
+        if len(input_dict["bodies"]) > 0:
+            
+            self.body_param_to_fort_var = {}
+            
+            idx_body = 0
+            
+            for body_name in input_dict["bodies"]:
+                body_dict = input_dict["bodies"][body_name]
+                
+                self._setup_body_maps(body_name, idx_body)
+                
+                # Setup body
+                self.avl.BODY_GEOM_I.NSEC_B[idx_body] = 0  # Body sections not used but set to 0 just in case
+                
+                # Set body name
+                self.avl.CASE_C.BTITLE[idx_body] = self._str_to_fort_str(body_name, num_max_char=40)
+                
+                if "yduplicate" in body_dict:
+                    self.set_avl_fort_arr("BODY_GEOM_L", "LDUPL_B", True, slicer=idx_body)
+                else:
+                    self.set_avl_fort_arr("BODY_GEOM_L", "LDUPL_B", False, slicer=idx_body)
+
+                
+                optional_body_defaults = {
+                    "yduplicate" : 0.0
+                }
+
+                for key, avl_vars in self.body_param_to_fort_var[body_name].items():
+                    
+                    if key not in body_dict:
+                        if key in optional_body_defaults: 
+                            val = optional_body_defaults[key]
+                        else:
+                            raise ValueError(f"Key {key} not found in body dictionary, {body_name}, but is required")
+                    else:
+                        val = body_dict[key]
+                    
+                    check_type(key, avl_vars, val)
+                    
+                    self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
+
+
+                # Load airfoil file
+                if "body_oml" in body_dict.keys():
+                    self.set_body_coordinates(
+                        idx_body, num_pts, body_dict["body_oml"][0, :], body_dict["body_oml"][1, :], True
+                    )
+                if "bfile" in body_dict.keys():
+                    # xfminmax doesn't appear to be supported for bodies and the fact that the bfil input routine in the fortran layer takes them at all is a bug?
+                    # xfminmax = body_dict["xfminmax"][j] if "xfminmax" in body_dict.keys() else np.array([0., 1.])
+                    # if ((xfminmax[0] > 0.01) or (xfminmax[1] < 0.99)):
+                    #     self.set_avl_fort_arr("SURF_L","LRANGE", True, slicer=i)
+                    self.avl.CASE_C.BFILES[idx_body] = body_dict["bfile"]
+                    X = read_coordinates_files(body_dict["bfile"])
+                    self.set_body_coordinates(idx_body, num_pts, X[:, 0], X[:, 1], True)
+
+                # Make the body
+                if self.debug:
+                    print(f"Building body: {body_name}")
+                self.avl.makebody(idx_body + 1)
+
+                if "yduplicate" in body_dict.keys():
+                    self.avl.bdupl(idx_body + 1, body_dict["yduplicate"], "YDUP")
+
+                    # Keep python data consistent with Fortran
+                    idx_body += 1
+                    
+                idx_body += 1
+
+
+        if postCheck:
+            self.post_check_input(input_dict)
+
+        if self.debug:
+            print(f"Mach: {self.avl.CASE_R.MACH0}")
+            print(f"Number of Bodies: {self.avl.CASE_I.NBODY}")
+            print(f"Number of Surfaces: {self.avl.CASE_I.NSURF}")
+            print(f"Number of Strips: {self.avl.CASE_I.NSTRIP}")
+            print(f"Number of Horseshoe Vortices: {self.avl.CASE_I.NVOR}")
+            print(f"Number of Control Surfaces: {self.avl.CASE_I.NCONTROL}")
+            print(f"Number of Design Parameters (AVL): {self.avl.CASE_I.NDESIGN}")
+
+            if self.avl.CASE_I.IYSYM > 0:
+                print(f"Y Symmetry: Wall plane  at Ysym = {self.avl.CASE_R.YSYM}")
+            elif self.avl.CASE_I.IYSYM < 0:
+                print(f"Y Symmetry: Free surface at Ysym = {self.avl.CASE_R.YSYM}")
+
+            if self.avl.CASE_I.IZSYM > 0:
+                print(f"Z Symmetry: Ground plane at Zsym = {self.avl.CASE_R.ZSYM}")
+            elif self.avl.CASE_I.IZSYM < 0:
+                print(f"Z Symmetry: Free surface at Zsym = {self.avl.CASE_R.ZSYM}")
+
+        # Tell AVL that geometry exists now and is ready for analysis
+        self.avl.CASE_L.LGEO = True
+
+    def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
+        """Sets the airfoil oml points for the specified surface and section. Computes camber lines, thickness, and oml shape from
+        NACA 4-digit specification.
+
+
+        Args:
+            isec: section number to set the airfoil mesh
+            isurf: surface number to set the airfoil mesh
+            nasec: number of points to evaluate the interpolated camber line and thickness curves at
+            naca: 4-digit naca specificaion as a string
+            xfminmax: length 2 array with the min and max x/c to slice the airfoil
+        """
+
+        # Read 4-digit string
+        cam = np.float64(naca[0]) / 100.0
+        pos = np.float64(naca[1]) / 10.0
+        thick = np.float64(naca[2:]) / 100.0
+
+        # Generate airfoil section data
+        xf = xfminmax[0] + np.diff(xfminmax) * np.arange(nasec) / (nasec - 1)
+        slopes = np.zeros_like(xf)
+        slopes[xf < pos] = 2.0 * cam * (pos - xf[xf < pos]) / (pos**2)
+        slopes[xf > pos] = 2.0 * cam * (pos - xf[xf > pos]) / (1 - pos) ** 2
+        thickness = (
+            10.0 * thick * (0.29690 * np.sqrt(xf) - 0.12600 * xf - 0.35160 * xf**2 + 0.28430 * xf**3 - 0.10150 * xf**4)
+        )
+        zf = np.zeros_like(xf)
+        zf[xf < pos] = cam * (2.0 * pos * xf[xf < pos] - 1.0) * xf[xf < pos] / (pos**2)
+        zf[xf > pos] = cam * ((1 - 2.0 * pos) + (2.0 * pos - xf[xf > pos]) * xf[xf > pos]) / (1 - pos) ** 2
+        theta = np.atan(slopes)
+
+        # Set airfoil section
+        self.set_avl_fort_arr("SURF_GEOM_I", "NASEC", nasec, slicer=(isurf, isec))
+        self.set_avl_fort_arr(
+            "SURF_GEOM_R", "XASEC", (xf - xf[0]) / (xf[-1] - xf[0]), slicer=(isurf, isec, slice(0, nasec))
+        )
+        self.set_avl_fort_arr("SURF_GEOM_R", "SASEC", slopes, slicer=(isurf, isec, slice(0, nasec)))
+        self.set_avl_fort_arr("SURF_GEOM_R", "TASEC", thickness, slicer=(isurf, isec, slice(0, nasec)))
+
+        self.set_avl_fort_arr(
+            "SURF_GEOM_R", "XLASEC", xf + 0.5 * thickness * np.sin(theta), slicer=(isurf, isec, slice(0, nasec))
+        )
+        self.set_avl_fort_arr(
+            "SURF_GEOM_R", "XUASEC", xf - 0.5 * thickness * np.sin(theta), slicer=(isurf, isec, slice(0, nasec))
+        )
+        self.set_avl_fort_arr(
+            "SURF_GEOM_R", "ZLASEC", zf - 0.5 * thickness * np.cos(theta), slicer=(isurf, isec, slice(0, nasec))
+        )
+        self.set_avl_fort_arr(
+            "SURF_GEOM_R", "ZUASEC", zf + 0.5 * thickness * np.cos(theta), slicer=(isurf, isec, slice(0, nasec))
+        )
+        self.set_avl_fort_arr("SURF_GEOM_R", "CASEC", zf, slicer=(isurf, isec, slice(0, nasec)))
+
+    def set_section_coordinates(
+        self,
+        isec: int,
+        isurf: int,
+        nasec: int,
+        x: np.ndarray,
+        y: np.ndarray,
+        xfminmax: np.ndarray,
+        storecoords: bool = False,
+    ):
+        """Sets the airfoil oml points for the specified surface and section. Computes the camber line and interpolates it
+        with AVL's 1D Akima Spline implementation.
+
+
+        Args:
+            isec: section number to set the airfoil mesh
+            isurf: surface number to set the airfoil mesh
+            nasec: number of points to evaluate the interpolated camber line and thickness curves at
+            x: airfoil x-coordinate array
+            y: airfoil y-coodinate array
+            xfminmax: length 2 array with the min and max x/c to slice the airfoil
+            storecoords: store the raw input coordinates in common block
+        """
+
+        if (len(x) > self.IBX) or (len(y) > self.IBX):
+            raise RuntimeError(f"Airfoil array overflow! Increase IBX to {len(x) if len(x) > len(y) else len(y)}")
+        if (len(x) < 2) or (len(y) < 2):
+            raise RuntimeError("Airfoil shape not defined. Too few points!")
+        if len(x) != len(y):
+            raise RuntimeError(f"x and y array lengths do not match! len x: {len(x)}, len y: {len(y)}")
+        if isurf + 1 > self.get_num_surfaces():
+            raise RuntimeError(f"surface {isurf} does not exist!")
+        # if isec+1 > self.get_num_sections(self.get_surface_names(remove_dublicated=True)[isec]):
+        #     raise RuntimeError(f"section {isec} in surface {isurf} does not exist!")
+
+        self.avl.set_section_coordinates(isec + 1, isurf + 1, x, y, nasec, xfminmax[0], xfminmax[1], storecoords)
+
+    def set_body_coordinates(self, ibod: int, nasec: int, x: np.ndarray, y: np.ndarray, storecoords: bool = False):
+        """Sets the body of revolution oml points for the specified body. Computes the camber line and interpolates it
+        with AVL's 1D Akima Spline implementation.
+
+
+        Args:
+            ibod: body number to set the outer mold line too
+            nasec: number of points to evaluate the interpolated camber line and thickness curves at
+            x: oml x-coordinate array
+            y: oml y-coodinate array
+            xfminmax: length 2 array with the min and max x/c to slice the oml
+            storecoords: store the raw input coordinates in common block
+        """
+
+        if (len(x) > self.IBX) or (len(y) > self.IBX):
+            raise RuntimeError(f"Body oml array overflow! Increase IBX to {len(x) if len(x) > len(y) else len(y)}")
+        if (len(x) < 2) or (len(y) < 2):
+            raise RuntimeError("Airfoil shape not defined. Too few points!")
+        if len(x) != len(y):
+            raise RuntimeError(f"x and y array lengths do not match! len x: {len(x)}, len y: {len(y)}")
+        if ibod + 1 > self.avl.CASE_I.NBODY:
+            raise RuntimeError(f"body {ibod} does not exist!")
+        # if isec+1 > self.get_num_sections(self.get_surface_names(remove_dublicated=True)[isec]):
+        #     raise RuntimeError(f"section {isec} in surface {isurf} does not exist!")
+
+        self.avl.set_body_coordinates(ibod + 1, x, y, nasec, storecoords)
+
+    # MOVED TO FORTRAN...amake.f
+    # def set_section_coordinates(self,isec: int, isurf: int, nasec: int, x: np.ndarray, y: np.ndarray, xfminmax: np.ndarray):
+    #     """Sets the airfoil oml points for the specified surface and section. Computes the camber line and interpolates it
+    #     with AVL's 1D Akima Spline implementation.
+
+    #     Args:
+    #         isec: section number to set the airfoil mesh
+    #         isurf: surface number to set the airfoil mesh
+    #         nasec: number of points to evaluate the interpolated camber line and thickness curves at
+    #         x: airfoil x-coordinate array
+    #         y: airfoil y-coodinate array
+    #         xfminmax: length 2 array with the min and max x/c to slice the airfoil
+    #     """
+
+    #     if ((len(x) > self.IBX) or (len(y) > self.IBX)):
+    #         raise RuntimeError(f"Airfoil array overflow! Increase IBX to {len(x) if len(x)>len(y) else len(y)}")
+    #     if len(x) != len(y):
+    #         raise RuntimeError(f"x and y array lengths do not match! len x: {len(x)}, len y: {len(y)}")
+
+    #     xf = xfminmax[0] + np.diff(xfminmax)*np.arange(nasec)/(nasec-1)
+
+    #     xin,yin,tin,nasec = self.avl.getcam(x,y,len(x),nasec,True)
+
+    #     xasec = xin[0] + xf*(xin[-1] -xin[0])
+
+    #     zc = np.zeros(nasec)
+    #     slopes = np.zeros(nasec)
+    #     thickness = np.zeros(nasec)
+
+    #     # Use the original AVL akima, not vectorized
+    #     for i in range(nasec):
+    #         zc[i], slopes[i] = self.avl.akima(xin, yin, nasec, xasec) # USE_CPOML always on in OptVL
+    #         thickness[i], _ = self.avl.akima(xin, tin, nasec, xasec)
+
+    #     # Set airfoil section
+    #     self.set_avl_fort_arr("SURF_GEOM_I","NASEC", nasec, slicer=(isurf,isec))
+    #     self.set_avl_fort_arr("SURF_GEOM_R","XASEC", (xasec-xasec[0])/(xasec[-1]-xasec[0]), slicer=(isurf,isec,slice(0,nasec)))
+    #     self.set_avl_fort_arr("SURF_GEOM_R","SASEC", slopes, slicer=(isurf,isec,slice(0,nasec)))
+    #     self.set_avl_fort_arr("SURF_GEOM_R","TASEC", thickness, slicer=(isurf,isec,slice(0,nasec)))
+
+    #     self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", xasec, slicer=(isurf,isec,slice(0,nasec)))
+    #     self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", xasec, slicer=(isurf,isec,slice(0,nasec)))
+    #     self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", zc - 0.5*thickness, slicer=(isurf,isec,slice(0,nasec)))
+    #     self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", zc + 0.5*thickness, slicer=(isurf,isec,slice(0,nasec)))
+    #     self.set_avl_fort_arr("SURF_GEOM_R","CASEC", zc, slicer=(isurf,isec,slice(0,nasec)))
+
+    def post_check_input(self, inputDict: dict):
+        """This routine verifies that a few critical values in the Fortran layer have been set correctly with
+        regard to the input dict.
+
+        To be expanded later...
+        """
+
+        # Surface checks
+        if "surfaces" in inputDict.keys():
+            # check number of surfaces
+            dict_num_surfaces = len(inputDict["surfaces"])
+            surf_names = list(inputDict["surfaces"].keys())
+            for i in range(len(inputDict["surfaces"])):
+                surf_dict = inputDict["surfaces"][surf_names[i]]
+                if "yduplicate" in surf_dict.keys():
+                    dict_num_surfaces += 1
+            if dict_num_surfaces != self.avl.CASE_I.NSURF:
+                raise RuntimeError(
+                    f"Mismatch: NSURF = {self.avl.CASE_I.NSURF}, Dictionary: {len(inputDict['surfaces'])}"
+                )
+
+            # check number of sections, controls, and dvs
+            if len(inputDict["surfaces"]) > 0:
+                surf_names = list(inputDict["surfaces"].keys())
+                for i in range(len(inputDict["surfaces"])):
+                    surf_dict = inputDict["surfaces"][surf_names[i]]
+                    if self.avl.SURF_GEOM_I.NSEC[i] != surf_dict["num_sections"]:
+                        raise RuntimeError(
+                            f"Mismatch: NSEC[i] = {self.avl.SURF_GEOM_I.NSEC[i]}, Dictionary: {surf_dict['num_sections']}"
+                        )
+
+                    # Check controls and design variables per section
+                    for j in range(surf_dict["num_sections"]):
+                        if self.avl.SURF_GEOM_I.NSCON[i, j] != surf_dict["num_controls"][j]:
+                            raise RuntimeError(
+                                f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[i, j]}, Dictionary: {surf_dict['num_controls'][j]}"
+                            )
+                        if self.avl.SURF_GEOM_I.NSDES[i, j] != surf_dict["num_design_vars"][j]:
+                            raise RuntimeError(
+                                f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[i, j]}, Dictionary: {surf_dict['num_design_vars'][j]}"
+                            )
+
+                # Check the global control and design var count
+                if "dname" in inputDict.keys():
+                    if len(inputDict["dname"]) != self.avl.CASE_I.NCONTROL:
+                        raise RuntimeError(
+                            f"Mismatch: NCONTROL = {self.avl.CASE_I.NCONTROL}, Dictionary: {inputDict['dname']}"
+                        )
+                if "gname" in inputDict.keys():
+                    if len(inputDict["gname"]) != self.avl.CASE_I.NDESIGN:
+                        raise RuntimeError(
+                            f"Mismatch: NDESIGN = {self.avl.CASE_I.NDESIGN}, Dictionary: {inputDict['gname']}"
+                        )
+
+        # Body checks
+        if "bodies" in inputDict.keys():
+            dict_num_bodies = len(inputDict["bodies"])
+            body_names = list(inputDict["bodies"].keys())
+            for i in range(len(inputDict["bodies"])):
+                body = inputDict["bodies"][body_names[i]]
+                if "yduplicate" in body.keys():
+                    dict_num_bodies += 1
+            # check number of bodies
+            if dict_num_bodies != self.avl.CASE_I.NBODY:
+                raise RuntimeError(f"Mismatch: NBODY = {self.avl.CASE_I.NBODY}, Dictionary: {len(inputDict['bodies'])}")
+
 
     # region -- analysis api
     def execute_run(self, tol: float = 0.00002):
-        """run the analysis (equivalent to the AVL command `x` in the OPER menu)
+        """Run the analysis (equivalent to the AVL command `x` in the OPER menu)
 
         Args:
             tol: the tolerace of the Newton solver used for timing the aircraft
@@ -501,7 +1342,7 @@ class OVLSolver(object):
             "Z cg": ["Z"],
         }
 
-        if not (variable in options):
+        if variable not in options:
             raise ValueError(
                 f"constraint variable `{variable}` not a valid option. Must be one of the following {[key for key in options]} "
             )
@@ -548,7 +1389,7 @@ class OVLSolver(object):
         return deriv_data
 
     def get_stab_derivs(self) -> Dict[str, Dict[str, float]]:
-        """gets the stability derivates after an analysis run
+        """Gets the stability derivates after an analysis run
 
         Returns:
             stab_deriv_dict: Dictionary of stability derivatives.
@@ -577,7 +1418,7 @@ class OVLSolver(object):
         return ref_data
 
     def get_avl_fort_arr(self, common_block: str, variable: str, slicer: Optional[slice] = None) -> np.ndarray:
-        """get data from the Fortran level common block data structure. see AVL.INC for all availible variables
+        """Get data from the Fortran level common block data structure. see AVL.INC for all availible variables
 
         Args:
             common_block: Name of the common block of the variable like `CASE_R`
@@ -602,11 +1443,15 @@ class OVLSolver(object):
         # Apply slicer if provided
         if slicer is not None:
             val = val[slicer]
-
+        
+        # if the array is of size 1 then just return the float 
+        if val.size == 1 and val.shape == ():
+            val = val.flatten()[0]
+        
         return val
 
     def set_avl_fort_arr(self, common_block: str, variable: str, val: float, slicer: Optional[slice] = None) -> None:
-        """set data from the Fortran level common block data structure. see AVL.INC for all availible variables
+        """Set data from the Fortran level common block data structure. see AVL.INC for all availible variables
 
         Args:
             common_block: Name of the common block of the variable like `CASE_R`
@@ -615,7 +1460,7 @@ class OVLSolver(object):
             slicer: slice applied to the common block variable to return a subset of the data. i.e. (100) or slice(2, 5)
 
         """
-        # convert from fortran ordering to c ordering
+        # convert from c ordering to fortran ordering
         if isinstance(val, np.ndarray):
             val = val.ravel(order="C").reshape(val.shape[::-1], order="F")
 
@@ -628,8 +1473,11 @@ class OVLSolver(object):
         if slicer is None:
             setattr(common_block_obj, variable.upper(), val)
         else:
-            # flip the order of the slicer to match the cordinates of the val
-            new_slicer = slicer[::-1]
+            if isinstance(slicer, (np.ndarray, tuple)):
+                # flip the order of the slicer to match the cordinates of the val
+                new_slicer = slicer[::-1]
+            else:
+                new_slicer = copy.deepcopy(slicer)
 
             original_val = getattr(common_block_obj, variable.upper())
             original_val[new_slicer] = val
@@ -638,7 +1486,7 @@ class OVLSolver(object):
         return
 
     def get_surface_forces(self) -> Dict[str, Dict[str, float]]:
-        """returns the force data from each surface (including mirriored surfaces)
+        """Returns the force data from each surface (including mirriored surfaces)
 
         Returns:
             surf_data_dict: a dictionary of surface data where the first key is the surface and the second is the force coefficient
@@ -660,7 +1508,7 @@ class OVLSolver(object):
 
     def get_parameter(self, param_key: str) -> float:
         """
-        analogous to ruinont Modify parameters for the OPER menu to view parameters.
+        Analogous to ruinont Modify parameters for the OPER menu to view parameters.
 
         Args:
             param_key: the name of the parameter to return
@@ -687,7 +1535,7 @@ class OVLSolver(object):
         return param_val
 
     def get_constraint(self, con_key: str) -> float:
-        """get the value of a constraint
+        """Get the value of a constraint
 
         Args:
             con_key: name of the constraint. Options are ["alpha","beta","roll rate","pitch rate","yaw rate","CL","CY","CR BA","CM","CR"]
@@ -703,7 +1551,7 @@ class OVLSolver(object):
         return con_val
 
     def set_parameter(self, param_key: str, param_val: float) -> None:
-        """modify a parameter of the run (analogous to M from the OPER menu in AVL).
+        """Modify a parameter of the run (analogous to M from the OPER menu in AVL).
 
         Args:
             param_key: parameter to modify. Options are ["alpha", "beta", "pb/2V", "qc/2V", "rb/2V", "CL"]
@@ -729,7 +1577,7 @@ class OVLSolver(object):
         self.avl.set_params(1)
 
     def get_control_deflections(self) -> Dict[str, float]:
-        """get the deflections of all the control surfaces
+        """Get the deflections of all the control surfaces
 
         Returns:
             def_dict: dictionary of control surfaces as the keys and deflections as the values
@@ -745,7 +1593,7 @@ class OVLSolver(object):
         return def_dict
 
     def get_hinge_moments(self) -> Dict[str, float]:
-        """get the hinge moments from the fortran layer and return them as a dictionary
+        """Get the hinge moments from the fortran layer and return them as a dictionary
 
         Returns:
             hinge_moments: array of control surface moments. The order the control surfaces are declared are the indices,
@@ -761,7 +1609,7 @@ class OVLSolver(object):
         return hinge_moments
 
     def get_strip_forces(self) -> Dict[str, Dict[str, np.ndarray]]:
-        """get force data for each strip (chordwise segment) of the mesh.
+        """Get force data for each strip (chordwise segment) of the mesh.
 
         Returns:
             strip_data: dictionary of strip data. The keys are ["chord", "width", "X LE", "Y LE", "Z LE", "twist","CL", "CD", "CDv", "downwash", "CX", "CY", "CZ","CM", "CN", "CR","CL strip", "CD strip", "CF strip", "CM strip","CL perp","CM c/4,"CM LE"]
@@ -776,25 +1624,25 @@ class OVLSolver(object):
             "Y LE": ["STRP_R", "RLE", (slice(None), 1)],  # control point leading edge coordinates
             "Z LE": ["STRP_R", "RLE", (slice(None), 2)],  # control point leading edge coordinates
             "twist": ["STRP_R", "AINC"],
-            
+
             # strip contributions to total lift and drag from strip integration
             "CL": ["STRP_R", "CLSTRP"],
             "CD": ["STRP_R", "CDSTRP"],
             "CDv" : ["STRP_R","CDV_LSTRP"],  # strip viscous drag in stability axes
             "downwash" : ["STRP_R","DWWAKE"],
-            
-            
-            # strip contributions to non-dimensionalized forces 
-            "CX": ["STRP_R", "CXSTRP"], 
-            "CY": ["STRP_R", "CYSTRP"], 
-            "CZ": ["STRP_R", "CZSTRP"],   
-            
+
+
+            # strip contributions to non-dimensionalized forces
+            "CX": ["STRP_R", "CXSTRP"],
+            "CY": ["STRP_R", "CYSTRP"],
+            "CZ": ["STRP_R", "CZSTRP"],
+
             # strip contributions to total moments (body frame)
             "CM": ["STRP_R", "CMSTRP"],
             "CN": ["STRP_R", "CNSTRP"],
             "CR": ["STRP_R", "CRSTRP"],
-            
-            
+
+
             # forces non-dimentionalized by strip quantities
             "CL strip" : ["STRP_R", "CL_LSTRP"],
             "CD strip" : ["STRP_R", "CD_LSTRP"],
@@ -805,9 +1653,9 @@ class OVLSolver(object):
             "CL perp" : ["STRP_R", "CLTSTRP"], # strip CL referenced to Vperp,
             "CM c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
             "CM LE" : ["STRP_R","CMLE"],  # strip pitching moment about LE vector
-            "spanloading" : ["STRP_R","CNC"],   # strip spanloading 
-            
-        }    
+            "spanloading" : ["STRP_R","CNC"],   # strip spanloading
+
+        }
         # fmt: on
 
         # add a dictionary for each surface that will be filled later
@@ -871,11 +1719,11 @@ class OVLSolver(object):
 
     # region --- modal analysis api
     def execute_eigen_mode_calc(self):
-        """execute a modal analysis (x from the MODE menu in AVL)"""
+        """Execute a modal analysis (x from the MODE menu in AVL)"""
         self.avl.execute_eigenmode_calc()
 
     def get_eigenvalues(self) -> np.ndarray:
-        """after running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL
+        """After running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL
 
         Returns:
             eig_vals: array of eigen values
@@ -892,7 +1740,7 @@ class OVLSolver(object):
         return eig_vals
 
     def get_eigenvectors(self) -> np.ndarray:
-        """after running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL
+        """After running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL
 
         Returns:
             eig_vec: 2D array of eigen vectors
@@ -908,8 +1756,8 @@ class OVLSolver(object):
 
         return eig_vecs
 
-    def get_system_matrix(self, in_body_axis=False) -> np.ndarray:
-        """returns the system matrix used for the eigenmode calculation
+    def get_system_matrix(self) -> np.ndarray:
+        """Returns the system matrix used for the eigenmode calculation
 
         Returns:
             asys: 2D array representing the system matrix for the eigen value analysis
@@ -924,59 +1772,31 @@ class OVLSolver(object):
         irun_case = 1
         self.avl.get_system_matrix(irun_case, asys)
 
-        def apply_state_signs(asys):
-            """
-            Apply sign changes to the state matrix A and return the modified version.
-            """
-            nsys = asys.shape[0]
-
-            # Indices for sign flip
-            jeu = 0
-            jew = 1
-            jeq = 2
-            jeth = 3
-            jev = 4
-            jep = 5
-            jer = 6
-            jeph = 7
-            jex = 8
-            jey = 9
-            jez = 10
-            jeps = 11
-
-            usgn = np.ones(nsys)
-            for idx in [jeu, jew, jep, jer, jex, jez]:
-                if 0 <= idx < nsys:
-                    usgn[idx] = -1.0
-
-            # Allocate result
-            asys_signed = np.zeros_like(asys)
-
-            # Apply row/column sign flips explicitly
-            for i in range(nsys):
-                for j in range(nsys):
-                    asys_signed[i, j] = asys[i, j] * usgn[i] * usgn[j]
-
-            return asys_signed
-
-        if in_body_axis:
-            asys = apply_state_signs(asys)
-
         return asys
 
     # region --- geometry api
     def get_control_names(self) -> List[str]:
-        """get the names of the control surfaces
+        """Get the names of the control surfaces
 
         Returns:
             control_names: list of control surface names
         """
         fort_names = self.get_avl_fort_arr("CASE_C", "DNAME")
-        control_names = self._convertFortranStringArrayToList(fort_names)
+        control_names = self._fort_char_array_to_str_list(fort_names)
         return control_names
 
+    def get_design_var_names(self) -> List[str]:
+        """Get the names of the design_var surfaces
+
+        Returns:
+            design_var_names: list of design_var surface names
+        """
+        fort_names = self.get_avl_fort_arr("CASE_C", "GNAME")
+        design_var_names = self._fort_char_array_to_str_list(fort_names)
+        return design_var_names
+
     def get_surface_names(self, remove_dublicated: Optional[bool] = False) -> List[str]:
-        """get the surface names from the geometry
+        """Get the surface names from the geometry
 
         Args:
             remove_dublicated: remove the surface that were created by duplication about symmetry planes
@@ -985,7 +1805,7 @@ class OVLSolver(object):
             surf_names: list of surface names
         """
         fort_names = self.get_avl_fort_arr("CASE_C", "STITLE")
-        surf_names = self._convertFortranStringArrayToList(fort_names)
+        surf_names = self._fort_char_array_to_str_list(fort_names)
 
         if remove_dublicated:
             imags = self.get_avl_fort_arr("SURF_I", "IMAGS")
@@ -1000,7 +1820,7 @@ class OVLSolver(object):
             return surf_names
 
     def get_body_names(self, remove_dublicated: Optional[bool] = False) -> List[str]:
-        """get the body names from the geometry
+        """Get the body names from the geometry
 
         Args:
             remove_dublicated: remove the body that were created by duplication about symmetry planes
@@ -1009,7 +1829,7 @@ class OVLSolver(object):
             body_names: list of body names
         """
         fort_names = self.get_avl_fort_arr("CASE_C", "BTITLE")
-        body_names = self._convertFortranStringArrayToList(fort_names)
+        body_names = self._fort_char_array_to_str_list(fort_names)
 
         if remove_dublicated:
             # imags = self.get_avl_fort_arr("BODY_GEOM_L", "LDUPL_B")
@@ -1028,12 +1848,12 @@ class OVLSolver(object):
         else:
             return body_names
 
-    def get_con_surf_param(self, surf_name: str, idx_slice: int, param: str) -> np.ndarray:
-        """returns the parameters that define the control surface
+    def get_con_surf_param(self, surf_name: str, idx_sec: int, param: str) -> np.ndarray:
+        """Returns the parameters that define the control surface. Can also get design variables (AVL).
 
         Args:
             surf_name: the name of the surface containing the control surface
-            idx_slice: the section index of the control surface data
+            idx_sec: the section index of the control surface data
             param: control surface parameter to get
 
         Returns:
@@ -1046,13 +1866,34 @@ class OVLSolver(object):
             raise ValueError(
                 f"param, {param}, not in found for {surf_name}, that has control surface data {self.con_surf_to_fort_var[surf_name].keys()}"
             )
-        param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2][idx_slice])
+        param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2][idx_sec])
+        return param
+    
+    def __get_des_var_param(self, surf_name: str, idx_sec: int, param: str) -> np.ndarray:
+        """Returns the parameters that define the control surface. Can also get design variables (AVL).
+
+        Args:
+            surf_name: the name of the surface containing the control surface
+            idx_sec: the section index of the control surface data
+            param: control surface parameter to get
+
+        Returns:
+            parm: parameter value
+        """
+        # the control surface and design variables need to be handeled differently because the number at each section is variable
+        if param in self.des_var_to_fort_var[surf_name].keys():
+            fort_var = self.des_var_to_fort_var[surf_name][param]
+        else:
+            raise ValueError(
+                f"param, {param}, not in found for {surf_name}, that has design variable data {self.des_var_to_fort_var[surf_name].keys()}"
+            )
+        param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2][idx_sec])
         return param
 
     def set_con_surf_param(
         self, surf_name: str, idx_slice: int, param: str, val: float, update_geom: Optional[bool] = True
     ):
-        """returns the parameters that define the control surface
+        """Sets the parameters that define the control surface. Can also set design variables (AVL).
 
         Args:
             surf_name: the name of the surface containing the control surface
@@ -1076,7 +1917,7 @@ class OVLSolver(object):
             self.avl.update_surfaces()
 
     def get_surface_param(self, surf_name: str, param: str) -> np.ndarray:
-        """Get a parameter of a specified surface
+        """Get a parameter of a specified surface. Does not get control surface or design variables.
 
         Args:
             surf_name: the surface containing the parameter
@@ -1088,20 +1929,45 @@ class OVLSolver(object):
         """
 
         # check that param is in self.surf_geom_to_fort_var
+        if param in self.surf_section_geom_to_fort_var[surf_name].keys():
+            # TODO-JLA: handle section parameters differently  
+            # return the data for each section
+            fort_vars = self.surf_section_geom_to_fort_var[surf_name][param]
+            param_list = []
+            
+            for slicer in fort_vars[2]:
+                param = self.get_avl_fort_arr(fort_vars[0], fort_vars[1], slicer=slicer)
+                
+                param_list.append(copy.deepcopy(param))
+            
+            return param_list
+        
         if param in self.surf_geom_to_fort_var[surf_name].keys():
             fort_var = self.surf_geom_to_fort_var[surf_name][param]
         elif param in self.surf_pannel_to_fort_var[surf_name].keys():
             fort_var = self.surf_pannel_to_fort_var[surf_name][param]
+        elif param in self.con_surf_to_fort_var[surf_name].keys():
+            warnings.warn(
+                "OptVL WARNING - Getting control surface and design variables is not supported with this function.\n"
+                "Use the get_con_surf_param function.",
+                stacklevel=2,
+            )
+        elif param in ["afiles", "airfoils", "naca", "xfminmax"]:
+            warnings.warn(
+                "OptVL WARNING - Getting section geometry data using airfoils, afiles, or naca with this function is not supported.",
+                stacklevel=2,
+            )
         else:
             raise ValueError(
-                f"param, {param}, not in found for {surf_name}, that has geom data {list(self.surf_geom_to_fort_var[surf_name].keys()) + list(self.surf_pannel_to_fort_var[surf_name].keys())}"
+                f"param, {param}, not in found for {surf_name}, that has geom data {list(self.surf_geom_to_fort_var[surf_name].keys()) + list(self.surf_section_geom_to_fort_var[surf_name].keys()) + list(self.surf_pannel_to_fort_var[surf_name].keys())}"
             )
-
+        
         param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2])
         return copy.deepcopy(param)  # return the value of the array, but not a reference to avoid sideffects
 
     def set_surface_param(self, surf_name: str, param: str, val: float, update_geom: bool = True):
-        """Get a parameter of a specified surface
+        """Set a parameter of a specified surface. Supports setting params related to geometry and panelling.
+        Section geometry can be directly set here but this is not recommended. Use set_section_coordinates instead.
 
         Args:
             surf_name: the surface containing the parameter
@@ -1111,25 +1977,58 @@ class OVLSolver(object):
         """
 
         # check that the surface is in the set of unique surfaces and not duplicated
-        if not surf_name in self.unique_surface_names:
+        if surf_name not in self.unique_surface_names:
             raise ValueError(
                 f"Only non-duplicates surface parameters can be set, {surf_name} not found in {self.unique_surface_names}"
             )
+        
+        # check that param is in self.surf_geom_to_fort_var
+        if param in self.surf_section_geom_to_fort_var[surf_name].keys():
+            # TODO-JLA: handle section parameters differently  
+            # return the data for each section
+            # Set surface cross section geometry variables (not recommended)
+            warnings.warn(
+                "OptVL WARNING - Updating section geometry data directly is not recommened!\n "
+                "OptVL will not verify that the camber line is consistent with the given coordiantes.\n"
+                "Use the set_section_coordinates function.",
+                stacklevel=2,
+            )
+            
+            fort_vars = self.surf_section_geom_to_fort_var[surf_name][param]
 
-        if param in self.surf_geom_to_fort_var[surf_name].keys():
+            for idx_sec, slicer in enumerate(fort_vars[2]):
+                
+                self.set_avl_fort_arr(fort_vars[0], fort_vars[1], val[idx_sec], slicer=slicer)
+                
+        elif param in self.surf_geom_to_fort_var[surf_name].keys():
+            # Set basic surface geometry variables
             fort_var = self.surf_geom_to_fort_var[surf_name][param]
+            self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
+            
         elif param in self.surf_pannel_to_fort_var[surf_name].keys():
+            # Set surface panelling variables
             fort_var = self.surf_pannel_to_fort_var[surf_name][param]
+            self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
+        elif param in ["afiles", "airfoils", "naca", "xfminmax"]:
+            # Cannot indirectly update the cross sections like this. Would over complicate this function when it can easily be handled by set_section_coordinates
+            warnings.warn(
+                "OptVL WARNING - Updating section geometry data with using airfoils, afiles, or naca is not supported with this function.\n"
+                "Use the set_section_coordinates function.",
+                stacklevel=2,
+            )
+            pass
         elif param in self.con_surf_to_fort_var[surf_name].keys():
             # the control surface and design variables need to be handeled differently because the number at each section is variable
+            warnings.warn(
+                "OptVL WARNING - Updating control surface and design variables is not supported with this function.\n"
+                "Use the set_con_surf_param function.",
+                stacklevel=2,
+            )
             pass
-
         else:
             raise ValueError(
                 f"param, {param}, not in found for {surf_name}, that has geom data {list(self.surf_geom_to_fort_var[surf_name].keys()) + list(self.surf_pannel_to_fort_var[surf_name].keys())}"
             )
-
-        self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
 
         if update_geom:
             self.avl.update_surfaces()
@@ -1137,16 +2036,19 @@ class OVLSolver(object):
     def get_surface_params(
         self,
         include_geom: bool = True,
+        include_section_geom: bool = False,
         include_paneling: bool = False,
         include_con_surf: bool = False,
+        include_des_vars: bool = False,
         include_airfoils: bool = False,
     ) -> Dict[str, Dict[str, Any]]:
-        """get all the surface level parameters for each suface
+        """Get all the surface level parameters for each suface
 
         Args:
-            include_geom: flag to include geometry data in the output. The data is ["scale", "translate", "angle", "xles", "yles", "zles", "chords", "aincs", "xasec", "sasec", "tasec", "clcdsec", "claf"]
-            include_paneling:  flag to include paneling information in the output. The data ["nchordwise", "cspace","nspan", "sspace","sspaces","nspans","yduplicate", "use surface spacing", "component"]
-            include_con_surf:  flag to include control surface data in the output. This is data like the hinge vector and gain.
+            include_geom: flag to include geometry data in the output. The data is ["scale", "translate", "angle", "xles", "yles", "zles", "chords", "aincs", "clcdsec", "claf"]
+            include_section_geom: flag to include section geometry data in the output. The data is ["xasec", "sasec", "tasec", xuasec, xlasec, zlasec, zuasec, casec, nasec]
+            include_paneling:  flag to include paneling information in the output. The data ["nchordwise", "cspace","nspan", "sspace","sspaces","nspans","yduplicate", "wake", "able", "load", "use surface spacing", "component"]
+            include_con_surf:  flag to include control surface and design variable data in the output. This is data like the hinge vector and gain.
             include_airfoils:  flag to include airfoil file data in the output
 
         Return:
@@ -1160,6 +2062,11 @@ class OVLSolver(object):
                 for var in self.surf_geom_to_fort_var[surf_name]:
                     surf_data[surf_name][var] = self.get_surface_param(surf_name, var)
 
+            if include_section_geom:
+                # add section geometry parameters if requested
+                for var in self.surf_section_geom_to_fort_var[surf_name]:
+                    surf_data[surf_name][var] = self.get_surface_param(surf_name, var)
+
             idx_surf = self.surface_names.index(surf_name)
             if include_paneling:
                 # add paneling parameters if requested
@@ -1170,7 +2077,7 @@ class OVLSolver(object):
                     surf_data[surf_name].pop("yduplicate")
 
             if include_con_surf:
-                # add control surface parameters if requested
+                # add control surface and design variable parameters if requested
                 for var in self.con_surf_to_fort_var[surf_name]:
                     num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
 
@@ -1180,22 +2087,61 @@ class OVLSolver(object):
                         slice_data.append(tmp)
 
                     surf_data[surf_name][var] = slice_data
+            
+            if include_des_vars:
+                # add control surface and design variable parameters if requested
+                for var in self.des_var_to_fort_var[surf_name]:
+                    num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
+
+                    slice_data = []
+                    for idx_sec in range(num_sec):
+                        tmp = self.__get_des_var_param(surf_name, idx_sec, var)
+                        slice_data.append(tmp)
+
+                    surf_data[surf_name][var] = slice_data
 
             if include_airfoils:
+                # add airfoil files/coordinates/naca names if requested
+                # NOTE: If section geometry was modified NACA and afile data won't be accurate
+                # NOTE: If NACA is set then airfoil will be zeros. Check the raw section data instead
                 afiles = []
-                num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
+                nacas = []
+                airfoils = []
+                xfminmax = []
 
+                num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
                 for idx_sec in range(num_sec):
-                    afile = self.__decodeFortranString(self.avl.CASE_C.AFILES[idx_sec, idx_surf])
+                    afile = self.__fort_char_array_to_str(self.avl.CASE_C.AFILES[idx_sec, idx_surf])
                     afiles.append(afile)
 
+                    naca = self.__fort_char_array_to_str(self.avl.CASE_C.NACA[idx_sec, idx_surf])
+                    nacas.append(naca)
+
+                    airfoilx = np.trim_zeros(
+                        self.get_avl_fort_arr("SURF_GEOM_R", "XSEC")[idx_surf, idx_sec, slice(None)]
+                    )
+                    airfoily = np.trim_zeros(
+                        self.get_avl_fort_arr("SURF_GEOM_R", "YSEC")[idx_surf, idx_sec, slice(None)]
+                    )
+
+                    airfoils.append([airfoilx, airfoily])
+
+                    xfmin = self.get_avl_fort_arr("SURF_GEOM_R", "XFMIN_R")[idx_surf, idx_sec]
+                    xfmax = self.get_avl_fort_arr("SURF_GEOM_R", "XFMAX_R")[idx_surf, idx_sec]
+
+                    xfminmax.append([xfmin, xfmax])
+
+                surf_data[surf_name]["naca"] = nacas
+                surf_data[surf_name]["airfoils"] = np.array(airfoils)
                 surf_data[surf_name]["afiles"] = afiles
+                surf_data[surf_name]["xfminmax"] = np.array(xfminmax)
 
         return surf_data
 
     def set_surface_params(self, surf_data: Dict[str, Dict[str, any]]):
-        """set the give surface data of the current geometry.
+        """Set the given data of the current geometry.
         ASSUMES THE CONTROL SURFACE DATA STAYS AT THE SAME LOCATION
+        (i.e  you didn't move the control surfaces to new sections or surfaces. If so re-initialize OptVL)
 
         Args:
             surf_data: Nested dictionary where the 1st key is the surface name and the 2nd key is the parameter.
@@ -1211,10 +2157,10 @@ class OVLSolver(object):
                 )
 
             for var in surf_data[surf_name]:
-                # do not set the data this way if it is a control surface
-                if var not in self.con_surf_to_fort_var[surf_name]:
+                # do not set the data this way if it is a control surface or airfoil
+                if var not in [self.con_surf_to_fort_var[surf_name], "airfoils", "afiles", "naca"]:
                     self.set_surface_param(surf_name, var, surf_data[surf_name][var], update_geom=False)
-                else:
+                elif var in [self.con_surf_to_fort_var[surf_name]]:
                     idx_surf = self.surface_names.index(surf_name)
                     num_sec = self.get_avl_fort_arr("SURF_GEOM_I", "NSEC")[idx_surf]
                     slice_data = []
@@ -1222,12 +2168,108 @@ class OVLSolver(object):
                         self.set_con_surf_param(
                             surf_name, idx_sec, var, surf_data[surf_name][var][idx_sec], update_geom=False
                         )
+                elif var in ["airfoils", "afiles", "naca"]:
+                    # Cannot indirectly update the cross sections like this. Would over complicate this function when it can easily be handled by set_section_coordinates
+                    warnings.warn(
+                        "OptVL WARNING - Updating section geometry data with using airfoils, afiles, or naca is not supported with this function.\n"
+                        "Use the set_section_coordinates function.",
+                        stacklevel=2,
+                    )
+                else:
+                    pass
 
         # update the geometry once at the end
         self.avl.update_surfaces()
 
-    def get_body_params(self) -> Dict[str, Dict[str, Any]]:
+    def get_body_param(self, body_name: str, param: str) -> np.ndarray:
+        """Get a parameter of a specified body
+
+        Args:
+            body_name: the body containing the parameter
+            param: the body parameter to return. Could be either geometric or paneling
+
+
+        Returns:
+            val: the val of parameter of the body
+        """
+
+        body_names = self.get_body_names()
+        idx_body = body_names.index(body_name)
+        unique_body_names = self.get_body_names(remove_dublicated=True)
+        if body_name not in unique_body_names:
+            raise ValueError(
+                f"""body name, {body_name}, not found in the current avl object."
+                    Note duplicated bodies can not be set directly.
+                    Surfaces in file {unique_body_names}
+                    {body_names}"""
+            )
+
+        # yduplicate is the only parameter that may not exist for a body, everything else is required
+        if not self.get_avl_fort_arr(
+            self.body_geom_to_fort_var["yduplicate"][0], self.body_geom_to_fort_var["yduplicate"][1]
+        )[idx_body]:
+            raise ValueError(f"{param}, not set for {body_name}")
+
+        val = self.get_avl_fort_arr(
+            self.body_geom_to_fort_var[param][0], self.body_geom_to_fort_var[param][1], slicer=idx_body
+        )
+
+        if param == "bfile":
+            val = self.__fort_char_array_to_str(val)
+
+        return copy.deepcopy(val)  # return the value of the array, but not a reference to avoid sideffects
+
+    def set_body_param(self, body_name: str, param: str, val, update_geom: bool = True):
+        """Set a parameter of a specified body
+
+        Args:
+            body_name: the body containing the parameter
+            param: the surface parameter to return. Could be either geometric or paneling
+            val: value to set
+            update_geom: flag to update the geometry after setting
+        """
+
+        body_names = self.get_body_names()
+        idx_body = body_names.index(body_name)
+        unique_body_names = self.get_body_names(remove_dublicated=True)
+        if body_name not in unique_body_names:
+            raise ValueError(
+                f"""body name, {body_name}, not found in the current avl object."
+                    Note duplicated bodies can not be set directly.
+                    Surfaces in file {unique_body_names}
+                    {body_names}"""
+            )
+
+        if param in self.body_geom_to_fort_var.keys():
+            fort_var = self.body_geom_to_fort_var[param]
+        else:
+            raise ValueError(
+                f"param, {param}, not in found for {body_name}, that has geom data {list(self.body_geom_to_fort_var.keys())}"
+            )
+
+        # Set the slicer
+        if isinstance(val, np.ndarray):
+            slicer = (idx_body, slice(0, len(val)))
+        else:
+            slicer = idx_body
+
+        # Handle strings differently
+        if isinstance(val, str):
+            operator.setitem(getattr(getattr(self.avl, fort_var[0]), fort_var[1]), idx_body, val)
+        else:
+            self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=slicer)
+
+        if update_geom:
+            self.avl.update_bodies()
+
+    def get_body_params(
+        self,
+        include_body_oml: bool = False,
+    ) -> Dict[str, Dict[str, Any]]:
         """Get the parameters of the bodies
+
+        Args:
+            include_body_oml: include the raw oml coordinates in the output dict
 
         Returns:
             body_data: Nested dictionary where the 1st key is the body name and the 2nd key is the parameter.
@@ -1244,15 +2286,103 @@ class OVLSolver(object):
             for var, fort_var in self.body_geom_to_fort_var.items():
                 val = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=idx_body)  #
                 if var == "bfile":
-                    val = self.__decodeFortranString(val)
+                    val = self.__fort_char_array_to_str(val)
 
                 body_data[body_name][var] = val
 
+            if not self.get_avl_fort_arr(
+                self.body_geom_to_fort_var["yduplicate"][0], self.body_geom_to_fort_var["yduplicate"][1]
+            )[idx_body]:
+                body_data[body_name].pop("yduplicate")
+
+            if include_body_oml:
+                body_data[body_name]["body_oml"] = np.array(
+                    [
+                        np.trim_zeros(self.get_avl_fort_arr("BODY_GEOM_R", "XBOD_R")[idx_body, slice(None)]),
+                        np.trim_zeros(self.get_avl_fort_arr("BODY_GEOM_R", "YBOD_R")[idx_body, slice(None)]),
+                    ]
+                )
+
         return body_data
+
+    def set_body_params(self, body_data: Dict[str, Dict[str, Any]]):
+        """Set the give body data of the current geometry.
+
+        Args:
+            body_data: Nested dictionary where the 1st key is the body name and the 2nd key is the parameter.
+
+        """
+        body_names = self.get_body_names()
+        unique_body_names = self.get_body_names(remove_dublicated=True)
+        for body_name in body_data:
+            if body_name not in unique_body_names:
+                raise ValueError(
+                    f"""body name, {body_name}, not found in the current avl object."
+                        Note duplicated bodies can not be set directly.
+                        Surfaces in file {unique_body_names}
+                        {body_names}"""
+                )
+
+            for var in body_data[body_name]:
+                if var == "body_oml":
+                    raise RuntimeError("The body oml cannot be set with this function! Use set_body_coordinates.")
+                self.set_body_param(body_name, var, body_data[body_name][var], update_geom=False)
+
+        # update the geometry once at the end
+        self.avl.update_bodies()
+
+    def get_header_params(self) -> Dict:
+        """Gets the header input settings in AVL and returns them in a dictionary.
+
+        Returns:
+            Dict[str]: Dictionary containing the header input settings in AVL
+        """
+        header_data = {}
+
+        header_data["title"] = self.avl.CASE_C.TITLE
+
+        for var, fort_var in self.header_var_to_fort_var.items():
+            val = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=None)
+            header_data[var] = val
+
+        return header_data
+
+    def get_input_dict(
+        self, include_surfaces: bool = True, include_section_geom: bool = False, include_bodies: bool = True
+    ) -> Dict[str, Dict[str, Any]]:
+        """Returns all input information from AVL in input dictionary format.
+
+        Args:
+            include_surfaces (bool, optional): Include all surfaces in the dictionary. Defaults to True.
+            include_section_geom (bool, optional): Include all the section geometry information for each surface. Defaults to False.
+            include_bodies (bool, optional): Include all bodies in the dictionary. Defaults to True.
+
+        Returns:
+            Dict[str, Dict[str, Any]]: OptVL input dictionary
+        """
+
+        input_dict = self.get_header_params()
+
+        if include_surfaces:
+            input_dict["surfaces"] = self.get_surface_params(
+                include_paneling=True,
+                include_airfoils=True,
+                include_con_surf=True,
+                include_section_geom=include_section_geom,
+            )
+        else:
+            input_dict["surfaces"] = {}
+
+        if include_bodies:
+            input_dict["bodies"] = self.get_body_params(include_body_oml=True)
+        else:
+            input_dict["bodies"] = {}
+
+        return input_dict
 
     # region --- geometry file writing api
     def write_geom_file(self, filename: str):
-        """write the current geometry to a file
+        """Write the current geometry to a file
 
         Args:
             filename: name of the output AVL-style geometry file
@@ -1263,7 +2393,12 @@ class OVLSolver(object):
             self._write_header(fid)
 
             surf_data = self.get_surface_params(
-                include_geom=True, include_paneling=True, include_con_surf=True, include_airfoils=True
+                include_geom=True,
+                include_section_geom=True,
+                include_paneling=True,
+                include_con_surf=True,
+                include_des_vars=True,
+                include_airfoils=True,
             )
 
             for surf_name in surf_data:
@@ -1293,12 +2428,12 @@ class OVLSolver(object):
         fid.write(out_str)
 
     def _write_header(self, fid: TextIO):
-        """write the header to a file"""
+        """Write the header to a file"""
         # write the name of the aircraft
 
         self._write_banner(fid, "Header")
         title_array = self.get_avl_fort_arr("case_c", "title")
-        title = self._convertFortranStringArrayToList(title_array)
+        title = self.__fort_char_array_to_str(title_array)
         fid.write(f"{title}\n")
 
         fid.write("#Mach\n")
@@ -1315,7 +2450,7 @@ class OVLSolver(object):
         self._write_fort_vars(fid, "case_r", "bref")
 
         fid.write("#Xref    Yref    Zref\n")
-        self._write_fort_vars(fid, "case_r", "XYZREF")
+        self._write_fort_vars(fid, "case_r", "XYZREF0")  # The inpute routine reads the defaults
 
         fid.write("#CD0\n")
         self._write_fort_vars(fid, "case_r", "CDREF0")
@@ -1330,26 +2465,25 @@ class OVLSolver(object):
         banner = f"#{'=' * (width)}\n#{header.center(width, '-')}\n#{'=' * (width)}\n"
         fid.write(banner)
 
-        # ======================================================
-        # ------------------- Geometry File --------------------
-        # ======================================================
-
     def _write_body(self, fid: TextIO, body_name: str, data: Dict[str, float]):
         self._write_banner(fid, body_name)
-        fid.write(f"BODY\n")
+        fid.write("BODY\n")
         fid.write(f"{body_name}\n")
-        fid.write(f"#N  Bspace\n")
+        fid.write("#N  Bspace\n")
         fid.write(f"{data['nvb']} {data['bspace']}\n")
+        if "yduplicate" in data.keys():
+            fid.write("YDUPLICATE\n")
+            fid.write(f"{data['yduplicate']}\n")
         fid.write("SCALE\n")
         fid.write(f"{data['scale'][0]} {data['scale'][1]} {data['scale'][2]}\n")
         fid.write("TRANSLATE\n")
         fid.write(f"{data['translate'][0]} {data['translate'][1]} {data['translate'][2]}\n")
         if data["bfile"] != "":
-            fid.write(f"BFILE\n")
+            fid.write("BFILE\n")
             fid.write(f"{data['bfile']}\n")
 
     def _write_surface(self, fid: TextIO, surf_name: str, data: Dict[str, float]):
-        """write a surface to a file"""
+        """Write a surface to a file"""
         # TODO add NACA and CLAF keyword support
 
         def _write_data(key_list: List[str], newline: bool = True):
@@ -1373,10 +2507,10 @@ class OVLSolver(object):
 
         # start with the banner
         self._write_banner(fid, surf_name)
-        fid.write(f"SURFACE\n")
+        fid.write("SURFACE\n")
         fid.write(f"{surf_name}\n")
 
-        fid.write(f"#Nchordwise  Cspace  [Nspanwise  Sspace]\n")
+        fid.write("#Nchordwise  Cspace  [Nspanwise  Sspace]\n")
         _write_data(["nchordwise", "cspace"], newline=False)
         if data["use surface spacing"]:
             _write_data(["nspan", "sspace"])
@@ -1386,6 +2520,13 @@ class OVLSolver(object):
         if "yduplicate" in data:
             fid.write("YDUPLICATE\n")
             _write_data(["yduplicate"])
+
+        if not data["wake"]:
+            fid.write("NOWAKE\n")
+        if not data["albe"]:
+            fid.write("NOALBE\n")
+        if not data["load"]:
+            fid.write("NOLOAD\n")
 
         idx_surf = self.get_surface_index(surf_name)
         if idx_surf + 1 != data["component"]:
@@ -1403,10 +2544,22 @@ class OVLSolver(object):
         fid.write("ANGLE\n")
         _write_data(["angle"])
 
+        if (data["clcd"] != 0.0).any():
+            fid.write(" CDCL\n")
+            fid.write(
+                f" {data['clcd'][0]:.6f} "
+                f" {data['clcd'][1]:.6f} "
+                f" {data['clcd'][2]:.6f} "
+                f" {data['clcd'][3]:.6f} "
+                f" {data['clcd'][4]:.6f} "
+                f" {data['clcd'][5]:.6f}\n"
+            )
+
         fid.write("#---------------------------------------\n")
 
         num_sec = data["chords"].size
         control_names = self.get_control_names()
+        design_var_names = self.get_design_var_names()
 
         for idx_sec in range(num_sec):
             fid.write("SECTION\n")
@@ -1431,10 +2584,25 @@ class OVLSolver(object):
                 )
 
             afile = data["afiles"][idx_sec]
+            naca = data["naca"][idx_sec]
+            airfoil = data["airfoils"][idx_sec]
+
+            if naca:
+                fid.write("#NACA | X1 X2\n")
+                fid.write(f" NACA   {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]}\n")
+                fid.write(f" {naca}\n")
+
+            if np.any(airfoil):
+                fid.write("#AIRFOIL | X1 X2\n")
+                fid.write(f"AIRFOIL   {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]}\n")
+                for i in range(0, min(self.IBX, len(airfoil[0, :]))):
+                    fid.write(f" {airfoil[0, i]} {airfoil[1, i]}\n")
 
             if afile:
-                fid.write(" AFILE\n")
+                fid.write("#AFILE | X1 X2\n")
+                fid.write(f" AFILE {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]} \n")
                 fid.write(f" {afile}\n")
+
             # output claf and  clcd if not default
             if data["claf"][idx_sec] != 1.0:
                 fid.write(" CLAF\n")
@@ -1452,7 +2620,6 @@ class OVLSolver(object):
                 )
 
             # check for control surfaces
-
             for idx_local_cont_surf, idx_cont_surf in enumerate(data["icontd"][idx_sec]):
                 fid.write(" CONTROL\n")
                 fid.write("#surface   gain xhinge       hvec       SgnDup\n")
@@ -1463,28 +2630,12 @@ class OVLSolver(object):
                 fid.write(f" {vhinge[0]:.6f} {vhinge[1]:.6f} {vhinge[2]:.6f}")
                 fid.write(f" {data['refld'][idx_sec][idx_local_cont_surf]}\n")
 
-    def __decodeFortranString(self, fort_string: str) -> str:
-        # TODO: need a more general solution for |S<variable> type
-
-        if fort_string.dtype == np.dtype("|S0"):
-            # there are no characters in the sting to add
-            return ""
-        if fort_string.dtype == np.dtype("|S1"):
-            py_string = b"".join(fort_string).decode().strip()
-        elif fort_string.dtype == np.dtype("<U1"):
-            py_string = "".join(fort_string).strip()
-        elif fort_string.dtype == np.dtype("|S16"):
-            py_string = fort_string.decode().strip()
-        elif fort_string.dtype == np.dtype("|S40"):
-            py_string = fort_string.decode().strip()
-        elif fort_string.dtype == np.dtype("|S80"):
-            py_string = fort_string.decode().strip()
-        elif fort_string.dtype == np.dtype("|S120"):
-            py_string = fort_string.decode().strip()
-        else:
-            raise TypeError(f"Unable to convert {fort_string} of type {fort_string.dtype} to string")
-
-        return py_string
+            # check for design variables
+            for idx_local_des_var, idx_des_var in enumerate(data["idestd"][idx_sec]):
+                fid.write(" DESIGN\n")
+                fid.write("#surface   gain\n")
+                fid.write(f" {design_var_names[idx_des_var - 1]} ")
+                fid.write(f" {data['gaing'][idx_sec][idx_local_des_var]}\n")
 
     # region --- Utility functions
     def get_num_surfaces(self) -> int:
@@ -1497,7 +2648,7 @@ class OVLSolver(object):
         return self.get_avl_fort_arr("CASE_I", "NSURF")
 
     def get_surface_index(self, surf_name: str) -> int:
-        """given a surface name returns the index
+        """Given a surface name returns the index
 
         Args:
             surf_name: name of the surface
@@ -1508,6 +2659,19 @@ class OVLSolver(object):
         surf_names = self.surface_names
         idx_surf = surf_names.index(surf_name)
         return idx_surf
+    
+    def get_body_index(self, body_name: str) -> int:
+        """Given a body name returns the index
+
+        Args:
+            body_name: name of the body
+
+        Returns:
+            idx_body: index of the body
+        """
+        body_names = self.body_names
+        idx_body = body_names.index(body_name)
+        return idx_body
 
     def get_num_sections(self, surf_name: str) -> int:
         """Get the number of sections in a surface.
@@ -1545,9 +2709,40 @@ class OVLSolver(object):
         """
         return int(self.get_avl_fort_arr("CASE_I", "NVOR"))
 
-    def _createFortranStringArray(self, strList, num_max_char):
+    def _str_to_fort_str(self, py_string, num_max_char):
         """Setting arrays of strings in Fortran can be kinda nasty. This
-        takesa list of strings and returns the array"""
+        takes a strings and returns the char array.
+        """
+
+        arr = np.zeros((), dtype=f"|S{num_max_char}")
+        # pad the array with spaces 
+        arr = py_string + " "*(num_max_char-(len(py_string)))
+        
+        # for j in range(len(py_string)):
+        #     # copy over each character
+        #     arr[j] = py_string[j]
+
+        return arr
+    
+    def _str_to_fort_char_array(self, py_string, num_max_char):
+        """Setting arrays of strings in Fortran can be kinda nasty. This
+        takes a strings and returns the char array.
+        """
+
+        arr = np.zeros(1, dtype=f"|S{num_max_char}")
+        # pad the array with spaces 
+        arr[:] = " "
+        
+        for j in range(len(py_string)):
+            # copy over each character
+            arr[j] = py_string[j]
+
+        return arr
+
+    def _str_list_to_fort_char_array(self, strList, num_max_char):
+        """Setting arrays of strings in Fortran can be kinda nasty. This
+        takes a list of strings and returns the array.
+        """
 
         arr = np.zeros((len(strList), num_max_char), dtype="str")
         arr[:] = " "
@@ -1556,17 +2751,46 @@ class OVLSolver(object):
                 arr[i, j] = s[j]
 
         return arr
+    
+    def __fort_char_array_to_str(self, fort_string: str) -> str:
+        # TODO: need a more general solution for |S<variable> type
+        # SB: This should fix it but keep things commented out in case
 
-    def _convertFortranStringArrayToList(self, fortArray):
+        if fort_string.dtype == np.dtype("|S0"):
+            # there are no characters in the sting to add
+            return ""
+        if fort_string.dtype == np.dtype("|S1"):
+            py_string = b"".join(fort_string).decode().strip()
+        elif fort_string.dtype == np.dtype("<U1"):
+            py_string = "".join(fort_string).strip()
+        elif fort_string.dtype.str.startswith("|S"):
+            py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S4"):
+        #     py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S16"):
+        #     py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S40"):
+        #     py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S80"):
+        #     py_string = fort_string.decode().strip()
+        # elif fort_string.dtype == np.dtype("|S120"):
+        #     py_string = fort_string.decode().strip()
+        else:
+            raise TypeError(f"Unable to convert {fort_string} of type {fort_string.dtype} to string")
+
+        return py_string
+
+
+    def _fort_char_array_to_str_list(self, fortArray):
         """Undoes the _createFotranStringArray"""
         strList = []
 
         if fortArray.size == 1:
             # we must handle the 0-d array case sperately
-            return self.__decodeFortranString(fortArray[()])
+            return self.__fort_char_array_to_str(fortArray[()])
 
         for ii in range(fortArray.size):
-            py_string = self.__decodeFortranString(fortArray[ii])
+            py_string = self.__fort_char_array_to_str(fortArray[ii])
             if py_string != "":
                 strList.append(py_string)
 
@@ -1577,9 +2801,6 @@ class OVLSolver(object):
             var, func = key.split("/")
         except Exception as e:
             print(key)
-            import pdb
-
-            pdb.set_trace()
             raise e
         # remove leading 'd's
         var = var[1:]
@@ -2423,7 +3644,7 @@ class OVLSolver(object):
         mesh_linewidth=0.3,
         show_mesh: bool = True,
     ):
-        """adds a plot of the aircraft mesh to the axis
+        """Adds a plot of the aircraft mesh to the axis
 
         Args:
             axis: axis to add the plot to
@@ -2444,19 +3665,19 @@ class OVLSolver(object):
         strip_slice = (slice(0, num_strips),)
         surf_slice = (slice(0, num_surfs),)
 
-        rv1 = self.get_avl_fort_arr("VRTX_R", "RV1", slicer=mesh_slice)
-        rv2 = self.get_avl_fort_arr("VRTX_R", "RV2", slicer=mesh_slice)
-        rle1 = self.get_avl_fort_arr("STRP_R", "RLE1", slicer=strip_slice)
-        rle2 = self.get_avl_fort_arr("STRP_R", "RLE2", slicer=strip_slice)
-        chord1 = self.get_avl_fort_arr("STRP_R", "CHORD1", slicer=strip_slice)
-        chord2 = self.get_avl_fort_arr("STRP_R", "CHORD2", slicer=strip_slice)
-        jfrst = self.get_avl_fort_arr("SURF_I", "JFRST", slicer=surf_slice)
+        rv1 = self.get_avl_fort_arr("VRTX_R", "RV1", slicer=mesh_slice)  # Vortex Left points
+        rv2 = self.get_avl_fort_arr("VRTX_R", "RV2", slicer=mesh_slice)  # Vortex Right points
+        rle1 = self.get_avl_fort_arr("STRP_R", "RLE1", slicer=strip_slice)  # Strip left end LE point
+        rle2 = self.get_avl_fort_arr("STRP_R", "RLE2", slicer=strip_slice)  # Strip right end LE point
+        chord1 = self.get_avl_fort_arr("STRP_R", "CHORD1", slicer=strip_slice)  # Left strip chord
+        chord2 = self.get_avl_fort_arr("STRP_R", "CHORD2", slicer=strip_slice)  # Right strip chord
+        jfrst = self.get_avl_fort_arr("SURF_I", "JFRST", slicer=surf_slice)  # Index of first strip in surface
 
-        ijfrst = self.get_avl_fort_arr("STRP_I", "IJFRST", slicer=strip_slice)
-        nvstrp = self.get_avl_fort_arr("STRP_I", "NVSTRP", slicer=strip_slice)
+        ijfrst = self.get_avl_fort_arr("STRP_I", "IJFRST", slicer=strip_slice)  # Index of first element in strip
+        nvstrp = self.get_avl_fort_arr("STRP_I", "NVSTRP", slicer=strip_slice)  # Number of elements in strip
 
-        nj = self.get_avl_fort_arr("SURF_I", "NJ", slicer=surf_slice)
-        imags = self.get_avl_fort_arr("SURF_I", "IMAGS")
+        nj = self.get_avl_fort_arr("SURF_I", "NJ", slicer=surf_slice)  # Number of elements along span in surface
+        imags = self.get_avl_fort_arr("SURF_I", "IMAGS")  # Is surface YDUPL one?
 
         for idx_surf in range(num_surfs):
             # get the range of the elements that belong to this surfaces
@@ -2512,7 +3733,9 @@ class OVLSolver(object):
 
             if show_mesh:
                 for idx_strip in range(strip_st, strip_end):
-                    if idx_strip != strip_st:
+                    if ((imags[idx_surf] > 0) and (idx_strip != strip_st)) or (
+                        (imags[idx_surf] < 0) and (idx_strip != strip_end)
+                    ):
                         pts = {
                             "x": [rle1[idx_strip, 0], rle1[idx_strip, 0] + chord1[idx_strip]],
                             "y": [rle1[idx_strip, 1], rle1[idx_strip, 1]],
@@ -2535,7 +3758,7 @@ class OVLSolver(object):
                         axis.plot(pts[xaxis], pts[yaxis], mesh_style, color=color, alpha=0.7, linewidth=mesh_linewidth)
 
     def plot_geom(self, axes=None):
-        """generate a matplotlib plot of geometry
+        """Generate a matplotlib plot of geometry
 
         Args:
             axes: Matplotlib axis object to add the plots too. If none are given, the axes will be generated.
@@ -2605,7 +3828,7 @@ class OVLSolver(object):
         return xyz_list, cp_list
 
     def plot_cp(self):
-        """create a matplotlib plot of the surface and cp distribution"""
+        """Create a matplotlib plot of the surface and cp distribution"""
         import matplotlib.pyplot as plt
         from matplotlib import cm
 

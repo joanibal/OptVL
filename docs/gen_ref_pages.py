@@ -9,7 +9,6 @@ nav = mkdocs_gen_files.Nav()
 src_dir = "optvl"
 
 files = sorted(Path(src_dir).rglob("*.py"))[::-1]
-print(Path(src_dir).rglob("*.py"))
 
 for path in files:  #
     module_path = path.relative_to(src_dir).with_suffix("")  #
