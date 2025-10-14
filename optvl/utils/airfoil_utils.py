@@ -8,14 +8,14 @@ def read_coordinates_files(filename, headerlines=0):
     line containing an xy pair separate by whitespace.
 
     Args:
-    filename : str
-        dat file from which to read data
-    headerlines : int
-        the number of lines to skip at the beginning of the file to reach the coordinates
+        filename : str
+            dat file from which to read data
+        headerlines : int
+            the number of lines to skip at the beginning of the file to reach the coordinates
 
     Returns:
-    X : Ndarray [N,2]
-        The coordinates read from the file
+        X : Ndarray [N,2]
+            The coordinates read from the file
     """
     with open(filename, "r") as f:
         for _i in range(headerlines):
