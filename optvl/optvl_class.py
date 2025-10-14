@@ -951,7 +951,7 @@ class OVLSolver(object):
 
                 
                 optional_body_defaults = {
-                    "yduplicate" : 0.0   
+                    "yduplicate" : 0.0
                 }
 
                 for key, avl_vars in self.body_param_to_fort_var[body_name].items():
@@ -961,10 +961,10 @@ class OVLSolver(object):
                             val = optional_body_defaults[key]
                         else:
                             raise ValueError(f"Key {key} not found in body dictionary, {body_name}, but is required")
-                    else: 
+                    else:
                         val = body_dict[key]
                     
-                    check_type(key, avl_vars, val)    
+                    check_type(key, avl_vars, val)
                     
                     self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
 
@@ -1962,7 +1962,6 @@ class OVLSolver(object):
                 f"param, {param}, not in found for {surf_name}, that has geom data {list(self.surf_geom_to_fort_var[surf_name].keys()) + list(self.surf_section_geom_to_fort_var[surf_name].keys()) + list(self.surf_pannel_to_fort_var[surf_name].keys())}"
             )
         
-        print(surf_name, param, fort_var)
         param = self.get_avl_fort_arr(fort_var[0], fort_var[1], slicer=fort_var[2])
         return copy.deepcopy(param)  # return the value of the array, but not a reference to avoid sideffects
 
