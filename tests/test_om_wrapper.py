@@ -31,7 +31,6 @@ class TestOMWrapper(unittest.TestCase):
     def setUp(self):
         self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
 
-
         model = om.Group()
         model.add_subsystem(
             "ovlsolver",
@@ -59,7 +58,6 @@ class TestOMWrapper(unittest.TestCase):
             om_val = prob.get_val(f"ovlsolver.{func}")
             assert om_val == run_data[func]
 
-
     def test_surface_param_setting(self):
         prob = self.prob
         prob.setup(mode="rev")
@@ -76,17 +74,14 @@ class TestOMWrapper(unittest.TestCase):
                 self.ovl_solver.avl.update_surfaces()
                 self.ovl_solver.execute_run()
 
-
                 # set om surface data
                 prob.set_val(f"ovlsolver.{surf_key}:{geom_key}", arr)
                 prob.run_model()
-
 
                 run_data = self.ovl_solver.get_total_forces()
                 for func in run_data:
                     om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == run_data[func]
-
 
                 stab_derivs = self.ovl_solver.get_stab_derivs()
                 for func in stab_derivs:
@@ -107,17 +102,14 @@ class TestOMWrapper(unittest.TestCase):
             self.ovl_solver.set_parameter(param, param_val)
             self.ovl_solver.execute_run()
 
-
             # set om surface data
             prob.set_val(f"ovlsolver.{param}", param_val)
             prob.run_model()
-
 
             run_data = self.ovl_solver.get_total_forces()
             for func in run_data:
                 om_val = prob.get_val(f"ovlsolver.{func}")
                 assert om_val == run_data[func]
-
 
             stab_derivs = self.ovl_solver.get_stab_derivs()
             for func in stab_derivs:
@@ -207,7 +199,6 @@ class TestOMWrapper(unittest.TestCase):
         prob.run_model()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 
-
         deriv_err = prob.check_totals()
         rtol = 5e-4
         for key, data in deriv_err.items():
@@ -221,4 +212,3 @@ class TestOMWrapper(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
