@@ -355,7 +355,7 @@ class TestTotals(unittest.TestCase):
                 # print(f"{func_key:5} wrt {ref_key:5} | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
                 tol = 1e-13
-                if np.abs(ad_dot) < tol or np.abs(fd_dot) < tol:
+                if np.abs(np.linalg.norm(ad_dot)) < tol or np.abs(fd_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
                         ad_dot,
@@ -381,7 +381,7 @@ class TestTotals(unittest.TestCase):
                 #     f"{func_key} wrt {var_key:5}  wrt {ref_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                 # )
                 tol = 1e-8
-                if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
+                if np.abs(np.linalg.norm(ad_dot)) < tol or np.abs(func_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
                         ad_dot,
