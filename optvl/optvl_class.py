@@ -109,6 +109,7 @@ class OVLSolver(object):
         "Sref": ["CASE_R", "SREF"],
         "Cref": ["CASE_R", "CREF"],
         "Bref": ["CASE_R", "BREF"],
+        "XYZref": ["CASE_R", "XYZREF"],
     }
 
     case_derivs_to_fort_var = {
@@ -3201,7 +3202,7 @@ class OVLSolver(object):
         mode: str = "AD",
         step: float = 1e-7,
     ) -> Tuple[Dict[str, float], np.ndarray, Dict[str, float], Dict[str, float], np.ndarray, np.ndarray]:
-        """Get partial derivatives in forward mode. This routine is usefulinternally and when creating wrappers for things like OpenMDAO
+        """Get partial derivatives in forward mode. This routine is useful internally and when creating wrappers for things like OpenMDAO
 
         Args:
             con_seeds: Case constraint AD seeds
