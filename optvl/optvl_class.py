@@ -640,7 +640,7 @@ class OVLSolver(object):
         for key, avl_vars in self.header_var_to_fort_var.items():
 
             if key not in input_dict:
-                if key in optional_header_defaults: 
+                if key in optional_header_defaults:
                     val = optional_header_defaults[key]
                 else:
                     raise ValueError(f"Key {key} not found in input dictionary but is required")
@@ -721,16 +721,16 @@ class OVLSolver(object):
                 # fmt: off
                 
                 optional_surface_defaults = {
-                    "nspan":                  0,                      
-                    "sspace":                 0.0,                    
-                    "use surface spacing":   False,                   
+                    "nspan":                  0,
+                    "sspace":                 0.0,
+                    "use surface spacing":   False,
                     "component":              idx_surf+1, # +1 for 1-based indexing in fortran
-                    "scale":                  np.array([1.,1.,1.]),   
-                    "translate":              np.array([0.,0.,0.]),   
-                    "angle":                  0.0,                    
-                    "wake":                   True,                   
-                    "albe":                   True,                   
-                    "load":                   True,                   
+                    "scale":                  np.array([1.,1.,1.]),
+                    "translate":              np.array([0.,0.,0.]),
+                    "angle":                  0.0,
+                    "wake":                   True,
+                    "albe":                   True,
+                    "load":                   True,
                     "clcd":                   np.zeros(6, dtype=np.float64),
                     "nspans":                 np.zeros(num_secs, dtype=int),
                     "sspaces":                np.zeros(num_secs, dtype=int),
@@ -762,14 +762,14 @@ class OVLSolver(object):
                 ):
                     
                     if key not in surf_dict:
-                        if key in optional_surface_defaults: 
+                        if key in optional_surface_defaults:
                             val = optional_surface_defaults[key]
                         else:
                             raise ValueError(f"Key {key} not found in surface dictionary, {surf_name}, but is required")
-                    else: 
+                    else:
                         val = surf_dict[key]
                     
-                    check_type(key, avl_vars, val)    
+                    check_type(key, avl_vars, val)
                     
                     self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
 
@@ -800,7 +800,7 @@ class OVLSolver(object):
                 # Load airfoil data sections
                 # Load the Airfoil Section into AVL
                 for j in range(num_secs):
-                    xfminmax = xfminmax_arr[j]           
+                    xfminmax = xfminmax_arr[j]
                     
                     # Manually Specify Coordiantes (no camberline verification, only use if you know what you're doing)
                     if "xasec" in surf_dict.keys():
@@ -819,7 +819,7 @@ class OVLSolver(object):
                             
                             val = surf_dict[key][j]
                             
-                            check_type(key, avl_vars, val)    
+                            check_type(key, avl_vars, val)
                             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
                     
                     # 4 digit NACA airfoil specification
@@ -866,7 +866,7 @@ class OVLSolver(object):
                 # Load control surfaces
                 if "icontd" in surf_dict.keys():
                     for j in range(num_secs):
-                        # check to make sure this section has control vars 
+                        # check to make sure this section has control vars
                         if surf_dict["num_controls"][j] == 0:
                             continue
                         
@@ -876,7 +876,7 @@ class OVLSolver(object):
         
                             if key not in surf_dict:
                                     raise ValueError(f"Key {key} not found in surf dictionary, `{surf_name}` but is required")
-                            else: 
+                            else:
                                 val = surf_dict[key][j]
                                 
                             check_type(key, avl_vars, val)
@@ -888,7 +888,7 @@ class OVLSolver(object):
                 # Load design variables
                 if "idestd" in surf_dict.keys():
                     for j in range(num_secs):
-                        # check to make sure this section has control vars 
+                        # check to make sure this section has control vars
                         if surf_dict["num_design_vars"][j] == 0:
                             continue
                         
@@ -898,7 +898,7 @@ class OVLSolver(object):
         
                             if key not in surf_dict:
                                     raise ValueError(f"Key {key} not found in surf dictionary, `{surf_name}` but is required")
-                            else: 
+                            else:
                                 val = surf_dict[key][j]
                                 
                             check_type(key, avl_vars, val)
@@ -958,7 +958,7 @@ class OVLSolver(object):
                 for key, avl_vars in self.body_param_to_fort_var[body_name].items():
                     
                     if key not in body_dict:
-                        if key in optional_body_defaults: 
+                        if key in optional_body_defaults:
                             val = optional_body_defaults[key]
                         else:
                             raise ValueError(f"Key {key} not found in body dictionary, {body_name}, but is required")
@@ -1449,7 +1449,7 @@ class OVLSolver(object):
         if slicer is not None:
             val = val[slicer]
         
-        # if the array is of size 1 then just return the float 
+        # if the array is of size 1 then just return the float
         if val.size == 1 and val.shape == ():
             val = val.flatten()[0]
         
@@ -1949,7 +1949,7 @@ class OVLSolver(object):
 
         # check that param is in self.surf_geom_to_fort_var
         if param in self.surf_section_geom_to_fort_var[surf_name].keys():
-            # TODO-JLA: handle section parameters differently  
+            # TODO-JLA: handle section parameters differently
             # return the data for each section
             fort_vars = self.surf_section_geom_to_fort_var[surf_name][param]
             param_list = []
@@ -2005,7 +2005,7 @@ class OVLSolver(object):
         
         # check that param is in self.surf_geom_to_fort_var
         if param in self.surf_section_geom_to_fort_var[surf_name].keys():
-            # TODO-JLA: handle section parameters differently  
+            # TODO-JLA: handle section parameters differently
             # return the data for each section
             # Set surface cross section geometry variables (not recommended)
             warnings.warn(
@@ -2741,7 +2741,7 @@ class OVLSolver(object):
         """
 
         arr = np.zeros((), dtype=f"|S{num_max_char}")
-        # pad the array with spaces 
+        # pad the array with spaces
         arr = py_string + " "*(num_max_char-(len(py_string)))
         
         # for j in range(len(py_string)):
@@ -2756,7 +2756,7 @@ class OVLSolver(object):
         """
 
         arr = np.zeros(1, dtype=f"|S{num_max_char}")
-        # pad the array with spaces 
+        # pad the array with spaces
         arr[:] = " "
         
         for j in range(len(py_string)):
