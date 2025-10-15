@@ -310,9 +310,9 @@ fuselage = {
     # 'yduplicate': np.float64(0), # body is duplicated over the ysymm plane
     # Geometry
     "scale": np.array(
-        [[1.0, 1.0, 1.0]]
+        [1.0, 1.0, 1.0]
     ),  # scaling factors applied to all x,y,z coordinates (chords areal so scaled by Xscale)
-    "translate": np.array([[0.0, 0.0, 0.0]]),  # offset added on to all X,Y,Z values in this surface
+    "translate": np.array([0.0, 0.0, 0.0]),  # offset added on to all X,Y,Z values in this surface
     # Discretization
     "nvb": np.int32(10),  # number of source-line nodes
     "bspace": np.float64(0.0),  # lengthwise node spacing parameter
@@ -409,7 +409,7 @@ input_dict = {
     "mach": np.float64(0.0),
     "iysym": np.int32(0),
     "izsym": np.int32(0),
-    "zsymm": np.float64(0.0),
+    "zsym": np.float64(0.0),
     "Sref": np.float64(10.0),
     "Cref": np.float64(1.0),
     "Bref": np.float64(10.0),

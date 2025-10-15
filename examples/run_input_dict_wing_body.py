@@ -49,15 +49,16 @@ surf = {
         # Airfoil
         #'airfoils' : np.array([[0., 1.],[0., 0.]]), # Specify airfoil coordinates for each section
         # Raw Geometry
-        # 'xasec': np.array([[0., 1.], [0., 1.]]), # the x coordinate aifoil section
-        # 'casec': np.array([[0., 0.], [0., 0.]]), # camber line at xasec
-        # 'tasec': np.array([[0., 0.], [0., 0.]]), # thickness at xasec
-        # 'xuasec': np.array([[0., 0.], [0., 0.]]), # airfoil upper surface x-coords
-        # 'xlasec': np.array([[0., 0.], [0., 0.]]),  # airfoil lower surface x-coords
-        # 'zuasec': np.array([[0., 0.], [0., 0.]]),  # airfoil upper surface z-coords
-        # 'zlasec': np.array([[0., 0.], [0., 0.]]),  # airfoil lower surface z-coords
+        'xasec': np.array([[0., 1.], [0., 1.]]), # the x coordinate aifoil section
+        'casec': np.array([[0., 0.], [0., 0.]]), # camber line at xasec
+        'sasec': np.array([[0., 0.], [0., 0.]]), # camber line slope at xasec
+        'tasec': np.array([[0., 0.], [0., 0.]]), # thickness at xasec
+        'xuasec': np.array([[0., 0.], [0., 0.]]), # airfoil upper surface x-coords
+        'xlasec': np.array([[0., 0.], [0., 0.]]),  # airfoil lower surface x-coords
+        'zuasec': np.array([[0., 0.], [0., 0.]]),  # airfoil upper surface z-coords
+        'zlasec': np.array([[0., 0.], [0., 0.]]),  # airfoil lower surface z-coords
         # Airfoil Files
-        'afiles': np.array(['airfoils/ag40d.dat','airfoils/ag40d.dat']), # airfoil file names
+        # 'afiles': np.array(['airfoils/ag40d.dat','airfoils/ag40d.dat']), # airfoil file names
         # Paneling
         "nchordwise": np.int32(5),  # number of chordwise horseshoe vortice s placed on the surface
         "cspace": np.float64(0.0),  # chordwise vortex spacing parameter
@@ -87,9 +88,9 @@ body = {
         # 'yduplicate': np.float64(0), # body is duplicated over the ysymm plane
         # Geometry
         "scale": np.array(
-            [[1.0, 1.0, 1.0]]
+            [1.0, 1.0, 1.0]
         ),  # scaling factors applied to all x,y,z coordinates (chords areal so scaled by Xscale)
-        "translate": np.array([[0.0, 0.0, 0.0]]),  # offset added on to all X,Y,Z values in this surface
+        "translate": np.array([0.0, 0.0, 0.0]),  # offset added on to all X,Y,Z values in this surface
         # Geometry: OML
         # CHOOSE ONLY ONE APPROACH
         # OML Files
@@ -107,7 +108,7 @@ inputDict = {
     "mach": np.float64(0.0), # Reference Mach number
     "iysym": np.int32(0), # y-symmetry settings
     "izsym": np.int32(0), # z-symmetry settings
-    "zsymm": np.float64(0.0), # z-symmetry plane
+    "zsym": np.float64(0.0), # z-symmetry plane
     "Sref": np.float64(10.0), # Reference planform area
     "Cref": np.float64(1.0), # Reference chord area
     "Bref": np.float64(10.0), # Reference span length
@@ -143,8 +144,8 @@ print(
     f'CL:{force_data["CL"]:10.6f}   CD:{force_data["CD"]:10.6f}   CM:{force_data["CM"]:10.6f}'
 )
 
-# lets look at the cp countours
-ovl.plot_cp()
+# # lets look at the cp countours
+# ovl.plot_cp()
 
 # Get the body parameters
 body_data = ovl.get_body_params()
@@ -171,14 +172,14 @@ ovl.set_surface_params(surf_data)
 ovl.execute_run()
 
 # lets look at the cp countours again
-ovl.plot_cp()
+# ovl.plot_cp()
 
 
 # Get the whole input dict that would give us what we have in there
 input_data = ovl.get_input_dict()
 
 # Let's look at it
-print(input_data)
+# print(input_data)
 
 # Lastly, let's write the classical AVL input file
 ovl.write_geom_file("aircraft_wing_body_afile.avl")
