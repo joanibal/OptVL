@@ -88,7 +88,6 @@ class TestOMWrapper(unittest.TestCase):
                     om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == stab_derivs[func]
 
-
     def test_param_setting(self):
         prob = self.prob
         prob.setup(mode="rev")
@@ -116,7 +115,6 @@ class TestOMWrapper(unittest.TestCase):
                 om_val = prob.get_val(f"ovlsolver.{func}")
                 print(func, om_val, stab_derivs[func])
                 assert om_val == stab_derivs[func]
-
 
     def test_CL_solve(self):
         prob = self.prob
