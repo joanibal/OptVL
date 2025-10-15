@@ -56,8 +56,6 @@ class TestOMWrapper(unittest.TestCase):
         prob.run_model()
 
         for func in run_data:
-
-        for func in run_data:
             om_val = prob.get_val(f"ovlsolver.{func}")
             assert om_val == run_data[func]
 
@@ -86,13 +84,11 @@ class TestOMWrapper(unittest.TestCase):
 
                 run_data = self.ovl_solver.get_total_forces()
                 for func in run_data:
-                for func in run_data:
                     om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == run_data[func]
 
 
                 stab_derivs = self.ovl_solver.get_stab_derivs()
-                for func in stab_derivs:
                 for func in stab_derivs:
                     om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == stab_derivs[func]
@@ -119,13 +115,11 @@ class TestOMWrapper(unittest.TestCase):
 
             run_data = self.ovl_solver.get_total_forces()
             for func in run_data:
-            for func in run_data:
                 om_val = prob.get_val(f"ovlsolver.{func}")
                 assert om_val == run_data[func]
 
 
             stab_derivs = self.ovl_solver.get_stab_derivs()
-            for func in stab_derivs:
             for func in stab_derivs:
                 om_val = prob.get_val(f"ovlsolver.{func}")
                 print(func, om_val, stab_derivs[func])
