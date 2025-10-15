@@ -180,9 +180,10 @@ class TestResidualUPartials(unittest.TestCase):
 
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[5]
+            ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[5]
 
-            res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0}, mode="FD", step=1e-5)[
+            res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed}, mode="FD", step=1e-5)[
                 5
             ]
 
@@ -381,9 +382,10 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
 
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[3]
+            ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
+            sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[3]
 
-            sd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0}, mode="FD", step=1e-6)[3]
+            sd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed}, mode="FD", step=1e-6)[3]
 
             for deriv_func in sd_d:
                 sens_label = f"{deriv_func} wrt {ref_key}"
@@ -416,7 +418,8 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
         self.ovl_solver.clear_ad_seeds_fast()
 
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            stab_deriv_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[3]
+            ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
+            stab_deriv_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[3]
 
             stab_deriv_sum = 0.0
             for deriv_func in stab_deriv_seeds_fwd:

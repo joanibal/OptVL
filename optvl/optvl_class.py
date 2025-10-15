@@ -2902,7 +2902,7 @@ class OVLSolver(object):
             if mode == "AD":
                 blk += self.ad_suffix
                 var += self.ad_suffix
-                val = ref_seeds[ref_key] * scale * np.ones(3) if ref_key == "XYZref" else ref_seeds[ref_key] * scale
+                val = ref_seeds[ref_key] * scale
             elif mode == "FD":
                 val = self.get_avl_fort_arr(blk, var)
                 val += ref_seeds[ref_key] * scale

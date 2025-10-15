@@ -284,9 +284,10 @@ class TestFunctionPartials(unittest.TestCase):
 
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            func_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[0]
+            ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
 
-            func_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7)[0]
+            func_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[0]
+            func_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed}, mode="FD", step=1e-7)[0]
 
             for func_key in func_seeds:
                 # print(f"{func_key} wrt {ref_key}", func_seeds[func_key], func_seeds_FD[func_key])
@@ -309,8 +310,9 @@ class TestFunctionPartials(unittest.TestCase):
 
     def test_rev_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
+            ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
             self.ovl_solver.clear_ad_seeds_fast()
-            func_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[0]
+            func_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[0]
             self.ovl_solver.clear_ad_seeds_fast()
 
             for func_key in self.ovl_solver.case_var_to_fort_var:
@@ -489,7 +491,8 @@ class TestResidualPartials(unittest.TestCase):
 
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[1]
+            ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
+            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[1]
             res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7
             )[1]
@@ -505,7 +508,8 @@ class TestResidualPartials(unittest.TestCase):
         self.ovl_solver.clear_ad_seeds_fast()
 
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
-            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: 1.0})[1]
+            ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
+            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[1]
             # do dot product
             res_sum = np.sum(res_seeds_rev * res_seeds_fwd)
             ref_sum = np.sum(ref_seeds_rev[ref_key])
