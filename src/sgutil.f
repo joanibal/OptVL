@@ -296,6 +296,24 @@ C
 
 
       SUBROUTINE CSPACER(NVC,CSPACE,CLAF, XPT,XVR,XSR,XCP)
+      ! This is a extremely important funciton that is not
+      ! documented for some reason.
+      ! Inputs: 
+      !      NVC: NUMBER OF DESIRED POINTS IN ARRAY
+      !      CSPACE: SPACING PARAMETER (-3<=PSPACE<=3).
+      !                   DEFINES POINT DISTRIBUTION
+      !                   TO BE USED AS FOLLOWS:
+      !           PSPACE = 0  : EQUAL SPACING
+      !           PSPACE = 1  : COSINE SPACING.
+      !           PSPACE = 2  : SINE SPACING
+      !                         (CONCENTRATING POINTS NEAR 0).
+      !           PSPACE = 3  : EQUAL SPACING.
+      !      CLAF: CL alfa (needed to determine control point location)
+      ! Outputs:
+      !           XPT: Array of panel x-locations
+      !           XVR: Array of vortex x-locations
+      !           XSR: Array of source x-locations
+      !           XCP: Array of control point x-locations
       REAL XPT(*), XVR(*), XSR(*), XCP(*)
 C
       PI = 4.0*ATAN(1.0)
@@ -318,17 +336,21 @@ C---- set blending weights
       ENDIF
 C
 C---- cosine chordwise spacing
+      ! Each of these provides a quarter panel chord offset for cosine, 
+      ! sine, and uniform spacing respectively.
       DTH1 =     PI/FLOAT(4*NVC + 2)
       DTH2 = 0.5*PI/FLOAT(4*NVC + 1)
       DXC0 =    1.0/FLOAT(4*NVC)
 C
       DO IVC = 1, NVC
 C------ uniform
-        XC0 = INT(4*IVC - 4) * DXC0
+        XC0 = INT(4*IVC - 4) * DXC0 ! eqv (IVC-1)/NVC
         XPT0 = XC0        
-        XVR0 = XC0 +     DXC0
-        XSR0 = XC0 + 2.0*DXC0
-        XCP0 = XC0 +     DXC0 + 2.0*DXC0*CLAF
+        XVR0 = XC0 +     DXC0 ! quarter-chord
+        XSR0 = XC0 + 2.0*DXC0 ! half-chord
+        XCP0 = XC0 +     DXC0 + 2.0*DXC0*CLAF ! quarter-chord + half-chord*claf
+        ! Note: claf is a scaling factor so typically claf = 1 and the control point 
+        ! is at the three-quarter chord position of the panel
 C
 C------ cosine
         TH1 = INT(4*IVC - 3) * DTH1

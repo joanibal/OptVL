@@ -1258,7 +1258,7 @@ class OVLSolver(object):
         """Run the analysis (equivalent to the AVL command `x` in the OPER menu)
 
         Args:
-            tol: the tolerace of the Newton solver used for timing the aircraft
+            tol: the tolerace of the Newton solver used for triming the aircraft
         """
         self.set_avl_fort_arr("CASE_R", "EXEC_TOL", tol)
         self.avl.oper()

@@ -130,9 +130,7 @@ def add_ovl_mesh_out_as_output(self, ovl):
         idx_surf = ovl.surface_names.index(surf)
         out_name = f"{surf}:mesh"
         self.add_output(out_name, val=meshes[idx_surf], tags="geom_mesh")
-    
-
-                
+          
 def add_ovl_conditions_as_inputs(sys, ovl):
     # TODO: add all the condition constraints
 
