@@ -106,6 +106,9 @@ def pre_check_input_dict(input_dict: dict):
         "nspans",  # number of spanwise elements vector, overriden by nspans
         "sspaces",  # spanwise spacing vector (for each section), overriden by sspace
         "use surface spacing",  # surface spacing set under the surface heeading (known as LSURFSPACING in AVL)
+        # Geometery: Mesh
+        "mesh",
+        "iptloc",
         # Control Surfaces
         # "dname" # IMPLEMENT THIS
         "icontd",  # control variable index
@@ -193,7 +196,7 @@ def pre_check_input_dict(input_dict: dict):
                     stacklevel=2,
                 )
                 input_dict[key] = np.sign(input_dict[key])
-                
+
         # Check for keys not implemented
         if key not in keys_implemented_general:
             warnings.warn(
@@ -201,15 +204,58 @@ def pre_check_input_dict(input_dict: dict):
                 category=RuntimeWarning,
                 stacklevel=2,
             )
+
     total_global_control = 0
     total_global_design_var = 0
     if "surfaces" in input_dict.keys():
         if len(input_dict["surfaces"]) > 0:
             for surface in input_dict["surfaces"].keys():
 
+                # Check if we are directly providing a mesh
+                if "mesh" in input_dict["surfaces"][surface].keys():
+                    # Check if sections are specified
+                    if "num_sections" in input_dict["surfaces"][surface].keys():
+                        # Check if the section indices are provided
+                        if "iptloc" in input_dict["surfaces"][surface].keys():
+                            # If they are make sure we provide one for every section
+                            if len(input_dict["surfaces"][surface]["iptloc"]) != input_dict["num_sections"]:
+                                raise ValueError("iptloc vector length does not match num_sections")
+                        # Check if the user provided nspans instead    
+                        elif "nspans" in input_dict["surfaces"][surface].keys():
+                            # setting iptloc to 0 is how we tell the Fortran layer to use nspans
+                            input_dict["surfaces"][surface]["iptloc"] = np.zeros(input_dict["num_sections"])
+                        # The OptVL class will have to call the fudging routine to try and auto cut the mesh into sections
+                        else:
+                            warnings.warn(
+                            "Mesh provided for surface dict `{}` for {} sections but locations not defined.\n OptVL will automatically define section locations as close to equally as possible.".format(
+                                surface, input_dict["surfaces"][surface]["num_sections"]
+                            ),
+                            category=RuntimeWarning,
+                            stacklevel=2,
+                        )
+                    else:
+                        # Assume we have two sections at the ends of mesh and inform the user
+                        warnings.warn(
+                            "Mesh provided for surface dict `{}` but no sections provided.\n Assuming 2 sections at tips.".format(
+                                surface
+                            ),
+                            category=RuntimeWarning,
+                            stacklevel=2,
+                        )
+                        input_dict["surfaces"][surface]["iptloc"] = np.array([0,input_dict["surfaces"][surface]["mesh"].shape[1]-1],dtype=np.int32)
+                        input_dict["surfaces"][surface]["num_sections"] = 2
+
                 # Verify at least two section
                 if input_dict["surfaces"][surface]["num_sections"] < 2:
                     raise RuntimeError("Must have at least two sections per surface!")
+                
+                # if no controls are specified then fill it in with 0s
+                if "num_controls" not in input_dict["surfaces"][surface].keys():
+                    input_dict["surfaces"][surface]["num_controls"] = np.zeros(input_dict["surfaces"][surface]["num_sections"],dtype=np.int32)
+
+                 # if no dvs are specified then fill it in with 0s
+                if "num_design_vars" not in input_dict["surfaces"][surface].keys():
+                    input_dict["surfaces"][surface]["num_design_vars"] = np.zeros(input_dict["surfaces"][surface]["num_sections"],dtype=np.int32)
                 
                 #Checks to see that at most only one of the options in af_load_ops or one of the options in manual_af_override is selected
                 if len(airfoil_spec_keys & input_dict["surfaces"][surface].keys()) > 1:

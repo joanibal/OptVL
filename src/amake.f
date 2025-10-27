@@ -640,7 +640,7 @@ C
       RETURN
       END ! MAKESURF
 
-      subroutine adjust_mesh_spacing(isurf,nx, ny, mesh, iptloc)
+      subroutine adjust_mesh_spacing(isurf, nx, ny, mesh, iptloc)
       ! This routine is a modified standalone version of the "fudging"
       ! operation in makesurf. The main purpose is to deal with cases
       ! where the user provide a mesh and does not specify the indicies

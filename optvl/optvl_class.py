@@ -728,15 +728,30 @@ class OVLSolver(object):
                     "scale":                  np.array([1.,1.,1.]),   
                     "translate":              np.array([0.,0.,0.]),   
                     "angle":                  0.0,                    
+                    "aincs":                  np.zeros(num_secs, dtype=np.float64),
                     "wake":                   True,                   
                     "albe":                   True,                   
                     "load":                   True,                   
                     "clcd":                   np.zeros(6, dtype=np.float64),
-                    "nspans":                 np.zeros(num_secs, dtype=int),
-                    "sspaces":                np.zeros(num_secs, dtype=int),
+                    "nspans":                 np.zeros(num_secs, dtype=np.int32),
+                    "sspaces":                np.zeros(num_secs, dtype=np.float64),
                     "clcdsec":                np.zeros((num_secs,6)),
                     "claf":                   np.ones(num_secs),
                 }
+
+
+                ignore_if_mesh = {
+                    "xles",
+                    "yles",
+                    "zles",
+                    "chords",
+                    "nchordwise",
+                    "cspace",
+                    "sspaces"
+                    "sspace",
+                    "nspan",
+                }
+
                 # fmt: on
                 
                 # set some flags based on the options used for this surface
@@ -762,11 +777,13 @@ class OVLSolver(object):
                 ):
                     
                     if key not in surf_dict:
-                        if key in optional_surface_defaults: 
+                        if (key == "yduplicate") or (("mesh" in surf_dict) and (key in ignore_if_mesh)):
+                            continue
+                        elif key in optional_surface_defaults:
                             val = optional_surface_defaults[key]
                         else:
                             raise ValueError(f"Key {key} not found in surface dictionary, {surf_name}, but is required")
-                    else: 
+                    else:
                         val = surf_dict[key]
                     
                     check_type(key, avl_vars, val)    
@@ -858,9 +875,6 @@ class OVLSolver(object):
                         self.set_avl_fort_arr("SURF_GEOM_R", "ZLASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "ZUASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "CASEC",  np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-
-
-                        
                         
                 # --- setup control variables for each section ---
                 # Load control surfaces
@@ -909,7 +923,14 @@ class OVLSolver(object):
                 # Make the surface
                 if self.debug:
                     print(f"Building surface: {surf_name}")
-                self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
+                # Load the mesh and make if one is specified otherwise just make
+                if "mesh" in surf_dict.keys():
+                    # Check if we have to define the sections for the user
+                    if "iptloc" not in surf_dict.keys():
+                        surf_dict["iptloc"] = self.avl.adjust_mesh_spacing(idx_surf+1,surf_dict["mesh"].transpose((2, 0, 1)),np.zeros(surf_dict["num_sections"],dtype=np.int32))
+                    self.set_mesh(idx_surf, surf_dict["mesh"],surf_dict["iptloc"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
+                else:
+                    self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
                 
                 if "yduplicate" in surf_dict.keys():
                     self.avl.sdupl(idx_surf + 1, surf_dict["yduplicate"], "YDUP")
@@ -1022,6 +1043,37 @@ class OVLSolver(object):
 
         # Tell AVL that geometry exists now and is ready for analysis
         self.avl.CASE_L.LGEO = True
+
+    def set_mesh(self, idx_surf: int, mesh: np.ndarray, iptloc: np.ndarray, update_nvs: bool=False, update_nvc: bool=False):
+        """Sets a mesh directly into OptVL. Requires an iptloc vector to define the indices where the sections are defined.
+        This is required for many of AVL's features like control surfaces to work properly. OptVL's input routine has multiple
+        ways of automatically computing this vector. Alternatively, calling the adjust_mesh_spacing subroutine in the Fortran layer
+        can automatically compute the iptloc vector for a given mesh and number of sections. NOTE: the iptloc input is not differentiated.
+        Additionally, the length of iptloc cannot change (i.e the number sections cannot change for a surface that's already loaded).
+
+        Args:
+            idx_surf (int): the surface to apply the mesh to
+            mesh (np.ndarray): XYZ mesh array (nx,ny,3)
+            iptloc (np.ndarray): Vector containing the spanwise indicies where each section is defined (num_sections,)
+            update_nvs (bool): Should OptVL update the number of spanwise elements for the given mesh
+            update_nvc (bool): Should OptVL update the number of chordwise elements for the given mesh
+        """
+        # idx_surf += 1 
+        iptloc += 1 #+1 for Fortran indexing
+        mesh = mesh.transpose((2,0,1)) #reshape for Fortran memory access
+
+        nx = mesh.shape[1]
+        ny = mesh.shape[2]
+
+        if update_nvs:
+            self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1
+
+        if update_nvc:
+            self.avl.SURF_GEOM_I.NVC[idx_surf] = nx-1
+
+        self.avl.makesurf_mesh(idx_surf+1, mesh, iptloc) #+1 for Fortran indexing
+
+
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
         """Sets the airfoil oml points for the specified surface and section. Computes camber lines, thickness, and oml shape from
