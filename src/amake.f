@@ -950,17 +950,17 @@ c--------------------------------------------------------------
       CHCOSL_G(N) = 0.
       CHCOSR_G(N) = 0.
 
-      DO ISDES = 1, NSDES(idx_surf,isurf)
-      IF(IDESTD(ISDES,idx_surf,isurf).EQ.N) THEN
-            CHSINL_G(N) =  CHCOSL * GAING(ISDES,idx_surf,isurf)*DTR
-            CHCOSL_G(N) = -CHSINL * GAING(ISDES,idx_surf,isurf)*DTR
+      DO ISDES = 1, NSDES(idx_sec,isurf)
+      IF(IDESTD(ISDES,idx_sec,isurf).EQ.N) THEN
+            CHSINL_G(N) =  CHCOSL * GAING(ISDES,idx_sec,isurf)*DTR
+            CHCOSL_G(N) = -CHSINL * GAING(ISDES,idx_sec,isurf)*DTR
       ENDIF
       ENDDO
 
-      DO ISDES = 1, NSDES(idx_surf+1,isurf)
-      IF(IDESTD(ISDES,idx_surf+1,isurf).EQ.N) THEN
-            CHSINR_G(N) =  CHCOSR * GAING(ISDES,idx_surf+1,isurf)*DTR
-            CHCOSR_G(N) = -CHSINR * GAING(ISDES,idx_surf+1,isurf)*DTR
+      DO ISDES = 1, NSDES(idx_sec+1,isurf)
+      IF(IDESTD(ISDES,idx_sec+1,isurf).EQ.N) THEN
+            CHSINR_G(N) =  CHCOSR * GAING(ISDES,idx_sec+1,isurf)*DTR
+            CHCOSR_G(N) = -CHSINR * GAING(ISDES,idx_sec+1,isurf)*DTR
       ENDIF
       ENDDO
       ENDDO
@@ -1074,11 +1074,11 @@ c--------------------------------------------------------------
 
       ELSE
       ! control variable # N is active here
-            GAINDA(N) = GAIND(ICL,idx_surf  ,isurf)*(1.0-FC)
-     &                 + GAIND(ICR,idx_surf+1,isurf)*     FC
+            GAINDA(N) = GAIND(ICL,idx_sec  ,isurf)*(1.0-FC)
+     &                 + GAIND(ICR,idx_sec+1,isurf)*     FC
 
-            XHD = CHORDL*XHINGED(ICL,idx_surf  ,isurf)*(1.0-FC)
-     &           + CHORDR*XHINGED(ICR,idx_surf+1,isurf)*     FC
+            XHD = CHORDL*XHINGED(ICL,idx_sec  ,isurf)*(1.0-FC)
+     &           + CHORDR*XHINGED(ICR,idx_sec+1,isurf)*     FC
             IF(XHD.GE.0.0) THEN
       ! TE control surface, with hinge at XHD
             XLED(N) = XHD
@@ -1089,20 +1089,20 @@ c--------------------------------------------------------------
             XTED(N) = -XHD
             ENDIF
 
-            VHX = VHINGED(1,ICL,idx_surf,isurf)*XYZSCAL(1,isurf)
-            VHY = VHINGED(2,ICL,idx_surf,isurf)*XYZSCAL(2,isurf)
-            VHZ = VHINGED(3,ICL,idx_surf,isurf)*XYZSCAL(3,isurf)
+            VHX = VHINGED(1,ICL,idx_sec,isurf)*XYZSCAL(1,isurf)
+            VHY = VHINGED(2,ICL,idx_sec,isurf)*XYZSCAL(2,isurf)
+            VHZ = VHINGED(3,ICL,idx_sec,isurf)*XYZSCAL(3,isurf)
             VSQ = VHX**2 + VHY**2 + VHZ**2
             IF(VSQ.EQ.0.0) THEN
       ! default: set hinge vector along hingeline
-            VHX = XYZLES(1,idx_surf+1,isurf)
-     &              + ABS(CHORDR*XHINGED(ICR,idx_surf+1,isurf))
-     &              - XYZLES(1,idx_surf  ,isurf)
-     &              - ABS(CHORDL*XHINGED(ICL,idx_surf,isurf))
-            VHY = XYZLES(2,idx_surf+1,isurf)
-     &            - XYZLES(2,idx_surf  ,isurf)
-            VHZ = XYZLES(3,idx_surf+1,isurf)
-     &            - XYZLES(3,idx_surf  ,isurf)
+            VHX = mesh(1,1,iptr)
+     &              + ABS(CHORDR*XHINGED(ICR,idx_sec+1,isurf))
+     &              - mesh(1,1,iptl)
+     &              - ABS(CHORDL*XHINGED(ICL,idx_sec,isurf))
+            VHY = mesh(2,1,iptr)
+     &            - mesh(2,1,iptl)
+            VHZ = mesh(3,1,iptr)
+     &            - mesh(3,1,iptl)
             VHX = VHX*XYZSCAL(1,isurf)
             VHY = VHY*XYZSCAL(2,isurf)
             VHZ = VHZ*XYZSCAL(3,isurf)
@@ -1114,7 +1114,7 @@ c--------------------------------------------------------------
             VHINGE(2,idx_strip,N) = VHY/VMOD
             VHINGE(3,idx_strip,N) = VHZ/VMOD
 
-            VREFL(idx_strip,N) = REFLD(ICL,idx_surf, isurf)
+            VREFL(idx_strip,N) = REFLD(ICL,idx_sec, isurf)
 
             IF(XHD .GE. 0.0) THEN
             PHINGE(1,idx_strip,N) = RLE(1,idx_strip) + XHD

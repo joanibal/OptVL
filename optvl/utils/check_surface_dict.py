@@ -218,7 +218,7 @@ def pre_check_input_dict(input_dict: dict):
                         # Check if the section indices are provided
                         if "iptloc" in input_dict["surfaces"][surface].keys():
                             # If they are make sure we provide one for every section
-                            if len(input_dict["surfaces"][surface]["iptloc"]) != input_dict["num_sections"]:
+                            if len(input_dict["surfaces"][surface]["iptloc"]) != input_dict["surfaces"][surface]["num_sections"]:
                                 raise ValueError("iptloc vector length does not match num_sections")
                         # Check if the user provided nspans instead    
                         elif "nspans" in input_dict["surfaces"][surface].keys():

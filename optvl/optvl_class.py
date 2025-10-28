@@ -665,11 +665,11 @@ class OVLSolver(object):
         
         # set the gloabl design variable options
         ndesign = len(input_dict.get("gname", []))
-        self.set_avl_fort_arr("CASE_I","NDESIGN", ncontrol)
+        self.set_avl_fort_arr("CASE_I","NDESIGN", ndesign)
         if ndesign > self.NGMAX:
             raise RuntimeError(f"Number of specified design variables exceeds {self.NGMAX}. Raise NGMAX!")
 
-        for k in range(ncontrol):
+        for k in range(ndesign):
             self.avl.CASE_C.GNAME[k] = input_dict["gname"][k]
         
 
@@ -879,19 +879,23 @@ class OVLSolver(object):
                 # --- setup control variables for each section ---
                 # Load control surfaces
                 if "icontd" in surf_dict.keys():
-                    for j in range(num_secs):
+                    for idx_sec in range(num_secs):
                         # check to make sure this section has control vars 
-                        if surf_dict["num_controls"][j] == 0:
+                        if surf_dict["num_controls"][idx_sec] == 0:
                             continue
-                        
+
                         for key, avl_vars in self.con_surf_to_fort_var[surf_name].items():
                             avl_vars_secs = self.con_surf_to_fort_var[surf_name][key]
-                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
+                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][idx_sec])
         
                             if key not in surf_dict:
                                     raise ValueError(f"Key {key} not found in surf dictionary, `{surf_name}` but is required")
-                            else: 
-                                val = surf_dict[key][j]
+                            else:
+                                # This has to be incremented by 1 for Fortran indexing
+                                if key == "icontd":
+                                    val = surf_dict[key][idx_sec] + 1
+                                else:
+                                    val = surf_dict[key][idx_sec]
                                 
                             check_type(key, avl_vars, val)
                             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
@@ -901,19 +905,23 @@ class OVLSolver(object):
                 # --- setup design variables for each section ---
                 # Load design variables
                 if "idestd" in surf_dict.keys():
-                    for j in range(num_secs):
+                    for idx_sec in range(num_secs):
                         # check to make sure this section has control vars 
-                        if surf_dict["num_design_vars"][j] == 0:
+                        if surf_dict["num_design_vars"][idx_sec] == 0:
                             continue
                         
                         for key, avl_vars in self.des_var_to_fort_var[surf_name].items():
                             avl_vars_secs = self.des_var_to_fort_var[surf_name][key]
-                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
+                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][idx_sec])
         
                             if key not in surf_dict:
                                     raise ValueError(f"Key {key} not found in surf dictionary, `{surf_name}` but is required")
-                            else: 
-                                val = surf_dict[key][j]
+                            else:
+                                # This has to be incremented by 1 for Fortran indexing
+                                if key == "idestd":
+                                    val = surf_dict[key][idx_sec] + 1
+                                else:
+                                    val = surf_dict[key][idx_sec]
                                 
                             check_type(key, avl_vars, val)
                             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
@@ -1065,7 +1073,7 @@ class OVLSolver(object):
 
         # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
         # nspans by passing in all zeros
-        if (iptloc != 0).all():
+        if not (iptloc == 0).all():
             iptloc += 1
         # These seem to mangle the mesh up, just do a simple transpose to the correct ordering
         # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0],mesh.shape[1]), order="F")
@@ -1278,13 +1286,13 @@ class OVLSolver(object):
 
                     # Check controls and design variables per section
                     for j in range(surf_dict["num_sections"]):
-                        if self.avl.SURF_GEOM_I.NSCON[i, j] != surf_dict["num_controls"][j]:
+                        if self.avl.SURF_GEOM_I.NSCON[j, i] != surf_dict["num_controls"][j]:
                             raise RuntimeError(
-                                f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[i, j]}, Dictionary: {surf_dict['num_controls'][j]}"
+                                f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[j, i]}, Dictionary: {surf_dict['num_controls'][j]}"
                             )
-                        if self.avl.SURF_GEOM_I.NSDES[i, j] != surf_dict["num_design_vars"][j]:
+                        if self.avl.SURF_GEOM_I.NSDES[j, i] != surf_dict["num_design_vars"][j]:
                             raise RuntimeError(
-                                f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[i, j]}, Dictionary: {surf_dict['num_design_vars'][j]}"
+                                f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[j, i]}, Dictionary: {surf_dict['num_design_vars'][j]}"
                             )
 
                 # Check the global control and design var count
