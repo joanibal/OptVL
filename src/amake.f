@@ -700,10 +700,10 @@ C
       ! Now compute yz arc length using the computed section indicies
       yzlen(1) = 0.
       do idx_sec = 2, NSEC(isurf)
-        dy = mesh(2,iptloc(idx_sec), isurf) - mesh(2,(iptloc(idx_sec)-1)
-     &                                                          , isurf)
-        dz = mesh(3,iptloc(idx_sec), isurf) - mesh(3,(iptloc(idx_sec)-1)
-     &                                                          , isurf)
+        dy = mesh(2,1,iptloc(idx_sec)) - mesh(2,1
+     &                        , (iptloc(idx_sec)-1))
+        dz = mesh(3,1,iptloc(idx_sec)) - mesh(3,1
+     &                        , (iptloc(idx_sec)-1))
         yzlen(idx_sec) = yzlen(idx_sec-1) + sqrt(dy*dy + dz*dz)
       end do
       
@@ -789,7 +789,8 @@ c--------------------------------------------------------------
       REAL XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
       INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
       integer iptloc(NSEC(isurf))
-      integer idx_vor, idx_strip, idx_sec, idx_dim, idx_coef, idx_x, idx_y
+      integer idx_vor, idx_strip, idx_sec, idx_dim, idx_coef, idx_x, 
+     & idx_y
       
       ! If the user doesn't input a index vector telling us at what 
       ! spanwise index each section is located they will have to have

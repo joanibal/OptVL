@@ -927,7 +927,9 @@ class OVLSolver(object):
                 if "mesh" in surf_dict.keys():
                     # Check if we have to define the sections for the user
                     if "iptloc" not in surf_dict.keys():
-                        surf_dict["iptloc"] = self.avl.adjust_mesh_spacing(idx_surf+1,surf_dict["mesh"].transpose((2, 0, 1)),np.zeros(surf_dict["num_sections"],dtype=np.int32))
+                         surf_dict["iptloc"] = np.zeros(surf_dict["num_sections"],dtype=np.int32)
+                         self.avl.adjust_mesh_spacing(idx_surf+1,surf_dict["mesh"].transpose((2, 0, 1)),surf_dict["iptloc"])
+                         surf_dict["iptloc"] = surf_dict["iptloc"] - 1
                     self.set_mesh(idx_surf, surf_dict["mesh"],surf_dict["iptloc"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
                 else:
                     self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
