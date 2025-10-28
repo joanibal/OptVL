@@ -641,7 +641,7 @@ C
       END ! MAKESURF
 
       subroutine adjust_mesh_spacing(isurf, nx, ny, mesh,
-     &  iptloc)
+     &  iptloc, nsecsurf)
       ! This routine is a modified standalone version of the "fudging"
       ! operation in makesurf. The main purpose is to deal with cases
       ! where the user provide a mesh and does not specify the indicies
@@ -650,15 +650,26 @@ C
       ! to be run as a preprocessing step to compute iptloc and the fudged mesh
       ! as once we have iptloc makesurf_mesh will know how to handle the sections.
       INCLUDE 'AVL.INC'
-      integer nx, ny, isurf, niptloc
+      ! input/output
+      integer nx, ny, nsecsurf, isurf
       integer isec, ipt, ipt1, ipt2, idx_sec, idx_pt
-      integer iptloc(NSEC(isurf))
+      integer iptloc(nsecsurf)
       real mesh(3,nx,ny)
-      real ylen(NSEC(isurf)), yzlen(NSEC(isurf))
+
+      ! working variables
+      integer niptloc
+      real ylen(nsecsurf), yzlen(nsecsurf)
       real yptloc, yptdel, yp1, yp2, dy, dz, y_mesh, dy_mesh
+      
+      ! check that iptloc is the correct size            
+      if (nsecsurf /= NSEC(isurf)) then 
+            write(*,'(A,I2,A,I2)') 'given size of iptloc:',nsecsurf, 
+     &      ' does not match NSEC(isurf):', NSEC(isurf)
+      endif
+
 
       ! Check if the mesh can be adjusted
-      if (ny < NSEC(isurf)) then
+      if (ny < nsecsurf) then
             print *, "*** Not enought spanwise nodes to split the mesh"
             stop
       end if
@@ -670,30 +681,32 @@ C
       ! We only need to do this is there isn't already a guess for iptloc
 
       if (iptloc(1) .eq. 0) then
-      ! compute mesh y length
-      y_mesh = mesh(2,1,ny) - mesh(2,1,1)
-      dy_mesh = y_mesh/(NSEC(isurf)-1)
+            ! compute mesh y length
+            y_mesh = mesh(2,1,ny) - mesh(2,1,1)
+            dy_mesh = y_mesh/(NSEC(isurf)-1)
+            write(*,*) 'y_mesh', y_mesh
+            write(*,*) 'dy_mesh', dy_mesh
 
-      ! Chop up into equal y length pieces
-      ylen(1) = 0.
-      do idx_sec = 2,NSEC(isurf)
-      ylen(idx_sec) = ylen(idx_sec-1) + dy_mesh
-      end do
+            ! Chop up into equal y length pieces
+            ylen(1) = 0.
+            do idx_sec = 2,NSEC(isurf)
+            ylen(idx_sec) = ylen(idx_sec-1) + dy_mesh
+            end do
 
-      ! Find node nearest each section
-      do idx_sec = 2, NSEC(isurf)-1
-         yptloc = 1.0E9
-         iptloc(idx_sec) = 1
-         do idx_pt = 1, ny
-           yptdel = abs(mesh(2,1,1)+ ylen(idx_sec) - mesh(2,1,idx_pt))
-           if(yptdel .LT. yptloc) then
-            yptloc = yptdel
-            iptloc(idx_sec) = idx_pt
-           endif
-         enddo
-      enddo
-      iptloc(1)    = 1
-      iptloc(NSEC(isurf)) = ny
+            ! Find node nearest each section
+            do idx_sec = 2, NSEC(isurf)-1
+            yptloc = 1.0E9
+            iptloc(idx_sec) = 1
+            do idx_pt = 1, ny
+            yptdel = abs(mesh(2,1,1)+ ylen(idx_sec) - mesh(2,1,idx_pt))
+            if(yptdel .LT. yptloc) then
+                  yptloc = yptdel
+                  iptloc(idx_sec) = idx_pt
+            endif
+            enddo
+            enddo
+            iptloc(1)    = 1
+            iptloc(NSEC(isurf)) = ny
       end if
 
       ! NOTE-SB: I don't think we need this
@@ -777,15 +790,19 @@ C
 
       end subroutine adjust_mesh_spacing
 
-      subroutine makesurf_mesh(isurf, mesh, nx, ny, iptloc)
+      subroutine makesurf_mesh(isurf, mesh, nx, ny, iptloc, nsecsurf)
 c--------------------------------------------------------------
 c     Sets up all stuff for surface ISURF, 
 C     using info from configuration input file 
 C     and the given mesh coordinate array.
 c--------------------------------------------------------------
       INCLUDE 'AVL.INC'
-      integer nx, ny
+      ! input/output
+      integer nx, ny, nsecsurf
       real mesh(3,nx,ny)
+      integer iptloc(nsecsurf)
+      
+      ! working variables
       real m1, m2, m3, f1, f2, dc1, dc2, dc, a1, a2, a3, xptxind1
       PARAMETER (KCMAX=50,
      &           KSMAX=500)
@@ -796,10 +813,14 @@ c--------------------------------------------------------------
      &     CHSINR_G(NGMAX),CHCOSR_G(NGMAX)
       REAL XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
       INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
-      integer iptloc(NSEC(isurf))
       integer idx_vor, idx_strip, idx_sec, idx_dim, idx_coef, idx_x, 
      & idx_y
       
+      if (nsecsurf /= NSEC(isurf)) then 
+            write(*,'(A,I2,A,I2)') 'given size of iptloc:',nsecsurf, 
+     &      ' does not match NSEC(isurf):', NSEC(isurf)
+      endif
+
       ! If the user doesn't input a index vector telling us at what 
       ! spanwise index each section is located they will have to have
       ! provided nspans otherwise they will have to go back and provide
