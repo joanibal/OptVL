@@ -223,7 +223,7 @@ def pre_check_input_dict(input_dict: dict):
                         # Check if the user provided nspans instead    
                         elif "nspans" in input_dict["surfaces"][surface].keys():
                             # setting iptloc to 0 is how we tell the Fortran layer to use nspans
-                            input_dict["surfaces"][surface]["iptloc"] = np.zeros(input_dict["num_sections"])
+                            input_dict["surfaces"][surface]["iptloc"] = np.zeros(input_dict["surfaces"][surface]["num_sections"])
                         # The OptVL class will have to call the fudging routine to try and auto cut the mesh into sections
                         else:
                             warnings.warn(

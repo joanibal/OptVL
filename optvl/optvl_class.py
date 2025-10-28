@@ -1062,8 +1062,11 @@ class OVLSolver(object):
         """
         nx = copy.deepcopy(mesh.shape[0])
         ny = copy.deepcopy(mesh.shape[1])
-        # idx_surf += 1 
-        iptloc += 1 #+1 for Fortran indexing
+
+        # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
+        # nspans by passing in all zeros
+        if (iptloc != 0).all():
+            iptloc += 1
         # These seem to mangle the mesh up, just do a simple transpose to the correct ordering
         # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0],mesh.shape[1]), order="F")
         # iptloc = iptloc.ravel(order="C").reshape(iptloc.shape[::-1], order="F")
