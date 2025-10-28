@@ -1049,17 +1049,17 @@ c--------------------------------------------------------------
 
       ! Strip left side incidence
       CHSIN = CHSINL + f1*(CHSINR-CHSINL)
-      CHCOS = CHSINL + f1*(CHCOSR-CHCOSL)
+      CHCOS = CHCOSL + f1*(CHCOSR-CHCOSL)
       AINC1(idx_strip) = ATAN2(CHSIN,CHCOS)
 
       ! Strip right side incidence
       CHSIN = CHSINL + f2*(CHSINR-CHSINL)
-      CHCOS = CHSINL + f2*(CHCOSR-CHCOSL)
+      CHCOS = CHCOSL + f2*(CHCOSR-CHCOSL)
       AINC2(idx_strip) = ATAN2(CHSIN,CHCOS)
 
       ! Strip mid-point incidence
       CHSIN = CHSINL + fc*(CHSINR-CHSINL)
-      CHCOS = CHSINL + fc*(CHCOSR-CHCOSL)
+      CHCOS = CHCOSL + fc*(CHCOSR-CHCOSL)
       AINC(idx_strip) = ATAN2(CHSIN,CHCOS)
 
       ! Set dv gains for incidence angles
@@ -1253,19 +1253,22 @@ c--------------------------------------------------------------
 
        ! Camber slope at control point
        CALL AKIMA(XASEC(1,idx_sec,  isurf),SASEC(1,idx_sec,  isurf),
-     &               NSL,RC(1,idx_vor)/CHORD(idx_strip),SLOPEL, DSDX)
+     &               NSL,(RC(1,idx_vor)-RLE(1,idx_strip))
+     &                /CHORD(idx_strip),SLOPEL, DSDX)
        CALL AKIMA(XASEC(1,idx_sec+1,isurf),SASEC(1,idx_sec+1,isurf),
-     &               NSR,RC(1,idx_vor)/CHORD(idx_strip),SLOPER, DSDX)
-
+     &               NSR,(RC(1,idx_vor)-RLE(1,idx_strip))
+     &                /CHORD(idx_strip),SLOPER, DSDX)
 
        SLOPEC(idx_vor) =  (1.-fc)*(CHORDL/CHORD(idx_strip))*SLOPEL 
      &                    +     fc *(CHORDR/CHORD(idx_strip))*SLOPER
 
       ! Camber slope at vortex mid-point
        CALL AKIMA(XASEC(1,idx_sec,  isurf),SASEC(1,idx_sec,  isurf),
-     &               NSL,RV(1,idx_vor)/CHORD(idx_strip),SLOPEL, DSDX)
+     &               NSL,(RV(1,idx_vor)-RLE(1,idx_strip))
+     &               /CHORD(idx_strip),SLOPEL, DSDX)
        CALL AKIMA(XASEC(1,idx_sec+1,isurf),SASEC(1,idx_sec+1,isurf),
-     &               NSR,RV(1,idx_vor)/CHORD(idx_strip),SLOPER, DSDX)
+     &               NSR,(RV(1,idx_vor)-RLE(1,idx_strip))
+     &               /CHORD(idx_strip),SLOPER, DSDX)
 
 
        SLOPEV(idx_vor) =  (1.-fc)*(CHORDL/CHORD(idx_strip))*SLOPEL 
@@ -1310,8 +1313,11 @@ c--------------------------------------------------------------
 
       ! Store the panel mid point for the next panel in the strip
       ! This gets used a lot here 
-      xptxind1 = ((mesh(1,idx_x,(idx_y+1))-mesh(1,idx_x,idx_y))/2.)/
-     &           CHORD(idx_strip)
+      xptxind1 = (mesh(1,idx_x+1,idx_y)
+     &           - RLE1(1,idx_strip))/CHORD1(idx_strip)
+
+      xptxind2 = (mesh(1,idx_x+1,(idx_y+1))
+     &           - RLE2(1,idx_strip))/CHORD2(idx_strip) 
 
       ! Interpolate cross section on left side
       CALL AKIMA( XLASEC(1,idx_sec,isurf), ZLASEC(1,idx_sec,isurf),
@@ -1321,10 +1327,10 @@ c--------------------------------------------------------------
 
       ! Interpolate cross section on right side
       CALL AKIMA( XLASEC(1,idx_sec+1,isurf),ZLASEC(1,idx_sec+1,isurf),
-     &            NSR, xptxind1, ZL_R, DSDX)
+     &            NSR, xptxind2, ZL_R, DSDX)
                       
-      CALL AKIMA( XUASEC(1,idx_sec+1,isurf), ZUASEC(1,idx_sec+1,isurf),
-     &            NSR, xptxind1, ZU_R, DSDX)
+      CALL AKIMA( XUASEC(1,idx_sec+1,isurf),ZUASEC(1,idx_sec+1,isurf),
+     &            NSR, xptxind2, ZU_R, DSDX)
 
 
       ! Compute the left aft node of panel 
@@ -1346,7 +1352,7 @@ c--------------------------------------------------------------
       ! Compute the right aft node of panel 
       ! X-point
       XYN2(1,idx_vor) = RLE2(1,idx_strip) + 
-     &                        xptxind1*CHORD2(idx_strip)
+     &                        xptxind2*CHORD2(idx_strip)
 
       ! Y-point
       XYN2(2,idx_vor) = RLE2(2,idx_strip)
