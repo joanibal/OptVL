@@ -1060,12 +1060,14 @@ class OVLSolver(object):
             update_nvs (bool): Should OptVL update the number of spanwise elements for the given mesh
             update_nvc (bool): Should OptVL update the number of chordwise elements for the given mesh
         """
+        nx = copy.deepcopy(mesh.shape[0])
+        ny = copy.deepcopy(mesh.shape[1])
         # idx_surf += 1 
         iptloc += 1 #+1 for Fortran indexing
-        mesh = mesh.transpose((2,0,1)) #reshape for Fortran memory access
-
-        nx = mesh.shape[1]
-        ny = mesh.shape[2]
+        # These seem to mangle the mesh up, just do a simple transpose to the correct ordering
+        # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0],mesh.shape[1]), order="F")
+        # iptloc = iptloc.ravel(order="C").reshape(iptloc.shape[::-1], order="F")
+        mesh = mesh.transpose((2,0,1))
 
         if update_nvs:
             self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1

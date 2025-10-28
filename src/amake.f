@@ -640,7 +640,8 @@ C
       RETURN
       END ! MAKESURF
 
-      subroutine adjust_mesh_spacing(isurf, nx, ny, mesh, iptloc)
+      subroutine adjust_mesh_spacing(isurf, nx, ny, mesh,
+     &  iptloc)
       ! This routine is a modified standalone version of the "fudging"
       ! operation in makesurf. The main purpose is to deal with cases
       ! where the user provide a mesh and does not specify the indicies
@@ -649,13 +650,12 @@ C
       ! to be run as a preprocessing step to compute iptloc and the fudged mesh
       ! as once we have iptloc makesurf_mesh will know how to handle the sections.
       INCLUDE 'AVL.INC'
-      integer nx, ny, isurf
+      integer nx, ny, isurf, niptloc
       integer isec, ipt, ipt1, ipt2, idx_sec, idx_pt
       integer iptloc(NSEC(isurf))
       real mesh(3,nx,ny)
       real ylen(NSEC(isurf)), yzlen(NSEC(isurf))
       real yptloc, yptdel, yp1, yp2, dy, dz, y_mesh, dy_mesh
-
 
       ! Check if the mesh can be adjusted
       if (ny < NSEC(isurf)) then
@@ -676,7 +676,7 @@ C
 
       ! Chop up into equal y length pieces
       ylen(1) = 0.
-      do idx_sec = 2,NSEC(isurf)-1
+      do idx_sec = 2,NSEC(isurf)
       ylen(idx_sec) = ylen(idx_sec-1) + dy_mesh
       end do
 
@@ -685,7 +685,7 @@ C
          yptloc = 1.0E9
          iptloc(idx_sec) = 1
          do idx_pt = 1, ny
-           yptdel = abs(ylen(idx_sec) - mesh(2,1,idx_pt))
+           yptdel = abs(mesh(2,1,1)+ ylen(idx_sec) - mesh(2,1,idx_pt))
            if(yptdel .LT. yptloc) then
             yptloc = yptdel
             iptloc(idx_sec) = idx_pt
@@ -696,33 +696,41 @@ C
       iptloc(NSEC(isurf)) = ny
       end if
 
-      
-      ! Now compute yz arc length using the computed section indicies
-      yzlen(1) = 0.
-      do idx_sec = 2, NSEC(isurf)
-        dy = mesh(2,1,iptloc(idx_sec)) - mesh(2,1
-     &                        , (iptloc(idx_sec)-1))
-        dz = mesh(3,1,iptloc(idx_sec)) - mesh(3,1
-     &                        , (iptloc(idx_sec)-1))
-        yzlen(idx_sec) = yzlen(idx_sec-1) + sqrt(dy*dy + dz*dz)
-      end do
-      
-      ! Now do the Drela fudging routine to ensure the sections don't split panels
+      ! NOTE-SB: I don't think we need this
+      ! I originally included it to be more consistent with Drela
+      ! The prior routine only considers the y distance while
+      ! Drela considers y and z. However, the above routine appears 
+      ! to work fine on its own and running this after appears to
+      ! cause issues.
 
-      ! Find node nearest each section
-      do isec = 2, NSEC(isurf)-1
-         yptloc = 1.0E9
-         iptloc(isec) = 1
-         do ipt = 1, ny
-           yptdel = abs(yzlen(isec) - mesh(2,1,ipt))
-           if(yptdel .LT. yptloc) then
-            yptloc = yptdel
-            iptloc(ISEC) = ipt
-           endif
-         enddo
-      enddo
-      iptloc(1)    = 1
-      iptloc(NSEC(ISURF)) = ny
+      ! Now compute yz arc length using the computed section indicies
+!       yzlen(1) = 0.
+!       do idx_sec = 2, NSEC(isurf)
+!         dy = mesh(2,1,iptloc(idx_sec)) - mesh(2,1
+!      &                        , (iptloc(idx_sec)-1))
+!         dz = mesh(3,1,iptloc(idx_sec)) - mesh(3,1
+!      &                        , (iptloc(idx_sec)-1))
+!         yzlen(idx_sec) = yzlen(idx_sec-1) + sqrt(dy*dy + dz*dz)
+!       end do
+      
+!       ! Now do the Drela fudging routine to ensure the sections don't split panels
+
+!       ! Find node nearest each section
+!       do isec = 2, NSEC(isurf)-1
+!          yptloc = 1.0E9
+!          iptloc(isec) = 1
+!          do ipt = 1, ny
+!            yptdel = abs(yzlen(isec) - mesh(2,1,ipt))
+!            if(yptdel .LT. yptloc) then
+!             yptloc = yptdel
+!             iptloc(ISEC) = ipt
+!            endif
+!          enddo
+!       enddo
+!       iptloc(1)    = 1
+!       iptloc(NSEC(ISURF)) = ny
+
+!       print *, "Final iptloc", iptloc
 
        ! fudge spacing array to make nodes match up exactly with interior sections
        do isec = 2, NSEC(isurf)-1
@@ -964,7 +972,7 @@ c--------------------------------------------------------------
 
       ! Loop over strips in section
       do ispan = 1,nspan
-      idx_y = iptl + idx_strip - 1
+      idx_y = idx_strip - JFRST(isurf) + 1
 
       ! Strip left side
       do idx_dim = 1,3
