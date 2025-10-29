@@ -1277,23 +1277,28 @@ class OVLSolver(object):
             # check number of sections, controls, and dvs
             if len(inputDict["surfaces"]) > 0:
                 surf_names = list(inputDict["surfaces"].keys())
+                idx_surf = 0
                 for i in range(len(inputDict["surfaces"])):
                     surf_dict = inputDict["surfaces"][surf_names[i]]
-                    if self.avl.SURF_GEOM_I.NSEC[i] != surf_dict["num_sections"]:
+                    if self.avl.SURF_GEOM_I.NSEC[idx_surf] != surf_dict["num_sections"]:
                         raise RuntimeError(
-                            f"Mismatch: NSEC[i] = {self.avl.SURF_GEOM_I.NSEC[i]}, Dictionary: {surf_dict['num_sections']}"
+                            f"Mismatch: NSEC[i] = {self.avl.SURF_GEOM_I.NSEC[idx_surf]}, Dictionary: {surf_dict['num_sections']}"
                         )
 
                     # Check controls and design variables per section
                     for j in range(surf_dict["num_sections"]):
-                        if self.avl.SURF_GEOM_I.NSCON[j, i] != surf_dict["num_controls"][j]:
+                        if self.avl.SURF_GEOM_I.NSCON[j, idx_surf] != surf_dict["num_controls"][j]:
                             raise RuntimeError(
-                                f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[j, i]}, Dictionary: {surf_dict['num_controls'][j]}"
+                                f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[j, idx_surf]}, Dictionary: {surf_dict['num_controls'][j]}"
                             )
-                        if self.avl.SURF_GEOM_I.NSDES[j, i] != surf_dict["num_design_vars"][j]:
+                        if self.avl.SURF_GEOM_I.NSDES[j, idx_surf] != surf_dict["num_design_vars"][j]:
                             raise RuntimeError(
-                                f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[j, i]}, Dictionary: {surf_dict['num_design_vars'][j]}"
+                                f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[j, idx_surf]}, Dictionary: {surf_dict['num_design_vars'][j]}"
                             )
+                    
+                    idx_surf += 1
+                    if "yduplicate" in surf_dict:
+                            idx_surf += 1
 
                 # Check the global control and design var count
                 if "dname" in inputDict.keys():

@@ -901,6 +901,12 @@ c--------------------------------------------------------------
         ICNTSEC(II) = iptloc(ISEC)
       ENDDO
 
+      ! Apply the scaling and translations to the mesh as a whole
+      do idx_dim = 1,3
+            mesh(idx_dim,:,:) = XYZSCAL(idx_dim,isurf)*mesh(idx_dim,:,:)
+     &                              + XYZTRAN(idx_dim,isurf)
+      end do
+
 
       ! Setup the strips
 
@@ -1025,14 +1031,14 @@ c--------------------------------------------------------------
 !       CHORD(idx_strip) = sqrt(m1**2 + m3**2)
 
       ! Strip width (leading edge)
-      m2 = mesh(2,1,idx_strip+1)-mesh(2,1,idx_strip)
-      m3 = mesh(3,1,idx_strip+1)-mesh(3,1,idx_strip)
+      m2 = mesh(2,1,idx_y+1)-mesh(2,1,idx_y)
+      m3 = mesh(3,1,idx_y+1)-mesh(3,1,idx_y)
       WSTRIP(idx_strip) = sqrt(m2**2 + m3**2)
 
       ! Strip LE and TE sweep slopes
-      tanle(idx_strip) = (mesh(1,1,idx_strip+1)-mesh(1,1,idx_strip))
+      tanle(idx_strip) = (mesh(1,1,idx_y+1)-mesh(1,1,idx_y))
      &                                            /WSTRIP(idx_strip)
-      tante(idx_strip) = (mesh(1,nx,idx_strip+1)-mesh(1,nx,idx_strip))
+      tante(idx_strip) = (mesh(1,nx,idx_y+1)-mesh(1,nx,idx_y))
      &                                            /WSTRIP(idx_strip)
 
       ! Compute chord projections and strip twists
