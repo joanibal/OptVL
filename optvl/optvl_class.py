@@ -644,6 +644,9 @@ class OVLSolver(object):
                     val = optional_header_defaults[key]
                 else:
                     raise ValueError(f"Key {key} not found in input dictionary but is required")
+            elif key == "title":
+                # We need to apply this function to the title string so that the tecplot file writing works correctly
+                val = self._str_to_fort_str(input_dict[key],num_max_char=120)
             else:
                 val = input_dict[key]
                 
