@@ -798,7 +798,7 @@ C     and the given mesh coordinate array.
 c--------------------------------------------------------------
       INCLUDE 'AVL.INC'
       ! input/output
-      integer nx, ny, nsecsurf
+      integer isurf, nx, ny, nsecsurf
       real mesh(3,nx,ny)
       integer iptloc(nsecsurf)
       
@@ -1402,10 +1402,50 @@ c--------------------------------------------------------------
       
       end subroutine makesurf_mesh
 
+      subroutine update_surface_mesh_HACK(isurf,mesh,nx,ny,iptloc,
+     &       nsecsurf,lcount)
+c--------------------------------------------------------------
+c     HACK: This routine is a temporary solution that combines
+c     the functionality of makesurf_mesh with update_surfaces.
+c     note that unlike update_surfaces it can only update one
+c     surface at a time and requires the mesh for that surface
+c     ber provided as input. There is also a flag that tells
+c     the routine whether to reset the counters or not. This 
+c     routine is a hack until I can find a better way to store
+c     meshes in the Fortran layer without flattening them.
+c--------------------------------------------------------------
+      include 'AVL.INC'
+      integer isurf, nx, ny, nsecsurf
+      real mesh(3,nx,ny)
+      integer iptloc(nsecsurf)
+      logical lcount
+
+      if (lcount) then
+       NSTRIP = 0
+       NVOR = 0
+      end if
+
+      
+      call makesurf_mesh(isurf, mesh, nx, ny, iptloc, nsecsurf)
+
+      CALL ENCALC
+      
+      LAIC = .FALSE. ! Tell AVL that the AIC is no longer valid and to regenerate it
+      LSRD = .FALSE. ! Tell AVL that unit source+doublet strengths are no longer valid and to regenerate them
+      LVEL = .FALSE. ! Tell AVL that the induced velocity matrix is no longer valid and to regenerate it
+      LSOL = .FALSE. ! Tell AVL that a valid solution no longer exists
+      LSEN = .FALSE. ! Tell AVL that valid sensitives no longer exists
+
+      end subroutine update_surfaces_mesh
+
       
       subroutine update_surfaces()
 c--------------------------------------------------------------
 c     Updates all surfaces, using the stored data.
+c     Resets the strips and vorticies so that AVL rebuilds them
+c     from the updated geometry. Recomputes panels normals and
+c     tells AVL to rebuild the AIC and other aero related data 
+c     arrays on the next execution. 
 c--------------------------------------------------------------
       
       include 'AVL.INC'
@@ -1436,11 +1476,11 @@ c--------------------------------------------------------------
       
       CALL ENCALC
       
-      LAIC = .FALSE.
-      LSRD = .FALSE.
-      LVEL = .FALSE.
-      LSOL = .FALSE.
-      LSEN = .FALSE.
+      LAIC = .FALSE. ! Tell AVL that the AIC is no longer valid and to regenerate it
+      LSRD = .FALSE. ! Tell AVL that unit source+doublet strengths are no longer valid and to regenerate them
+      LVEL = .FALSE. ! Tell AVL that the induced velocity matrix is no longer valid and to regenerate it
+      LSOL = .FALSE. ! Tell AVL that a valid solution no longer exists
+      LSEN = .FALSE. ! Tell AVL that valid sensitives no longer exists
       
       end subroutine update_surfaces
             

@@ -498,7 +498,7 @@ c
      & GAING(ICONX, NSMAX, NFMax)  ! desgin variable gain
 
 
-C      !!--- end added variables for python geometry minipulation ---
+C      !!--- end added variables for python geometry manipulation ---
 
       COMMON /STRP_I/
      & NSURFS(NSMAX),    ! index of surface which contains this strip
