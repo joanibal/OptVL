@@ -1091,6 +1091,53 @@ class OVLSolver(object):
 
         self.avl.makesurf_mesh(idx_surf+1, mesh, iptloc) #+1 for Fortran indexing
 
+    # Temporary helper function
+    def reset_vort_count(self):
+        self.avl.CASE_I.NSTRIP = 0
+        self.avl.CASE_I.NVOR = 0
+
+    # Ideally there would be an update_surfaces routine in Fotran to do this with meshes but for now we need to do this.
+    def update_mesh(self, idx_surf: int, mesh: np.ndarray, iptloc: np.ndarray, ydup:float):
+
+        # nx = copy.deepcopy(mesh.shape[0])
+        # ny = copy.deepcopy(mesh.shape[1])
+
+        # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
+        # nspans by passing in all zeros
+        if not (iptloc == 0).all():
+            iptloc += 1
+        # These seem to mangle the mesh up, just do a simple transpose to the correct ordering
+        # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0],mesh.shape[1]), order="F")
+        # iptloc = iptloc.ravel(order="C").reshape(iptloc.shape[::-1], order="F")
+        mesh = mesh.transpose((2,0,1))
+
+        # if update_nvs:
+        #     self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1
+
+        # if update_nvc:
+        #     self.avl.SURF_GEOM_I.NVC[idx_surf] = nx-1
+
+        if idx_surf != 0:
+            if self.avl.SURF_GEOM_L.LDUPL[idx_surf-1]:
+                print(f"Surface {idx_surf} is a duplicated surface!")
+            else:
+                self.avl.makesurf_mesh(idx_surf+1, mesh, iptloc) #+1 for Fortran indexing
+        else:
+            self.avl.makesurf_mesh(idx_surf+1, mesh, iptloc) #+1 for Fortran indexing
+
+        if self.avl.SURF_GEOM_L.LDUPL[idx_surf]:
+            self.avl.sdupl(idx_surf + 1, ydup, "YDUP")
+
+    # Temporary helper function
+    def reset_avl_solver(self):
+        self.avl.CASE_L.LAIC = False
+        self.avl.CASE_L.LSRD = False
+        self.avl.CASE_L.LVEL = False
+        self.avl.CASE_L.LSOL = False
+        self.avl.CASE_L.LSEN = False
+
+
+
 
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):

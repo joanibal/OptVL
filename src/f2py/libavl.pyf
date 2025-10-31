@@ -180,5 +180,12 @@ python module libavl ! in
             real*8 :: xb(nb), yb(nb)
             logical :: storecoords
         end subroutine set_body_coordinates
+
+        !subroutine update_surface_mesh_HACK(isurf,mesh,nx,ny,iptloc,nsecsurf,lcount,lcall) ! in :libavl:amake.f
+            !integer :: isurf, nx, ny, nsecsurf
+            !logical :: lcount, lcall
+            !real*8 :: mesh(3,nx,ny)
+            !integer :: iptloc(nsecsurf)
+        !end subroutine update_surfaces_mesh
     end interface 
 end python module libavl
