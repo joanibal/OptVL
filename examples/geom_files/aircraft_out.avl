@@ -1,0 +1,229 @@
+# generated using OptVL
+#===============================================================================
+#------------------------------------ Header -----------------------------------
+#===============================================================================
+Supra 3.4m F3J
+#Mach
+0.0 
+#IYsym   IZsym   Zsym
+0 0 0.0 
+#Sref    Cref    Bref
+1034.0 7.6 133.86 
+#Xref    Yref    Zref
+3.75 0.0 1.5 
+#CD0
+0.015 
+#===============================================================================
+#---------------------------------- Inner Wing ---------------------------------
+#===============================================================================
+SURFACE
+Inner Wing
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+7 1.0 8 -2.9 
+YDUPLICATE
+0.0 
+SCALE
+1.0 1.0 0.0437 
+TRANSLATE
+0.0 0.0 0.0 
+ANGLE
+1.0 
+#---------------------------------------
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 0.000000 0.000000 0.000000   9.750000 0.000000 1      0.0
+ AFILE
+ ./geom_files/airfoils/ag40d.dat
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ flap  1.0 0.75 0.000000 0.000000 0.000000 1.0
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ aileron  -1.0 0.75 0.000000 0.000000 0.000000 -1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 0.250000 31.500000 31.500000   8.750000 0.000000 1      0.0
+ AFILE
+ ./geom_files/airfoils/ag41d.dat
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ flap  1.0 0.75 0.000000 0.000000 0.000000 1.0
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ aileron  -1.0 0.75 0.000000 0.000000 0.000000 -1.0
+#===============================================================================
+#---------------------------------- Outer Wing ---------------------------------
+#===============================================================================
+SURFACE
+Outer Wing
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+7 1.0 18 -2.0 
+YDUPLICATE
+0.0 
+COMPONENT
+1 
+SCALE
+1.0 1.0 0.13165 
+TRANSLATE
+0.25 31.5 1.37655 
+ANGLE
+1.0 
+#---------------------------------------
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 0.000000 0.000000 0.000000   8.750000 0.000000 1      0.0
+ AFILE
+ ./geom_files/airfoils/ag41d.dat
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ flap  1.0 0.75 0.000000 0.000000 0.000000 1.0
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ aileron  -1.0 0.75 0.000000 0.000000 0.000000 -1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 1.000000 23.500000 23.500000   6.250000 -0.500000 1      0.0
+ AFILE
+ ./geom_files/airfoils/ag42d.dat
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ flap  1.0 0.75 0.000000 0.000000 0.000000 1.0
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ aileron  -1.0 0.75 0.000000 0.000000 0.000000 -1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 1.720000 29.500000 29.500000   5.000000 -0.500000 1      0.0
+ AFILE
+ ./geom_files/airfoils/ag42d.dat
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ flap  1.0 0.75 0.000000 0.000000 0.000000 1.0
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ aileron  -1.0 0.75 0.000000 0.000000 0.000000 -1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 2.750000 34.000000 34.000000   3.400000 -0.500000 1      0.0
+ AFILE
+ ./geom_files/airfoils/ag43d.dat
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ flap  1.0 0.75 0.000000 0.000000 0.000000 1.0
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ aileron  -1.0 0.75 0.000000 0.000000 0.000000 -1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 3.500000 35.500000 35.500000   2.300000 -0.500000 1      0.0
+ AFILE
+ ./geom_files/airfoils/ag43d.dat
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ flap  1.0 0.75 0.000000 0.000000 0.000000 1.0
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ aileron  -1.0 0.75 0.000000 0.000000 0.000000 -1.0
+#===============================================================================
+#------------------------------------- Stab ------------------------------------
+#===============================================================================
+SURFACE
+Stab
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+5 1.0 12 -1.0 
+YDUPLICATE
+0.0 
+SCALE
+1.0 1.0 1.0 
+TRANSLATE
+37.5 0.0 2.1 
+ANGLE
+0.0 
+#---------------------------------------
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 0.000000 0.000000 0.000000   4.400000 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ elevator  1.0 0.0 0.000000 0.000000 0.000000 1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 0.153850 2.000000 0.000000   4.115400 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ elevator  1.0 0.0 0.000000 0.000000 0.000000 1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 0.769200 10.000000 0.000000   2.577000 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ elevator  1.0 0.0 0.000000 0.000000 0.000000 1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 1.173000 12.000000 0.000000   1.942000 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ elevator  1.0 0.0 0.000000 0.000000 0.000000 1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 1.500000 12.700000 0.000000   1.520000 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ elevator  1.0 0.0 0.000000 0.000000 0.000000 1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 2.000000 13.000000 0.000000   1.000000 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ elevator  1.0 0.0 0.000000 0.000000 0.000000 1.0
+#===============================================================================
+#------------------------------------- Fin -------------------------------------
+#===============================================================================
+SURFACE
+Fin
+#Nchordwise  Cspace  [Nspanwise  Sspace]
+10 1.0 12 -1.0 
+SCALE
+1.15 1.15 1.1 
+TRANSLATE
+42.5 0.0 0.0 
+ANGLE
+0.0 
+#---------------------------------------
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 0.000000 0.000000 0.000000   7.000000 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ rudder  1.0 0.43 0.000000 0.000000 0.000000 1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 1.125000 0.000000 9.000000   4.000000 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ rudder  1.0 0.5 0.000000 0.000000 0.000000 1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 1.875000 0.000000 11.250000   2.833300 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ rudder  1.0 0.5 0.000000 0.000000 0.000000 1.0
+SECTION
+#Xle      Yle      Zle      | Chord    Ainc     Nspan  Sspace
+ 2.500000 0.000000 12.000000   2.000000 0.000000 
+ CONTROL
+#surface   gain xhinge       hvec       SgnDup
+ rudder  1.0 0.5 0.000000 0.000000 0.000000 1.0
+#===============================================================================
+#----------------------------------- Fuse pod ----------------------------------
+#===============================================================================
+BODY
+Fuse pod
+#N  Bspace
+28 2.0
+SCALE
+1.0 1.0 1.0
+TRANSLATE
+0.0 0.0 0.0
+BFILE
+fuseSupra.dat

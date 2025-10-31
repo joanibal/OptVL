@@ -205,9 +205,8 @@ class TestOMWrapper(unittest.TestCase):
         prob.setup(mode='rev')
         prob.run_model()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
-        
-        deriv_err = prob.check_totals(step=1e-6)
-        rtol = 5e-3
+        deriv_err = prob.check_totals(step=1e-7, form='central')
+        rtol = 1e-3
         for key, data in deriv_err.items():
                 np.testing.assert_allclose(
                     data['J_fd'],

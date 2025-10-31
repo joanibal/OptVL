@@ -9,10 +9,10 @@ C SETUP
 C
 C
       SUBROUTINE BUILD_AIC_D()
+      use avl_heap_inc
+      use avl_heap_diff_inc
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
-      REAL(kind=avl_real) wc_gam(3, nvor, nvor)
-      REAL(kind=avl_real) wc_gam_diff(3, nvor, nvor)
       REAL betm
       REAL betm_diff
       INTRINSIC SQRT
@@ -24,8 +24,8 @@ C
       INTEGER i1
       INTEGER iv
       INTEGER jv
-      REAL(kind=8) arg1
-      REAL(kind=8) arg1_diff
+      REAL(kind=avl_real) arg1
+      REAL(kind=avl_real) arg1_diff
       REAL(kind=avl_real) temp
       INTEGER ii2
       INTEGER ii1
@@ -43,14 +43,15 @@ C
       betm = temp
       IF (lverbose) WRITE(*, *) ' Building normalwash AIC matrix...'
       CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
-     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
-     +            , nsurfv, chordv, chordv_diff, nvor, rc, rc_diff, 
-     +            nsurfv, .false., wc_gam, wc_gam_diff, nvor)
+     +            zsym_diff, vrcorec, vrcorew, nvor, rv1, rv1_diff, rv2
+     +            , rv2_diff, lvcomp, chordv, chordv_diff, nvor, rc, 
+     +            rc_diff, lvcomp, .false., wc_gam, wc_gam_diff, nvmax)
       DO ii1=1,nvor
         DO ii2=1,nvor
           aicn_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
+C
       DO j=1,nvor
         DO i=1,nvor
           aicn_diff(i, j) = enc(1, i)*wc_gam_diff(1, i, j) + wc_gam(1, i
@@ -93,146 +94,156 @@ C--------- set  sum_strip(Gamma) = 0  for this strip
       END
 
 C  Differentiation of velsum in forward (tangent) mode (with options i4 dr8 r8):
-C   variations   of useful results: wv wv_u
-C   with respect to varying inputs: vinf wrot mach rv1 rv2 rv chordv
-C                gam gam_u
-C   RW status of diff variables: vinf:in wrot:in mach:in rv1:in
-C                rv2:in rv:in chordv:in gam:in gam_u:in wv:out
-C                wv_u:out
+C   variations   of useful results: vv vv_u vv_d wv wv_u wv_d
+C   with respect to varying inputs: wv_gam vinf wrot gam gam_u
+C                gam_d
+C   RW status of diff variables: wv_gam:in vinf:in wrot:in gam:in
+C                gam_u:in gam_d:in vv:out vv_u:out vv_d:out wv:out
+C                wv_u:out wv_d:out
 C GAMSUM
 C
 C
       SUBROUTINE VELSUM_D()
+      use avl_heap_inc
+      use avl_heap_diff_inc
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
-      REAL(kind=avl_real) wv_gam(3, nvor, nvor)
-      REAL(kind=avl_real) wv_gam_diff(3, nvor, nvor)
-      REAL betm
-      REAL betm_diff
-      INTRINSIC SQRT
       INTEGER i
       INTEGER k
       INTEGER j
       INTEGER n
-      REAL(kind=8) arg1
-      REAL(kind=8) arg1_diff
-      REAL(kind=avl_real) temp
+      INTEGER ii3
       INTEGER ii2
       INTEGER ii1
-      INTEGER ii3
-      amach_diff = mach_diff
-      amach = mach
-      arg1_diff = -(2*amach*amach_diff)
-      arg1 = 1.0 - amach**2
-      temp = SQRT(arg1)
-      IF (arg1 .EQ. 0.D0) THEN
-        betm_diff = 0.D0
-      ELSE
-        betm_diff = arg1_diff/(2.0*temp)
-      END IF
-      betm = temp
-      zsym_diff = 0.D0
-      ysym_diff = 0.D0
-      CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
-     +            zsym_diff, vrcore, nvor, rv1, rv1_diff, rv2, rv2_diff
-     +            , nsurfv, chordv, chordv_diff, nvor, rv, rv_diff, 
-     +            nsurfv, .true., wv_gam, wv_gam_diff, nvor)
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
+        DO ii2=1,3
+          wvsrd_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
+        DO ii2=1,3
+          vv_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,numax
+        DO ii2=1,nvor
+          DO ii3=1,3
+            vv_u_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
+      DO ii1=1,ndmax
+        DO ii2=1,nvor
+          DO ii3=1,3
+            vv_d_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
         DO ii2=1,3
           wv_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-C I (josh) changed the loop order for speed. 
-C It should be equivalent to the new code, but test coverage is low.
-C I am leaving it hear as a reminder of the original code.
-C--------------------------------------------------
-C     Sums AIC components to get WC, WV
-C--------------------------------------------------
-C
-C
-C       DO I = 1, NVOR
-C         DO K = 1, 3
-C     !       WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
-C     !  &            + WCSRD_U(K,I,2)*VINF(2)
-C     !  &            + WCSRD_U(K,I,3)*VINF(3)
-C     !  &            + WCSRD_U(K,I,4)*WROT(1)
-C     !  &            + WCSRD_U(K,I,5)*WROT(2)
-C     !  &            + WCSRD_U(K,I,6)*WROT(3)
-C          WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
-C      &            + WVSRD_U(K,I,2)*VINF(2)
-C      &            + WVSRD_U(K,I,3)*VINF(3)
-C      &            + WVSRD_U(K,I,4)*WROT(1)
-C      &            + WVSRD_U(K,I,5)*WROT(2)
-C      &            + WVSRD_U(K,I,6)*WROT(3)
-C           DO J = 1, NVOR
-C             ! WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
-C             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
-C           ENDDO
-C C
-C           DO N = 1, NUMAX
-C             ! WC_U(K,I,N) = WCSRD_U(K,I,N)
-C             WV_U(K,I,N) = WVSRD_U(K,I,N)
-C             DO J = 1, NVOR
-C               ! WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
-C               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
-C             ENDDO
-C           ENDDO
-C C
-C         ENDDO
-C       ENDDO
-C
-      DO i=1,nvor
-C       WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
-C  &            + WCSRD_U(K,I,2)*VINF(2)
-C  &            + WCSRD_U(K,I,3)*VINF(3)
-C  &            + WCSRD_U(K,I,4)*WROT(1)
-C  &            + WCSRD_U(K,I,5)*WROT(2)
-C  &            + WCSRD_U(K,I,6)*WROT(3)
-        DO k=1,3
-          wv_diff(k, i) = wvsrd_u(k, i, 1)*vinf_diff(1) + wvsrd_u(k, i, 
-     +      2)*vinf_diff(2) + wvsrd_u(k, i, 3)*vinf_diff(3) + wvsrd_u(k
-     +      , i, 4)*wrot_diff(1) + wvsrd_u(k, i, 5)*wrot_diff(2) + 
-     +      wvsrd_u(k, i, 6)*wrot_diff(3)
-          wv(k, i) = wvsrd_u(k, i, 1)*vinf(1) + wvsrd_u(k, i, 2)*vinf(2)
-     +      + wvsrd_u(k, i, 3)*vinf(3) + wvsrd_u(k, i, 4)*wrot(1) + 
-     +      wvsrd_u(k, i, 5)*wrot(2) + wvsrd_u(k, i, 6)*wrot(3)
-        ENDDO
-      ENDDO
-      DO j=1,nvor
-        DO i=1,nvor
-C WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
-          DO k=1,3
-            wv_diff(k, i) = wv_diff(k, i) + gam(j)*wv_gam_diff(k, i, j) 
-     +        + wv_gam(k, i, j)*gam_diff(j)
-            wv(k, i) = wv(k, i) + wv_gam(k, i, j)*gam(j)
-          ENDDO
-        ENDDO
-      ENDDO
-      DO n=1,numax
-        DO i=1,nvor
-          DO k=1,3
-            wc_u(k, i, n) = wcsrd_u(k, i, n)
-            wv_u(k, i, n) = wvsrd_u(k, i, n)
-          ENDDO
-        ENDDO
-      ENDDO
       DO ii1=1,numax
-        DO ii2=1,nvmax
+        DO ii2=1,nvor
           DO ii3=1,3
             wv_u_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
         ENDDO
       ENDDO
-      DO n=1,numax
-        DO j=1,nvor
-          DO i=1,nvor
-C WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
-            DO k=1,3
-              wv_u_diff(k, i, n) = wv_u_diff(k, i, n) + gam_u(j, n)*
+      DO ii1=1,ndmax
+        DO ii2=1,nvor
+          DO ii3=1,3
+            wv_d_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
+C---------------------------------------------------------
+C     Sums AIC components to get induced velocities and
+C     velocities per unit freestream VXX_U,WXX_U
+C
+C     VC, VV    .h.v. induced at control pts and vortex pts
+C     WC, WV    total induced at control pts and vortex pts
+C     WCSRD, WVSRD  body source/doublet induced velocities
+C---------------------------------------------------------
+C
+C
+      DO i=1,nvor
+        DO k=1,3
+          vc(k, i) = 0.0
+          vv_diff(k, i) = 0.D0
+          vv(k, i) = 0.0
+C--- h.v. velocity at control points and vortex midpoints
+          DO j=1,nvor
+            vc(k, i) = vc(k, i) + wc_gam(k, i, j)*gam(j)
+            vv_diff(k, i) = vv_diff(k, i) + gam(j)*wv_gam_diff(k, i, j) 
+     +        + wv_gam(k, i, j)*gam_diff(j)
+            vv(k, i) = vv(k, i) + wv_gam(k, i, j)*gam(j)
+          ENDDO
+          DO n=1,numax
+            vc_u(k, i, n) = 0.0
+            vv_u_diff(k, i, n) = 0.D0
+            vv_u(k, i, n) = 0.0
+            DO j=1,nvor
+              vc_u(k, i, n) = vc_u(k, i, n) + wc_gam(k, i, j)*gam_u(j, n
+     +          )
+              vv_u_diff(k, i, n) = vv_u_diff(k, i, n) + gam_u(j, n)*
      +          wv_gam_diff(k, i, j) + wv_gam(k, i, j)*gam_u_diff(j, n)
-              wv_u(k, i, n) = wv_u(k, i, n) + wv_gam(k, i, j)*gam_u(j, n
+              vv_u(k, i, n) = vv_u(k, i, n) + wv_gam(k, i, j)*gam_u(j, n
      +          )
             ENDDO
+          ENDDO
+          DO n=1,ncontrol
+            vc_d(k, i, n) = 0.0
+            vv_d_diff(k, i, n) = 0.D0
+            vv_d(k, i, n) = 0.0
+            DO j=1,nvor
+              vc_d(k, i, n) = vc_d(k, i, n) + wc_gam(k, i, j)*gam_d(j, n
+     +          )
+              vv_d_diff(k, i, n) = vv_d_diff(k, i, n) + gam_d(j, n)*
+     +          wv_gam_diff(k, i, j) + wv_gam(k, i, j)*gam_d_diff(j, n)
+              vv_d(k, i, n) = vv_d(k, i, n) + wv_gam(k, i, j)*gam_d(j, n
+     +          )
+            ENDDO
+          ENDDO
+          DO n=1,ndesign
+            vc_g(k, i, n) = 0.0
+            vv_g(k, i, n) = 0.0
+            DO j=1,nvor
+              vc_g(k, i, n) = vc_g(k, i, n) + wc_gam(k, i, j)*gam_g(j, n
+     +          )
+              vv_g(k, i, n) = vv_g(k, i, n) + wv_gam(k, i, j)*gam_g(j, n
+     +          )
+            ENDDO
+          ENDDO
+C--- velocity contribution from body sources and doublets
+          wcsrd(k, i) = wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*vinf
+     +      (2) + wcsrd_u(k, i, 3)*vinf(3) + wcsrd_u(k, i, 4)*wrot(1) + 
+     +      wcsrd_u(k, i, 5)*wrot(2) + wcsrd_u(k, i, 6)*wrot(3)
+          wvsrd_diff(k, i) = wvsrd_u(k, i, 1)*vinf_diff(1) + wvsrd_u(k, 
+     +      i, 2)*vinf_diff(2) + wvsrd_u(k, i, 3)*vinf_diff(3) + wvsrd_u
+     +      (k, i, 4)*wrot_diff(1) + wvsrd_u(k, i, 5)*wrot_diff(2) + 
+     +      wvsrd_u(k, i, 6)*wrot_diff(3)
+          wvsrd(k, i) = wvsrd_u(k, i, 1)*vinf(1) + wvsrd_u(k, i, 2)*vinf
+     +      (2) + wvsrd_u(k, i, 3)*vinf(3) + wvsrd_u(k, i, 4)*wrot(1) + 
+     +      wvsrd_u(k, i, 5)*wrot(2) + wvsrd_u(k, i, 6)*wrot(3)
+C--- total velocity at control points and vortex midpoints
+          wc(k, i) = vc(k, i) + wcsrd(k, i)
+          wv_diff(k, i) = vv_diff(k, i) + wvsrd_diff(k, i)
+          wv(k, i) = vv(k, i) + wvsrd(k, i)
+          DO n=1,numax
+            wc_u(k, i, n) = vc_u(k, i, n) + wcsrd_u(k, i, n)
+            wv_u_diff(k, i, n) = vv_u_diff(k, i, n)
+            wv_u(k, i, n) = vv_u(k, i, n) + wvsrd_u(k, i, n)
+          ENDDO
+          DO n=1,ndmax
+            wc_d(k, i, n) = vc_d(k, i, n)
+            wv_d_diff(k, i, n) = vv_d_diff(k, i, n)
+            wv_d(k, i, n) = vv_d(k, i, n)
+          ENDDO
+          DO n=1,ngmax
+            wc_g(k, i, n) = vc_g(k, i, n)
+            wv_g(k, i, n) = vv_g(k, i, n)
           ENDDO
         ENDDO
       ENDDO
@@ -245,10 +256,11 @@ C  Differentiation of set_par_and_cons in forward (tangent) mode (with options i
 C   variations   of useful results: alfa beta wrot delcon xyzref
 C                mach cdref
 C   with respect to varying inputs: parval conval
-C WSENS
+C VELSUM
       SUBROUTINE SET_PAR_AND_CONS_D(niter, ir)
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+C mach setting is done in here. Should it be?
       INTEGER niter, ir
       INTEGER n
       INTEGER iv
@@ -274,8 +286,11 @@ C
 C----- new Mach number invalidates close to everything that's stored
         laic = .false.
         lsrd = .false.
+        lvel = .false.
         lsol = .false.
         lsen = .false.
+        lobaic = .false.
+        lobvel = .false.
       END IF
       IF (niter .GT. 0) THEN
 C----- might as well directly set operating variables if they are known
@@ -498,8 +513,8 @@ Cset_vel_rhs_u
       INCLUDE 'AVL_ad_seeds.inc'
       REAL enc_q(3, nvmax, *), rhs_vec(nvmax)
       REAL enc_q_diff(3, nvmax, *), rhs_vec_diff(nvmax)
-      REAL rrot(3), vrot(3), vc(3)
-      REAL rrot_diff(3), vrot_diff(3), vc_diff(3)
+      REAL rrot(3), vrot(3), vq(3)
+      REAL rrot_diff(3), vrot_diff(3), vq_diff(3)
       INTEGER i
       INTEGER k
       REAL DOT
@@ -512,7 +527,7 @@ Cset_vel_rhs_u
         vrot_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,3
-        vc_diff(ii1) = 0.D0
+        vq_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,3
         rrot_diff(ii1) = 0.D0
@@ -530,29 +545,29 @@ C
             CALL CROSS_D(rrot, rrot_diff, wrot, wrot_diff, vrot, 
      +                   vrot_diff)
             DO k=1,3
-              vc_diff(k) = vinf_diff(k) + vrot_diff(k)
-              vc(k) = vinf(k) + vrot(k)
+              vq_diff(k) = vinf_diff(k) + vrot_diff(k)
+              vq(k) = vinf(k) + vrot(k)
             ENDDO
           ELSE
-            vc_diff(1) = 0.D0
-            vc(1) = 0.
-            vc_diff(2) = 0.D0
-            vc(2) = 0.
-            vc_diff(3) = 0.D0
-            vc(3) = 0.
+            vq_diff(1) = 0.D0
+            vq(1) = 0.
+            vq_diff(2) = 0.D0
+            vq(2) = 0.
+            vq_diff(3) = 0.D0
+            vq(3) = 0.
           END IF
           DO k=1,3
-            vc_diff(k) = vc_diff(k) + wcsrd_u(k, i, 1)*vinf_diff(1) + 
+            vq_diff(k) = vq_diff(k) + wcsrd_u(k, i, 1)*vinf_diff(1) + 
      +        wcsrd_u(k, i, 2)*vinf_diff(2) + wcsrd_u(k, i, 3)*vinf_diff
      +        (3) + wcsrd_u(k, i, 4)*wrot_diff(1) + wcsrd_u(k, i, 5)*
      +        wrot_diff(2) + wcsrd_u(k, i, 6)*wrot_diff(3)
-            vc(k) = vc(k) + wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*
+            vq(k) = vq(k) + wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*
      +        vinf(2) + wcsrd_u(k, i, 3)*vinf(3) + wcsrd_u(k, i, 4)*wrot
      +        (1) + wcsrd_u(k, i, 5)*wrot(2) + wcsrd_u(k, i, 6)*wrot(3)
           ENDDO
 C 
-          result1_diff = DOT_D(enc_q(1, i, iq), enc_q_diff(1, i, iq), vc
-     +      , vc_diff, result1)
+          result1_diff = DOT_D(enc_q(1, i, iq), enc_q_diff(1, i, iq), vq
+     +      , vq_diff, result1)
           rhs_vec_diff(i) = -result1_diff
           rhs_vec(i) = -result1
         ELSE

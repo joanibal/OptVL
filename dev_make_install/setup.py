@@ -38,7 +38,6 @@ if __name__ == "__main__":
     # after running make in the top
     # `pip install`
 
-
     setup(
         name="optvl",
         version=f"{get_version_from_pyproject()}.dev0",
@@ -48,8 +47,8 @@ if __name__ == "__main__":
         url="https://github.com/joanibal/optvl",
         license="GPL-2.0",
         packages=["optvl"],
-        package_dir={"optvl": "../"},
-        package_data={"optvl": ["*.so"]},
+        package_dir={"optvl": "optvl"},
+        package_data={"optvl": ["optvl/*.so"]},
         install_requires=["numpy"],
         extras_require={"plotting": ["matplotlib"], "testing": ["testflo>=1.4.5"]},
         classifiers=["Programming Language :: Python, Fortran"],

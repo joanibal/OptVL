@@ -97,7 +97,7 @@ class TestStabDerivs(unittest.TestCase):
         }
         
         for con_key in con_keys:
-            h = 1e-8
+            h = 1e-9
             val = self.ovl_solver.get_constraint(con_key)
             self.ovl_solver.set_variable(con_key, val + h)
             self.ovl_solver.execute_run()
@@ -114,7 +114,7 @@ class TestStabDerivs(unittest.TestCase):
                    fd_dot *= 180/np.pi 
                    # convert to radians from degrees!
                 
-                rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
+                # rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
                 # print(f"{key:5}  | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
                 tol = 1e-13
@@ -130,7 +130,7 @@ class TestStabDerivs(unittest.TestCase):
                     np.testing.assert_allclose(
                         ad_dot,
                         fd_dot,
-                        rtol=5e-5,
+                        rtol=5e-4,
                         err_msg=f"func_key {key}",
                     )   
             

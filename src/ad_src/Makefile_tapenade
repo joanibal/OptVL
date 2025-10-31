@@ -17,7 +17,8 @@ ALL_RES_FILES =	$(SRC)/aero.f\
 				
 
 # intermediate preprocessed files.
-I_RES_FILES := $(ALL_RES_FILES)
+PP_DIR = preprocessed_files
+PP_FILES = $(addprefix $(PP_DIR)/,$(notdir $(ALL_RES_FILES)))
 
 # ---------------------------------------------------------------------
 # If you modify these variables you must check that the necessary intermmidate variables are in AVL_ad_seeds.inc. 
@@ -27,38 +28,49 @@ I_RES_FILES := $(ALL_RES_FILES)
 fullRoutines = "\
 	update_surfaces(XYZSCAL,XYZTRAN,ADDINC,XYZLES,CHORDS,AINCS,XASEC,SASEC,TASEC,CLCDSEC,CLAF)>(ENC,ENV, DXV, CHORDV,CHORD, CHORD1, CHORD2, RLE,RLE1,RLE2, WSTRIP, RV1,RV2,RV,RC,RS,RL, ENSY, ENSZ, ESS, XSREF,YSREF,ZSREF, ENC_D)\
 	\
-	get_res(GAM, GAM_D, GAM_U, CONVAL, PARVAL, YSYM, ZSYM, ENC, ENV, DXV, CHORDV, RV1, RV2, RV, RC, RS, RL, ENC_D)>(RES, RES_D, RES_U, GAM, GAM_D, GAM_U, VINF, WROT, VINF_A, VINF_B, ALFA, BETA, DELCON, RV1,RV2, RV, RC,DXV, XYZREF, CDREF, MACH)\
+	get_res(GAM, GAM_D, GAM_U, CONVAL, PARVAL, YSYM, ZSYM, ENC, ENV, DXV, CHORDV, RV1, RV2, RV, RC, RS, RL, ENC_D)>(RES, RES_D, RES_U, GAM, GAM_D, GAM_U, VINF, WROT, VINF_A, VINF_B, ALFA, BETA, DELCON, RV1,RV2, RV, RC,DXV, XYZREF, WV_GAM, CDREF, MACH)\
 	\
-	VElSUM(MACH, RV, RV1, RV2, CHORDV, GAM, GAM_U, VINF, WROT)>(WV, WV_U, GAM, GAM_U, VINF, WROT, RV, RV1, RV2) \
-	AERO(GAM, GAM_U, GAM_D, WV, WV_U, RC, RV, RV1, RV2, RLE, XYZREF, CHORD, CHORD1, CHORD2, RLE1, RLE2, WSTRIP, ALFA, MACH, VINF, WROT, VINF_A, VINF_B, ENSZ, ENSY, ESS, SREF, CREF, BREF, XSREF,YSREF,ZSREF,DXV, CDREF)>(\
-	CLTOT, CDTOT, CDVTOT, CDITOT\
+	VElSUM(GAM, GAM_U, GAM_D, VINF, WROT, WV_GAM)>(VV, VV_U, VV_D, WV, WV_U, WV_D, GAM, GAM_U, GAM_D, VINF, WROT, RV, RV1, RV2) \
+	AERO(GAM, GAM_U, GAM_D, VV, VV_U, VV_D, WV, WV_U, WV_D, RC, RV, RV1, RV2, RLE, XYZREF, CHORD, CHORD1, CHORD2, RLE1, RLE2, WSTRIP, ALFA, MACH, VINF, WROT, VINF_A, VINF_B, ENSZ, ENSY, ESS, SREF, CREF, BREF, XSREF,YSREF,ZSREF,DXV, CDREF)>(\
+	CLTOT, CYTOT, CDTOT, CDVTOT, CDITOT\
 	CLFF, CYFF, CDFF,\
-	CXTOT, CYTOT, CZTOT,\
-	CRTOT, CMTOT, CNTOT,\
+	CFTOT, \
+	CMTOT,\
 	CXBAX, CYBAX, CZBAX,\
 	CRBAX, CMBAX, CNBAX,\
 	CRSAX, CNSAX, \
 	SPANEF,\
-	CLTOT_D, CDTOT_D,\
-	CXTOT_D, CYTOT_D, CZTOT_D,\
-	CRTOT_D, CMTOT_D, CNTOT_D,\
+	CLTOT_D, CYTOT_D, CDTOT_D,\
+	CFTOT_D, \
+	CMTOT_D, \
+	CXTOT_D_BA, CYTOT_D_BA, CZTOT_D_BA, \
+    CRTOT_D_BA, CMTOT_D_BA, CNTOT_D_BA, \
 	CLTOT_AL, CLTOT_BE, CLTOT_RX, CLTOT_RY, CLTOT_RZ,\
 	CDTOT_AL, CDTOT_BE, CDTOT_RX, CDTOT_RY, CDTOT_RZ,\
 	CYTOT_AL, CYTOT_BE, CYTOT_RX, CYTOT_RY, CYTOT_RZ,\
 	CRTOT_AL, CRTOT_BE, CRTOT_RX, CRTOT_RY, CRTOT_RZ,\
 	CMTOT_AL, CMTOT_BE, CMTOT_RX, CMTOT_RY, CMTOT_RZ,\
 	CNTOT_AL, CNTOT_BE, CNTOT_RX, CNTOT_RY, CNTOT_RZ,\
-	XNP, SM, BB, RR\
+	XNP, SM, BB, RR,\
+	CRSAX_D, CMSAX_D, CNSAX_D,\
 	CXTOT_U_BA, CYTOT_U_BA, CZTOT_U_BA,\
 	CRTOT_U_BA, CMTOT_U_BA, CNTOT_U_BA\
 	) \
 "
 
-# get_res is possible missing WCSRD_U
 
 default: ad_forward ad_reverse
 
-ad_forward:
+preprocess_files:
+
+	@echo "Preprocessing all input files for AD..."
+	mkdir -p $(PP_DIR)
+# make sure the dir is empty
+	rm -f $(PP_DIR)/*
+	
+	python ad_utils/edit_ad_src.py preprocess --files $(ALL_RES_FILES) --output_dir=$(PP_DIR)
+
+clean_fwd: 
 # First delete the holding directory if it exists
 	rm -fr forward_ad_src
 	rm -fr forward_tmp
@@ -67,8 +79,16 @@ ad_forward:
 	mkdir -p forward_ad_src
 	mkdir -p forward_tmp
 
-# Run preprocessor on all input files
-# make -f Makefile_tapenade preprocess_forward
+clean_rev:
+# First delete the holding directory if it exists
+	rm -fr reverse_ad_src
+	rm -fr reverse_tmp
+
+# Next create the holidng directory:
+	mkdir -p reverse_ad_src
+	mkdir -p reverse_tmp
+
+ad_forward: preprocess_files clean_fwd
 
 # The following is the single Tapenade command to run:
 	$(TAPENADE_HOME)/bin/tapenade \
@@ -78,22 +98,12 @@ ad_forward:
 	-tgtfuncname %_d \
 	-forward \
 	$(TAPENADE_PRECISION) \
-	$(I_RES_FILES) \
+	$(PP_FILES) \
 	-O forward_tmp
 	
-	python ad_utils/edit_ad_src.py forward_tmp forward_ad_src forward
+	python ad_utils/edit_ad_src.py forward --input=forward_tmp --output=forward_ad_src
 	
-ad_reverse:
-# First delete the holding directory if it exists
-	rm -fr reverse_ad_src
-	rm -fr reverse_tmp
-
-# Next create the holidng directory:
-	mkdir -p reverse_ad_src
-	mkdir -p reverse_tmp
-
-# Run preprocessor on all input files
-# make -f Makefile_tapenade preprocess_reverse
+ad_reverse: preprocess_files
 
 # The following is the single Tapenade command to run:
 	$(TAPENADE_HOME)/bin/tapenade \
@@ -103,10 +113,10 @@ ad_reverse:
 	-adjfuncname %_b \
 	-reverse \
 	$(TAPENADE_PRECISION) \
-	$(I_RES_FILES) \
+	$(PP_FILES) \
 	-O reverse_tmp
 	
-	python ad_utils/edit_ad_src.py reverse_tmp reverse_ad_src reverse
+	python ad_utils/edit_ad_src.py reverse --input=reverse_tmp --output=reverse_ad_src 
 
 view-html:
 	xdg-open forward_ad_src/tapenadehtml/tapenade.html

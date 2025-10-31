@@ -228,7 +228,7 @@ C
         if (save_file) then 
           WRITE(LU,'(A)') 'SURFACE'
           WRITE(LU,'(A)') STITLE(ISURF)
-          WRITE(LU,'(I6,6X,A)') LSCOMP(ISURF), '  | component'
+          WRITE(LU,'(I6,6X,A)') LNCOMP(ISURF), '  | component'
           WRITE(LU,'(2I6,A)') NJ(ISURF), NK(ISURF),
      &     '  | elements (span, chord)'
           WRITE(LU,'(I6,6X,A)') IMAGS(ISURF),

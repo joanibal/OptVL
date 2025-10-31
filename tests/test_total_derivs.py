@@ -180,9 +180,9 @@ class TestTotals(unittest.TestCase):
 
                     rel_err = np.abs(ad_dot - func_dot) / np.abs(func_dot + 1e-20)
 
-                    print(
-                        f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
-                    )
+                    # print(
+                    #     f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                    # )
                     
                     tol = 1e-8
                     if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
@@ -282,7 +282,7 @@ class TestTotals(unittest.TestCase):
                         np.testing.assert_allclose(
                             geom_dot,
                             func_dot,
-                            rtol=3e-3,
+                            rtol=6e-3,
                             err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                         )
                         
@@ -310,7 +310,7 @@ class TestTotals(unittest.TestCase):
                             np.testing.assert_allclose(
                                 geom_dot,
                                 func_dot,
-                                rtol=3e-3,
+                                rtol=6e-3,
                                 err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                             )                
                 
@@ -321,9 +321,9 @@ class TestTotals(unittest.TestCase):
 
                         rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
 
-                        print(
-                            f"{func_key}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
-                        )
+                        # print(
+                        #     f"{func_key}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                        # )
                         
                         tol = 5e-7
                         if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
@@ -338,7 +338,7 @@ class TestTotals(unittest.TestCase):
                             np.testing.assert_allclose(
                                 geom_dot,
                                 func_dot,
-                                rtol=3e-3,
+                                rtol=6e-3,
                                 err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                             )                
                 

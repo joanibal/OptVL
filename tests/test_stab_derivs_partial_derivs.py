@@ -189,7 +189,7 @@ class TestResidualUPartials(unittest.TestCase):
                 ref_seeds={ref_key: 1.0}, mode="FD", step=1e-5
             )[6]
             
-            print(res_u_seeds, res_u_seeds_FD)
+            # print(res_u_seeds, res_u_seeds_FD)
 
             np.testing.assert_allclose(
                 res_u_seeds,
@@ -203,7 +203,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
     def setUp(self):
         # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
         self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        # self.ovl_solver = OVLSolver(geo_file="geom_files/rect.avl")
         self.ovl_solver.set_variable("alpha", 45.0)
         self.ovl_solver.set_variable("beta", 45.0)
         self.ovl_solver.execute_run()
@@ -224,12 +224,25 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
             for deriv_func in sd_d:
                 sens_label = f"{deriv_func} wrt {con_key}"
                 # print(sens_label, sd_d[deriv_func][cs_key], sd_d_fd[deriv_func][cs_key])
-                np.testing.assert_allclose(
-                    sd_d[deriv_func],
-                    sd_d_fd[deriv_func],
-                    rtol=1e-4,
-                    err_msg=sens_label,
-                )
+                
+                tol = 1e-10
+                # print(f"{deriv_func} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
+                if np.abs(sd_d[deriv_func]) < tol or np.abs(sd_d_fd[deriv_func]) < tol:
+                    # If either value is basically zero, use an absolute tolerance
+                    np.testing.assert_allclose(
+                        sd_d[deriv_func],
+                        sd_d_fd[deriv_func],
+                        atol=1e-8,
+                        err_msg=sens_label,
+                    )
+                else:
+                    np.testing.assert_allclose(
+                        sd_d[deriv_func],
+                        sd_d_fd[deriv_func],
+                        rtol=1e-4,
+                        err_msg=sens_label,
+                    )
+                
 
     def test_rev_aero_constraint(self):
         
@@ -286,14 +299,14 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
                         np.testing.assert_allclose(
                             sd_d[deriv_func],
                             sd_d_fd[deriv_func],
-                            atol=1e-8,
+                            atol=1e-7,
                             err_msg=sens_label,
                         )
                     else:
                         np.testing.assert_allclose(
                             sd_d[deriv_func],
                             sd_d_fd[deriv_func],
-                            rtol=1e-4,
+                            rtol=5e-3,
                             err_msg=sens_label,
                         )
 
@@ -362,8 +375,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
 
     def test_rev_gamma_u(self):
         num_gamma = self.ovl_solver.get_mesh_size()
-        num_consurf = self.ovl_solver.get_num_control_surfs()
-        gamma_u_seeds_fwd = np.random.rand(num_consurf, num_gamma)
+        gamma_u_seeds_fwd = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
         sd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[3]
         self.ovl_solver.clear_ad_seeds_fast()

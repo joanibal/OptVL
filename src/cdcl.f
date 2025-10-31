@@ -1,7 +1,7 @@
 C***********************************************************************
 C    Module:  cdcl.f
 C 
-C    Copyright (C) 2002 Mark Drela, Harold Youngren
+C    Copyright (C) 2020 Mark Drela, Harold Youngren
 C 
 C    This program is free software; you can redistribute it and/or modify
 C    it under the terms of the GNU General Public License as published by
@@ -18,102 +18,98 @@ C    along with this program; if not, write to the Free Software
 C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
 
-      SUBROUTINE CDCL(J,CL,CD,CD_CL)
-C
-C--- Routine for CD as a function of CL, as defined by 6 parameters
-C    defining the polar, input by the user and stored for each strip J.
-C
-C    The CD-CL polar is based on a simple interpolation scheme using
-C    four CL regions:
-C     1) negative stall region
-C     2) parabolic CD(CL) region between negative stall and the drag minimum
-C     2) parabolic CD(CL) region between the drag minimum and positive stall
-C     4) positive stall region
-C
-C             CLpos,CDpos       <-  Region 4 (quadratic above CLpos)
-C    CL |     X--------      
-C       |    /                     
-C       |   |                   <-  Region 3 (quadratic above CLcdmin)
-C       |   X CLcdmin,CDmin  
-C       |   |                
-C       |    \                  <-  Region 2 (quadratic below CLcdmin)
-C       |     X_________      
-C       |     CLneg,CDneg       <-  Region 1 (quadratic below CLneg)
-C       |                             
-C       -------------------------
-C                       CD
-C
-C    The parameters that control the section "polar" are:
-C      CLCDSEC(1)  the CL (CLneg) at point before the negative stall drag rise
-C      CLCDSEC(2)  the CD (CDneg) at CLneg
-C      CLCDSEC(3)  the CL (CLcdmin) at minimum drag (middle of polar)
-C      CLCDSEC(4)  the CD (CDmin) at CLcdmin
-C      CLCDSEC(5)  the CL (CLpos) at point before the positive stall drag rise
-C      CLCDSEC(6)  the CD (CDpos) at CLpos
-C
-      INCLUDE 'AVL.INC'
-C
-C--- CLINC and CDINC control the rate of increase of drag in the stall regions
-C    CLINC=0.2 forces drag to increase by CDINC over deltaCL=0.2 after stall
-C    The CDINC term is the CD increment added by deltaCL=CLINC after stall
-C
-      DATA  CLINC, CDINC / 0.2, 0.0500 /
-C
-      CD    = 0.0
-      CD_CL = 0.0
-      IF(J.LT.1 .OR. J.GT.NSTRIP) THEN
-        WRITE(*,*) 'Error in CDCL - strip index out of bounds'
-        RETURN
-      ENDIF
-C
-C--- Unpack the CD,CL parameters for this strip
-      CLMIN = CLCD(1,J)
-      CDMIN = CLCD(2,J)
-      CL0   = CLCD(3,J)
-      CD0   = CLCD(4,J)
-      CLMAX = CLCD(5,J)
-      CDMAX = CLCD(6,J)
-      IF(CLMAX.LE.CL0 .OR. CL0.LE.CLMIN) THEN
-        WRITE(*,*) '*** CDCL input CL data out of order'
-        RETURN
-      ENDIF
-C
-C--- Some matching parameters that make the slopes smooth at the stall joins
-      CDX1 = 2.0*(CDMIN-CD0)*(CLMIN-CL0)/(CLMIN-CL0)**2 
-      CDX2 = 2.0*(CDMAX-CD0)*(CLMAX-CL0)/(CLMAX-CL0)**2 
-      CLFAC = 1.0 / CLINC
-C
-C--- Four formulas are used for CD, depending on the CL  
-C
-      IF(CL.LT.CLMIN) THEN
-C--- Negative stall drag model (slope matches lower side, quadratic drag rise)
-        CD = CDMIN + CDINC*(CLFAC*(CL-CLMIN))**2
-     &      + CDX1*(1.0 - (CL-CL0)/(CLMIN-CL0))
-        CD_CL = CDINC*CLFAC*2.0*(CL-CLMIN)
-C
-C--- Quadratic matching negative stall and minimum drag point with zero slope
-       ELSEIF(CL.LT.CL0) THEN
-        CD = CD0 + (CDMIN-CD0)*(CL-CL0)**2/(CLMIN-CL0)**2  
-        CD_CL = (CDMIN-CD0)*2.0*(CL-CL0)/(CLMIN-CL0)**2  
-C
-C--- Quadratic matching positive stall and minimum drag point with zero slope
-       ELSEIF(CL.LT.CLMAX) THEN
-        CD = CD0 + (CDMAX-CD0)*(CL-CL0)**2/(CLMAX-CL0)**2  
-        CD_CL = (CDMAX-CD0)*2.0*(CL-CL0)/(CLMAX-CL0)**2  
-C
-       ELSE
-C--- Positive stall drag model (slope matches upper side, quadratic drag rise)
-        CD = CDMAX + CDINC*(CLFAC*(CL-CLMAX))**2  
-     &      - CDX2*(1.0 - (CL-CL0)/(CLMAX-CL0))
-        CD_CL = CDINC*CLFAC*2.0*(CL-CLMAX)
-      ENDIF
-C
-      RETURN
-      END
+      subroutine cdcl(cdclpol,cl,cd,cd_cl)
+c-------------------------------------------------------------------------
+c    Returns cd as a function of cl, or drag polar.
+c
+c    The polar is defined in 4 pieces, between and outside 3 cl,cd pairs,
+c    shown as x symbols on diagram below
+c
+c     1) negative stall region
+c     2) parabolic cd(cl) region between negative stall and the drag minimum
+c     2) parabolic cd(cl) region between the drag minimum and positive stall
+c     4) positive stall region
+c
+c             clpos,cdpos       <-  region 4 (quadratic above clpos)
+c    cl |     x--------      
+c       |    /                     
+c       |   |                   <-  region 3 (quadratic above clcdmin)
+c       |   x clcdmin,cdmin  
+c       |   |                
+c       |    \                  <-  region 2 (quadratic below clcdmin)
+c       |     x_________      
+c       |     clneg,cdneg       <-  region 1 (quadratic below clneg)
+c       |                             
+c       -------------------------
+c                       cd
+c
+c    The 3 cd,cl pairs are specified in the input cdclpol(.) array:
+c      cdclpol(1)   cl (clneg) at point before the negative stall drag rise
+c      cdclpol(2)   cd (cdneg) at clneg
+c      cdclpol(3)   cl (clcdmin) at minimum drag (middle of polar)
+c      cdclpol(4)   cd (cdmin) at clcdmin
+c      cdclpol(5)   cl (clpos) at point before the positive stall drag rise
+c      cdclpol(6)   cd (cdpos) at clpos
+c-------------------------------------------------------------------------
+      real cdclpol(6)
+c
+c--- clinc and cdinc control the rate of increase of drag in the stall regions
+c    clinc=0.2 forces drag to increase by cdinc over deltacl=0.2 after stall
+c    the cdinc term is the cd increment added by deltacl=clinc after stall
+      data  clinc, cdinc / 0.2, 0.0500 /
+c
+      cd    = 0.0
+      cd_cl = 0.0
 
-
-
-
-
-
-
+c---- unpack the cd,cl parameters for the polar
+      clmin = cdclpol(1)
+      cdmin = cdclpol(2)
+      cl0   = cdclpol(3)
+      cd0   = cdclpol(4)
+      clmax = cdclpol(5)
+      cdmax = cdclpol(6)
+      if(clmax.le.cl0 .or. cl0.le.clmin) then
+        write(*,*) '* CDCL: input CL data out of order'
+        return
+      endif
+c
+c---- matching parameters that make the slopes smooth at the stall joins
+      cdx1 =  2.0*(cdmin-cd0)*(clmin-cl0)/(clmin-cl0)**2 
+      cdx2 =  2.0*(cdmax-cd0)*(clmax-cl0)/(clmax-cl0)**2 
+      clfac = 1.0 / clinc
+c
+      if(cl.lt.clmin) then
+c------ negative stall region
+c-      slope matches lower side, quadratic drag rise
+        cd = cdmin
+     &        + cdinc*clfac**2 * (cl-clmin)**2
+     &        + cdx1*(1.0 - (cl-cl0)/(clmin-cl0))
+        cd_cl = cdinc*clfac**2 * (cl-clmin)*2.0
+     &        - cdx1                /(clmin-cl0)
+c
+       elseif(cl.lt.cl0) then
+c------ lower quadratic
+c-      slope matches negative stall, and has zero slope at min drag point
+        cd = cd0
+     &        + (cdmin-cd0)*(cl-cl0)**2 /(clmin-cl0)**2  
+        cd_cl = (cdmin-cd0)*(cl-cl0)*2.0/(clmin-cl0)**2  
+c
+       elseif(cl.lt.clmax) then
+c------ upper quadratic
+c-      slope matches positive stall, and has zero slope at min drag point
+        cd = cd0
+     &        + (cdmax-cd0)*(cl-cl0)**2 /(clmax-cl0)**2  
+        cd_cl = (cdmax-cd0)*(cl-cl0)*2.0/(clmax-cl0)**2  
+c
+       else
+c------ positive stall region
+c-      slope matches upper side, quadratic drag rise
+        cd = cdmax
+     &        + cdinc*clfac**2 * (cl-clmax)**2  
+     &        - cdx2*(1.0 - (cl-cl0)/(clmax-cl0))
+        cd_cl = cdinc*clfac**2 * (cl-clmax)*2.0
+     &        + cdx2                /(clmax-cl0)
+      endif
+c
+      return
+      end ! cdcl

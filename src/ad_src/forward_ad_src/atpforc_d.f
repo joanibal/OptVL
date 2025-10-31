@@ -3,7 +3,8 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of tpforc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: clff cyff cdff spanef
-C   with respect to varying inputs: sref bref rv1 rv2 rc gam
+C   with respect to varying inputs: sref bref chord rv1 rv2 rc
+C                gam
 C***********************************************************************
 C    Module:  atpforc.f
 C 
@@ -65,7 +66,9 @@ C
       REAL vz_diff
       INTEGER jv
       REAL dsyz
+      REAL dsyz_diff
       REAL rcore
+      REAL rcore_diff
       INTRINSIC MAX
       REAL dy1
       REAL dy1_diff
@@ -86,6 +89,7 @@ C
       REAL spanef_cy
       REAL spanef_cd
       REAL arg1
+      REAL arg1_diff
       REAL temp
       REAL temp0
       REAL(kind=8) temp1
@@ -122,7 +126,7 @@ C
         cyff_g(n) = 0.
         cdff_g(n) = 0.
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         gams_diff(ii1) = 0.D0
       ENDDO
 C
@@ -139,7 +143,7 @@ C
           gams_g(jc, n) = 0.
         ENDDO
 C
-Ccc        ISURF = NSURFS(JC)
+Ccc        ISURF = LSSURF(JC)
 Ccc        IF(LFLOAD(ISURF)) THEN   !Bug 6/13/14 HHY 
 C------- add circulation of this strip only if it contributes to total load
         i1 = ijfrst(jc)
@@ -157,17 +161,17 @@ C------- add circulation of this strip only if it contributes to total load
           ENDDO
         ENDDO
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           rt2_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           rtc_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           rt1_diff(ii2, ii1) = 0.D0
         ENDDO
@@ -233,18 +237,28 @@ C
 C
 C...Sum velocity contributions from wake vortices
         DO jv=1,nstrip
+          arg1_diff = 2*(rt2(2, jv)-rt1(2, jv))*(rt2_diff(2, jv)-
+     +      rt1_diff(2, jv)) + 2*(rt2(3, jv)-rt1(3, jv))*(rt2_diff(3, jv
+     +      )-rt1_diff(3, jv))
           arg1 = (rt2(2, jv)-rt1(2, jv))**2 + (rt2(3, jv)-rt1(3, jv))**2
-          dsyz = SQRT(arg1)
-          IF (lscomp(nsurfs(jc)) .EQ. lscomp(nsurfs(jv))) THEN
+          temp = SQRT(arg1)
+          IF (arg1 .EQ. 0.D0) THEN
+            dsyz_diff = 0.D0
+          ELSE
+            dsyz_diff = arg1_diff/(2.0*temp)
+          END IF
+          dsyz = temp
+          IF (lncomp(lssurf(jc)) .EQ. lncomp(lssurf(jv))) THEN
 Ccc        RCORE = 0.0001*DSYZ
             rcore = 0.
-          ELSE IF (vrcore*chord(jv) .LT. 2.0*vrcore*dsyz) THEN
-            rcore = 2.0*vrcore*dsyz
+            rcore_diff = 0.D0
+          ELSE IF (vrcorec*chord(jv) .LT. vrcorew*dsyz) THEN
+            rcore_diff = vrcorew*dsyz_diff
+            rcore = vrcorew*dsyz
           ELSE
-            rcore = vrcore*chord(jv)
+            rcore_diff = vrcorec*chord_diff(jv)
+            rcore = vrcorec*chord(jv)
           END IF
-C
-          rcore = 0.
 C
           dy1_diff = ycntr_diff - rt1_diff(2, jv)
           dy1 = ycntr - rt1(2, jv)
@@ -254,10 +268,28 @@ C
           dz1 = zcntr - rt1(3, jv)
           dz2_diff = zcntr_diff - rt2_diff(3, jv)
           dz2 = zcntr - rt2(3, jv)
-          rsq1_diff = 2*dy1*dy1_diff + 2*dz1*dz1_diff
-          rsq1 = dy1*dy1 + dz1*dz1 + rcore**2
-          rsq2_diff = 2*dy2*dy2_diff + 2*dz2*dz2_diff
-          rsq2 = dy2*dy2 + dz2*dz2 + rcore**2
+          arg1_diff = 2*(dy1**2+dz1**2)*(2*dy1*dy1_diff+2*dz1*dz1_diff) 
+     +      + 4*rcore**3*rcore_diff
+          arg1 = (dy1**2+dz1**2)**2 + rcore**4
+          temp = SQRT(arg1)
+          IF (arg1 .EQ. 0.D0) THEN
+            rsq1_diff = 0.D0
+          ELSE
+            rsq1_diff = arg1_diff/(2.0*temp)
+          END IF
+          rsq1 = temp
+          arg1_diff = 2*(dy2**2+dz2**2)*(2*dy2*dy2_diff+2*dz2*dz2_diff) 
+     +      + 4*rcore**3*rcore_diff
+          arg1 = (dy2**2+dz2**2)**2 + rcore**4
+          temp = SQRT(arg1)
+          IF (arg1 .EQ. 0.D0) THEN
+            rsq2_diff = 0.D0
+          ELSE
+            rsq2_diff = arg1_diff/(2.0*temp)
+          END IF
+          rsq2 = temp
+Cc          RSQ1 = DY1*DY1 + DZ1*DZ1 + RCORE**2
+Cc          RSQ2 = DY2*DY2 + DZ2*DZ2 + RCORE**2
           temp = dz1/rsq1 - dz2/rsq2
           vy_diff = vy_diff + hpi*(temp*gams_diff(jv)+gams(jv)*((
      +      dz1_diff-dz1*rsq1_diff/rsq1)/rsq1-(dz2_diff-dz2*rsq2_diff/
@@ -422,7 +454,7 @@ C
 C
 C...Trefftz-plane drag is kinetic energy in crossflow
 C
-        isurf = nsurfs(jc)
+        isurf = lssurf(jc)
         IF (lfload(isurf)) THEN
 C-------add load from this strip only if it contributes to total load
           temp1 = dyt/sref
@@ -460,7 +492,11 @@ C-------add load from this strip only if it contributes to total load
         END IF
       ENDDO
 C
-C---- Double the X,Z forces, zero Y force for a Y symmetric case
+C
+C---------------------------------------------------------
+C--- If case is XZ symmetric (IYSYM=1), add contributions from images,
+C    zero out the asymmetric forces and double the symmetric ones
+C
       IF (iysym .EQ. 1) THEN
         clff_diff = 2.0*clff_diff
         clff = 2.0*clff
@@ -484,6 +520,7 @@ C---- Double the X,Z forces, zero Y force for a Y symmetric case
         ENDDO
         cyff_diff = 0.D0
       END IF
+C---------------------------------------------------------
 C
 C---- aspect ratio
       temp2 = bref*bref/sref

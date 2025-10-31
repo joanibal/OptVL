@@ -51,6 +51,7 @@ share/python-wheels/
 MANIFEST
 src/ad_src/forward_tmp/
 src/ad_src/reverse_tmp/
+src/ad_src/preprocessed_files/
 src/includes/AVL.INC
 examples/*.html
 examples/*.db
