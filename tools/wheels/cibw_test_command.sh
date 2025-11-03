@@ -6,9 +6,9 @@ cd $PROJECT_DIR/tests
 
 # install tesing dependencies
 pip install psutil openmdao!=3.38
-pip install testflo
+# pip install testflo
 
-testflo -v .
+# testflo -v .
 
 #HACK: if the tests are not split up the CI runs out of memory...
 # python -m unittest -v
@@ -16,9 +16,9 @@ testflo -v .
 
 
 
-# # test package built and installed correctly
-# python -m unittest -v test_import.py
-# python -m unittest -v test_io.py
+# test package built and installed correctly
+python -m unittest -v test_import.py
+python -m unittest -v test_io.py
 
 # # test mem ussage of pyavl and test framework
 # python -m unittest -v test_tear_down.py

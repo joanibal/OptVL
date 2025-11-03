@@ -32,12 +32,12 @@
 !              to make it easier to termine the true size in clear_ad_seeds_fast()
 !              I increased some values to avoid matching
 
-      PARAMETER (NVMAX=2500)
+      PARAMETER (NVMAX=1000)
 
-      PARAMETER (NSMAX=200) ! max number of strips
-      PARAMETER (NSECMAX=201) ! max number of geometry sections
+      PARAMETER (NSMAX=500) ! max number of strips
+      PARAMETER (NSECMAX=501) ! max number of geometry sections
       PARAMETER (NFMAX=100) ! max number of surfaces
-      PARAMETER (NLMAX=202) ! max number of body nodes
+      PARAMETER (NLMAX=502) ! max number of body nodes
       PARAMETER (NBMAX=20)  ! max number of bodies
 
       PARAMETER (NUMAX=6)  ! number of velocity components
@@ -45,7 +45,7 @@
       PARAMETER (NGMAX=21) ! max number of design variables
 
       PARAMETER (NRMAX=25)  ! max number of run cases
-      PARAMETER (NTMAX=203) ! max number of time values
+      PARAMETER (NTMAX=503) ! max number of time values
 
       PARAMETER (NOBMAX=100) ! max number of off body points
       
