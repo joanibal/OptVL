@@ -3,7 +3,7 @@ import numpy as np
 
 write_tecplot_files = True
 
-ovl_solver = OVLSolver(geo_file="aircraft.avl", debug=False, timing=False)
+ovl_solver = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False, timing=False)
 
 # set the angle of attack
 ovl_solver.set_variable("alpha", 5.00)

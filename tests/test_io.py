@@ -16,7 +16,7 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_dir = os.path.join(base_dir, 'geom_files')
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
 geom_file = os.path.join(geom_dir, "aircraft.avl")
 mass_file = os.path.join(geom_dir, "aircraft.mass")
@@ -28,7 +28,6 @@ rect_geom_file = os.path.join(geom_dir, "rect.avl")
 rect_geom_output_file = os.path.join(geom_dir, "rect_out.avl")
 
 # TODO: add test for expected input output errors
-
 
 class TestInput(unittest.TestCase):
     def test_read_geom(self):
@@ -90,6 +89,7 @@ class TestOutput(unittest.TestCase):
         ovl_solver = OVLSolver(geo_file=rect_geom_file)
         ovl_solver.write_geom_file(rect_geom_output_file)   
         baseline_data = ovl_solver.get_surface_params(include_paneling=True, include_geom=False)
+
         assert baseline_data['Wing']['use surface spacing'] == True
         
         del ovl_solver

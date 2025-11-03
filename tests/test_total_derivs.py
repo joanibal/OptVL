@@ -17,21 +17,19 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
-geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
+
+geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
 
 
 class TestTotals(unittest.TestCase):
     # TODO: beta derivatives likely wrong
 
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        # self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1_trans.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
         self.ovl_solver.set_variable("alpha", 5.0)
         self.ovl_solver.set_variable("beta", 0.0)
+        self.ovl_solver.set_parameter('Mach', 0.8)
         self.ovl_solver.execute_run()
 
     def tearDown(self):

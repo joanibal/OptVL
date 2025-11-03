@@ -17,18 +17,16 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
-geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
+geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
 
 class TestStabDerivs(unittest.TestCase):
     # TODO: beta derivatives likely wrong
 
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl", debug=False)
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver = OVLSolver(geo_file=geom_file, debug=False)
         
         # HACK: we have to use alpha/beta=0 here so the stability and body axis are the same
         self.ovl_solver.set_variable("alpha", 0.0)

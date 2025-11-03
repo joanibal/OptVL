@@ -16,9 +16,10 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
+geom_file = os.path.join(geom_dir, "aircraft.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
 
 class TestEigenAnalysisSweep(unittest.TestCase):
     def setUp(self):

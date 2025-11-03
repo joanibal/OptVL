@@ -24,9 +24,10 @@ warnings.simplefilter('error', DeprecationWarning)
 np.seterr(all='raise')
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
+geom_file = os.path.join(geom_dir, "aircraft.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
 
 class TestOMWrapper(unittest.TestCase):
     def setUp(self):
@@ -141,7 +142,7 @@ class TestOMWrapper(unittest.TestCase):
         prob.run_driver()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 
-        om_val = prob.get_val(f"ovlsolver.alpha")
+        om_val = prob.get_val("ovlsolver.alpha")
         
         
         self.ovl_solver.set_trim_condition("CL", cl_star)

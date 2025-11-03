@@ -37,31 +37,31 @@ SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
 0.0    0.0    0      0.45     0.0      5      3
 AFILE
-./geom_files/airfoils/A_1.dat
+../geom_files/airfoils/A_1.dat
 
 SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
 0.0   0.75    0     0.45     0.0      5      3
 AFILE
-./geom_files/airfoils/A_2.dat
+../geom_files/airfoils/A_2.dat
 
 SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
 0.0    1.3    0      0.4     0.0      5      3
 AFILE
-./geom_files/airfoils/A_3.dat
+../geom_files/airfoils/A_3.dat
 
 SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
 0.0    1.75    0    0.3    0.0      5      3
 AFILE
-./geom_files/airfoils/A_4.dat
+../geom_files/airfoils/A_4.dat
 
 SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
 0.0    2.0    0.1   0.2     0.0      5      3
 AFILE
-./geom_files/airfoils/A_5.dat
+../geom_files/airfoils/A_5.dat
 
 
 #======================================================

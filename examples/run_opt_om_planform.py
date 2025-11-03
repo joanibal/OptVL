@@ -175,7 +175,7 @@ geom_dvs = model.add_subsystem("geom_dvs", om.IndepVarComp())
 geom_dvs.add_output('aincs', shape_by_conn=True)
 model.connect('geom_dvs.aincs', "ovlsolver.Wing:aincs")
 
-model.add_subsystem("mesh", OVLMeshReader(geom_file="rectangle.avl"))
+model.add_subsystem("mesh", OVLMeshReader(geom_file="../geom_files/rectangle.avl"))
 model.add_subsystem('geom_param', GeometryParametrizationComp())
 model.connect("mesh.Wing:yles",['geom_param.yles_in'] )
 
@@ -187,7 +187,7 @@ model.connect("mesh.Wing:yles",['mass_props.yles'] )
 model.connect("geom_param.chords_out",['mass_props.chords'] )
 
 
-model.add_subsystem("ovlsolver", OVLGroup(geom_file="rectangle.avl", output_stability_derivs=True, write_grid=True, input_param_vals=True, input_ref_vals=True, output_dir='opt_output_sweep'))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="../geom_files/rectangle.avl", output_stability_derivs=True, write_grid=True, input_param_vals=True, input_ref_vals=True, output_dir='opt_output_sweep'))
 model.connect("geom_param.xles_out",['ovlsolver.Wing:xles'] )
 model.connect("geom_param.zles_out",['ovlsolver.Wing:zles'] )
 model.connect("geom_param.chords_out",['ovlsolver.Wing:chords'] )

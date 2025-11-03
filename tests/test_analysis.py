@@ -16,8 +16,9 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "geom_files/supra.avl")
-mass_file = os.path.join(base_dir, "geom_files/supra.mass")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
+geom_file = os.path.join(geom_dir, "supra.avl")
+mass_file = os.path.join(geom_dir, "supra.mass")
 
 
 class TestBasic(unittest.TestCase):
@@ -45,8 +46,8 @@ class TestUnconstrained(unittest.TestCase):
     def test_aircraft(self):
         case = "aircraft"
         ovl = OVLSolver(
-            geo_file=os.path.join(base_dir, f"geom_files/{case}.avl"),
-            mass_file=os.path.join(base_dir, f"geom_files/{case}.mass"),
+            geo_file=os.path.join(geom_dir, f"{case}.avl"),
+            mass_file=os.path.join(geom_dir, f"{case}.mass"),
             timing=False,
             debug=False,
         )
@@ -57,8 +58,8 @@ class TestUnconstrained(unittest.TestCase):
     def test_supra(self):
         case = "supra"
         ovl = OVLSolver(
-            geo_file=os.path.join(base_dir, f"geom_files/{case}.avl"),
-            mass_file=os.path.join(base_dir, f"geom_files/{case}.mass"),
+            geo_file=os.path.join(geom_dir, f"{case}.avl"),
+            mass_file=os.path.join(geom_dir, f"{case}.mass"),
             timing=False,
             debug=False,
         )
@@ -71,8 +72,8 @@ class TestConstrained(unittest.TestCase):
     def test_aircraft(self):
         case = "aircraft"
         ovl = OVLSolver(
-            geo_file=os.path.join(base_dir, f"geom_files/{case}.avl"),
-            mass_file=os.path.join(base_dir, f"geom_files/{case}.mass"),
+            geo_file=os.path.join(geom_dir, f"{case}.avl"),
+            mass_file=os.path.join(geom_dir, f"{case}.mass"),
             timing=False,
             debug=False,
         )
@@ -83,8 +84,8 @@ class TestConstrained(unittest.TestCase):
     def test_supra(self):
         case = "supra"
         ovl = OVLSolver(
-            geo_file=os.path.join(base_dir, f"geom_files/{case}.avl"),
-            mass_file=os.path.join(base_dir, f"geom_files/{case}.mass"),
+            geo_file=os.path.join(geom_dir, f"{case}.avl"),
+            mass_file=os.path.join(geom_dir, f"{case}.mass"),
             timing=False,
             debug=False,
         )

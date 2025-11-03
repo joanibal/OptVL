@@ -3,7 +3,7 @@ import numpy as np
 from scipy.optimize import minimize
 from optvl import OVLSolver
 
-ovl_solver = OVLSolver(geo_file="aircraft.avl", debug=False)
+ovl_solver = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
 
 # setup OptVL 
 ovl_solver.set_parameter("Mach", 0.0)

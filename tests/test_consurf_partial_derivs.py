@@ -18,16 +18,16 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
+
+geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
 geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 
 class TestResidualDPartials(unittest.TestCase):
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
         self.ovl_solver.set_variable("alpha", 25.0)
         self.ovl_solver.set_variable("beta", 5.0)
         self.ovl_solver.execute_run()
@@ -187,9 +187,7 @@ class TestResidualDPartials(unittest.TestCase):
 
 class TestConSurfDerivsPartials(unittest.TestCase):
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
         self.ovl_solver.set_variable("alpha", 45.0)
         self.ovl_solver.set_variable("beta", 45.0)
         self.ovl_solver.execute_run()

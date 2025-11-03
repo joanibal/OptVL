@@ -1003,14 +1003,14 @@ class OVLSolver(object):
             
             
             # strip contributions to non-dimensionalized forces 
-            "CX": ["STRP_R", "CXSTRP"], 
-            "CY": ["STRP_R", "CYSTRP"], 
-            "CZ": ["STRP_R", "CZSTRP"],   
+            "CX": ["STRP_R", "CFSTRP", (slice(None), 0)], 
+            "CY": ["STRP_R", "CFSTRP", (slice(None), 1)], 
+            "CZ": ["STRP_R", "CFSTRP", (slice(None), 2)],   
             
             # strip contributions to total moments (body frame)
-            "Cl": ["STRP_R", "CRSTRP"], # previously CR
-            "Cm": ["STRP_R", "CMSTRP"], # previously CM
-            "Cn": ["STRP_R", "CNSTRP"], # previously CN
+            "Cl": ["STRP_R", "CMSTRP", (slice(None), 0)], # previously CR
+            "Cm": ["STRP_R", "CMSTRP", (slice(None), 1)], # previously CM
+            "Cn": ["STRP_R", "CMSTRP", (slice(None), 2)], # previously CN
             
             
             # forces non-dimentionalized by strip quantities

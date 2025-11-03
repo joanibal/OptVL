@@ -58,7 +58,7 @@ class GeometryParametrizationComp(om.ExplicitComponent):
 
 
 model = om.Group()
-model.add_subsystem("mesh", OVLMeshReader(geom_file="aircraft.avl"))
+model.add_subsystem("mesh", OVLMeshReader(geom_file="../geom_files/aircraft.avl"))
 model.add_subsystem('wing_param', GeometryParametrizationComp())
 model.connect("mesh.Wing:xles",['wing_param.xles_in'] )
 model.connect("mesh.Wing:yles",['wing_param.yles_in'] )
@@ -67,7 +67,7 @@ model.connect("wing_param.xles_out",['ovlsolver.Wing:xles'] )
 model.connect("wing_param.yles_out",['ovlsolver.Wing:yles'] )
 model.connect("wing_param.zles_out",['ovlsolver.Wing:zles'] )
 
-model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl"))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="../geom_files/aircraft.avl"))
 model.add_design_var("ovlsolver.Wing:aincs", lower=-10, upper=10)
 model.add_design_var("wing_param.added_sweep", lower=-10, upper=10)
 

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 # Initialize OptVL solver
 geo_file = "aircraft.avl" 
-ovl_solver = OVLSolver(geo_file=geo_file, debug=False)
+ovl_solver = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
 
 
 # Set Mach number for the analysis
