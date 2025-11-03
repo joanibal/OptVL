@@ -254,7 +254,7 @@ c    moments
      & CMTOT(3),                     ! body axes total CMX,CMY,CMZ referred to SREF, CREF about XYZref
      & CMTOT_U(3,NUMAX),             !sens wrt u,v,w,rot 
      & CMTOT_D(3,NDMAX),             !sens wrt control
-     & CMTOT_G(3,NGMAX),	     !sens wrt design 
+     & CMTOT_G(3,NGMAX),             !sens wrt design 
      & CRSAX, CMSAX, CNSAX,   ! total Cl,Cm,Cn in stability axis
      & CRSAX_D(NDMAX),CMSAX_D(NDMAX),CNSAX_D(NDMAX), ! stab axis mom wrt controls
 c    moments in body axis
