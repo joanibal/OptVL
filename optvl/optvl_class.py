@@ -211,6 +211,12 @@ class OVLSolver(object):
         if platform.system() == "Windows":
             #HACK
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.pyd"))[0]
+            print('avl_lib_so_file', avl_lib_so_file)
+            if len(avl_lib_so_file) == 0:
+                # print the contents of the module dir
+                print('module_dir', module_dir)
+                print(glob.glob(os.path.join(module_dir, "*")))
+                raise RuntimeError('no dyanmic library found')
         else:
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
             

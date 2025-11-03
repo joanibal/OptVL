@@ -114,6 +114,7 @@ ff_args += [
   '-fdefault-real-8',
   '-fdefault-double-8',
   '-fPIC',
+  '-fmax-stack-var-size=8388608'
   '-O2'
 ]
 
