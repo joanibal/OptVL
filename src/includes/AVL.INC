@@ -244,7 +244,7 @@ c    forces
      & CFTOT(3),                     ! body axes total CFx,CFy,CFz referred to SREF
      & CFTOT_U(3,NUMAX),             !sens wrt u,v,w,rot 
      & CFTOT_D(3,NDMAX),             !sens wrt control
-     & CFTOT_G(3,NGMAX),	     !sens wrt design 
+     & CFTOT_G(3,NGMAX),             !sens wrt design 
 c    forces in body axis
      & CXBAX, CYBAX, CZBAX,    ! total Cx,Cy,Cz in stability axis
      & CXTOT_U_BA(NUMAX), CYTOT_U_BA(NUMAX), CZTOT_U_BA(NUMAX), ! body axis stab derive wrt vel

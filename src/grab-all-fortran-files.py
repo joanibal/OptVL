@@ -6,13 +6,13 @@ import os
 
 def parse_file(file_name):
     # Initialize lists for each file type
-    fortranFiles = []
+    f90Files = []
     f77Files = []
     cFiles = []
 
     # Define a dictionary to map identifiers to lists
     list_map = {
-        "fortranFiles =": fortranFiles,
+        "f90Files =": f90Files,
         "f77Files =": f77Files,
         "cFiles =": cFiles,
     }
@@ -49,9 +49,11 @@ def parse_file(file_name):
                 current_list.append(line)
 
     # Print each file list
-    # print("fortranFiles = ", fortranFiles)
+    # print("f90Files = ", f90Files)
     # print("f77Files = ", f77Files)
     # print("cFiles = ", cFiles)
+    for file in f90Files:
+        print(file)
     for file in f77Files:
         print(file)
     for file in cFiles:
