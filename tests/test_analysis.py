@@ -20,6 +20,8 @@ geom_dir = os.path.join(base_dir, '..', 'geom_files')
 geom_file = os.path.join(geom_dir, "supra.avl")
 mass_file = os.path.join(geom_dir, "supra.mass")
 
+# we can get an exact match when run on the same matchine, but we need to loose this so the tests work on all machines
+avl_match_tol = 5e-14
 
 class TestBasic(unittest.TestCase):
     """These tests are to check that a simple case works before launching the full matrix of tests used in the other tests"""
@@ -40,7 +42,7 @@ class TestBasic(unittest.TestCase):
         for key in force_data:
             avl_key = get_avl_output_name(key, self.ovl)
             avl_val = ref_data["outputs"]["total_forces"][avl_key]
-            check_vals(force_data[key], avl_val, key, rtol=1e-15, printing=False)
+            check_vals(force_data[key], avl_val, key, rtol=avl_match_tol, printing=False)
 
 class TestUnconstrained(unittest.TestCase):
     def test_aircraft(self):
@@ -53,7 +55,7 @@ class TestUnconstrained(unittest.TestCase):
         )
         with open(f"avl_analysis_references/unconstrained_{case}.json") as f:
             ref_data_cases = json.load(f)
-            run_comparison(ovl, ref_data_cases, printing=False)
+            run_comparison(ovl, ref_data_cases, rtol=avl_match_tol, printing=False)
 
     def test_supra(self):
         case = "supra"
@@ -65,7 +67,7 @@ class TestUnconstrained(unittest.TestCase):
         )
         with open(f"avl_analysis_references/unconstrained_{case}.json") as f:
             ref_data_cases = json.load(f)
-            run_comparison(ovl, ref_data_cases)
+            run_comparison(ovl, ref_data_cases, rtol=avl_match_tol)
 
 
 class TestConstrained(unittest.TestCase):
@@ -79,7 +81,7 @@ class TestConstrained(unittest.TestCase):
         )
         with open(f"avl_analysis_references/unconstrained_{case}.json") as f:
             ref_data_cases = json.load(f)
-            run_comparison(ovl, ref_data_cases)
+            run_comparison(ovl, ref_data_cases, rtol=avl_match_tol)
 
     def test_supra(self):
         case = "supra"
@@ -91,7 +93,7 @@ class TestConstrained(unittest.TestCase):
         )
         with open(f"avl_analysis_references/unconstrained_{case}.json") as f:
             ref_data_cases = json.load(f)
-            run_comparison(ovl, ref_data_cases)
+            run_comparison(ovl, ref_data_cases, rtol=avl_match_tol)
 
 
 if __name__ == "__main__":

@@ -100,7 +100,7 @@ class TestGeom(unittest.TestCase):
         np.testing.assert_allclose(
             updated_data["Wing"]["yles"],
             new_data["Wing"]["yles"],
-            atol=1e-16
+            atol=5e-16
         )
 
 
