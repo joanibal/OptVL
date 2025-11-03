@@ -14,7 +14,8 @@ pip install psutil openmdao!=3.38
 # python -m unittest -v
 
 
-
+python -c "import sys; print(sys.version)"
+python -c "import platform; print(platform.architecture()[0])"
 
 # test package built and installed correctly
 python test_import.py
