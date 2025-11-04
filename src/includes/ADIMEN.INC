@@ -32,10 +32,13 @@
 !              to make it easier to termine the true size in clear_ad_seeds_fast()
 !              I increased some values to avoid matching
 
+      ! PARAMETER (NVMAX=4000)
       PARAMETER (NVMAX=5000)
 
       PARAMETER (NSMAX=400) ! max number of strips
       PARAMETER (NSECMAX=401) ! max number of geometry sections
+      ! PARAMETER (NSMAX=500) ! max number of strips
+      ! PARAMETER (NSECMAX=501) ! max number of geometry sections
       PARAMETER (NFMAX=100) ! max number of surfaces
       PARAMETER (NLMAX=502) ! max number of body nodes
       PARAMETER (NBMAX=20)  ! max number of bodies
@@ -48,27 +51,14 @@
       PARAMETER (NTMAX=503) ! max number of time values
 
       PARAMETER (NOBMAX=1) ! max number of off body points
+      ! PARAMETER (NOBMAX=1000) ! max number of off body points
       
       PARAMETER (ICONX=20) ! 
       PARAMETER (IBX=300)  ! max number of airfoil coordinates
 
       
-      ! PARAMETER (NVMAX=5000)
 
-      ! PARAMETER (NSMAX=500) ! max number of strips
-      ! PARAMETER (NSECMAX=501) ! max number of geometry sections
-      ! PARAMETER (NFMAX=100) ! max number of surfaces
-      ! PARAMETER (NLMAX=502) ! max number of body nodes
-      ! PARAMETER (NBMAX=20)  ! max number of bodies
-
-      ! PARAMETER (NUMAX=6)  ! number of velocity components
-      ! PARAMETER (NDMAX=30) ! max number of control surfaces
-      ! PARAMETER (NGMAX=21) ! max number of design variables
-
-      ! PARAMETER (NRMAX=25)  ! max number of run cases
-      ! PARAMETER (NTMAX=503) ! max number of time values
-
-      ! PARAMETER (NOBMAX=1000) ! max number of off body points
       
-      ! PARAMETER (ICONX=20) ! 
-      ! PARAMETER (IBX=300)  ! max number of airfoil coordinates
+
+
+      
