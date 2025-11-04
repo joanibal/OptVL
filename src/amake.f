@@ -1855,6 +1855,21 @@ c--------------------------------------------------------------
 
       ! Interpolate claf over the section
       ! CHORDC = CHORD(idx_strip)
+      ! SAB: Two ways to handle this for non linear sections
+      ! 1. Interpolate claf as non dimensional quantity
+      ! 2. Piecewise linearly iterpolate
+      ! Option 1:
+      clafc =  (1.-FC)*CLAFL + FC*CLAFR
+      ! Option 2:
+            fc = (((mesh_surf(2,idx_node_yp1)+mesh_surf(2,idx_node))/2.) 
+     & -mesh_surf(2,idx_nodel))/(mesh_surf(2,idx_noder)
+     & -mesh_surf(2,idx_nodel))
+      ! accumulate piecewise linear interp
+      if (idx_strip .eq. JFRST(isurf)) then
+
+      else
+      
+      end if 
       clafc =  (1.-FC)*(CHORDL/CHORD(idx_strip))*CLAFL
      &           +     FC *(CHORDR/CHORD(idx_strip))*CLAFR
 
@@ -1863,6 +1878,7 @@ c--------------------------------------------------------------
        
        ! Left bound vortex points 
        ! Y- point
+       idx_node = flatidx(idx_x,idx_y,isurf)
        RV1(2,idx_vor) = mesh(2,idx_x,idx_y)  
        ! Compute the panel's left side chord and angle
        dc1 = sqrt((mesh(1,idx_x+1,idx_y) - mesh(1,idx_x,idx_y))**2
