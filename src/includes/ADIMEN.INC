@@ -32,7 +32,7 @@
 !              to make it easier to termine the true size in clear_ad_seeds_fast()
 !              I increased some values to avoid matching
 
-      PARAMETER (NVMAX=4000)
+      PARAMETER (NVMAX=5000)
 
       PARAMETER (NSMAX=400) ! max number of strips
       PARAMETER (NSECMAX=401) ! max number of geometry sections
