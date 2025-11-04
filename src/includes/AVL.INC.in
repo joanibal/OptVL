@@ -497,6 +497,14 @@ c
      & REFLD(ICONX, NSMAX, NFMAX), ! control surface reflection
      & GAING(ICONX, NSMAX, NFMax)  ! desgin variable gain
 
+      COMMON /SURF_MESH_I/
+     & MFRST(NFMAX), ! stores the index in the MSHBLK where each surface's mesh begins
+     & IPTSEC(NSMAX,NFMAX), ! stores the iptloc vector for each surface
+
+      REAL(kind=avl_real) MSHBLK
+      COMMON /SURF_MESH_R/
+     & MSHBLK(3, 4*NVMAX) ! block to store all surface meshes
+
 
 C      !!--- end added variables for python geometry manipulation ---
 

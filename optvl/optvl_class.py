@@ -1091,16 +1091,15 @@ class OVLSolver(object):
 
         self.avl.makesurf_mesh(idx_surf+1, mesh, iptloc) #+1 for Fortran indexing
 
-    # Temporary helper function
-    def reset_vort_count(self):
-        self.avl.CASE_I.NSTRIP = 0
-        self.avl.CASE_I.NVOR = 0
-
     # Ideally there would be an update_surfaces routine in Fotran to do this with meshes but for now we need to do this.
     def update_mesh(self, idx_surf: int, mesh: np.ndarray, iptloc: np.ndarray, ydup:float):
-
         # nx = copy.deepcopy(mesh.shape[0])
         # ny = copy.deepcopy(mesh.shape[1])
+
+        # reset the counters before starting the first surface
+        if idx_surf == 0:
+            self.avl.CASE_I.NSTRIP = 0
+            self.avl.CASE_I.NVOR = 0
 
         # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
         # nspans by passing in all zeros
@@ -1128,16 +1127,18 @@ class OVLSolver(object):
         if self.avl.SURF_GEOM_L.LDUPL[idx_surf]:
             self.avl.sdupl(idx_surf + 1, ydup, "YDUP")
 
-    # Temporary helper function
-    def reset_avl_solver(self):
-        self.avl.CASE_L.LAIC = False
-        self.avl.CASE_L.LSRD = False
-        self.avl.CASE_L.LVEL = False
-        self.avl.CASE_L.LSOL = False
-        self.avl.CASE_L.LSEN = False
+        # Reset AVL solver upon finishing the last surface
+        if (idx_surf == (self.get_num_surfaces()-1)):
+            self.avl.CASE_L.LAIC = False
+            self.avl.CASE_L.LSRD = False
+            self.avl.CASE_L.LVEL = False
+            self.avl.CASE_L.LSOL = False
+            self.avl.CASE_L.LSEN = False
 
-
-
+    def update_surfaces_mesh(self, meshes:list, iptloc:list):
+        if len(meshes) != self.get_num_surfaces():
+            raise ValueError("Must provide a mesh for each surface ")
+        for idx_surf in 
 
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
