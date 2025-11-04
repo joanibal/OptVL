@@ -16,11 +16,16 @@ C                rv2:out rv:out rc:out rs:out dxv:out chordv:out
 C                enc:out env:out enc_d:out
 C MAKESURF
       SUBROUTINE UPDATE_SURFACES_D()
+      use avl_heap_inc
+      use avl_heap_diff_inc
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
-      INTEGER idx_uniq_surf
       INTEGER ii
       INTEGER isurf
+      EXTERNAL AVLHEAP_CLEAN
+      EXTERNAL AVLHEAP_DIFF_CLEAN
+      EXTERNAL AVLHEAP_INIT
+      EXTERNAL AVLHEAP_DIFF_INIT
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
@@ -130,6 +135,13 @@ C     reset all the flags related to the analysis pipline
       lvel = .false.
       lsol = .false.
       lsen = .false.
+C
+      IF (naic .NE. nvor) THEN
+        CALL AVLHEAP_CLEAN()
+        CALL AVLHEAP_DIFF_CLEAN()
+        CALL AVLHEAP_INIT(nvor)
+        CALL AVLHEAP_DIFF_INIT(nvor)
+      END IF
       END
 
 C  Differentiation of makesurf in forward (tangent) mode (with options i4 dr8 r8):

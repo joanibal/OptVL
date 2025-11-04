@@ -96,7 +96,7 @@ def check_vals(
     val,
     ref_val,
     msg,
-    rtol=1e-7,
+    rtol=1e-15,
     atol=0,
     printing=False,
     raise_error=True,
@@ -156,22 +156,22 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
         for key in force_data:
             avl_key = get_avl_output_name(key, ovl)
             avl_val = ref_data["outputs"]["total_forces"][avl_key]
-            check_vals(force_data[key], avl_val, key, rtol=1e-15, **kwargs)
+            check_vals(force_data[key], avl_val, key, **kwargs)
 
         mesh_data = ovl.get_mesh_data()
         for key in ref_data["outputs"]["mesh_data"]:
             mesh_avl_val = ref_data["outputs"]["mesh_data"][key]
-            check_vals(mesh_data[key], mesh_avl_val, f"meshing:{key}", rtol=1e-15, **kwargs)
+            check_vals(mesh_data[key], mesh_avl_val, f"meshing:{key}", **kwargs)
 
         reference_data = ovl.get_reference_data()
         for key in reference_data:
             ref_avl_val = ref_data["outputs"]["reference_data"][key]
-            check_vals(reference_data[key], ref_avl_val, f"ref:{key}", rtol=1e-15, **kwargs)
+            check_vals(reference_data[key], ref_avl_val, f"ref:{key}", **kwargs)
 
         control_def = ovl.get_control_deflections()
         for key in control_def:
             def_avl_val = ref_data["outputs"]["controls"][key]
-            check_vals(control_def[key], def_avl_val, key, rtol=1e-15, **kwargs)
+            check_vals(control_def[key], def_avl_val, key, **kwargs)
 
         stab_derivs = ovl.get_stab_derivs()
         for key in stab_derivs:
@@ -193,7 +193,7 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
 
             deriv_avl_val = ref_data["outputs"]["stability_derivatives"][avl_key]
             
-            check_vals(stab_derivs[key], deriv_avl_val, f"sd:{key}", rtol=1e-15, **kwargs)
+            check_vals(stab_derivs[key], deriv_avl_val, f"sd:{key}", **kwargs)
 
         body_axi_derivs = ovl.get_body_axis_derivs()
         for key in body_axi_derivs:
@@ -203,7 +203,7 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
 
             deriv_avl_val = ref_data["outputs"]["body_axis_derivatives"][avl_key]
             
-            check_vals(body_axi_derivs[key], deriv_avl_val, f"bd:{key}", rtol=1e-15, **kwargs)
+            check_vals(body_axi_derivs[key], deriv_avl_val, f"bd:{key}", **kwargs)
 
         con_stab_derivs = ovl.get_control_stab_derivs()
         for key in con_stab_derivs:
@@ -217,4 +217,4 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
                 axis_key = "body_axis_derivatives"
 
             avl_val = ref_data["outputs"][axis_key][avl_key]
-            check_vals(con_stab_derivs[key], avl_val, f"cd:{key}", rtol=1e-15, **kwargs)
+            check_vals(con_stab_derivs[key], avl_val, f"cd:{key}", **kwargs)

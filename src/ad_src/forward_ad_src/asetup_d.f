@@ -45,7 +45,7 @@ C
       CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
      +            zsym_diff, vrcorec, vrcorew, nvor, rv1, rv1_diff, rv2
      +            , rv2_diff, lvcomp, chordv, chordv_diff, nvor, rc, 
-     +            rc_diff, lvcomp, .false., wc_gam, wc_gam_diff, nvmax)
+     +            rc_diff, lvcomp, .false., wc_gam, wc_gam_diff, nvor)
       DO ii1=1,nvor
         DO ii2=1,nvor
           aicn_diff(ii2, ii1) = 0.D0
@@ -588,11 +588,11 @@ C
      +                      out_vec_diff)
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
-      REAL mat(nvmax, nvmax), vec(nvmax), out_vec(nvmax)
-      REAL mat_diff(nvmax, nvmax), vec_diff(nvmax), out_vec_diff(nvmax)
+      INTEGER n
+      REAL mat(n, n), vec(nvmax), out_vec(nvmax)
+      REAL mat_diff(n, n), vec_diff(nvmax), out_vec_diff(nvmax)
       INTEGER j
       INTEGER i
-      INTEGER n
       out_vec = 0.
       out_vec_diff = 0.D0
       DO j=1,n

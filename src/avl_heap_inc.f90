@@ -6,6 +6,8 @@ module avl_heap_inc
 ! Heap array include file for large AVL AIC arrays
 
   INTEGER, PARAMETER :: NVX=5000   ! must match nvmax in ADIMEN.INC)
+  INTEGER :: NAIC 
+  
 
 ! All non-constant variables are declared as threadprivate for OpenMP
  ! warning! hardcoding precision!

@@ -19,11 +19,16 @@ C                rs:in-out dxv:in-out chordv:in-out enc:in-out
 C                env:in-out enc_d:in-out
 C MAKESURF
       SUBROUTINE UPDATE_SURFACES_B()
+      use avl_heap_inc
+      use avl_heap_diff_inc
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
-      INTEGER idx_uniq_surf
       INTEGER ii
       INTEGER isurf
+      EXTERNAL AVLHEAP_CLEAN
+      EXTERNAL AVLHEAP_DIFF_CLEAN
+      EXTERNAL AVLHEAP_INIT
+      EXTERNAL AVLHEAP_DIFF_INIT
       INTEGER ii1
       INTEGER branch
       INTEGER ii2

@@ -27,7 +27,7 @@ class TestBasic(unittest.TestCase):
     """These tests are to check that a simple case works before launching the full matrix of tests used in the other tests"""
 
     def setUp(self):
-        self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False, timing=False)
 
     def test_one_case(self):
         with open("avl_analysis_references/unconstrained_supra.json") as f:

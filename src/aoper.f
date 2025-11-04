@@ -2196,7 +2196,7 @@ C ============= Added to AVL ===============
             do i = 1,NVOR
                   GAM_U(i,IU) = RHS_U(i, IU)
             enddo
-            CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U(:,IU))
+            CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U(:,IU))
       enddo
       
       call set_vel_rhs
@@ -2206,7 +2206,7 @@ C---- copy RHS vector into GAM that will be used for soluiton
             GAM(i) = RHS(i)
       enddo
 
-      CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM)
+      CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM)
       
       
       IF(NCONTROL.GT.0) THEN
@@ -2237,7 +2237,7 @@ C---
      &           VRCOREC,VRCOREW,
      &           NVOR,RV1,RV2,LVCOMP,CHORDV,
      &           NVOR,RV ,    LVCOMP,.TRUE.,
-     &           WV_GAM,NVMAX)
+     &           WV_GAM,NVOR)
 
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
@@ -2301,14 +2301,14 @@ C------ don't bother if this control variable is undefined
             RES_diff(i) = GAM_diff(i)
       enddo
 
-      CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_diff)
+      CALL BAKSUBTRANS(NVOR,NVOR,AICN_LU,IAPIV,RES_diff)
       
       if (solve_con_surf_adj) then 
       DO IC = 1, NCONTROL
             do i =1,NVOR
                   RES_D_diff(i,IC) = GAM_D_diff(i,IC)
             enddo
-            CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_D_diff(:,IC))
+            CALL BAKSUBTRANS(NVOR,NVOR,AICN_LU,IAPIV,RES_D_diff(:,IC))
       enddo
       endif 
 
@@ -2318,7 +2318,7 @@ C------ don't bother if this control variable is undefined
                   RES_U_diff(i,IU) = GAM_U_diff(i,IU)
             enddo
             
-            CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_U_diff(:,IU))
+            CALL BAKSUBTRANS(NVOR,NVOR,AICN_LU,IAPIV,RES_U_diff(:,IU))
       enddo
       endif
       

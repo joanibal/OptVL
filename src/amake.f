@@ -642,7 +642,7 @@ C
 c--------------------------------------------------------------
 c     Updates all surfaces, using the stored data.
 c--------------------------------------------------------------
-      
+      use avl_heap_inc
       include 'AVL.INC'
       integer ii
       
@@ -674,6 +674,13 @@ c     reset all the flags related to the analysis pipline
       LVEL = .FALSE.
       LSOL = .FALSE.
       LSEN = .FALSE.
+
+      if (NAIC /= NVOR) then 
+            call avlheap_clean()
+            call avlheap_diff_clean()
+            call avlheap_init(NVOR)
+            call avlheap_diff_init(NVOR)
+      endif 
       
       end subroutine update_surfaces
             

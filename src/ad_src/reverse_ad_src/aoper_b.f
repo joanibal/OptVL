@@ -768,7 +768,7 @@ C$BWD-OF II-LOOP
       CALL VVOR_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
      +            zsym_diff, vrcorec, vrcorew, nvor, rv1, rv1_diff, rv2
      +            , rv2_diff, lvcomp, chordv, chordv_diff, nvor, rv, 
-     +            rv_diff, lvcomp, .true., wv_gam, wv_gam_diff, nvmax)
+     +            rv_diff, lvcomp, .true., wv_gam, wv_gam_diff, nvor)
       IF (1.0 - amach**2 .EQ. 0.D0) THEN
         amach_diff = 0.D0
       ELSE

@@ -115,7 +115,7 @@ if __name__ == "__main__":
             'asetup_b.f' : {
             '      CALL VVOR(betm, iysym, ysym, izsym, zsym, vrcorec, vrcorew, nvor, ' : 'assume analysis run before',
             '     +          rv1, rv2, lvcomp, chordv, nvor, rc, lvcomp, .false., ' : ' ',
-            '     +          wc_gam, nvmax)' : ' ',
+            '     +          wc_gam, nvor)' : ' ',
             
             }
         }

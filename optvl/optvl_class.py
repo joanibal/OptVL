@@ -209,7 +209,6 @@ class OVLSolver(object):
         module_name = os.path.basename(module_dir)
         
         
-        print('platform is ', platform.system())
         if platform.system() == "Windows":
             #HACK
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.pyd"))[0]
@@ -223,9 +222,7 @@ class OVLSolver(object):
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
             
         # # get just the file name
-        print('avl_lib_so_file 1', avl_lib_so_file)
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
-        print('avl_lib_so_file 2', avl_lib_so_file)
         
         self.avl = MExt.MExt("libavl", module_name, "optvl", lib_so_file=avl_lib_so_file, debug=debug)._module
 

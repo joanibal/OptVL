@@ -71,10 +71,10 @@ C---- set basic defaults
       CALL DEFINI
       CALL MASINI
 
-c---- initialize heap storage arrays for AIC's
-      call avlheap_init
-      call avlheap_diff_init
-C
+! c---- initialize heap storage arrays for AIC's
+!       call avlheap_init
+!       call avlheap_diff_init
+! C
 C---- initialize Xplot, and AVL plot stuff
 C       CALL PLINIT
       CPFAC = MIN(0.4*CREF,0.1*BREF)  / CREF
@@ -482,6 +482,11 @@ C
        LVEL = .FALSE.
        LSOL = .FALSE.
        LSEN = .FALSE.
+       
+c---- initialize heap storage arrays for AIC's
+      call avlheap_init(NVOR)
+      call avlheap_diff_init(NVOR)
+C
        
       END 
 

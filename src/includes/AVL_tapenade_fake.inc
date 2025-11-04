@@ -10,3 +10,7 @@ c     This file is to trick tapenade into treating the allocated module variable
      & WC_GAM(3,NVMAX,NVMAX), ! c.p. velocity/Gamma influence matrix
      & WV_GAM(3,NVMAX,NVMAX) ! h.v. velocity/Gamma influence matrix
 C
+      COMMON /AFAKE_I/
+     & NAIC
+C
+      

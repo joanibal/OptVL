@@ -41,7 +41,6 @@ C...COMMENTS
 C
       use avl_heap_inc  
       INCLUDE 'AVL.INC'
-      REAL WORK(NVMAX)
       real t0, t1, t2, t3, t4, t5
 C
       AMACH = MACH
@@ -104,7 +103,7 @@ C
      &           VRCOREC,VRCOREW,
      &           NVOR,RV1,RV2,LVCOMP,CHORDV,
      &           NVOR,RV ,    LVCOMP,.TRUE.,
-     &           WV_GAM,NVMAX)
+     &           WV_GAM,NVOR)
 C
        NU = 6
        CALL VSRD(BETM,IYSYM,YSYM,IZSYM,ZSYM,SRCORE,
@@ -141,7 +140,7 @@ C
      &           VRCOREC,VRCOREW,
      &           NVOR,RV1,RV2,LVCOMP,CHORDV,
      &           NVOR,RC ,    LVCOMP,.FALSE.,
-     &           WC_GAM,NVMAX)
+     &           WC_GAM,NVOR)
 C
 C$AD II-LOOP
       DO J = 1, NVOR
@@ -187,7 +186,7 @@ C$AD II-LOOP
       SUBROUTINE factor_AIC
        use avl_heap_inc  
        INCLUDE 'AVL.INC'
-       REAL WORK(NVMAX)
+       REAL WORK(NVOR)
        integer i, j
        
        if(lverbose) then
@@ -199,7 +198,7 @@ C$AD II-LOOP
             ! write(*,*) i,j, 'AICN(i,j)', AICN(i,j)
          enddo 
         ENDDO
-       CALL LUDCMP(NVMAX,NVOR,AICN_LU,IAPIV,WORK)
+       CALL LUDCMP(NVOR,NVOR,AICN_LU,IAPIV,WORK)
 C
        LAIC = .TRUE.
       END ! factor_AIC
@@ -253,12 +252,12 @@ C--------- just clear r.h.s.
           ENDIF
         ENDDO
 
-        CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
+        CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
         DO N = 1, NCONTROL
-          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
+          CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
         ENDDO
         DO N = 1, NDESIGN
-          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
+          CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
         ENDDO
  10   CONTINUE
 C
@@ -304,12 +303,12 @@ C--------- just clear r.h.s.
            ENDDO
           ENDIF
         ENDDO
-        CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
+        CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
         DO N = 1, NCONTROL
-          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
+          CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
         ENDDO
         DO N = 1, NDESIGN
-          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
+          CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
         ENDDO
    20 CONTINUE
 C
@@ -373,7 +372,7 @@ C...Eliminates excluded vortex equations for strips with z<Zsym
 ccc      CALL MUNGEB(GAM_Q(1,IQ))
 C********************************************************************
 C
-        CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_Q(1,IQ))
+        CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_Q(1,IQ))
  100  CONTINUE
 C
       RETURN
@@ -772,7 +771,7 @@ C
       
       subroutine mat_prod(mat, vec, n, out_vec)
         include 'AVL.INC'
-        real mat(NVMAX,NVMAX), vec(NVMAX), out_vec(NVMAX)
+        real mat(n,n), vec(NVMAX), out_vec(NVMAX)
         
         out_vec = 0.
 C$AD II-LOOP

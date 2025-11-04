@@ -31,6 +31,12 @@ rect_geom_output_file = os.path.join(geom_dir, "rect_out.avl")
 # TODO: add test for expected input output errors
 
 class TestInput(unittest.TestCase):
+    def tearDown(self):
+        # Get the memory usage of the current process using psutil
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id():80} Memory usage: {mb_memory:.2f} MB")
+
     def test_read_geom(self):
         ovl_solver = OVLSolver(geo_file=geom_file)
         assert ovl_solver.get_num_surfaces() == 5
@@ -137,7 +143,7 @@ class TestFortranLevelAPI(unittest.TestCase):
     def test_get_array(self):
         chords = self.ovl_solver.get_avl_fort_arr("SURF_GEOM_R", "CHORDS")
 
-        self.assertEqual(chords.shape, (100, 501))
+        self.assertEqual(chords.shape, (100, 401))
         np.testing.assert_array_equal(chords[0, :5], np.array([0.45, 0.45, 0.4, 0.3, 0.2]))
 
 

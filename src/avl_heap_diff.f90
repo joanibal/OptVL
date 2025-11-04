@@ -1,18 +1,19 @@
 !=============================================================================80
 ! Allocates AIC arrays that may be too big for COMMONS
 !=============================================================================80
-subroutine avlheap_diff_init()
+subroutine avlheap_diff_init(n)
 
   use avl_heap_diff_inc
+  
+  integer :: n
 
 ! Allocate AIC variable storage
  
-  write(*,*) 'allocating ', 8*NVX**2/1024**2
   if (.not. allocated(AICN_DIFF)) then
-    allocate(AICN_DIFF(NVX,NVX))
-    allocate(AICN_LU_DIFF(NVX,NVX))
-    allocate(WC_GAM_DIFF(3,NVX,NVX))
-    allocate(WV_GAM_DIFF(3,NVX,NVX))
+    allocate(AICN_DIFF(n,n))
+    allocate(AICN_LU_DIFF(n,n))
+    allocate(WC_GAM_DIFF(3,n,n))
+    allocate(WV_GAM_DIFF(3,n,n))
   endif
 end subroutine avlheap_diff_init
 

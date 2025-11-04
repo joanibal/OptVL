@@ -33,7 +33,7 @@ C
       betm = SQRT(1.0 - amach**2)
 c           CALL VVOR(betm, iysym, ysym, izsym, zsym, vrcorec, vrcorew, nvor,  assume analysis run before
 c          +          rv1, rv2, lvcomp, chordv, nvor, rc, lvcomp, .false.,   
-c          +          wc_gam, nvmax)  
+c          +          wc_gam, nvor)  
 C$BWD-OF II-LOOP 
       DO n=1,nsurf
         IF (.NOT.lfwake(n)) THEN
@@ -85,7 +85,7 @@ C$BWD-OF II-LOOP
       CALL VVOR_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
      +            zsym_diff, vrcorec, vrcorew, nvor, rv1, rv1_diff, rv2
      +            , rv2_diff, lvcomp, chordv, chordv_diff, nvor, rc, 
-     +            rc_diff, lvcomp, .false., wc_gam, wc_gam_diff, nvmax)
+     +            rc_diff, lvcomp, .false., wc_gam, wc_gam_diff, nvor)
       IF (1.0 - amach**2 .EQ. 0.D0) THEN
         amach_diff = 0.D0
       ELSE
@@ -596,11 +596,11 @@ C
      +                      out_vec_diff)
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
-      REAL mat(nvmax, nvmax), vec(nvmax), out_vec(nvmax)
-      REAL mat_diff(nvmax, nvmax), vec_diff(nvmax), out_vec_diff(nvmax)
+      INTEGER n
+      REAL mat(n, n), vec(nvmax), out_vec(nvmax)
+      REAL mat_diff(n, n), vec_diff(nvmax), out_vec_diff(nvmax)
       INTEGER j
       INTEGER i
-      INTEGER n
 C$BWD-OF II-LOOP 
       DO j=1,n
 C$BWD-OF II-LOOP 

@@ -650,7 +650,7 @@ C---
       CALL VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
      +            zsym_diff, vrcorec, vrcorew, nvor, rv1, rv1_diff, rv2
      +            , rv2_diff, lvcomp, chordv, chordv_diff, nvor, rv, 
-     +            rv_diff, lvcomp, .true., wv_gam, wv_gam_diff, nvmax)
+     +            rv_diff, lvcomp, .true., wv_gam, wv_gam_diff, nvor)
 C
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB_D()
