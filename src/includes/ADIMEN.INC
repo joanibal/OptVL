@@ -38,7 +38,7 @@
       ! PARAMETER (NSMAX=400) ! max number of strips
       ! PARAMETER (NSECMAX=401) ! max number of geometry sections
       PARAMETER (NSMAX=500) ! max number of strips
-      PARAMETER (NSECMAX=501) ! max number of geometry sections
+      PARAMETER (NSECMAX=301) ! max number of geometry sections
       PARAMETER (NFMAX=100) ! max number of surfaces
       PARAMETER (NLMAX=502) ! max number of body nodes
       PARAMETER (NBMAX=20)  ! max number of bodies
@@ -54,7 +54,8 @@
       ! PARAMETER (NOBMAX=1000) ! max number of off body points
       
       PARAMETER (ICONX=20) ! 
-      PARAMETER (IBX=300)  ! max number of airfoil coordinates
+      PARAMETER (IBX=200)  ! max number of airfoil coordinates
+      ! PARAMETER (IBX=300)  ! max number of airfoil coordinates
 
       
 
