@@ -7,6 +7,7 @@ from optvl import OVLSolver
 # Standard Python Modules
 # =============================================================================
 import os
+import psutil
 
 # =============================================================================
 # External Python modules
@@ -42,6 +43,14 @@ class TestInput(unittest.TestCase):
 
 
 class TestOutput(unittest.TestCase):
+    
+    def tearDown(self):
+        # Get the memory usage of the current process using psutil
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id():80} Memory usage: {mb_memory:.2f} MB")
+
+    
     def test_write_geom(self):
         """check that the file written by OptVL is the same as the original file"""
         ovl_solver = OVLSolver(geo_file=supra_geom_file)

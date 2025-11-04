@@ -6,7 +6,8 @@ subroutine avlheap_diff_init()
   use avl_heap_diff_inc
 
 ! Allocate AIC variable storage
-
+ 
+  write(*,*) 'allocating ', 8*NVX**2/1024**2
   if (.not. allocated(AICN_DIFF)) then
     allocate(AICN_DIFF(NVX,NVX))
     allocate(AICN_LU_DIFF(NVX,NVX))
