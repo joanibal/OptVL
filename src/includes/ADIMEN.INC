@@ -35,10 +35,10 @@
       ! PARAMETER (NVMAX=4000)
       PARAMETER (NVMAX=5000)
 
-      PARAMETER (NSMAX=400) ! max number of strips
-      PARAMETER (NSECMAX=401) ! max number of geometry sections
-      ! PARAMETER (NSMAX=500) ! max number of strips
-      ! PARAMETER (NSECMAX=501) ! max number of geometry sections
+      ! PARAMETER (NSMAX=400) ! max number of strips
+      ! PARAMETER (NSECMAX=401) ! max number of geometry sections
+      PARAMETER (NSMAX=500) ! max number of strips
+      PARAMETER (NSECMAX=501) ! max number of geometry sections
       PARAMETER (NFMAX=100) ! max number of surfaces
       PARAMETER (NLMAX=502) ! max number of body nodes
       PARAMETER (NBMAX=20)  ! max number of bodies
