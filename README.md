@@ -73,3 +73,4 @@ As a consequence, OptVL is also distributed under a GLP license via the copyleft
 Although, here we update the GLP license to version 3 as allowed by the original license. 
 
 This software includes portions of [NetLib's LAPACK library](https://www.netlib.org/lapack/). LAPACK is a software package provided by University of Tennessee, University of California Berkeley, University of Colorado Denver and NAG Ltd under the modified BSD license.  See the license file in src/lapack/LICENSE.txt for more details.
+
