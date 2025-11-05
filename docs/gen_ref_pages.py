@@ -9,7 +9,6 @@ nav = mkdocs_gen_files.Nav()
 src_dir = "optvl"
 
 files = sorted(Path(src_dir).rglob("*.py"))[::-1]
-print(Path(src_dir).rglob("*.py"))
 
 for path in files:  #
     module_path = path.relative_to(src_dir).with_suffix("")  #
@@ -20,9 +19,9 @@ for path in files:  #
     full_doc_path = Path("reference", doc_path)  #
 
     parts = list(module_path.parts)
-    if parts[0] == 'MExt':
+    if parts[0] == "MExt":
         continue
-    
+
     if parts[-1] == "__init__":  #
         parts = parts[:-1]
     elif parts[-1] == "__main__":

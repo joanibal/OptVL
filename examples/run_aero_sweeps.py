@@ -1,4 +1,3 @@
-
 from optvl import OVLSolver
 import numpy as np
 ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
@@ -10,7 +9,6 @@ ovl.set_variable("alpha", 0.00)
 ovl.set_constraint("Elevator", "Cm", 0.00)
 
 ovl.set_parameter("Mach", 0.3)
-
 
 
 print("----------------- alpha sweep ----------------")
@@ -39,7 +37,7 @@ ovl.set_variable("beta", 0.00)
 
 print("----------------- Mach sweep ----------------")
 print("    Mach        Cl           Cd          Cdi          Cdv          Cm")
-for mach in np.arange(0.0,0.7,0.1):
+for mach in np.arange(0.0, 0.7, 0.1):
     ovl.set_parameter("Mach", mach)
     ovl.execute_run()
     run_data = ovl.get_total_forces()
@@ -50,7 +48,7 @@ for mach in np.arange(0.0,0.7,0.1):
 
 print("----------------- CL sweep ----------------")
 print("   Angle        Cl           Cd          Cdff          Cdv          Cm")
-for cl in np.arange(0.6,1.6,0.1):
+for cl in np.arange(0.6, 1.6, 0.1):
     ovl.set_trim_condition("CL", cl)
     ovl.execute_run()
     run_data = ovl.get_total_forces()

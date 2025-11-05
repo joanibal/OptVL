@@ -67,21 +67,20 @@ class TestGeom(unittest.TestCase):
             run_comparison(self.ovl_solver, ref_data_cases, rtol=5e-13, atol=5e-13)
 
     def test_surface_mirroring(self):
-        
         # Take the one wing and streach out the tip
         new_data = {
             "Wing": {
-                "yles" : np.array([0, 1.0, 2.0, 3.0, 10.0]),
+                "yles": np.array([0, 1.0, 2.0, 3.0, 10.0]),
             },
         }
         
         self.ovl_solver.set_variable("alpha", 10.00)
         self.ovl_solver.set_surface_params(new_data)
-        
+
         self.ovl_solver.execute_run()
-        
+
         run_data = self.ovl_solver.get_total_forces()
-        
+
         # if only one wing was updated then will have unbalanced yaw and roll moments
         np.testing.assert_allclose(
             run_data["Cl"],

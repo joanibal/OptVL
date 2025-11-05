@@ -38,9 +38,7 @@ class TestNewSubroutines(unittest.TestCase):
         )
         res_u = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES_U)
         rhs_u = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RHS_U)
-        
-        # print('rhs_u', np.linalg.norm(rhs_u))
-        # print('res_u', np.linalg.norm(res_u))
+
         np.testing.assert_allclose(
             res_u,
             -1 * rhs_u,
@@ -49,7 +47,7 @@ class TestNewSubroutines(unittest.TestCase):
 
         self.ovl_solver.avl.exec_rhs()
         self.ovl_solver.avl.get_res()
-        res   = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES)
+        res = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES)
         res_d = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES_D)
         res_u = copy.deepcopy(self.ovl_solver.avl.VRTX_R.RES_U)
 
@@ -64,7 +62,7 @@ class TestNewSubroutines(unittest.TestCase):
             np.zeros_like(res_d),
             atol=5e-14,
         )
-        
+
         np.testing.assert_allclose(
             res_u,
             np.zeros_like(res_u),
@@ -77,19 +75,19 @@ class TestNewSubroutines(unittest.TestCase):
         self.ovl_solver.set_variable("beta", 10.00)
         
         self.ovl_solver.avl.exec_rhs()
-        
+
         self.ovl_solver.avl.velsum()
         self.ovl_solver.avl.aero()
-        wv_new    = copy.deepcopy(self.ovl_solver.avl.SOLV_R.WV)
-        gam_new   = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM)
+        wv_new = copy.deepcopy(self.ovl_solver.avl.SOLV_R.WV)
+        gam_new = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM)
         gam_u_new = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM_U)
         coef_data_new = self.ovl_solver.get_total_forces()
-        
+
         coef_derivs_new = self.ovl_solver.get_control_stab_derivs()
 
         self.ovl_solver.execute_run()
-        gam   = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM)
-        wv    = copy.deepcopy(self.ovl_solver.avl.SOLV_R.WV)
+        gam = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM)
+        wv = copy.deepcopy(self.ovl_solver.avl.SOLV_R.WV)
         gam_u = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM_U)
         coef_data = self.ovl_solver.get_total_forces()
         coef_derivs = self.ovl_solver.get_control_stab_derivs()
@@ -125,7 +123,7 @@ class TestNewSubroutines(unittest.TestCase):
                 err_msg=f"deriv of func_key {func_key}",
                 atol=1e-14,
             )
-                
+
 
 if __name__ == "__main__":
     unittest.main()

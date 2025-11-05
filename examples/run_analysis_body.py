@@ -14,6 +14,3 @@ for alpha in range(10):
     print(
         f' {alpha:10.6f}   {run_data["CL"]:10.6f}   {run_data["CD"]:10.6f}   {run_data["CDi"]:10.6f}   {run_data["CDv"]:10.6f}   {run_data["Cm"]:10.6f}'
     )
-
-
-

@@ -1,7 +1,7 @@
 project(
   'optvl',
   'c',
-  version: '1.4.1',
+  version: '1.5.0',
   license: 'GPL-3.0',
   meson_version: '>= 0.64.0',
   default_options: [
@@ -178,14 +178,4 @@ py3.extension_module('libavl',
                    
 )
 
-py3.install_sources([
-  'optvl/__init__.py',
-  'optvl/optvl_class.py',
-  'optvl/MExt.py',
-  'optvl/om_wrapper.py',
-],
-  subdir: 'optvl'
-)
-
-
-        
+install_subdir('optvl', install_dir: py3.get_install_dir())

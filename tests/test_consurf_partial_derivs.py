@@ -18,7 +18,7 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_dir = os.path.join(base_dir, '..', 'geom_files')
+geom_dir = os.path.join(base_dir, "..", "geom_files")
 
 geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
 mass_file = os.path.join(geom_dir, "aircraft.mass")
@@ -38,14 +38,13 @@ class TestResidualDPartials(unittest.TestCase):
         mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
         print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
 
-
     def test_fwd_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
             res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
-            res_d_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
-                con_seeds={con_key: 1.0}, mode="FD", step=1e-5
-            )[5]
+            res_d_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-5)[
+                5
+            ]
 
             np.testing.assert_allclose(
                 res_d_seeds,
@@ -151,9 +150,7 @@ class TestResidualDPartials(unittest.TestCase):
 
         res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds)[5]
 
-        res_d_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
-            gamma_d_seeds=gamma_d_seeds, mode="FD", step=1e-0
-        )[5]
+        res_d_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds, mode="FD", step=1e-0)[5]
 
         np.testing.assert_allclose(
             res_d_seeds,
@@ -204,7 +201,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
             cs_d = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[2]
 
             cs_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-8)[2]
-            
+
             for deriv_func in cs_d:
                 sens_label = f"d{deriv_func} wrt {con_key}"
                 np.testing.assert_allclose(
@@ -220,7 +217,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         cs_deriv_seeds = {}
         for deriv_func in self.ovl_solver.case_derivs_to_fort_var:
             for cs_name in cs_names:
-                cs_deriv_seeds[f'd{deriv_func}/d{cs_name}'] = np.random.rand(1)[0]
+                cs_deriv_seeds[f"d{deriv_func}/d{cs_name}"] = np.random.rand(1)[0]
 
         con_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_deriv_seeds)[0]
 
@@ -228,7 +225,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
 
         for con_key in self.ovl_solver.con_var_to_fort_var:
             cs_deriv_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[2]
- 
+
             cs_deriv_sum = 0.0
             for deriv_func in cs_deriv_seeds_fwd:
                 cs_deriv_sum += cs_deriv_seeds[deriv_func] * cs_deriv_seeds_fwd[deriv_func]
@@ -279,7 +276,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                             cs_d_fd[deriv_func],
                             rtol=1e-3,
                             err_msg=sens_label,
-                            )
+                        )
 
     def test_rev_geom(self):
         np.random.seed(111)
@@ -289,7 +286,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         cs_d_rev = {}
         for deriv_func in self.ovl_solver.case_derivs_to_fort_var:
             for cs_name in cs_names:
-                cs_d_rev[f'd{deriv_func}/d{cs_name}'] = np.random.rand(1)[0]
+                cs_d_rev[f"d{deriv_func}/d{cs_name}"] = np.random.rand(1)[0]
 
         geom_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)[1]
         self.ovl_solver.clear_ad_seeds_fast()
@@ -299,10 +296,9 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds_fwd = np.random.rand(*arr.shape)
 
-                func_seeds_fwd, _, cs_d_fwd, _, _, _,_ = self.ovl_solver._execute_jac_vec_prod_fwd(
+                func_seeds_fwd, _, cs_d_fwd, _, _, _, _ = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds_fwd}}
                 )
-                
 
                 for deriv_func in func_seeds_fwd:
                     # use dot product test as design variables maybe arrays
@@ -361,20 +357,21 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         self.ovl_solver.clear_ad_seeds_fast()
 
         for deriv_func in cs_d_fwd:
-                cs_d_rev = {deriv_func: 1.0}
+            cs_d_rev = {deriv_func: 1.0}
 
-                gamma_d_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)[3]
-                rev_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
+            gamma_d_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)[3]
 
-                fwd_sum = np.sum(cs_d_fwd[deriv_func])
+            rev_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
 
-                # print(deriv_func, "fwd_sum", fwd_sum, "rev_sum", rev_sum)
-                np.testing.assert_allclose(
-                    fwd_sum,
-                    rev_sum,
-                    atol=1e-14,
-                    err_msg=f"deriv_func {deriv_func} w.r.t. gamma",
-                )
+            fwd_sum = np.sum(cs_d_fwd[deriv_func])
+
+            # print("fwd_sum", fwd_sum, "rev_sum", rev_sum)
+            np.testing.assert_allclose(
+                fwd_sum,
+                rev_sum,
+                atol=1e-14,
+                err_msg=f"deriv_func {deriv_func} w.r.t. gamma",
+            )
 
 
 if __name__ == "__main__":

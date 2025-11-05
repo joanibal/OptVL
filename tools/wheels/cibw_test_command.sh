@@ -18,6 +18,7 @@ pip install psutil openmdao!=3.38
 python test_import.py
 python -m unittest -v test_import.py
 python -m unittest -v test_io.py
+python -m unittest -v test_input_dict.py
 
 # test mem ussage of pyavl and test framework
 python -m unittest -v test_tear_down.py

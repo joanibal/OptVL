@@ -45,7 +45,7 @@ python module libavl ! in
 
         
         subroutine conset(comand, comarg) ! in :libavl:aoper.f
-              character*(*) comand, comarg
+            character*(*) comand, comarg
         end subroutine conset
 
         subroutine trmset(comand, comarg, com, carg) ! in :libavl:aoper.f
@@ -57,9 +57,32 @@ python module libavl ! in
 
         subroutine calc_stab_derivs ! in :libavl:aoper.f
         end subroutine calc_stab_derivs
+
+        subroutine makesurf(isurf) ! in :libavl:amake.f
+            integer :: isurf
+        end subroutine makesurf
+
+        subroutine makebody(ibody) ! in :libavl:amake.f
+            integer :: ibody
+        end subroutine makebody
+
+        subroutine sdupl(nn,ypt,msg) ! in :libavl:amake.f
+            integer :: nn
+            real :: ypt
+            character*(*) msg
+        end subroutine sdupl
+
+        subroutine bdupl(nn,ypt,msg) ! in :libavl:amake.f
+            integer :: nn
+            real :: ypt
+            character*(*) msg
+        end subroutine bdupl
         
         subroutine update_surfaces ! in :libavl:amake.f
         end subroutine update_surfaces
+
+        subroutine update_bodies ! in :libavl:amake.f
+        end subroutine update_bodies
 
         subroutine update_surfaces_d ! in :libavl:amake.f
         end subroutine update_surfaces_d
@@ -99,6 +122,7 @@ python module libavl ! in
             logical :: add_time
             real*8 :: solution_time
         end subroutine write_tecplot
+
         subroutine mode
         end subroutine mode
         
@@ -110,6 +134,39 @@ python module libavl ! in
             integer :: ir
             real*8, intent(inout) :: asys(jemax,jemax)
         end subroutine get_system_matrix
+
+        !subroutine getcam(x, y, n, xc, yc, tc, nc, lnorm) ! in :libavl:airutil.f
+            !integer, intent(in) :: n
+            !integer, intent(inout) :: nc
+            !real, dimension(nc), intent(out) :: xc, yc, tc
+            !real, dimension(n), intent(in) :: x, y
+            !logical, intent(in) :: lnorm
+        !end subroutine getcam
+
+        !subroutine getcam(x, y, n, xc, yc, tc, nc, lnorm) ! in :libavl:airutil.f
+            !integer, intent(inout) :: nc
+            !integer n
+            !real*8 x(n), y(n), xc(nc), yc(nc), tc(nc)
+            !logical lnorm
+        !end subroutine getcam
+
+        !subroutine akima(x, y, n, xx, yy, slp) ! in :libavl:sgutil.f
+            !integer, intent(in) :: n
+            !real, dimension(n), intent(in) :: x, y
+            !real, dimension(*), intent(in) ::  xx
+            !real, dimension(*), intent(out) :: yy, slp
+        !end subroutine akima
+
+        subroutine set_section_coordinates(isec, isurf, x, y, n, nin, xfmin, xfmax, storecoords) ! in :libavl:amake.f
+            integer :: isec, isurf, n, nin
+            real*8 :: x(n), y(n), xfmin, xfmax
+            logical :: storecoords
+        end subroutine set_section_coordinates
         
+        subroutine set_body_coordinates(ibod,xb,yb,nb,nbod,storecoords) ! in :libavl:amake.f
+            integer :: ibod, nb, nbod
+            real*8 :: xb(nb), yb(nb)
+            logical :: storecoords
+        end subroutine set_body_coordinates
     end interface 
 end python module libavl

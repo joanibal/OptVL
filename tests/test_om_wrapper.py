@@ -15,174 +15,177 @@ import unittest
 import numpy as np
 import openmdao.api as om
 import warnings
-import numpy as np
 
 # Set DeprecationWarning to be treated as an error
-warnings.simplefilter('error', DeprecationWarning)
+warnings.simplefilter("error", DeprecationWarning)
 
 # Optionally, you can also set NumPy options to raise errors for specific conditions
-np.seterr(all='raise')
+np.seterr(all="raise")
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_dir = os.path.join(base_dir, '..', 'geom_files')
+geom_dir = os.path.join(base_dir, "..", "geom_files")
 
 geom_file = os.path.join(geom_dir, "aircraft.avl")
 mass_file = os.path.join(geom_dir, "aircraft.mass")
 
+
 class TestOMWrapper(unittest.TestCase):
     def setUp(self):
         self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-    
+
         model = om.Group()
-        model.add_subsystem("ovlsolver", OVLGroup(geom_file=geom_file, mass_file=mass_file, 
-                                                  output_stability_derivs=True,
-                                                  output_body_axis_derivs=True,
-                                                  input_param_vals=True, input_ref_vals=True, input_airfoil_geom=True))
+        model.add_subsystem(
+            "ovlsolver",
+            OVLGroup(
+                geom_file=geom_file,
+                mass_file=mass_file,
+                output_stability_derivs=True,
+                output_body_axis_derivs=True,
+                input_param_vals=True,
+                input_ref_vals=True,
+                input_airfoil_geom=True,
+            ),
+        )
 
         self.prob = om.Problem(model)
 
     def test_aero_coef(self):
-        
         self.ovl_solver.execute_run()
         run_data = self.ovl_solver.get_total_forces()
 
         prob = self.prob
-        prob.setup(mode='rev')
+        prob.setup(mode="rev")
         prob.run_model()
-        
-        for func in run_data:        
+
+        for func in run_data:
             om_val = prob.get_val(f"ovlsolver.{func}")
             assert om_val == run_data[func]
-    
+
     def test_surface_param_setting(self):
         prob = self.prob
-        prob.setup(mode='rev')
-                
-       
-        surf_data = self.ovl_solver.get_surface_params(include_geom=True, include_paneling=True, include_con_surf=True)
+        prob.setup(mode="rev")
+
         np.random.seed(111)
 
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                arr += np.random.rand(*arr.shape)*0.1
+                arr += np.random.rand(*arr.shape) * 0.1
                 # print(f'setting {surf_key}:{geom_key} to {arr}')
                 # #set surface data
                 self.ovl_solver.set_surface_param(surf_key, geom_key, arr)
                 self.ovl_solver.avl.update_surfaces()
                 self.ovl_solver.execute_run()
-                
+
                 # set om surface data
                 prob.set_val(f"ovlsolver.{surf_key}:{geom_key}", arr)
                 prob.run_model()
-                
+
                 run_data = self.ovl_solver.get_total_forces()
-                for func in run_data:        
+                for func in run_data:
                     om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == run_data[func]
-                    
+
                 stab_derivs = self.ovl_solver.get_stab_derivs()
-                for func in stab_derivs:        
+                for func in stab_derivs:
                     om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == stab_derivs[func]
 
                 body_axis_derivs = self.ovl_solver.get_body_axis_derivs()
-                for func in body_axis_derivs:        
+                for func in body_axis_derivs:
                     om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == body_axis_derivs[func]
-    
+
     def test_param_setting(self):
         prob = self.prob
-        prob.setup(mode='rev')
-       
+        prob.setup(mode="rev")
+
         np.random.seed(111)
-        
 
         for param in ["CD0", "Mach", "X cg", "Y cg", "Z cg"]:
             param_val = self.ovl_solver.get_parameter(param)
-            param_val += np.random.rand()*0.1 
+            param_val += np.random.rand() * 0.1
             # #set surface data
             self.ovl_solver.set_parameter(param, param_val)
             self.ovl_solver.execute_run()
-            
+
             # set om surface data
             prob.set_val(f"ovlsolver.{param}", param_val)
             prob.run_model()
-            
+
             run_data = self.ovl_solver.get_total_forces()
-            for func in run_data:        
+            for func in run_data:
                 om_val = prob.get_val(f"ovlsolver.{func}")
                 assert om_val == run_data[func]
-                
+
             stab_derivs = self.ovl_solver.get_stab_derivs()
-            for func in stab_derivs:        
+            for func in stab_derivs:
                 om_val = prob.get_val(f"ovlsolver.{func}")
-                print(func, om_val,stab_derivs[func])
+                print(func, om_val, stab_derivs[func])
                 assert om_val == stab_derivs[func]
 
             body_axis_derivs = self.ovl_solver.get_body_axis_derivs()
-            for func in body_axis_derivs:        
+            for func in body_axis_derivs:
                 om_val = prob.get_val(f"ovlsolver.{func}")
                 assert om_val == body_axis_derivs[func]
-        
+
     def test_CL_solve(self):
         prob = self.prob
         cl_star = 1.5
         prob.model.add_design_var("ovlsolver.alpha", lower=-10, upper=10)
         prob.model.add_constraint("ovlsolver.CL", equals=cl_star)
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
-        prob.setup(mode='rev')
+        prob.setup(mode="rev")
         prob.driver = om.ScipyOptimizeDriver()
-        prob.driver.options['optimizer'] = 'SLSQP'
-        prob.driver.options['debug_print'] = ["desvars", "ln_cons", "nl_cons", "objs"]
-        prob.driver.options['tol'] = 1e-6
-        prob.driver.options['disp'] = True
-    
-        prob.setup(mode='rev')
+        prob.driver.options["optimizer"] = "SLSQP"
+        prob.driver.options["debug_print"] = ["desvars", "ln_cons", "nl_cons", "objs"]
+        prob.driver.options["tol"] = 1e-6
+        prob.driver.options["disp"] = True
+
+        prob.setup(mode="rev")
         prob.run_driver()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 
         om_val = prob.get_val("ovlsolver.alpha")
-        
-        
         self.ovl_solver.set_trim_condition("CL", cl_star)
         self.ovl_solver.execute_run()
         alpha = self.ovl_solver.get_parameter("alpha")
-        
-        np.testing.assert_allclose(om_val,
-                            alpha,
-                            rtol=1e-5,
-                            err_msg=f"solved alpha",
-                        )
-        
+
+        np.testing.assert_allclose(
+            om_val,
+            alpha,
+            rtol=1e-5,
+            err_msg="solved alpha",
+        )
+
     def test_CM_solve(self):
         prob = self.prob
         prob.model.add_design_var("ovlsolver.alpha", lower=-10, upper=10)
         prob.model.add_constraint("ovlsolver.Cm", equals=0.0, scaler=1e3)
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
-        prob.setup(mode='rev')
+        prob.setup(mode="rev")
         prob.driver = om.ScipyOptimizeDriver()
-        prob.driver.options['optimizer'] = 'SLSQP'
-        prob.driver.options['debug_print'] = ["desvars", "ln_cons", "nl_cons", "objs"]
-        prob.driver.options['tol'] = 1e-6
-        prob.driver.options['disp'] = True
-    
-        prob.setup(mode='rev')
+        prob.driver.options["optimizer"] = "SLSQP"
+        prob.driver.options["debug_print"] = ["desvars", "ln_cons", "nl_cons", "objs"]
+        prob.driver.options["tol"] = 1e-6
+        prob.driver.options["disp"] = True
+
+        prob.setup(mode="rev")
         prob.run_driver()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
-        
+
         om_val = prob.get_val(f"ovlsolver.alpha")
-        
-        
+
         self.ovl_solver.set_constraint("alpha", "Cm", 0.00)
         self.ovl_solver.execute_run()
         alpha = self.ovl_solver.get_parameter("alpha")
-        
-        np.testing.assert_allclose(om_val,
-                            alpha,
-                            rtol=1e-5,
-                            err_msg="solved alpha",
-                        )
+
+        np.testing.assert_allclose(
+            om_val,
+            alpha,
+            rtol=1e-5,
+            err_msg="solved alpha",
+        )
 
     def test_OM_total_derivs(self):
         prob = self.prob
@@ -203,19 +206,20 @@ class TestOMWrapper(unittest.TestCase):
         prob.model.add_constraint("ovlsolver.dCl/dp", equals=-dcl_dalpha_star)
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
         prob.model.add_objective("ovlsolver.Cm", scaler=1e3)
-        prob.setup(mode='rev')
+        prob.setup(mode="rev")
         prob.run_model()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
-        deriv_err = prob.check_totals(step=1e-7, form='central')
+        deriv_err = prob.check_totals(step=1e-7, form="central")
         rtol = 1e-3
         for key, data in deriv_err.items():
-                np.testing.assert_allclose(
-                    data['J_fd'],
-                    data['J_rev'],
-                    rtol=rtol,
-                    atol=1e-9,
-                    err_msg=f"deriv of {key[0]} wrt {key[1]} does not agree with FD to rtol={rtol}"
-                )
-        
+            np.testing.assert_allclose(
+                data["J_fd"],
+                data["J_rev"],
+                rtol=rtol,
+                atol=1e-9,
+                err_msg=f"deriv of {key[0]} wrt {key[1]} does not agree with FD to rtol={rtol}",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

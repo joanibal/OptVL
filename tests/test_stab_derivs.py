@@ -2,8 +2,8 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
-import copy
 import psutil
+
 # =============================================================================
 # Standard Python Modules
 # =============================================================================
@@ -17,7 +17,7 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_dir = os.path.join(base_dir, '..', 'geom_files')
+geom_dir = os.path.join(base_dir, "..", "geom_files")
 
 geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
 mass_file = os.path.join(geom_dir, "aircraft.mass")
@@ -84,17 +84,17 @@ class TestStabDerivs(unittest.TestCase):
         base_data = self.ovl_solver.get_total_forces()
         stab_derivs = self.ovl_solver.get_stab_derivs()
 
-        con_keys =  ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"]
+        con_keys = ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"]
         func_keys = ["CL", "CD", "CY", "Cl'", "Cm", "Cn'"]
-        
+
         con_to_var = {
             "alpha": "alpha",
             "beta": "beta",
-            "roll rate" : "p'" ,
-            "pitch rate" : "q'" ,
-            "yaw rate" : "r'" ,
+            "roll rate": "p'",
+            "pitch rate": "q'",
+            "yaw rate": "r'",
         }
-        
+
         for con_key in con_keys:
             h = 1e-9
             val = self.ovl_solver.get_constraint(con_key)
@@ -102,17 +102,17 @@ class TestStabDerivs(unittest.TestCase):
             self.ovl_solver.execute_run()
             perb_data = self.ovl_solver.get_total_forces()
             self.ovl_solver.set_variable(con_key, val)
-            
+
             for func_key in func_keys:
                 key = self.ovl_solver._get_deriv_key(con_to_var[con_key], func_key)
-                ad_dot = stab_derivs[key] 
-                
-                fd_dot = (perb_data[func_key] - base_data[func_key]) / h 
-                
-                if con_key in ['alpha', 'beta']:
-                   fd_dot *= 180/np.pi 
-                   # convert to radians from degrees!
-                
+                ad_dot = stab_derivs[key]
+
+                fd_dot = (perb_data[func_key] - base_data[func_key]) / h
+
+                if con_key in ["alpha", "beta"]:
+                    fd_dot *= 180 / np.pi
+                    # convert to radians from degrees!
+
                 # rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
                 # print(f"{key:5}  | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
@@ -131,9 +131,7 @@ class TestStabDerivs(unittest.TestCase):
                         fd_dot,
                         rtol=5e-4,
                         err_msg=f"func_key {key}",
-                    )   
-            
-            
+                    )
 
 
 if __name__ == "__main__":

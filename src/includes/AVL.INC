@@ -29,6 +29,7 @@ C
       CHARACTER*40 STITLE, BTITLE, RTITLE
       CHARACTER*120 AFILES
       CHARACTER*120 BFILES
+      CHARACTER*4 NACA
       CHARACTER*16 DNAME, GNAME
       CHARACTER*12 VARNAM, CONNAM
       CHARACTER*12 VARKEY
@@ -46,6 +47,7 @@ C
      & AFILES(NSMAX,NFMAX),  ! airfoil file names
      & BTITLE(NBMAX),  ! body title
      & BFILES(NBMAX),  ! body file names
+     & NACA(NSMAX,NFMAX),  ! naca section names
      & RTITLE(NRMAX),  ! run case title
      & DNAME(NDMAX),   ! control variable name
      & GNAME(NGMAX),   ! design  variable name
@@ -399,19 +401,30 @@ C      !start added variables for python geometry minipulation
 c
       COMMON /BODY_GEOM_I/
      & NSEC_B(NBMAX),  ! number of sections in body
-     & NVB(NFMAX)! number of body elements
+     & NVB(NFMAX),     ! number of body elements
+     & NBOD(NBMAX)    ! number of body oml points
 
       REAL(kind=avl_real) XYZSCAL_B
       REAL(kind=avl_real) XYZTRAN_B
       REAL(kind=avl_real) YDUPL_B
       REAL(kind=avl_real) XYZLES_B 
       REAL(kind=avl_real) BSPACE
+      REAL(kind=avl_real) XBOD
+      REAL(kind=avl_real) YBOD
+      REAL(kind=avl_real) TBOD
+      REAL(kind=avl_real) XBOD_R
+      REAL(kind=avl_real) YBOD_R
       COMMON /BODY_GEOM_R/
      & XYZSCAL_B(3, NBMAX), ! scaling factors for XYZ coordinates
      & XYZTRAN_B(3, NBMAX), ! translation factors for XYZ coordinates
      & YDUPL_B(NBMAX), ! y duplicate
      & XYZLES_B(3, NSMAX, NBMAX), ! leading edge cordinate vector
-     & BSPACE(NBMAX) ! body spacing
+     & BSPACE(NBMAX), ! body spacing
+     & XBOD(IBX, NBMAX), ! body oml x-coordinates
+     & YBOD(IBX, NBMAX), ! body oml y-coordinates
+     & TBOD(IBX, NBMAX), ! body oml thickness
+     & XBOD_R(IBX, NBMAX), ! raw input oml x-coordinates
+     & YBOD_R(IBX, NBMAX) ! raw input oml y-coordinates
 c
       LOGICAL LDUPL
       LOGICAL LSURFSPACING
@@ -438,6 +451,10 @@ c
       REAL(kind=avl_real) SSPACE
       REAL(kind=avl_real) SSPACES
       REAL(kind=avl_real) XYZLES
+      REAL(kind=avl_real) XSEC
+      REAL(kind=avl_real) YSEC
+      REAL(kind=avl_real) XFMIN_R
+      REAL(kind=avl_real) XFMAX_R
       REAL(kind=avl_real) XLASEC
       REAL(kind=avl_real) ZLASEC
       REAL(kind=avl_real) XUASEC
@@ -465,10 +482,14 @@ c
      & SSPACE(NFMAX), ! spanwise spacing
      & SSPACES(NSECMAX, NFMAX), ! spanwise spacing vector
      & XYZLES(3, NSECMAX, NFMAX), ! leading edge cordinate vector
-     & XLASEC(IBX, NSECMAX, NFMAX),
-     & ZLASEC(IBX, NSECMAX, NFMAX),
-     & XUASEC(IBX, NSECMAX, NFMAX),
-     & ZUASEC(IBX, NSECMAX, NFMAX),
+     & XSEC(IBX, NSECMAX, NFMAX), ! raw section input x coordinates
+     & YSEC(IBX, NSECMAX, NFMAX), ! raw section input y coordinates
+     & XFMIN_R(NSECMAX, NFMAX), ! section input lower x bound 
+     & XFMAX_R(NSECMAX, NFMAX), ! section input upper x bound 
+     & XLASEC(IBX, NSECMAX, NFMAX), ! airfoil lower surface x-coords
+     & ZLASEC(IBX, NSECMAX, NFMAX), ! airfoil lower surface z-coords
+     & XUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface x-coords
+     & ZUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface z-coords
      & CHORDS(NSECMAX, NFMAX), ! chord length vectorm
      & AINCS(NSECMAX, NFMAX), ! incidence angle vector
      & XASEC(IBX, NSECMAX, NFMAX),  ! the x coordinate aifoil section
@@ -477,7 +498,7 @@ c
      & TASEC(IBX, NSECMAX, NFMAX),   ! thickness at xasec
      & CLCDSEC(6, NSECMAX, NFMAX),
      & CLCDSRF(6, NFMAX),
-     & CLAF(NSECMAX, NFMAX),
+     & CLAF(NSECMAX, NFMAX),   ! CL alpha (dCL/da) scaling factor
      & XHINGED(ICONX, NSECMAX, NFMAX), ! hinge location
      & VHINGED(3, ICONX, NSECMAX, NFMAX), ! hinge vector
      & GAIND(ICONX, NSECMAX, NFMAX), ! control surface gain

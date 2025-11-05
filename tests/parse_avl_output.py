@@ -84,13 +84,20 @@ def parse_avl_output(run_output_files):
                     current_case["outputs"]["mesh_data"][var.strip()] = int(val)
 
                 # --- Reference data ---
-                for _ in range(2):
-                    vals, keys = next(lines).split("|")
-                    vals = parse_floats(vals)
-                    keys = keys.split(',')
-                    
-                    for k, v in zip(keys, vals):
-                        current_case["outputs"]["reference_data"][k.strip()] = v
+                # Sref Cref Bref
+                vals, keys = next(lines).split("|")
+                vals = parse_floats(vals)
+                keys = keys.split(',')
+                
+                for k, v in zip(keys, vals):
+                    current_case["outputs"]["reference_data"][k.strip()] = v
+                
+                # Xref Yref Zref
+                vals, keys = next(lines).split("|")
+                vals = parse_floats(vals)
+                keys = keys.split(',')
+                current_case["outputs"]["reference_data"]['XYZref'] = vals
+                
 
                 # skip 2
                 for _ in range(2):

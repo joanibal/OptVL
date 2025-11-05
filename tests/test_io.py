@@ -17,18 +17,19 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_dir = os.path.join(base_dir, '..', 'geom_files')
+geom_dir = os.path.join(base_dir, "..", "geom_files")
 
 geom_file = os.path.join(geom_dir, "aircraft.avl")
 mass_file = os.path.join(geom_dir, "aircraft.mass")
 geom_mod_file = os.path.join(geom_dir, "aircraft_mod.avl")
 geom_output_file = os.path.join(geom_dir, "aircraft_out.avl")
 
-supra_geom_file = os.path.join(geom_dir, 'supra.avl')
+supra_geom_file = os.path.join(geom_dir, "supra.avl")
 rect_geom_file = os.path.join(geom_dir, "rect.avl")
 rect_geom_output_file = os.path.join(geom_dir, "rect_out.avl")
 
 # TODO: add test for expected input output errors
+
 
 class TestInput(unittest.TestCase):
     def tearDown(self):
@@ -49,14 +50,12 @@ class TestInput(unittest.TestCase):
 
 
 class TestOutput(unittest.TestCase):
-    
     def tearDown(self):
         # Get the memory usage of the current process using psutil
         process = psutil.Process()
         mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
         print(f"{self.id():80} Memory usage: {mb_memory:.2f} MB")
 
-    
     def test_write_geom(self):
         """check that the file written by OptVL is the same as the original file"""
         ovl_solver = OVLSolver(geo_file=supra_geom_file)
@@ -83,7 +82,7 @@ class TestOutput(unittest.TestCase):
                         atol=1e-8,
                         err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
                     )
-    
+
         for body in baseline_data_body:
             for key in baseline_data_body[body]:
                 data = new_data_body[body][key]
@@ -97,16 +96,15 @@ class TestOutput(unittest.TestCase):
                         atol=1e-8,
                         err_msg=f"bodyace `{body}` key `{key}` does not match reference data",
                     )
-    
+
     def test_write_panneling_params(self):
         # test that the surface is output correctly when only section or surface
         # panneling is given
         ovl_solver = OVLSolver(geo_file=rect_geom_file)
-        ovl_solver.write_geom_file(rect_geom_output_file)   
+        ovl_solver.write_geom_file(rect_geom_output_file)
         baseline_data = ovl_solver.get_surface_params(include_paneling=True, include_geom=False)
+        assert baseline_data["Wing"]["use surface spacing"]
 
-        assert baseline_data['Wing']['use surface spacing'] == True
-        
         del ovl_solver
         ovl_solver = OVLSolver(geo_file=rect_geom_output_file)
         new_data = baseline_data = ovl_solver.get_surface_params()

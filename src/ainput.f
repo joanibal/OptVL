@@ -39,7 +39,7 @@ C
 C
       REAL XB(IBX), YB(IBX)
       REAL XIN(IBX), YIN(IBX), TIN(IBX)
-      REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
+C      REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
 C
 C---- max number of control or design variable declaration lines per section
 C
@@ -220,9 +220,9 @@ C------check for body duplicated on symmetry plane
           WRITE(*,*)    '** Cannot duplicate body on symmetry plane'
           GO TO 990
          ENDIF
-C-------"old" body is still active, so build it before finishing
-         CALL MAKEBODY(IBODY,
-     &       XBOD,YBOD,TBOD,NBOD)
+C------- "old" body is still active, so build it before finishing
+         CALL MAKEBODY(IBODY)
+C     &       XBOD(1,IBODY),YBOD(1,IBODY),TBOD(1,IBODY),NBOD(IBODY))
 C
          IF(LDUPL_B(IBODY)) THEN
           CALL BDUPL(IBODY,YDUPL_B(IBODY),'YDUP')
@@ -253,8 +253,8 @@ C
 C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
-         CALL MAKEBODY(IBODY,
-     &       XBOD,YBOD,TBOD,NBOD)
+         CALL MAKEBODY(IBODY)
+C    &       XBOD(1,IBODY),YBOD(1,IBODY),TBOD(1,IBODY),NBOD(IBODY))
 C
          IF(LDUPL_B(IBODY)) THEN
           CALL BDUPL(IBODY,YDUPL_B(IBODY),'YDUP')
@@ -347,8 +347,8 @@ C------check for body duplicated on symmetry plane
           GO TO 990
          ENDIF
 C
-         CALL MAKEBODY(IBODY,
-     &       XBOD,YBOD,TBOD,NBOD)
+         CALL MAKEBODY(IBODY)
+C     &       XBOD(1,IBODY),YBOD(1,IBODY),TBOD(1,IBODY),NBOD(IBODY))
 C
          IF(LDUPL_B(IBODY)) THEN
           CALL BDUPL(IBODY,YDUPL_B(IBODY),'YDUP')
@@ -997,7 +997,8 @@ C
         ELSE
 C------ set thread line y, and thickness t ( = 2r)
           NBOD = MIN( 50 , IBX )
-          CALL GETCAM(XB,YB,NB,XBOD,YBOD,TBOD,NBOD,.FALSE.)
+          CALL GETCAM(XB,YB,NB,XBOD(1,IBODY),YBOD(1,IBODY),
+     &   TBOD(1,IBODY),NBOD(IBODY),.FALSE.)
         ENDIF
 C
 C===========================================================================

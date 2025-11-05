@@ -28,7 +28,7 @@ dependencies = [
     "numpy>=1.19",
 ]
 readme = "README.md"
-version = "1.4.1" # this automatically updates __init__.py and setup_deprecated.py
+version = "2.0.0" # this automatically updates __init__.py and setup_deprecated.py
 
 
 [tool.cibuildwheel]
