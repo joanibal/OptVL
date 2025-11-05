@@ -27,6 +27,7 @@ C--------------------------------------------------------------
       INCLUDE 'AVLPLT.INC'
       REAL XYZMIN(3), XYZMAX(3)
       LOGICAL LPROJ
+      LOGICAL LSET
 C
       REAL PTS(3,2)
 C
@@ -36,9 +37,11 @@ C
       XYZMAX(1) = -1.0E20
       XYZMAX(2) = -1.0E20
       XYZMAX(3) = -1.0E20
-C
+      LSET = .FALSE.
+C     
       DO N = 1, NSURF
        IF(LPLTSURF(N)) THEN
+         LSET = .TRUE.
 C
         J1 = JFRST(N)
         JN = JFRST(N) + NJ(N)-1
@@ -64,6 +67,7 @@ C
 C
       DO N = 1, NBODY
        IF(LPLTBODY(N)) THEN
+        LSET = .TRUE.
 C
         L1 = LFRST(N)
         LN = LFRST(N) + NL(N)-1
@@ -173,6 +177,31 @@ C
 C
        ENDIF
       END DO
+C
+C
+      IF(LOBPLT) THEN
+       DO N = 1, NOB
+        LSET = .TRUE.
+C
+        PTS(1,1) = ROB(1,N)
+        PTS(2,1) = ROB(2,N)
+        PTS(3,1) = ROB(3,N)
+        IF(LPROJ) CALL VIEWPROJ(PTS,1,PTS)
+C
+        DO K = 1, 3
+          XYZMIN(K) = MIN( XYZMIN(K), PTS(K,1) )
+          XYZMAX(K) = MAX( XYZMAX(K), PTS(K,1) )
+        ENDDO
+C
+       END DO
+      ENDIF
+C
+      IF(.NOT.LSET) THEN
+        DO K = 1, 3
+          XYZMIN(K) = -1.0
+          XYZMAX(K) =  1.0
+        ENDDO
+      ENDIF         
 C
       RETURN
       END ! GRLIMS

@@ -1,7 +1,7 @@
 from optvl import OVLSolver
 import numpy as np
 
-ovl_solver = OVLSolver(geo_file="aircraft.avl", debug=False)
+ovl_solver = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
 alpha = 3.0
 ovl_solver.set_variable("alpha", alpha)
 ovl_solver.execute_run()

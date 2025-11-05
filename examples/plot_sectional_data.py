@@ -2,7 +2,7 @@ from optvl import OVLSolver
 import numpy as np
 import matplotlib.pyplot as plt
 
-ovl = OVLSolver(geo_file="aircraft.avl", debug=False)
+ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
 ovl.set_variable('alpha', 5.0)
 ovl.set_variable('beta', 10.0)
 ovl.execute_run()

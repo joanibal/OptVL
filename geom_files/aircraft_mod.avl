@@ -7,13 +7,13 @@ modified aircraft
 # SI Used: m, kg, etc
 
 #Mach
-0.0
+0.1
 #IYsym   IZsym   Zsym
  0       0       0
 #Sref    Cref    b_wing
-1.2      0.37     8
+1.5825   0.35  4
 #Xref    Yref    Zref
-0.08     0.0     0.1
+0.084 0.0     0.0
 # CDp
 0.011600
 

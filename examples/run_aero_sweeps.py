@@ -1,7 +1,7 @@
 
 from optvl import OVLSolver
 import numpy as np
-ovl = OVLSolver(geo_file="aircraft.avl", debug=False)
+ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
 
 # set the angle of attack
 ovl.set_variable("alpha", 0.00)

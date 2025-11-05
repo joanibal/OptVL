@@ -17,18 +17,16 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
-geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
+geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
 
 class TestStabDerivs(unittest.TestCase):
     # TODO: beta derivatives likely wrong
 
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl", debug=False)
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver = OVLSolver(geo_file=geom_file, debug=False)
         
         # HACK: we have to use alpha/beta=0 here so the stability and body axis are the same
         self.ovl_solver.set_variable("alpha", 0.0)
@@ -97,18 +95,8 @@ class TestStabDerivs(unittest.TestCase):
         # pprint.pprint(body_axis_derivs)
 
         con_keys =  ["roll rate", "pitch rate", "yaw rate"]
-        func_keys = ["CX body axis", "CY body axis", "CZ body axis", "Cl", "Cm", "Cn"]
-        # con_keys =  ["roll rate"]
-        # func_keys = ["CZ body axis"]
-    
-        func_to_key = {
-            "Cl" : "Cl",
-            "Cm" : "Cm",
-            "Cn" : "Cn",
-            "CX body axis" : "CX",
-            "CY body axis" : "CY",
-            "CZ body axis" : "CZ",
-        }
+        func_keys = ["CX", "CY", "CZ", "Cl", "Cm", "Cn"]
+
         
         con_to_var = {
             "roll rate" : "p" ,
@@ -125,7 +113,7 @@ class TestStabDerivs(unittest.TestCase):
             self.ovl_solver.set_variable(con_key, val)
             
             for func_key in func_keys:
-                key = self.ovl_solver._get_deriv_key(con_to_var[con_key], func_to_key[func_key])
+                key = self.ovl_solver._get_deriv_key(con_to_var[con_key], func_key)
                 ad_dot = body_axis_derivs[key] 
                 
                 fd_dot = (perb_data[func_key] - base_data[func_key]) / h 
@@ -134,8 +122,8 @@ class TestStabDerivs(unittest.TestCase):
                    fd_dot *= 180/np.pi 
                    # convert to radians from degrees!
                 
-                rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
-                print(f"{key:5}  | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
+                # rel_err = np.abs((ad_dot - fd_dot) / (fd_dot + 1e-20))
+                # print(f"{key:5}  | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
                 tol = 1e-8
                 if np.abs(ad_dot) < tol or np.abs(fd_dot) < tol:

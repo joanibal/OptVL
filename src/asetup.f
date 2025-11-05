@@ -39,8 +39,8 @@ C            W            Normalwash at vortex midpoints for GAM
 C
 C...COMMENTS   
 C
+      use avl_heap_inc  
       INCLUDE 'AVL.INC'
-      REAL WORK(NVMAX)
       real t0, t1, t2, t3, t4, t5
 C
       AMACH = MACH
@@ -73,7 +73,7 @@ C
         if(lverbose) then
           WRITE(*,*) ' Building source+doublet strength AIC matrix...'
         end if
-        CALL SRDSET(BETM,XYZREF,
+        CALL SRDSET(BETM,XYZREF,IYSYM,
      &              NBODY,LFRST,NLMAX,
      &              NL,RL,RADL,
      &              SRC_U,DBL_U)
@@ -99,10 +99,11 @@ C
       if(lverbose) then
         WRITE(*,*) ' Building bound-vortex velocity matrix...'
        end if 
-    !    CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
-    !  &           NVOR,RV1,RV2,NSURFV,CHORDV,
-    !  &           NVOR,RV ,    NSURFV,.TRUE.,
-    !  &           WV_GAM,NVMAX)
+       CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,
+     &           VRCOREC,VRCOREW,
+     &           NVOR,RV1,RV2,LVCOMP,CHORDV,
+     &           NVOR,RV ,    LVCOMP,.TRUE.,
+     &           WV_GAM,NVOR)
 C
        NU = 6
        CALL VSRD(BETM,IYSYM,YSYM,IZSYM,ZSYM,SRCORE,
@@ -110,7 +111,7 @@ C
      &           NL,RL,RADL,
      &           NU,SRC_U,DBL_U,
      &           NVOR,RV ,
-     &           WVSRD_U,NVMAX)
+     &           WVSRD_U,NVOR)
 C
        LVEL = .TRUE.
       ENDIF
@@ -124,8 +125,8 @@ C
 
 
       SUBROUTINE build_AIC
+      use avl_heap_inc  
       INCLUDE 'AVL.INC'
-      REAL(kind=avl_real) WC_GAM(3,NVOR,NVOR)
 
       AMACH = MACH
       BETM = SQRT(1.0 - AMACH**2)
@@ -134,10 +135,13 @@ C
         if (lverbose) then
           WRITE(*,*) ' Building normalwash AIC matrix...'
         end if
-       CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
-     &           NVOR,RV1,RV2,NSURFV,CHORDV,
-     &           NVOR,RC ,    NSURFV,.FALSE.,
+        
+       CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,
+     &           VRCOREC,VRCOREW,
+     &           NVOR,RV1,RV2,LVCOMP,CHORDV,
+     &           NVOR,RC ,    LVCOMP,.FALSE.,
      &           WC_GAM,NVOR)
+C
 C$AD II-LOOP
       DO J = 1, NVOR
 C$AD II-LOOP
@@ -180,8 +184,9 @@ C$AD II-LOOP
        end ! build_AIC
        
       SUBROUTINE factor_AIC
+       use avl_heap_inc  
        INCLUDE 'AVL.INC'
-       REAL WORK(NVMAX)
+       REAL WORK(NVOR)
        integer i, j
        
        if(lverbose) then
@@ -190,14 +195,16 @@ C$AD II-LOOP
        do j = 1, NVOR
          do i = 1, NVOR
             AICN_LU(i,j) = AICN(i,j)
+            ! write(*,*) i,j, 'AICN(i,j)', AICN(i,j)
          enddo 
         ENDDO
-       CALL LUDCMP(NVMAX,NVOR,AICN_LU,IAPIV,WORK)
+       CALL LUDCMP(NVOR,NVOR,AICN_LU,IAPIV,WORK)
 C
        LAIC = .TRUE.
       END ! factor_AIC
  
       SUBROUTINE GUCALC
+      use avl_heap_inc  
       INCLUDE 'AVL.INC'
       REAL RROT(3), VUNIT(3), WUNIT(3)
 C
@@ -233,6 +240,7 @@ C--------- set r.h.s. for V.n equation
            ENDDO
 
           ELSE
+C--------- this c.p. does not satisfy V.n equation...
 C--------- just clear r.h.s.
            GAM_U_0(I,IU) = 0.
            DO N = 1, NCONTROL
@@ -244,12 +252,12 @@ C--------- just clear r.h.s.
           ENDIF
         ENDDO
 
-        CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
+        CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
         DO N = 1, NCONTROL
-          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
+          CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
         ENDDO
         DO N = 1, NDESIGN
-          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
+          CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
         ENDDO
  10   CONTINUE
 C
@@ -295,12 +303,12 @@ C--------- just clear r.h.s.
            ENDDO
           ENDIF
         ENDDO
-        CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
+        CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
         DO N = 1, NCONTROL
-          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
+          CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
         ENDDO
         DO N = 1, NDESIGN
-          CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
+          CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_G(1,IU,N))
         ENDDO
    20 CONTINUE
 C
@@ -310,12 +318,13 @@ C
 
  
       SUBROUTINE GDCALC(NQDEF,LQDEF,ENC_Q,GAM_Q)
+      use avl_heap_inc  
       INCLUDE 'AVL.INC'
       LOGICAL LQDEF(*)
       REAL ENC_Q(3,NVMAX,*), GAM_Q(NVMAX,*)
 C
 C
-      REAL RROT(3), VROT(3), VC(3)
+      REAL RROT(3), VROT(3), VQ(3)
 C
       IF(NQDEF.EQ.0) RETURN
 C
@@ -332,17 +341,17 @@ C
             RROT(3) = RC(3,I) - XYZREF(3)
             CALL CROSS(RROT,WROT,VROT)
             DO K = 1, 3
-              VC(K) = VINF(K)
+              VQ(K) = VINF(K)
      &              + VROT(K)
             ENDDO
            ELSE
-            VC(1) = 0.
-            VC(2) = 0.
-            VC(3) = 0.
+            VQ(1) = 0.
+            VQ(2) = 0.
+            VQ(3) = 0.
            ENDIF
 
            DO K = 1, 3
-             VC(K) = VC(K)
+             VQ(K) = VQ(K)
      &             + WCSRD_U(K,I,1)*VINF(1)
      &             + WCSRD_U(K,I,2)*VINF(2)
      &             + WCSRD_U(K,I,3)*VINF(3)
@@ -351,7 +360,7 @@ C
      &             + WCSRD_U(K,I,6)*WROT(3)
            ENDDO
 C
-           GAM_Q(I,IQ) = -DOT(ENC_Q(1,I,IQ),VC)
+           GAM_Q(I,IQ) = -DOT(ENC_Q(1,I,IQ),VQ)
           ELSE
            GAM_Q(I,IQ) = 0.
           ENDIF
@@ -363,7 +372,7 @@ C...Eliminates excluded vortex equations for strips with z<Zsym
 ccc      CALL MUNGEB(GAM_Q(1,IQ))
 C********************************************************************
 C
-        CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_Q(1,IQ))
+        CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_Q(1,IQ))
  100  CONTINUE
 C
       RETURN
@@ -378,6 +387,7 @@ C
 C...OUTPUT   A(.,.)  AIC matrix with affected rows replaced with 1 on diagonal
 C                
 C
+      use avl_heap_inc  
       INCLUDE 'AVL.INC'
 C
       DO 30 J = 1, NSTRIP
@@ -402,6 +412,7 @@ C...PURPOSE  To remove hidden vortex equations in RHS's
 C          
 C...OUTPUT   B(.)  RHS vector with affected rows replaced with 0
 C
+      use avl_heap_inc  
       INCLUDE 'AVL.INC'
       REAL B(NVMAX)
 C
@@ -492,150 +503,93 @@ C
       END ! GAMSUM
 
 
-      SUBROUTINE VELSUM
+      SUBROUTINE VELSUM()
+      use avl_heap_inc  
       INCLUDE 'AVL.INC'
       
-      REAL(kind=avl_real) WV_GAM(3,NVOR,NVOR)
-      
-      AMACH = MACH
-      BETM = SQRT(1.0 - AMACH**2)
-      
-      CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
-     &           NVOR,RV1,RV2,NSURFV,CHORDV,
-     &           NVOR,RV ,    NSURFV,.TRUE.,
-     &           WV_GAM,NVOR)
-C--------------------------------------------------
-C     Sums AIC components to get WC, WV
-C--------------------------------------------------
+C---------------------------------------------------------
+C     Sums AIC components to get induced velocities and
+C     velocities per unit freestream VXX_U,WXX_U
 C
-      ! I (josh) changed the loop order for speed. 
-      ! It should be equivalent to the new code, but test coverage is low.
-      ! I am leaving it hear as a reminder of the original code.
+C     VC, VV    .h.v. induced at control pts and vortex pts
+C     WC, WV    total induced at control pts and vortex pts
+C     WCSRD, WVSRD  body source/doublet induced velocities
+C---------------------------------------------------------
 
-!       DO I = 1, NVOR
-!         DO K = 1, 3
-!     !       WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
-!     !  &            + WCSRD_U(K,I,2)*VINF(2)
-!     !  &            + WCSRD_U(K,I,3)*VINF(3)
-!     !  &            + WCSRD_U(K,I,4)*WROT(1)
-!     !  &            + WCSRD_U(K,I,5)*WROT(2)
-!     !  &            + WCSRD_U(K,I,6)*WROT(3)
-!          WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
-!      &            + WVSRD_U(K,I,2)*VINF(2)
-!      &            + WVSRD_U(K,I,3)*VINF(3)
-!      &            + WVSRD_U(K,I,4)*WROT(1)
-!      &            + WVSRD_U(K,I,5)*WROT(2)
-!      &            + WVSRD_U(K,I,6)*WROT(3)
-!           DO J = 1, NVOR
-!             ! WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
-!             WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
-!           ENDDO
-! C
-!           DO N = 1, NUMAX
-!             ! WC_U(K,I,N) = WCSRD_U(K,I,N)
-!             WV_U(K,I,N) = WVSRD_U(K,I,N)
-!             DO J = 1, NVOR
-!               ! WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
-!               WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
-!             ENDDO
-!           ENDDO
-! C
-!         ENDDO
-!       ENDDO
-
-C$AD II-LOOP
+C
       DO I = 1, NVOR
         DO K = 1, 3
-    !       WC(K,I) = WCSRD_U(K,I,1)*VINF(1)
-    !  &            + WCSRD_U(K,I,2)*VINF(2)
-    !  &            + WCSRD_U(K,I,3)*VINF(3)
-    !  &            + WCSRD_U(K,I,4)*WROT(1)
-    !  &            + WCSRD_U(K,I,5)*WROT(2)
-    !  &            + WCSRD_U(K,I,6)*WROT(3)
-          WV(K,I) = WVSRD_U(K,I,1)*VINF(1)
-     &            + WVSRD_U(K,I,2)*VINF(2)
-     &            + WVSRD_U(K,I,3)*VINF(3)
-     &            + WVSRD_U(K,I,4)*WROT(1)
-     &            + WVSRD_U(K,I,5)*WROT(2)
-     &            + WVSRD_U(K,I,6)*WROT(3)
-        enddo 
-      enddo 
-      
-C$AD II-LOOP
-      DO J = 1, NVOR
-        DO I = 1, NVOR
-          DO K = 1, 3
-            ! WC(K,I) = WC(K,I) + WC_GAM(K,I,J)*GAM(J)
-            WV(K,I) = WV(K,I) + WV_GAM(K,I,J)*GAM(J)
+          VC(K,I) = 0.0
+          VV(K,I) = 0.0
+C--- h.v. velocity at control points and vortex midpoints
+          DO J = 1, NVOR
+            VC(K,I) = VC(K,I) + WC_GAM(K,I,J)*GAM(J)
+            VV(K,I) = VV(K,I) + WV_GAM(K,I,J)*GAM(J)
           ENDDO
-        ENDDO
-      ENDDO
-      
-C$AD II-LOOP
-      DO N = 1, NUMAX
-        DO I = 1, NVOR
-          DO K = 1, 3
-            WC_U(K,I,N) = WCSRD_U(K,I,N)
-            WV_U(K,I,N) = WVSRD_U(K,I,N)
-          enddo
-        enddo
-      enddo
-      
-C$AD II-LOOP
-      DO N = 1, NUMAX
-        DO J = 1, NVOR
-          DO I = 1, NVOR
-            DO K = 1, 3
-              ! WC_U(K,I,N) = WC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
-              WV_U(K,I,N) = WV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
+          DO N = 1, NUMAX
+            VC_U(K,I,N) = 0.0
+            VV_U(K,I,N) = 0.0
+            DO J = 1, NVOR
+              VC_U(K,I,N) = VC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
+              VV_U(K,I,N) = VV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
             ENDDO
           ENDDO
-        enddo 
-      enddo
+          DO N = 1, NCONTROL
+            VC_D(K,I,N) = 0.0
+            VV_D(K,I,N) = 0.0
+            DO J = 1, NVOR
+              VC_D(K,I,N) = VC_D(K,I,N) + WC_GAM(K,I,J)*GAM_D(J,N)
+              VV_D(K,I,N) = VV_D(K,I,N) + WV_GAM(K,I,J)*GAM_D(J,N)
+            ENDDO
+          ENDDO
+          DO N = 1, NDESIGN
+            VC_G(K,I,N) = 0.0
+            VV_G(K,I,N) = 0.0
+            DO J = 1, NVOR
+              VC_G(K,I,N) = VC_G(K,I,N) + WC_GAM(K,I,J)*GAM_G(J,N)
+              VV_G(K,I,N) = VV_G(K,I,N) + WV_GAM(K,I,J)*GAM_G(J,N)
+            ENDDO
+          ENDDO
+C--- velocity contribution from body sources and doublets
+          WCSRD(K,I) = WCSRD_U(K,I,1)*VINF(1)
+     &               + WCSRD_U(K,I,2)*VINF(2)
+     &               + WCSRD_U(K,I,3)*VINF(3)
+     &               + WCSRD_U(K,I,4)*WROT(1)
+     &               + WCSRD_U(K,I,5)*WROT(2)
+     &               + WCSRD_U(K,I,6)*WROT(3)
+          WVSRD(K,I) = WVSRD_U(K,I,1)*VINF(1)
+     &               + WVSRD_U(K,I,2)*VINF(2)
+     &               + WVSRD_U(K,I,3)*VINF(3)
+     &               + WVSRD_U(K,I,4)*WROT(1)
+     &               + WVSRD_U(K,I,5)*WROT(2)
+     &               + WVSRD_U(K,I,6)*WROT(3)
+C--- total velocity at control points and vortex midpoints
+          WC(K,I) = VC(K,I) + WCSRD(K,I)
+          WV(K,I) = VV(K,I) + WVSRD(K,I)
+          DO N = 1, NUMAX
+            WC_U(K,I,N) = VC_U(K,I,N) + WCSRD_U(K,I,N)
+            WV_U(K,I,N) = VV_U(K,I,N) + WVSRD_U(K,I,N)
+          ENDDO
+          DO N = 1, NDMAX
+            WC_D(K,I,N) = VC_D(K,I,N)
+            WV_D(K,I,N) = VV_D(K,I,N)
+          ENDDO
+          DO N = 1, NGMAX
+            WC_G(K,I,N) = VC_G(K,I,N)
+            WV_G(K,I,N) = VV_G(K,I,N)
+          ENDDO
 C
+        ENDDO
+      ENDDO
 C
       RETURN
       END ! VELSUM
-
-
-
-      SUBROUTINE WSENS
-      INCLUDE 'AVL.INC'
-C---------------------------------------------------
-C     Computes induced-velocity sensitivities
-C     to control and design changes
-C---------------------------------------------------
-C
-      call exit(1)
-      DO I = 1, NVOR
-        DO K = 1, 3
-          DO N = 1, NCONTROL
-            WC_D(K,I,N) = 0.
-            WV_D(K,I,N) = 0.
-            DO J = 1, NVOR
-              ! WC_D(K,I,N) = WC_D(K,I,N) + WC_GAM(K,I,J)*GAM_D(J,N)
-              WV_D(K,I,N) = WV_D(K,I,N) + WV_GAM(K,I,J)*GAM_D(J,N)
-            ENDDO
-          ENDDO  
-C
-          DO N = 1, NDESIGN
-            WC_G(K,I,N) = 0.
-            WV_G(K,I,N) = 0.
-            DO J = 1, NVOR
-              ! WC_G(K,I,N) = WC_G(K,I,N) + WC_GAM(K,I,J)*GAM_G(J,N)
-              WV_G(K,I,N) = WV_G(K,I,N) + WV_GAM(K,I,J)*GAM_G(J,N)
-            ENDDO
-          ENDDO  
-        ENDDO
-      ENDDO
-C
-      RETURN
-      END ! WSENS
       
       subroutine set_par_and_cons(NITER, IR)
       include 'AVL.INC'
       integer NITER, IR
       
+      ! mach setting is done in here. Should it be?
       call set_params(IR)
       ! Additionally set the reference point to be at the cg
       XYZREF(1) = PARVAL(IPXCG,IR)
@@ -649,8 +603,11 @@ C
 C----- new Mach number invalidates close to everything that's stored
        LAIC = .FALSE.
        LSRD = .FALSE.
+       LVEL = .FALSE.
        LSOL = .FALSE.
        LSEN = .FALSE.
+       LOBAIC = .FALSE.
+       LOBVEL = .FALSE.
       ENDIF
       
       IF(NITER.GT.0) THEN
@@ -771,7 +728,7 @@ C$AD II-LOOP
       SUBROUTINE set_gam_d_rhs(IQ,ENC_Q, rhs_vec)
       INCLUDE 'AVL.INC'
       REAL ENC_Q(3,NVMAX,*), rhs_vec(NVMAX)
-      REAL RROT(3), VROT(3), VC(3)
+      REAL RROT(3), VROT(3), VQ(3)
 C
 C$AD II-LOOP
       DO I = 1, NVOR
@@ -783,17 +740,17 @@ C$AD II-LOOP
           CALL CROSS(RROT,WROT,VROT)
 C$AD II-LOOP
           DO K = 1, 3
-            VC(K) = VINF(K)
+            VQ(K) = VINF(K)
      &              + VROT(K)
           ENDDO
           ELSE
-          VC(1) = 0.
-          VC(2) = 0.
-          VC(3) = 0.
+          VQ(1) = 0.
+          VQ(2) = 0.
+          VQ(3) = 0.
           ENDIF
 C$AD II-LOOP
           DO K = 1, 3
-            VC(K) = VC(K)
+            VQ(K) = VQ(K)
      &             + WCSRD_U(K,I,1)*VINF(1)
      &             + WCSRD_U(K,I,2)*VINF(2)
      &             + WCSRD_U(K,I,3)*VINF(3)
@@ -802,7 +759,7 @@ C$AD II-LOOP
      &             + WCSRD_U(K,I,6)*WROT(3)
           ENDDO
 C 
-          rhs_vec(I) = -DOT(ENC_Q(1,I,IQ),VC)
+          rhs_vec(I) = -DOT(ENC_Q(1,I,IQ),VQ)
         ELSE
           rhs_vec(I) = 0.
         ENDIF
@@ -814,7 +771,7 @@ C
       
       subroutine mat_prod(mat, vec, n, out_vec)
         include 'AVL.INC'
-        real mat(NVMAX,NVMAX), vec(NVMAX), out_vec(NVMAX)
+        real mat(n,n), vec(NVMAX), out_vec(NVMAX)
         
         out_vec = 0.
 C$AD II-LOOP

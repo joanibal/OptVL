@@ -51,6 +51,7 @@ share/python-wheels/
 MANIFEST
 src/ad_src/forward_tmp/
 src/ad_src/reverse_tmp/
+src/ad_src/preprocessed_files/
 src/includes/AVL.INC
 examples/*.html
 examples/*.db
@@ -61,6 +62,7 @@ tests/reports/
 tests/*.html
 tests/*_out.avl
 tests/reports
+tests/avl_analysis_references/*.output
 tests/opt_*.avl
 .devcontainer
 **.DS_Store

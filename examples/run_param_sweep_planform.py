@@ -4,7 +4,7 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 
 
-ovl_solver = OVLSolver(geo_file="rectangle.avl", debug=False, timing=False)
+ovl_solver = OVLSolver(geo_file="../geom_files/rectangle.avl", debug=False, timing=False)
 
 # set the angle of attack
 # ovl_solver.set_variable("alpha", 5.00)

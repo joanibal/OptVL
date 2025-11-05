@@ -1,0 +1,86 @@
+load ./geom_files/supra.avl
+mass ./geom_files/supra.mass
+mset 0
+oper
+MRF
+a a 0
+b b 0
+r r 0
+p p 0
+y y 0
+D1 D1 0
+D2 D2 0
+D3 D3 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+a a 45
+b b 0
+r r 0
+p p 0
+y y 0
+D1 D1 0
+D2 D2 0
+D3 D3 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+a a 0
+b b 0
+r r 0
+p p 0
+y y 0
+D1 D1 10
+D2 D2 10
+D3 D3 10
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+a a -45
+b b -45
+r r 0.1
+p p 0.2
+y y 0.3
+D1 D1 10
+D2 D2 10
+D3 D3 10
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+
+
+
+q
+q

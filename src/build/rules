@@ -1,26 +1,27 @@
 # These are the rules to make each of the 4 different types of files.
 
 
-%.o : %.f90 ../includes/AVL.INC
+%.o : %.f90 avl_heap_inc.o avl_heap_diff_inc.o
 	$(FF90) $(FF90_ALL_FLAGS) -I ../includes -c $< -o $*.o
 	@echo
 	@echo "        --- Compiled $*.f90 successfully ---"
 	@echo
 
-%.o : %.F90 ../includes/AVL.INC
+%.o : %.F90 
 	$(FF90) $(FF90_ALL_FLAGS) -I ../includes -c $< -o $*.o
 	@echo
 	@echo "        --- Compiled $*.F90 successfully ---"
 	@echo
 
-%.o : %.c ../includes/AVL.INC
+%.o : %.c 
 	$(CC) $(CC_ALL_FLAGS) -I ../includes -c $< -o $*.o
 	@echo
 	@echo "        --- Compiled $*.c successfully ---"
 	@echo
 
-%.o: %.f ../includes/AVL.INC
+%.o: %.f avl_heap_inc.o avl_heap_diff_inc.o
 	$(FF90) $(FF90_ALL_FLAGS) -I ../includes -c $< -o $*.o
 	@echo
 	@echo "        --- Compiled $*.f successfully ---"
 	@echo
+

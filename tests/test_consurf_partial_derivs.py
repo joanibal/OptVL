@@ -18,16 +18,16 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
+
+geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
 geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
 
 
 class TestResidualDPartials(unittest.TestCase):
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
         self.ovl_solver.set_variable("alpha", 25.0)
         self.ovl_solver.set_variable("beta", 5.0)
         self.ovl_solver.execute_run()
@@ -187,9 +187,7 @@ class TestResidualDPartials(unittest.TestCase):
 
 class TestConSurfDerivsPartials(unittest.TestCase):
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
         self.ovl_solver.set_variable("alpha", 45.0)
         self.ovl_solver.set_variable("beta", 45.0)
         self.ovl_solver.execute_run()
@@ -257,7 +255,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                 cs_d = self.ovl_solver._execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[2]
 
                 cs_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(
-                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
+                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-7
                 )[2]
 
                 for deriv_func in cs_d:
@@ -345,7 +343,8 @@ class TestConSurfDerivsPartials(unittest.TestCase):
 
         for deriv_func in cs_d:
             sens_label = f"{deriv_func} wrt gamma_d"
-            # print(sens_label, cs_d[deriv_func], cs_d_fd[deriv_func])
+            # rel_err = (cs_d[deriv_func] - cs_d_fd[deriv_func])/cs_d_fd[deriv_func]
+            # print(sens_label, cs_d[deriv_func], cs_d_fd[deriv_func], rel_err)
             np.testing.assert_allclose(
                 cs_d[deriv_func],
                 cs_d_fd[deriv_func],
@@ -365,12 +364,11 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                 cs_d_rev = {deriv_func: 1.0}
 
                 gamma_d_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)[3]
-
                 rev_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
 
                 fwd_sum = np.sum(cs_d_fwd[deriv_func])
 
-                # print("fwd_sum", fwd_sum, "rev_sum", rev_sum)
+                # print(deriv_func, "fwd_sum", fwd_sum, "rev_sum", rev_sum)
                 np.testing.assert_allclose(
                     fwd_sum,
                     rev_sum,

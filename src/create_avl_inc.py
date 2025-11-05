@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# This file is now deprecated. In v3.50 AVL was changed to only use an NVMAX of 5000 so there is no need to vary based operating system
 
 import sys
 

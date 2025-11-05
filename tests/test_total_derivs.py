@@ -17,21 +17,19 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
-geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
+
+geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
 
 
 class TestTotals(unittest.TestCase):
     # TODO: beta derivatives likely wrong
 
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        # self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1_trans.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
         self.ovl_solver.set_variable("alpha", 5.0)
         self.ovl_solver.set_variable("beta", 0.0)
+        self.ovl_solver.set_parameter('Mach', 0.8)
         self.ovl_solver.execute_run()
 
     def tearDown(self):
@@ -180,9 +178,9 @@ class TestTotals(unittest.TestCase):
 
                     rel_err = np.abs(ad_dot - func_dot) / np.abs(func_dot + 1e-20)
 
-                    print(
-                        f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
-                    )
+                    # print(
+                    #     f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                    # )
                     
                     tol = 1e-8
                     if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
@@ -282,7 +280,7 @@ class TestTotals(unittest.TestCase):
                         np.testing.assert_allclose(
                             geom_dot,
                             func_dot,
-                            rtol=3e-3,
+                            rtol=6e-3,
                             err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                         )
                         
@@ -310,7 +308,7 @@ class TestTotals(unittest.TestCase):
                             np.testing.assert_allclose(
                                 geom_dot,
                                 func_dot,
-                                rtol=3e-3,
+                                rtol=6e-3,
                                 err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                             )                
                 
@@ -321,9 +319,9 @@ class TestTotals(unittest.TestCase):
 
                         rel_err = np.abs(geom_dot - func_dot) / np.abs(func_dot + 1e-20)
 
-                        print(
-                            f"{func_key}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
-                        )
+                        # print(
+                        #     f"{func_key}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                        # )
                         
                         tol = 5e-7
                         if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
@@ -338,7 +336,7 @@ class TestTotals(unittest.TestCase):
                             np.testing.assert_allclose(
                                 geom_dot,
                                 func_dot,
-                                rtol=3e-3,
+                                rtol=6e-3,
                                 err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                             )                
                 

@@ -1,7 +1,7 @@
 from optvl import OVLSolver
 import numpy as np
 
-ovl_solver = OVLSolver(geo_file="supra.avl", debug=False)
+ovl_solver = OVLSolver(geo_file="../geom_files/supra.avl", debug=False)
 # set the angle of attack
 ovl_solver.set_parameter("Mach", 0.0)
 

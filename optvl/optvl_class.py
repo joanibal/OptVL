@@ -87,15 +87,15 @@ class OVLSolver(object):
         "CYff": ["CASE_R", "CYFF"],
         "CDff": ["CASE_R", "CDFF"],
         
-        # non-dimensionalized forces 
-        "CX": ["CASE_R", "CXTOT"], 
-        "CY": ["CASE_R", "CYTOT"], 
-        "CZ": ["CASE_R", "CZTOT"],   
+        # # non-dimensionalized forces 
+        # "CX": ["CASE_R", "CFTOT", 0], 
+        # "CY": ["CASE_R", "CFTOT", 1], 
+        # "CZ": ["CASE_R", "CFTOT", 2],   
         
         # non-dimensionalized forces (body frame)
-        "CX body axis": ["CASE_R", "CXBAX"], 
-        "CY body axis": ["CASE_R", "CYBAX"], 
-        "CZ body axis": ["CASE_R", "CZBAX"],   
+        "CX": ["CASE_R", "CXBAX"], 
+        "CY": ["CASE_R", "CYBAX"], 
+        "CZ": ["CASE_R", "CZBAX"],   
         
         # non-dimensionalized moments (body frame)
         "Cl": ["CASE_R", "CRBAX"],
@@ -113,18 +113,28 @@ class OVLSolver(object):
         "Sref": ["CASE_R", "SREF"],
         "Cref": ["CASE_R", "CREF"],
         "Bref": ["CASE_R", "BREF"],
+        "Xref": ["CASE_R", "XYZREF", 0],
+        "Yref": ["CASE_R", "XYZREF", 1],
+        "Zref": ["CASE_R", "XYZREF", 2],
     }
     
     case_derivs_to_fort_var = {
         # derivative of coefficents wrt control surface deflections
+        
+        # stablity axis values
         "CL": ["CASE_R", "CLTOT_D"],
         "CD": ["CASE_R", "CDTOT_D"],
-        "CX": ["CASE_R", "CXTOT_D"],
-        "CY": ["CASE_R", "CYTOT_D"],
-        "CZ": ["CASE_R", "CZTOT_D"],
-        "Cl": ["CASE_R", "CRTOT_D"],
-        "Cm": ["CASE_R", "CMTOT_D"],
-        "Cn": ["CASE_R", "CNTOT_D"],
+        "Cl'": ["CASE_R", "CRSAX_D"],
+        # "Cm'" is the same as "Cm"
+        "Cn'": ["CASE_R", "CNSAX_D"],
+        
+        # body axis values
+        "CX": ["CASE_R", "CXTOT_D_BA"],
+        "CY": ["CASE_R", "CYTOT_D_BA"],
+        "CZ": ["CASE_R", "CZTOT_D_BA"],
+        "Cl": ["CASE_R", "CRTOT_D_BA"],
+        "Cm": ["CASE_R", "CMTOT_D_BA"],
+        "Cn": ["CASE_R", "CNTOT_D_BA"],
     }
   
     # This dict has the following structure:
@@ -152,11 +162,11 @@ class OVLSolver(object):
         
         # forces non-dimentionalized by surface quantities
         # uses surface area instead of sref and takes moments about leading edge
-        "CL surf" : ["SURF_R", "CL_SRF"],
-        "CD surf" : ["SURF_R", "CD_SRF"],
-        "CmLE surf" : ["SURF_R", "CMLE_SRF"],
+        "CL surf" : ["SURF_R", "CL_LSRF"],
+        "CD surf" : ["SURF_R", "CD_LSRF"],
+        "CMLE_LSTRP surf" : ["SURF_R", "CMLE_LSRF"],
         
-        #TODO: add CF_SRF(3,NFMAX), CM_SRF(3,NFMAX)
+        #TODO: add CF_LSRF(3,NFMAX), CM_LSRF(3,NFMAX)
     }
     
 
@@ -198,14 +208,22 @@ class OVLSolver(object):
         module_dir = os.path.dirname(os.path.realpath(__file__))
         module_name = os.path.basename(module_dir)
         
+        
         if platform.system() == "Windows":
             #HACK
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.pyd"))[0]
+            print('avl_lib_so_file', avl_lib_so_file)
+            if len(avl_lib_so_file) == 0:
+                # print the contents of the module dir
+                print('module_dir', module_dir)
+                print(glob.glob(os.path.join(module_dir, "*")))
+                raise RuntimeError('no dyanmic library found')
         else:
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.so"))[0]
             
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
+        
         self.avl = MExt.MExt("libavl", module_name, "optvl", lib_so_file=avl_lib_so_file, debug=debug)._module
 
         # this way doesn't work with mulitple isntances fo OVLSolver
@@ -401,7 +419,7 @@ class OVLSolver(object):
                 "nspans": ["SURF_GEOM_I", "NSPANS", slice_surf_secs],
                 "yduplicate": ["SURF_GEOM_R", "YDUPL", slice_idx_surf],
                 "use surface spacing": ["SURF_GEOM_L", "LSURFSPACING", slice_idx_surf],
-                "component": ["SURF_I", "LSCOMP", slice_idx_surf],
+                "component": ["SURF_I", "LNCOMP", slice_idx_surf],
             }
 
             icontd_slices = []
@@ -568,11 +586,11 @@ class OVLSolver(object):
         avl_con_variables = copy.deepcopy(avl_variables)
         avl_con_variables.update(
             {
-                "CL":             "C ",
-                "CY":             "S ",
+                "CL": "C ",
+                "CY": "S ",
                 "Cl": "RM",
-                "Cm":"PM",
-                "Cn":  "YM",
+                "Cm": "PM",
+                "Cn": "YM",
             }
         )
 
@@ -674,7 +692,7 @@ class OVLSolver(object):
 
         return deriv_data
 
-    def get_stab_derivs(self) -> Dict[str, Dict[str, float]]:
+    def get_stab_derivs(self) -> Dict[str, float]:
         """gets the stability derivates after an analysis run
 
         Returns:
@@ -689,7 +707,7 @@ class OVLSolver(object):
 
         return deriv_data
 
-    def get_body_axis_derivs(self) -> Dict[str, Dict[str, float]]:
+    def get_body_axis_derivs(self) -> Dict[str, float]:
         """gets the body-axis derivates after an analysis run
 
         Returns:
@@ -715,7 +733,13 @@ class OVLSolver(object):
     def set_reference_data(self, ref_data: Dict[str, float]) -> None:
         for key, val in ref_data.items():
             avl_key = self.ref_var_to_fort_var[key]
-            self.set_avl_fort_arr(*avl_key, val)
+            if len(avl_key) == 3:
+                blk, var, slicer = avl_key
+            else:
+                blk, var = avl_key
+                slicer=None
+
+            self.set_avl_fort_arr(blk, var, val, slicer=slicer)
             
         return ref_data
 
@@ -860,7 +884,7 @@ class OVLSolver(object):
         """modify a parameter of the run (analogous to M from the OPER menu in AVL).
 
         Args:
-            param_key: parameter to modify. Options are ["alpha", "beta", "pb/2V", "qc/2V", "rb/2V", "CL"]
+            param_key: parameter to modify. Options are ["CD0","bank","elevation","heading","Mach","velocity","density","grav.acc.","turn rad.","load fac.","X cg","Y cg","Z cg","mass","Ixx","Iyy","Izz","Ixy","Iyz","Izx","visc CL_a","visc CL_u","visc Cm_a","visc Cm_u"]
             param_val: value to set
 
         """        
@@ -987,30 +1011,30 @@ class OVLSolver(object):
             
             
             # strip contributions to non-dimensionalized forces 
-            "CX": ["STRP_R", "CXSTRP"], 
-            "CY": ["STRP_R", "CYSTRP"], 
-            "CZ": ["STRP_R", "CZSTRP"],   
+            "CX": ["STRP_R", "CFSTRP", (slice(None), 0)], 
+            "CY": ["STRP_R", "CFSTRP", (slice(None), 1)], 
+            "CZ": ["STRP_R", "CFSTRP", (slice(None), 2)],   
             
             # strip contributions to total moments (body frame)
-            "Cl": ["STRP_R", "CRSTRP"], # previously CR
-            "Cm": ["STRP_R", "CMSTRP"], # previously CM
-            "Cn": ["STRP_R", "CNSTRP"], # previously CN
+            "Cl": ["STRP_R", "CMSTRP", (slice(None), 0)], # previously CR
+            "Cm": ["STRP_R", "CMSTRP", (slice(None), 1)], # previously CM
+            "Cn": ["STRP_R", "CMSTRP", (slice(None), 2)], # previously CN
             
             
             # forces non-dimentionalized by strip quantities
             "CL strip" : ["STRP_R", "CL_LSTRP"],
             "CD strip" : ["STRP_R", "CD_LSTRP"],
-            "CF strip" : ["STRP_R", "CF_STRP"], # forces in 3 directions
-            "Cm strip" : ["STRP_R", "CM_STRP"], # moments in 3 directions
+            "CF strip" : ["STRP_R", "CF_LSTRP"], # forces in 3 directions
+            "Cm strip" : ["STRP_R", "CM_LSTRP"], # moments in 3 directions
 
             # additional forces and moments
-            "CL perp" : ["STRP_R", "CLTSTRP"], # strip CL referenced to Vperp,
-            "Cm c/4" : ["STRP_R","CMC4"],  # strip pitching moment about c/4 and
-            "Cm LE" : ["STRP_R","CMLE"],  # strip pitching moment about LE vector
+            "CL perp" : ["STRP_R", "CLT_LSTRP"], # strip CL referenced to Vperp,
+            "Cm c/4" : ["STRP_R","CMC4_LSTRP"],  # strip pitching moment about c/4 and
+            "Cm LE" : ["STRP_R","CMLE_LSTRP"],  # strip pitching moment about LE vector
             "spanloading" : ["STRP_R","CNC"],   # strip spanloading 
             
             # TODO: add
-            #  & CF_STRP(3,NSMAX),   CM_STRP(3,NSMAX),    ! strip forces in body axes referenced to strip area and 1/4 chord
+            #  & CF_LSTRP(3,NSMAX),   CM_LSTRP(3,NSMAX),    ! strip forces in body axes referenced to strip area and 1/4 chord
         }    
         # fmt: on
 
@@ -1712,6 +1736,24 @@ class OVLSolver(object):
             val: the number of vortices
         """
         return int(self.get_avl_fort_arr("CASE_I", "NVOR"))
+    
+    def get_mesh_data(self) -> Dict[str, int]:
+        """Get the number of vortices in the mesh
+        
+        Returns:
+            mesh_data : dict
+        """
+        
+        mesh_data = {
+            "bodies": self.get_avl_fort_arr("CASE_I", "NBODY"),
+            "surfaces": self.get_avl_fort_arr("CASE_I", "NSURF"),
+            "strips": self.get_avl_fort_arr("CASE_I", "NSTRIP"),
+            "vortices": self.get_avl_fort_arr("CASE_I", "NVOR"),
+            "control variables": self.get_avl_fort_arr("CASE_I", "NCONTROL"),
+            "design variables": self.get_avl_fort_arr("CASE_I", "NDESIGN"),
+        }
+        
+        return mesh_data
 
     def _createFortranStringArray(self, strList, num_max_char):
         """Setting arrays of strings in Fortran can be kinda nasty. This
@@ -1846,27 +1888,37 @@ class OVLSolver(object):
     
     def set_reference_ad_seeds(self, ref_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
         for ref_key in ref_seeds:
-            blk, var = self.ref_var_to_fort_var[ref_key]
+            avl_key = self.ref_var_to_fort_var[ref_key]
+            if len(avl_key) == 3:
+                blk, var, slicer = avl_key
+            else:
+                blk, var = avl_key
+                slicer=None
 
             if mode == "AD":
                 blk += self.ad_suffix
                 var += self.ad_suffix
                 val = ref_seeds[ref_key] * scale
             elif mode == "FD":
-                val = self.get_avl_fort_arr(blk, var)
+                val = self.get_avl_fort_arr(blk, var, slicer=slicer)
                 val += ref_seeds[ref_key] * scale
             
-            self.set_avl_fort_arr(blk, var, val)
+            self.set_avl_fort_arr(blk, var, val, slicer=slicer)
             
     def get_reference_ad_seeds(self) -> Dict[str, float]:
         ref_seeds = {}
         for ref_key in self.ref_var_to_fort_var:
-            blk, var = self.ref_var_to_fort_var[ref_key]
+            avl_key = self.ref_var_to_fort_var[ref_key]
+            if len(avl_key) == 3:
+                blk, var, slicer = avl_key
+            else:
+                blk, var = avl_key
+                slicer=None
         
             blk += self.ad_suffix
             var += self.ad_suffix
             
-            val = self.get_avl_fort_arr(blk, var)
+            val = self.get_avl_fort_arr(blk, var, slicer=slicer)
             ref_seeds[ref_key] = copy.deepcopy(val)
         
         return ref_seeds
@@ -1926,7 +1978,7 @@ class OVLSolver(object):
     def get_gamma_d_ad_seeds(self) -> np.ndarray:
         slicer = (slice(0, self.get_num_control_surfs()), slice(0, self.get_mesh_size()))
         blk = "VRTX_R_DIFF"
-        var = "GAM_d_DIFF"
+        var = "GAM_D_DIFF"
 
         gamma_d_seeds = copy.deepcopy(self.get_avl_fort_arr(blk, var, slicer=slicer))
         return gamma_d_seeds
@@ -2122,11 +2174,28 @@ class OVLSolver(object):
                         setattr(diff_blk, _var, val * 0.0)
 
     def clear_ad_seeds_fast(self):
-        # Only clear the seeds that are used in Make_tapenade file
+        # use the size information to clear only the part of data that are used
+        # zeroing more will cause more data to be allocated in physcial memory
+        
         num_vor = self.get_mesh_size()
         gam = self.get_avl_fort_arr("VRTX_R", "GAM")
         num_vor_max = gam.size
+        
+        num_strips_max = self.get_avl_fort_arr("STRP_R", "AINC").size
+        num_strips = self.get_avl_fort_arr("CASE_I", "NSTRIP")[()]
+        
+        num_surfs_max = self.get_avl_fort_arr("SURF_GEOM_R", "YDUPL").size
+        num_surfs = self.get_avl_fort_arr("CASE_I", "NSURF")
 
+        num_sec_max = self.get_avl_fort_arr("SURF_GEOM_R", "AINCS").shape[-1]
+        num_sec = np.max(self.get_avl_fort_arr("SURF_GEOM_I", "NSEC"))
+        
+        num_airfoil_pts_max = self.get_avl_fort_arr("SURF_GEOM_R", "XLASEC").shape[-1]
+        num_airfoil_pts = np.max(self.get_avl_fort_arr("SURF_GEOM_I", "NASEC"))
+
+        # import psutil
+        # process = psutil.Process()
+        # mem_before = process.memory_info().rss
         for att in dir(self.avl):
             if att.endswith(self.ad_suffix):
                 # loop over the attributes of the common block
@@ -2143,14 +2212,30 @@ class OVLSolver(object):
                             dim_size = shape[idx_dim]
                             if dim_size == num_vor_max:
                                 dim_size = num_vor
+                            
+                            if dim_size == num_strips_max:
+                                dim_size = num_strips
+                                
+                            if dim_size == num_sec_max:
+                                dim_size = num_sec
+                                
+                            if dim_size == num_surfs_max:
+                                dim_size = num_surfs
+                                
+                            if dim_size == num_airfoil_pts_max:
+                                dim_size = num_airfoil_pts
+                                
 
                             slices.append(slice(0, dim_size))
                         slicer = tuple(slices)
                         val[slicer] = 0.0
-                        # setattr(diff_blk, _var, val)
-                        # print(diff_blk, _var, val.shape, slicer)
-                        # mb_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-                        # print(f"    Memory usage: {mb_memory} MB")
+                        
+                        
+                        # mem_now = process.memory_info().rss
+                        # del_mem = mem_now - mem_before
+                        # mem_before = mem_now
+                        # print(f'{att:10}:{_var:15}, {str(slicer):100} Memory usage: {del_mem/1024**2:.2f} MB')
+
 
     def print_ad_seeds(self, print_non_zero: bool = False):
         for att in dir(self.avl):

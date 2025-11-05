@@ -8,6 +8,7 @@ C RUNLST
 C
 C
       SUBROUTINE SET_PARAMS_D(ir)
+C
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       INTEGER ir
@@ -28,6 +29,9 @@ C
       REAL dcl_u
       REAL dcm_a
       REAL dcm_u
+      REAL rixy
+      REAL riyz
+      REAL rizx
       phi = parval(ipphi, ir)
       the = parval(ipthe, ir)
       mach_diff = parval_diff(ipmach, ir)
@@ -47,5 +51,9 @@ C
       dcl_u = parval(ipclu, ir)
       dcm_a = parval(ipcma, ir)
       dcm_u = parval(ipcmu, ir)
+C
+      rixy = parval(ipixy, ir)
+      riyz = parval(ipiyz, ir)
+      rizx = parval(ipizx, ir)
       END
 

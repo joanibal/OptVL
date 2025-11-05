@@ -573,7 +573,6 @@ class OVLFuncsComp(om.ExplicitComponent):
             for func_key in self.ovl.case_body_derivs_to_fort_var:
                 if func_key in d_outputs:
                     body_axis_seeds[func_key] = d_outputs[func_key]
-                    print(func_key, type(body_axis_seeds[func_key]))
                     
                     if np.abs(body_axis_seeds[func_key]) > 0.0:
                         # print(var_name, body_axis_seeds[func_key])

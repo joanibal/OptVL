@@ -2,7 +2,7 @@ from optvl import OVLSolver
 import numpy as np
 import matplotlib.pyplot as plt
 
-ovl = OVLSolver(geo_file="aircraft.avl", mass_file="aircraft.mass",  debug=False)
+ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", mass_file="../geom_files/aircraft.mass",  debug=False)
 
 vel = 10
 ovl.set_parameter("velocity", vel)

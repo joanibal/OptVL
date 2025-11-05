@@ -10,11 +10,12 @@ pip install psutil openmdao!=3.38
 
 #HACK: if the tests are not split up the CI runs out of memory...
 # python -m unittest -v
-
-
+# pip install testflo
+# testflo -v .
 
 
 # test package built and installed correctly
+python test_import.py
 python -m unittest -v test_import.py
 python -m unittest -v test_io.py
 
@@ -25,7 +26,6 @@ python -m unittest -v test_tear_down.py
 python -m unittest -v test_parameters.py
 python -m unittest -v test_analysis.py
 python -m unittest -v test_surf_geom.py
-python -m unittest -v test_constraints.py
 python -m unittest -v test_stab_derivs.py
 python -m unittest -v test_body_axis_derivs.py
 # test eigenmode analysis
