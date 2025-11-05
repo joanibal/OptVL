@@ -21,8 +21,8 @@ geom_file = os.path.join(geom_dir, "supra.avl")
 mass_file = os.path.join(geom_dir, "supra.mass")
 
 # we can get an exact match when run on the same matchine, but we need to loose this so the tests work on all machines
-avl_match_rtol = 5e-14
-avl_match_atol = 5e-14
+avl_match_rtol = 5e-13
+avl_match_atol = 5e-13
 
 class TestBasic(unittest.TestCase):
     """These tests are to check that a simple case works before launching the full matrix of tests used in the other tests"""
