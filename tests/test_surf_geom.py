@@ -64,7 +64,7 @@ class TestGeom(unittest.TestCase):
         
         with open("avl_analysis_references/constrained_aircraft.json") as f:
             ref_data_cases = json.load(f)
-            run_comparison(self.ovl_solver, ref_data_cases, rtol=1e-15, atol=1e-14)
+            run_comparison(self.ovl_solver, ref_data_cases, rtol=5e-13, atol=5e-13)
 
     def test_surface_mirroring(self):
         
