@@ -62,6 +62,7 @@ tests/reports/
 tests/*.html
 tests/*_out.avl
 tests/reports
+tests/avl_analysis_references/*.output
 tests/opt_*.avl
 .devcontainer
 **.DS_Store

@@ -40,7 +40,7 @@ endif
 cython_c_args = ['-DCYTHON_CCOMPLEX=0'] # see gh-18975 for why we need this
 if is_mingw
   # For mingw-w64, link statically against the UCRT.
-  gcc_link_args = ['-lucrt', '-static',]
+  gcc_link_args = ['-lucrt', '-static']
   add_project_link_arguments(gcc_link_args, language: ['c', 'cpp', 'fortran'])
   # Force gcc to float64 long doubles for compatibility with MSVC
   # builds, for C only.
@@ -62,8 +62,8 @@ endif
 # _linker_script = meson.project_source_root() / '_build_utils/link-version-pyinit.map'
 # link_args = ['-Wl,--version-script=' + _linker_script]
 # link_args = ['-Wl,--image-base,0x10000000']
-link_args = ['-mcmodel=large']
-# link_args = []
+# link_args = ['-mcmodel=large']
+link_args = []
 # -shared -fPIC
 # gfortran -o myprogram mysource.f90 -Wl,-stack_size,8388608
 
