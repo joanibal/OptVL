@@ -1586,19 +1586,24 @@ c--------------------------------------------------------------
 
       ! Compute the incidence angle at the section end points
       ! We will need this later to iterpolate chord projections
+      ! SAB Note: This type of interpolation assumes the section 
+      ! is linear. However, the twist angles it produces can be applied
+      ! to an arbitrary mesh. The user just needs to be aware of what they are
+      ! applying here. 
+      ! Analogy: imagine that we create a trapazoidal section
+      ! that matches up with the root and tip chords of your arbitrary wing section
+      ! The trapzoid can encompass the wing section or parts of the section can be 
+      ! protruding out side the trapazoid. It doesn't matter. Now we twist the trapazoid
+      ! so that the angles at the root and tip match what is specified at the sections in 
+      ! AINCS. However, when we twist we make sure to keep the leading and trailing edges
+      ! linear (straight line along the LE and TE). The angles at each strip required to 
+      ! do are what gets applied to the normal vector at each strip.
       AINCL = AINCS(idx_sec,isurf)*DTR + ADDINC(isurf)*DTR
       AINCR = AINCS(idx_sec+1,isurf)*DTR + ADDINC(isurf)*DTR
-      ! CHSINL = CHORDL*SIN(AINCL)
-      ! CHSINR = CHORDR*SIN(AINCR)
-      ! CHCOSL = CHORDL*COS(AINCL)
-      ! CHCOSR = CHORDR*COS(AINCR)
-      ! Note that I'm no longer scaling by chord here
-      ! but I'm keeping the variable names the same 
-      ! Just to allow for an easy switch back to the old style for now
-      CHSINL = SIN(AINCL)
-      CHSINR = SIN(AINCR)
-      CHCOSL = COS(AINCL)
-      CHCOSR = COS(AINCR)
+      CHSINL = CHORDL*SIN(AINCL)
+      CHSINR = CHORDR*SIN(AINCR)
+      CHCOSL = CHORDL*COS(AINCL)
+      CHCOSR = CHORDR*COS(AINCR)
 
       ! We need to determine which controls belong to this section 
       ! Bring over the routine for this from makesurf
@@ -1765,11 +1770,12 @@ c--------------------------------------------------------------
             GAINDA(N) = GAIND(ICL,idx_sec  ,isurf)*(1.0-FC)
      &                 + GAIND(ICR,idx_sec+1,isurf)*     FC
 
-!             XHD = CHORDL*XHINGED(ICL,idx_sec  ,isurf)*(1.0-FC)
-!      &           + CHORDR*XHINGED(ICR,idx_sec+1,isurf)*     FC
-            ! iterpolate then scale by chord 
-            XHD = (XHINGED(ICL,idx_sec  ,isurf)*(1.0-FC)
-     &           + XHINGED(ICR,idx_sec+1,isurf)*FC)*CHORD(idx_strip)
+            ! SAB Note: This iterpolation ensures that the hinge line is 
+            ! is linear which I think it is an ok assumption for arbitrary wings
+            ! as long as the user is aware
+            ! A curve hinge line could work if needed if we just interpolate XHINGED and scaled by local chord
+            XHD = CHORDL*XHINGED(ICL,idx_sec  ,isurf)*(1.0-FC)
+     &           + CHORDR*XHINGED(ICR,idx_sec+1,isurf)*     FC
             IF(XHD.GE.0.0) THEN
       ! TE control surface, with hinge at XHD
             XLED(N) = XHD
@@ -1855,23 +1861,15 @@ c--------------------------------------------------------------
 
       ! Interpolate claf over the section
       ! CHORDC = CHORD(idx_strip)
-      ! SAB: Two ways to handle this for non linear sections
-      ! 1. Interpolate claf as non dimensional quantity
-      ! 2. Piecewise linearly iterpolate
+      ! SAB: In AVL this quantity is interpolated as a product with chord
+      ! We then divide by the chord at the strip to recover claf at the strip
+      ! This only works correctly for linear sections so we have to make a change
+      ! here to account for nonlinear(really piecewise linear) sections
+      ! The chord multiplication here
       ! Option 1:
       clafc =  (1.-FC)*CLAFL + FC*CLAFR
-      ! Option 2:
-            fc = (((mesh_surf(2,idx_node_yp1)+mesh_surf(2,idx_node))/2.) 
-     & -mesh_surf(2,idx_nodel))/(mesh_surf(2,idx_noder)
-     & -mesh_surf(2,idx_nodel))
-      ! accumulate piecewise linear interp
-      if (idx_strip .eq. JFRST(isurf)) then
-
-      else
-      
-      end if 
-      clafc =  (1.-FC)*(CHORDL/CHORD(idx_strip))*CLAFL
-     &           +     FC *(CHORDR/CHORD(idx_strip))*CLAFR
+!       clafc =  (1.-FC)*(CHORDL/CHORD(idx_strip))*CLAFL
+!      &           +     FC *(CHORDR/CHORD(idx_strip))*CLAFR
 
       ! loop over vorticies for the strip
       do idx_x = 1, nvc(isurf)

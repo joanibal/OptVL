@@ -1135,10 +1135,10 @@ class OVLSolver(object):
             self.avl.CASE_L.LSOL = False
             self.avl.CASE_L.LSEN = False
 
-    def update_surfaces_mesh(self, meshes:list, iptloc:list):
-        if len(meshes) != self.get_num_surfaces():
-            raise ValueError("Must provide a mesh for each surface ")
-        for idx_surf in 
+    # def update_surfaces_mesh(self, meshes:list, iptloc:list):
+    #     if len(meshes) != self.get_num_surfaces():
+    #         raise ValueError("Must provide a mesh for each surface ")
+    #     for idx_surf in 
 
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
