@@ -716,6 +716,25 @@ c...      lower/upper coordinates (for oml)
           CASEC(I,ISEC,ISURF) = ZF
 cc#endif
         ENDDO
+        
+        ! save the airfoil coordinates for optvl level
+        ! by convention we go from upper TE to LE to lower TE
+        DO I = 1, NASEC(ISEC,ISURF)
+                
+          idx_upper = NASEC(ISEC,ISURF) - I +1
+          idx_lower = I 
+          
+          XSEC(I                  ,isec, isurf) = 
+     &                                   XUASEC(idx_upper, ISEC, ISURF)
+          XSEC(I+NASEC(ISEC,ISURF),isec, isurf) = 
+     &                                   XLASEC(idx_lower, ISEC, ISURF)
+
+          YSEC(I                  ,isec, isurf) = 
+     &                                   ZUASEC(idx_upper, ISEC, ISURF)
+          YSEC(I+NASEC(ISEC,ISURF),isec, isurf) = 
+     &                                   ZLASEC(idx_lower, ISEC, ISURF)
+
+        enddo 
 
         CALL NRMLIZ(NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
 C
@@ -897,6 +916,10 @@ cc#endif
          ENDDO
 C
         ELSE
+        do i = 1,NB
+                XSEC(i,isec, isurf) = XB(i)
+                YSEC(i,isec, isurf) = YB(i)
+        end do
 C------- camber and thickness
          NIN = MIN( 50 , IBX )
          CALL GETCAM(XB,YB,NB,XIN,YIN,TIN,NIN,.TRUE.)

@@ -25,7 +25,7 @@ def syssho(asys):
         print(row_str)
 
 
-ovl = OVLSolver(geo_file="aircraft.avl", mass_file="aircraft.mass", debug=False)
+ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", mass_file="../geom_files/aircraft.mass", debug=False)
 
 ovl.set_trim_condition("velocity", 10.0)
 ovl.set_constraint("Elevator", "Cm", 0.00)
