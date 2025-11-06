@@ -799,6 +799,12 @@ C
      &    '*** AINPUT: Airfoil array overflow.  Increase IBX to', I
          STOP
         ENDIF
+        ! save the airfoil data for optvl io
+        do i = 1,NB
+                XSEC(i,isec, isurf) = XB(i)
+                YSEC(i,isec, isurf) = YB(i)
+        enddo
+                
 C
 C------ set camber and thickness, normalized to unit chord
         NIN = MIN( 50 , IBX )

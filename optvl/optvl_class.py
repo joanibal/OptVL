@@ -2379,7 +2379,7 @@ class OVLSolver(object):
                         self.get_avl_fort_arr("SURF_GEOM_R", "YSEC")[idx_surf, idx_sec, slice(None)]
                     )
 
-                    airfoils.append([airfoilx, airfoily])
+                    airfoils.append(np.array([airfoilx, airfoily]))
 
                     xfmin = self.get_avl_fort_arr("SURF_GEOM_R", "XFMIN_R")[idx_surf, idx_sec]
                     xfmax = self.get_avl_fort_arr("SURF_GEOM_R", "XFMAX_R")[idx_surf, idx_sec]
@@ -2387,7 +2387,8 @@ class OVLSolver(object):
                     xfminmax.append([xfmin, xfmax])
 
                 surf_data[surf_name]["naca"] = nacas
-                surf_data[surf_name]["airfoils"] = np.array(airfoils)
+                
+                surf_data[surf_name]["airfoils"] = airfoils
                 surf_data[surf_name]["afiles"] = afiles
                 surf_data[surf_name]["xfminmax"] = np.array(xfminmax)
 
@@ -2847,7 +2848,7 @@ class OVLSolver(object):
                 fid.write(f" NACA   {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]}\n")
                 fid.write(f" {naca}\n")
 
-            if np.any(airfoil):
+            if np.any(airfoil) and afile == '':
                 fid.write("#AIRFOIL | X1 X2\n")
                 fid.write(f"AIRFOIL   {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]}\n")
                 for i in range(0, min(self.IBX, len(airfoil[0, :]))):
