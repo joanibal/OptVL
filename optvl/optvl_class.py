@@ -274,7 +274,7 @@ class OVLSolver(object):
             self.avl.loadgeo("")
         else:
             raise ValueError("neither a geometry file nor an input options dictionary was specified")
-
+        
         # todo store the default dict somewhere else
         # the control surface contraints get added to this array in the __init__
         self.conval_idx_dict = {
@@ -683,7 +683,10 @@ class OVLSolver(object):
         else:
             raise RuntimeError(f"Number of specified surfaces, {num_surfs}, exceeds {self.NFMAX}. Raise NFMAX!")
         
-        
+        # Class variable to store the starting index of all meshes. Set to 0 for no mesh.
+        # We will insert entries into it for duplicate surfaces later but right now it's only for unique surfaces
+        self.mesh_idx_first = np.zeros(self.get_num_surfaces(),dtype=np.int32)
+
         # Load surfaces
         if num_surfs > 0:
             surf_names = list(input_dict["surfaces"].keys())
@@ -947,6 +950,8 @@ class OVLSolver(object):
                 
                 if "yduplicate" in surf_dict.keys():
                     self.avl.sdupl(idx_surf + 1, surf_dict["yduplicate"], "YDUP")
+                    # Insert into the mesh first index array
+                    self.mesh_idx_first = np.insert(self.mesh_idx_first,idx_surf+1,self.mesh_idx_first[idx_surf])
                     self.avl.CASE_I.NSURF += 1
                     idx_surf += 1
 
@@ -1074,22 +1079,36 @@ class OVLSolver(object):
         nx = copy.deepcopy(mesh.shape[0])
         ny = copy.deepcopy(mesh.shape[1])
 
-        # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
-        # nspans by passing in all zeros
-        if not (iptloc == 0).all():
-            iptloc += 1
-        # These seem to mangle the mesh up, just do a simple transpose to the correct ordering
-        # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0],mesh.shape[1]), order="F")
-        # iptloc = iptloc.ravel(order="C").reshape(iptloc.shape[::-1], order="F")
-        mesh = mesh.transpose((2,0,1))
-
+        if len(iptloc) > self.NSMAX:
+            raise RuntimeError("Length of iptloc cannot exceed NSMAX. Raise NSMAX")
+        
         if update_nvs:
             self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1
 
         if update_nvc:
             self.avl.SURF_GEOM_I.NVC[idx_surf] = nx-1
 
-        self.avl.makesurf_mesh(idx_surf+1, mesh, iptloc) #+1 for Fortran indexing
+        # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
+        # nspans by passing in all zeros
+        if not (iptloc == 0).all():
+            iptloc += 1
+        # set iptloc
+        self.set_avl_fort_arr("SURF_MESH_I","IPTSEC",iptloc,slicer=(idx_surf,slice(None,len(iptloc))))
+
+        # Compute and set the mesh starting index
+        if idx_surf != 0:
+           self.mesh_idx_first[idx_surf] = self.mesh_idx_first[idx_surf-1] + 3*(self.avl.SURF_GEOM_I.NVS[idx_surf-1]+1)*(self.avl.SURF_GEOM_I.NVC[idx_surf-1]+1)
+
+        self.set_avl_fort_arr("SURF_MESH_I","MFRST",self.mesh_idx_first[idx_surf]+1,slicer=idx_surf)
+
+        # Reshape the mesh 
+        # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0]*mesh.shape[1]), order="F")
+        mesh = mesh.transpose((1,0,2)).reshape((mesh.shape[0]*mesh.shape[1],3))
+
+        # Set the mesh
+        self.set_avl_fort_arr("SURF_MESH_R","MSHBLK",mesh, slicer=(slice(self.mesh_idx_first[idx_surf],self.mesh_idx_first[idx_surf]+nx*ny),slice(0,3)))
+
+        self.avl.makesurf_mesh(idx_surf+1) #+1 for Fortran indexing
 
     # Ideally there would be an update_surfaces routine in Fotran to do this with meshes but for now we need to do this.
     def update_mesh(self, idx_surf: int, mesh: np.ndarray, iptloc: np.ndarray, ydup:float):
@@ -1134,12 +1153,6 @@ class OVLSolver(object):
             self.avl.CASE_L.LVEL = False
             self.avl.CASE_L.LSOL = False
             self.avl.CASE_L.LSEN = False
-
-    # def update_surfaces_mesh(self, meshes:list, iptloc:list):
-    #     if len(meshes) != self.get_num_surfaces():
-    #         raise ValueError("Must provide a mesh for each surface ")
-    #     for idx_surf in 
-
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
         """Sets the airfoil oml points for the specified surface and section. Computes camber lines, thickness, and oml shape from

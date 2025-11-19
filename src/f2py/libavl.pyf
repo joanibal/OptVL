@@ -135,10 +135,8 @@ python module libavl ! in
             real*8, intent(inout) :: asys(jemax,jemax)
         end subroutine get_system_matrix
 
-        subroutine makesurf_mesh(isurf, mesh, nx, ny, iptloc, nsecsurf) ! in :libavl:amake.f
-            integer :: isurf, nx, ny
-            integer :: iptloc(nsecsurf)
-            real*8 :: mesh(3,nx,ny)
+        subroutine makesurf_mesh(isurf) ! in :libavl:amake.f
+            integer :: isurf
         end subroutine makesurf_mesh
 
         subroutine adjust_mesh_spacing(isurf, nx, ny, mesh, iptloc, nsecsurf) ! in :libavl:amake.f

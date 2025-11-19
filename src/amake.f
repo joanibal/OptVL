@@ -790,12 +790,11 @@ C
 
       end subroutine adjust_mesh_spacing
 
-      function flatidx(idx_x, idx_y, idx_surf)
+      integer function flatidx(idx_x, idx_y, idx_surf)
       include 'AVL.INC'
       ! store MFRST and  NVC in the common block
       integer idx_x, idx_y, idx_surf
-      integer flatidx
-      flatidx = idx_x + (idx_y - 1) * NVC(idx_surf) 
+      flatidx = idx_x + (idx_y - 1) * (NVC(idx_surf)+1) 
       return
       end function flatidx
 
@@ -816,10 +815,10 @@ c--------------------------------------------------------------
       real CHSIN, CHCOS, CHSINL, CHSINR, CHCOSL, CHCOSR, AINCL, AINCR, 
      &     CHORDL, CHORDR, CLAFL, CLAFR, SLOPEL, SLOPER, DXDX, ZU_L, 
      &     ZL_L, ZU_R, ZL_R, ZL, ZR, SUM, WTOT, ASTRP
-      REAL CHSINL_G(NGMAX),CHCOSL_G(NGMAX),
+      real CHSINL_G(NGMAX),CHCOSL_G(NGMAX),
      &     CHSINR_G(NGMAX),CHCOSR_G(NGMAX)
-      REAL XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
-      INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
+      real XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
+      integer ISCONL(NDMAX), ISCONR(NDMAX)
       real mesh_surf(3,(NVC(isurf)+1)*(NVS(isurf)+1))
       integer idx_vor, idx_strip, idx_sec, idx_dim, idx_coef, idx_x, 
      & idx_node, idx_nodel, idx_noder, idx_node_yp1, idx_node_nx, 
@@ -845,7 +844,7 @@ c--------------------------------------------------------------
      & NSPANS(idx_sec-1,isurf)
       end do
       else
-      print *, '* Provide NSPANS or IPTLOC. (Hint: Run adjust_mesh_&
+      print *, '* Provide NSPANS or IPTSEC. (Hint: Run adjust_mesh_&
      &          spacing)'
       stop
       end if
@@ -857,7 +856,7 @@ c--------------------------------------------------------------
      & isurf 
       end if
 
-      ! Get the mesh from the the common block
+      ! Get the mesh for this surface from the the common block
       mesh_surf = MSHBLK(:,MFRST(isurf):MFRST(isurf)+(nx*ny)-1)
 
       ! Perform input checks from makesurf
@@ -922,10 +921,10 @@ c--------------------------------------------------------------
 
 
       ! Apply the scaling and translations to the mesh as a whole
-       do idx_y = 1,ny
-        do idx_x = 1,nx
-          do idx_dim = 1,3
-            idx_node = flatidx(idx_x, idx_y, idx_surf)
+      do idx_y = 1,ny
+       do idx_x = 1,nx
+        do idx_dim = 1,3
+            idx_node = flatidx(idx_x, idx_y, isurf)
             mesh_surf(idx_dim,idx_node) = XYZSCAL(idx_dim,isurf)
      &      *mesh_surf(idx_dim,idx_node) + XYZTRAN(idx_dim,isurf)
         end do
@@ -1135,7 +1134,7 @@ c--------------------------------------------------------------
       ENDDO
 
       ! We have to now setup any control surfaces we defined for this section
-      ! Bring over the routine for this from Drela
+      ! Bring over the routine for this from makesurf
       DO N = 1, NCONTROL
       ICL = ISCONL(N)
       ICR = ISCONR(N)
@@ -1161,18 +1160,17 @@ c--------------------------------------------------------------
             GAINDA(N) = GAIND(ICL,idx_sec  ,isurf)*(1.0-FC)
      &                 + GAIND(ICR,idx_sec+1,isurf)*     FC
 
-            ! SAB Note: This iterpolation ensures that the hinge line is 
-            ! is linear which I think it is an ok assumption for arbitrary wings
-            ! as long as the user is aware
+            ! SAB Note: This interpolation ensures that the hinge line is 
+            ! is linear which I think it is an ok assumption for arbitrary wings as long as the user is aware
             ! A curve hinge line could work if needed if we just interpolate XHINGED and scaled by local chord
             XHD = CHORDL*XHINGED(ICL,idx_sec  ,isurf)*(1.0-FC)
      &           + CHORDR*XHINGED(ICR,idx_sec+1,isurf)*     FC
             IF(XHD.GE.0.0) THEN
-      ! TE control surface, with hinge at XHD
+            ! TE control surface, with hinge at XHD
             XLED(N) = XHD
             XTED(N) = CHORD(idx_strip)
             ELSE
-      ! LE control surface, with hinge at -XHD
+            ! LE control surface, with hinge at -XHD
             XLED(N) =  0.0
             XTED(N) = -XHD
             ENDIF
@@ -1182,12 +1180,9 @@ c--------------------------------------------------------------
             VHZ = VHINGED(3,ICL,idx_sec,isurf)*XYZSCAL(3,isurf)
             VSQ = VHX**2 + VHY**2 + VHZ**2
             IF(VSQ.EQ.0.0) THEN
-      ! default: set hinge vector along hingeline
-            idx_nodel = flatidx(1,iptl,isurf)
-            idx_noder = flatidx(1,iptr,isurf)
+            ! default: set hinge vector along hingeline
             ! We are just setting the hinge line across the section
-            ! this assumes the hinge is linear even for a nonlinear 
-            ! wing which I assume is a fair assumption
+            ! this assumes the hinge is linear even for a nonlinear wing
             VHX = mesh_surf(1,idx_noder)
      &              + ABS(CHORDR*XHINGED(ICR,idx_sec+1,isurf))
      &              - mesh_surf(1,idx_nodel)
@@ -1234,7 +1229,7 @@ c--------------------------------------------------------------
       ! Set the panel (vortex) geometry data
 
       ! Accumulate the strip element indicies and start counting vorticies
-      if (idx_strip ==1) then 
+      if (idx_strip .eq. 1) then 
             IJFRST(idx_strip) = 1
       else
             IJFRST(idx_strip) = IJFRST(idx_strip - 1) + 
@@ -1243,15 +1238,16 @@ c--------------------------------------------------------------
       idx_vor = IJFRST(idx_strip)
       NVSTRP(idx_strip) = NVC(isurf)
 
-      ! Associate each strip with a surface
+      ! Associate the strip with the surface
       NSURFS(idx_strip) = isurf
 
       ! Prepare for cross section interpolation
       NSL = NASEC(idx_sec  , isurf)
       NSR = NASEC(idx_sec+1, isurf)
 
+      ! CHORDC = CHORD(idx_strip)      
+
       ! Interpolate claf over the section
-      ! CHORDC = CHORD(idx_strip)
       ! SAB: In AVL this quantity is interpolated as a product with chord
       ! We then divide by the chord at the strip to recover claf at the strip
       ! This only works correctly for linear sections. For arbitrary sections
@@ -1320,7 +1316,7 @@ c--------------------------------------------------------------
       ! is just the panel midpoint
        RC(2,idx_vor) = RV(2,idx_vor)
       ! Place the control point at the quarter chord + half chord*clafc
-      ! note that clafc is a scaler so is 1. for 2pi
+      ! note that clafc is a scaler so is 1. is for 2pi
       ! use data from vortex mid-point computation
        RC(1,idx_vor) = RV(1,idx_vor) + clafc*(DXV(idx_vor)/2.)*cos(a3)
        RC(3,idx_vor) = RV(3,idx_vor) + clafc*(DXV(idx_vor)/2.)*sin(a3)
@@ -1362,7 +1358,6 @@ c--------------------------------------------------------------
       SLOPEV(idx_vor) =  (1.-fc)*SLOPEL + fc*SLOPER
 !        SLOPEV(idx_vor) =  (1.-fc)*(CHORDL/CHORD(idx_strip))*SLOPEL 
 !      &                    + fc *(CHORDR/CHORD(idx_strip))*SLOPER
-
 
       ! Associate the panel with it's strip's chord and component
       CHORDV(idx_vor) = CHORD(idx_strip)
