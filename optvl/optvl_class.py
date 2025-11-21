@@ -945,12 +945,13 @@ class OVLSolver(object):
                          self.avl.adjust_mesh_spacing(idx_surf+1,surf_dict["mesh"].transpose((2, 0, 1)),surf_dict["iptloc"])
                          surf_dict["iptloc"] = surf_dict["iptloc"] - 1
                     self.set_mesh(idx_surf, surf_dict["mesh"],surf_dict["iptloc"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
+                    self.avl.makesurf_mesh(idx_surf + 1) #+1 for Fortran indexing
                 else:
                     self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
                 
                 if "yduplicate" in surf_dict.keys():
                     self.avl.sdupl(idx_surf + 1, surf_dict["yduplicate"], "YDUP")
-                    # Insert into the mesh first index array
+                    # Insert duplicate into the mesh first index array
                     self.mesh_idx_first = np.insert(self.mesh_idx_first,idx_surf+1,self.mesh_idx_first[idx_surf])
                     self.avl.CASE_I.NSURF += 1
                     idx_surf += 1
@@ -1101,58 +1102,15 @@ class OVLSolver(object):
 
         self.set_avl_fort_arr("SURF_MESH_I","MFRST",self.mesh_idx_first[idx_surf]+1,slicer=idx_surf)
 
-        # Reshape the mesh 
+        # Reshape the mesh
         # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0]*mesh.shape[1]), order="F")
         mesh = mesh.transpose((1,0,2)).reshape((mesh.shape[0]*mesh.shape[1],3))
 
         # Set the mesh
         self.set_avl_fort_arr("SURF_MESH_R","MSHBLK",mesh, slicer=(slice(self.mesh_idx_first[idx_surf],self.mesh_idx_first[idx_surf]+nx*ny),slice(0,3)))
 
-        self.avl.makesurf_mesh(idx_surf+1) #+1 for Fortran indexing
-
-    # Ideally there would be an update_surfaces routine in Fotran to do this with meshes but for now we need to do this.
-    def update_mesh(self, idx_surf: int, mesh: np.ndarray, iptloc: np.ndarray, ydup:float):
-        # nx = copy.deepcopy(mesh.shape[0])
-        # ny = copy.deepcopy(mesh.shape[1])
-
-        # reset the counters before starting the first surface
-        if idx_surf == 0:
-            self.avl.CASE_I.NSTRIP = 0
-            self.avl.CASE_I.NVOR = 0
-
-        # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
-        # nspans by passing in all zeros
-        if not (iptloc == 0).all():
-            iptloc += 1
-        # These seem to mangle the mesh up, just do a simple transpose to the correct ordering
-        # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0],mesh.shape[1]), order="F")
-        # iptloc = iptloc.ravel(order="C").reshape(iptloc.shape[::-1], order="F")
-        mesh = mesh.transpose((2,0,1))
-
-        # if update_nvs:
-        #     self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1
-
-        # if update_nvc:
-        #     self.avl.SURF_GEOM_I.NVC[idx_surf] = nx-1
-
-        if idx_surf != 0:
-            if self.avl.SURF_GEOM_L.LDUPL[idx_surf-1]:
-                print(f"Surface {idx_surf} is a duplicated surface!")
-            else:
-                self.avl.makesurf_mesh(idx_surf+1, mesh, iptloc) #+1 for Fortran indexing
-        else:
-            self.avl.makesurf_mesh(idx_surf+1, mesh, iptloc) #+1 for Fortran indexing
-
-        if self.avl.SURF_GEOM_L.LDUPL[idx_surf]:
-            self.avl.sdupl(idx_surf + 1, ydup, "YDUP")
-
-        # Reset AVL solver upon finishing the last surface
-        if (idx_surf == (self.get_num_surfaces()-1)):
-            self.avl.CASE_L.LAIC = False
-            self.avl.CASE_L.LSRD = False
-            self.avl.CASE_L.LVEL = False
-            self.avl.CASE_L.LSOL = False
-            self.avl.CASE_L.LSEN = False
+        # Flag surface as using mesh geometry
+        self.avl.SURF_MESH_L.LSURFMSH[idx_surf] = True
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
         """Sets the airfoil oml points for the specified surface and section. Computes camber lines, thickness, and oml shape from

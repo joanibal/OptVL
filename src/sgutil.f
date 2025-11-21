@@ -310,7 +310,7 @@ C
       !           PSPACE = 3  : EQUAL SPACING.
       !      CLAF: CL alfa (needed to determine control point location)
       ! Outputs:
-      !           XPT: Array of panel x-locations
+      !           XPT: Array of panel leading edge x-locations
       !           XVR: Array of vortex x-locations
       !           XSR: Array of source x-locations
       !           XCP: Array of control point x-locations

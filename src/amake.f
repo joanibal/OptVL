@@ -710,9 +710,9 @@ C
       end if
 
       ! NOTE-SB: I don't think we need this
-      ! I originally included it to be more consistent with Drela
+      ! I originally included it to be more consistent with AVL
       ! The prior routine only considers the y distance while
-      ! Drela considers y and z. However, the above routine appears 
+      ! AVL considers y and z. However, the above routine appears 
       ! to work fine on its own and running this after appears to
       ! cause issues.
 
@@ -726,7 +726,7 @@ C
 !         yzlen(idx_sec) = yzlen(idx_sec-1) + sqrt(dy*dy + dz*dz)
 !       end do
       
-!       ! Now do the Drela fudging routine to ensure the sections don't split panels
+!       ! Now do the AVL fudging routine to ensure the sections don't split panels
 
 !       ! Find node nearest each section
 !       do isec = 2, NSEC(isurf)-1
@@ -801,30 +801,34 @@ C
       subroutine makesurf_mesh(isurf)
 c--------------------------------------------------------------
 c     Sets up all stuff for surface ISURF, 
-C     using info from configuration input file 
+C     using info from configuration input 
 C     and the given mesh coordinate array.
 c--------------------------------------------------------------
       INCLUDE 'AVL.INC'
       ! input/output
       integer isurf
-      
-      ! working variables
-      real m1, m2, m3, f1, f2, dc1, dc2, dc, a1, a2, a3, xptxind1
+
+      ! working variables (AVL original)
       PARAMETER (KCMAX=50,
      &           KSMAX=500)
-      real CHSIN, CHCOS, CHSINL, CHSINR, CHCOSL, CHCOSR, AINCL, AINCR, 
+      REAL CHSIN, CHCOS, CHSINL, CHSINR, CHCOSL, CHCOSR, AINCL, AINCR, 
      &     CHORDL, CHORDR, CLAFL, CLAFR, SLOPEL, SLOPER, DXDX, ZU_L, 
      &     ZL_L, ZU_R, ZL_R, ZL, ZR, SUM, WTOT, ASTRP
-      real CHSINL_G(NGMAX),CHCOSL_G(NGMAX),
-     &     CHSINR_G(NGMAX),CHCOSR_G(NGMAX)
-      real XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
-      integer ISCONL(NDMAX), ISCONR(NDMAX)
+      REAL CHSINL_G(NGMAX),CHCOSL_G(NGMAX),
+     &     CHSINR_G(NGMAX),CHCOSR_G(NGMAX),
+     &     XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
+      INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
+      
+      ! working variables (OptVL additions)
+      real m1, m2, m3, f1, f2, fc, dc1, dc2, dc, a1, a2, a3, xptxind1,
+     & xptxind2
       real mesh_surf(3,(NVC(isurf)+1)*(NVS(isurf)+1))
       integer idx_vor, idx_strip, idx_sec, idx_dim, idx_coef, idx_x, 
      & idx_node, idx_nodel, idx_noder, idx_node_yp1, idx_node_nx, 
-     & idx_y, nx, ny
+     & idx_node_nx_yp1, idx_y, nx, ny
+
+      ! functions
       integer flatidx
-      external flatidx
 
       ! Get data from common block
       nx = NVC(isurf) + 1
@@ -1052,33 +1056,36 @@ c--------------------------------------------------------------
      & -mesh_surf(3,idx_node))**2)
 
       ! Strip right side
-      idx_node = flatidx(1,idx_y+1,isurf)
-      idx_node_nx = flatidx(nx,idx_y+1,isurf)
+      idx_node_yp1 = flatidx(1,idx_y+1,isurf)
+      idx_node_nx_yp1 = flatidx(nx,idx_y+1,isurf)
       do idx_dim = 1,3
-       RLE2(idx_dim,idx_strip) = mesh_surf(idx_dim,idx_node)
+       RLE2(idx_dim,idx_strip) = mesh_surf(idx_dim,idx_node_yp1)
       end do 
-      CHORD2(idx_strip) = sqrt((mesh_surf(1,idx_node_nx)
-     & -mesh_surf(1,idx_node))**2 + (mesh_surf(3,idx_node_nx)
-     & -mesh_surf(3,idx_node))**2)
+      CHORD2(idx_strip) = sqrt((mesh_surf(1,idx_node_nx_yp1)
+     & -mesh_surf(1,idx_node_yp1))**2 + (mesh_surf(3,idx_node_nx_yp1)
+     & -mesh_surf(3,idx_node_yp1))**2)
 
       ! Strip mid-point 
       do idx_dim = 1,3
-       ! Since the strips are linear we can just interpolate
+       ! Since the strips are linear SPANWISE we can just interpolate
        RLE(idx_dim,idx_strip) = (RLE1(idx_dim,idx_strip)
      &   + RLE2(idx_dim,idx_strip))/2.
-       ! RLE(idx_dim,idx_strip) = (mesh(idx_dim,1,idx_y+1)+mesh(idx_dim,1,idx_y))/2 
       end do 
-       ! Since the strips are linear we can just interpolate
+       ! The strips are not necessarily linear chord wise but by definition the chord value is
+       ! so we can interpolate
        CHORD(idx_strip) = (CHORD1(idx_strip)+CHORD2(idx_strip))/2.
-!       m1 = ((mesh(1,nx,idx_y+1)+mesh(1,nx,idx_y))/2) - 
-!      & ((mesh(1,1,idx_y+1)+mesh(1,1,idx_y))/2)
-!       m3 = ((mesh(3,nx,idx_y+1)+mesh(3,nx,idx_y))/2) - 
-!      & ((mesh(3,1,idx_y+1)+mesh(3,1,idx_y))/2)
-!       CHORD(idx_strip) = sqrt(m1**2 + m3**2)
+
+      ! Strip geometric incidence angle at the mid-point
+      ! This is strip incidence angle is computed from the LE and TE points
+      ! of the given geometry and is completely independent of AINC
+      ! This quantity is needed to correctly handle nonplanar meshes
+      GINCSTRIP(idx_strip) = atan2(((mesh_surf(3,idx_node_nx) 
+     &  + mesh_surf(3,idx_node_nx_yp1))/2.- (mesh_surf(3,idx_node) + 
+     &  mesh_surf(3,idx_node_yp1))/2.),
+     & ((mesh_surf(1,idx_node_nx) + mesh_surf(1,idx_node_nx_yp1))/2. 
+     &  - (mesh_surf(1,idx_node) + mesh_surf(1,idx_node_yp1))/2.))
 
       ! Strip width (leading edge)
-      idx_node = flatidx(1,idx_y,isurf)
-      idx_node_yp1 = flatidx(1,idx_y+1,isurf)
       m2 = mesh_surf(2,idx_node_yp1)-mesh_surf(2,idx_node)
       m3 = mesh_surf(3,idx_node_yp1)-mesh_surf(3,idx_node)
       WSTRIP(idx_strip) = sqrt(m2**2 + m3**2)
@@ -1098,8 +1105,6 @@ c--------------------------------------------------------------
       ! LINEAR interpolation over the section: left, right, and midpoint
       idx_nodel = flatidx(1,iptl,isurf)
       idx_noder = flatidx(1,iptr,isurf)
-      idx_node = flatidx(1,idx_y,isurf)
-      idx_node_yp1 = flatidx(1,idx_y+1,isurf)
 
       f1 = (mesh_surf(2,idx_node)-mesh_surf(2,idx_nodel))/
      & (mesh_surf(2,idx_noder)-mesh_surf(2,idx_nodel))
@@ -1304,6 +1309,8 @@ c--------------------------------------------------------------
      &  mesh_surf(3,idx_node))/2.),
      & ((mesh_surf(1,idx_node_yp1+1) + mesh_surf(1,idx_node+1))/2. 
      &  - (mesh_surf(1,idx_node_yp1) + mesh_surf(1,idx_node))/2.))
+      ! project the panel chord onto the strip chord
+       DXSTRPV(idx_vor) = DXV(idx_vor)*cos(a3-GINCSTRIP(idx_strip))
       ! Place vortex at panel quarter chord
        RV(1,idx_vor) = (mesh_surf(1,idx_node_yp1)
      & +mesh_surf(1,idx_node))/2.+ (DXV(idx_vor)/4.)*cos(a3)
@@ -1395,13 +1402,13 @@ c--------------------------------------------------------------
       ! NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
       ! retained in (x,z) plane at this point
 
-      ! Store the panel mid point for the next panel in the strip
+      ! Store the panel LE mid point for the next panel in the strip
       ! This gets used a lot here 
-      xptxind1 = (mesh_surf(1,idx_node+1)
-     &           - RLE1(1,idx_strip))/CHORD1(idx_strip)
+      xptxind1 = ((mesh_surf(1,idx_node+1)+mesh_surf(1,idx_node_yp1+1))
+     &         /2 - RLE(1,idx_strip))/CHORD(idx_strip)
 
-      xptxind2 = (mesh_surf(1,idx_node_yp1+1)
-     &           - RLE2(1,idx_strip))/CHORD2(idx_strip) 
+!       xptxind2 = (mesh_surf(1,idx_node_yp1+1)
+!      &           - RLE2(1,idx_strip))/CHORD2(idx_strip) 
 
       ! Interpolate cross section on left side
       CALL AKIMA( XLASEC(1,idx_sec,isurf), ZLASEC(1,idx_sec,isurf),
@@ -1411,10 +1418,10 @@ c--------------------------------------------------------------
 
       ! Interpolate cross section on right side
       CALL AKIMA( XLASEC(1,idx_sec+1,isurf),ZLASEC(1,idx_sec+1,isurf),
-     &            NSR, xptxind2, ZL_R, DSDX)
+     &            NSR, xptxind1, ZL_R, DSDX)
                       
       CALL AKIMA( XUASEC(1,idx_sec+1,isurf),ZUASEC(1,idx_sec+1,isurf),
-     &            NSR, xptxind2, ZU_R, DSDX)
+     &            NSR, xptxind1, ZU_R, DSDX)
 
 
       ! Compute the left aft node of panel 
@@ -1436,7 +1443,7 @@ c--------------------------------------------------------------
       ! Compute the right aft node of panel 
       ! X-point
       XYN2(1,idx_vor) = RLE2(1,idx_strip) + 
-     &                        xptxind2*CHORD2(idx_strip)
+     &                        xptxind1*CHORD2(idx_strip)
 
       ! Y-point
       XYN2(2,idx_vor) = RLE2(2,idx_strip)
@@ -1479,49 +1486,6 @@ c--------------------------------------------------------------
       NVOR = NVOR + NK(isurf)*NJ(isurf)
       
       end subroutine makesurf_mesh
-
-!       subroutine update_surface_mesh_HACK(isurf,mesh,nx,ny,iptloc,
-!      &       nsecsurf,lcount, lcall)
-! c--------------------------------------------------------------
-! c     HACK: This routine is a temporary solution that combines
-! c     the functionality of makesurf_mesh with update_surfaces.
-! c     note that unlike update_surfaces it can only update one
-! c     surface at a time and requires the mesh for that surface
-! c     ber provided as input. There is also a flag that tells
-! c     the routine whether to reset the counters or not. This 
-! c     routine is a hack until I can find a better way to store
-! c     meshes in the Fortran layer without flattening them.
-! c--------------------------------------------------------------
-!       include 'AVL.INC'
-!       integer isurf, nx, ny, nsecsurf
-!       real mesh(3,nx,ny)
-!       integer iptloc(nsecsurf)
-!       logical lcount, lcall
-
-!       if (lcount) then
-!        NSTRIP = 0
-!        NVOR = 0
-!       end if
-
-      
-!       call makesurf_mesh(isurf, mesh, nx, ny, iptloc, nsecsurf)
-
-!       if(ldupl(isurf)) then
-!             call sdupl(isurf,ydupl(isurf),'ydup')
-!       endif
-
-!       if (lcall) then
-!             CALL ENCALC
-            
-!             LAIC = .FALSE. ! Tell AVL that the AIC is no longer valid and to regenerate it
-!             LSRD = .FALSE. ! Tell AVL that unit source+doublet strengths are no longer valid and to regenerate them
-!             LVEL = .FALSE. ! Tell AVL that the induced velocity matrix is no longer valid and to regenerate it
-!             LSOL = .FALSE. ! Tell AVL that a valid solution no longer exists
-!             LSEN = .FALSE. ! Tell AVL that valid sensitives no longer exists
-!       end if
-
-!       end subroutine update_surfaces_mesh
-
       
       subroutine update_surfaces()
 c--------------------------------------------------------------
@@ -1548,9 +1512,17 @@ c--------------------------------------------------------------
                         ! it was probably duplicated from the previous one
                         cycle
                   end if
-                  call makesurf(ISURF)
+                  if (lsurfmsh(isurf)) then
+                        call makesurf_mesh(ISURF)
+                  else 
+                        call makesurf(ISURF)
+                  end if
             else
-                  call makesurf(ISURF)
+                  if (lsurfmsh(isurf)) then
+                        call makesurf_mesh(ISURF)
+                  else 
+                        call makesurf(ISURF)
+                  end if
             endif
             
             if(ldupl(isurf)) then
@@ -1558,7 +1530,8 @@ c--------------------------------------------------------------
             endif
       end do 
       
-      CALL ENCALC
+      !CALL ENCALC
+      CALL ENCALC2
       
       LAIC = .FALSE. ! Tell AVL that the AIC is no longer valid and to regenerate it
       LSRD = .FALSE. ! Tell AVL that unit source+doublet strengths are no longer valid and to regenerate them
@@ -1698,7 +1671,8 @@ c--------------------------------------------------------------
       endif
       end do 
       
-      CALL ENCALC
+      !CALL ENCALC
+      CALL ENCALC2
       
       LAIC = .FALSE.
       LSRD = .FALSE.
@@ -1889,6 +1863,7 @@ C
         RLE(2,JJI)    = -RLE(2,JJ) + YOFF
         RLE(3,JJI)    =  RLE(3,JJ)
         CHORD(JJI)  =  CHORD(JJ)
+        GINCSTRIP(JJI) = GINCSTRIP(JJ)
         WSTRIP(JJI) =  WSTRIP(JJ)
         TANLE(JJI)  = -TANLE(JJ)
         AINC (JJI)  =  AINC(JJ)
@@ -1954,6 +1929,7 @@ C
           SLOPEC(III) = SLOPEC(II)
           SLOPEV(III) = SLOPEV(II)
           DXV(III)     = DXV(II)
+          DXSTRPV(III) = DXSTRPV(II)
           CHORDV(III) = CHORDV(II)
           NSURFV(III) = LSCOMP(NNI)
           LVALBE(III) = LVALBE(II)
@@ -2327,3 +2303,303 @@ C
       RETURN
       END ! ENCALC
 
+
+
+
+
+      SUBROUTINE ENCALC2
+C
+C...PURPOSE  To calculate the normal vectors for the strips, 
+C            the horseshoe vortices, and the control points.
+C            Assuming arbitrary point cloud geometry
+C            Incorporates surface deflections.
+C
+C...INPUT    NVOR      Number of vortices
+C            X1        Coordinates of endpoint #1 of the vortices
+C            X2        Coordinates of endpoint #2 of the vortices
+C            SLOPEV    Slope at bound vortices
+C            SLOPEC    Slope at control points
+C            NSTRIP    Number of strips
+C            IJFRST    Index of first element in strip
+C            NVSTRP    No. of vortices in strip
+C            AINC      Angle of incidence of strip
+C            LDES      include design-variable deflections if TRUE
+C
+C...OUTPUT   ENC(3)        Normal vector at control point
+C            ENV(3)        Normal vector at bound vortices
+C            ENSY, ENSZ    Strip normal vector (ENSX=0)
+C            LSTRIPOFF     Non-used strip (T) (below z=ZSYM)
+C
+C...COMMENTS   
+C
+      INCLUDE 'AVL.INC'
+C
+      REAL EP(3), EQ(3), ES(3), EB(3), EC(3), ECXB(3)
+      REAL EC_G(3,NDMAX), ECXB_G(3)
+
+      real(kind=avl_real) :: dchstrip, DXT, DYT, DZT
+C
+C...Calculate the normal vector at control points and bound vortex midpoints
+C
+      DO 10 J = 1, NSTRIP
+C
+C...Calculate normal vector for the strip (normal to X axis)
+        ! we can't just interpolate this anymore given that 
+        ! the strip is no longer necessarily linear chordwise
+
+        ! We want the spanwise unit vector for the strip at the 
+        ! chordwise location specified by SAXFR (usually set to 0.25)
+        ! Loop over all panels in the strip until we find the one that contains
+        ! the SAXFR position in it's projected chord. Since the panels themselves are still linear
+        ! we can just use the bound vortex unit vector of that panel as 
+        ! the spanwise unit vector of the strip at SAXFR
+
+        ! SAB: This is slow, find a better way to do this
+        dchstrip = 0.0
+        searchSAXFR: do i = IJFRST(J),IJFRST(J) + (NVSTRP(J)-1)
+            dchstrip = dchstrip+DXSTRPV(i)
+            if (dchstrip .ge. CHORD(J)*SAXFR) then
+                  exit searchSAXFR
+            end if
+        end do searchSAXFR
+
+      !   print *, "I", I
+
+        ! compute the spanwise unit vector for Vperp def
+        DXT =  RV2(1,I)-RV1(1,I)
+        DYT =  RV2(2,I)-RV1(2,I)
+        DZT =  RV2(3,I)-RV1(3,I)
+        XSREF(J) = RV(1,I)
+        YSREF(J) = RV(2,I)
+        ZSREF(J) = RV(3,I)
+
+      !   print *, "DVT", DYT
+      !   print *, "RV2(2,I)-RV1(2,I)", RV2(2,I)-RV1(2,I)
+      !   print *, "RV2(2,I)", RV2(2,I)
+      !   print *, "RV1(2,I)", RV1(2,I)
+      !   print *, "NSTRIP", NSTRIP
+      !   print *, "J", J
+        ESS(1,J) =  DXT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
+        ESS(2,J) =  DYT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
+        ESS(3,J) =  DZT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
+
+        ! Treffz plane normals
+        ENSY(J) = -DZT/SQRT(DYT*DYT + DZT*DZT)
+        ENSZ(J) =  DYT/SQRT(DYT*DYT + DZT*DZT)
+
+        ES(1) = 0.
+        ES(2) = ENSY(J)
+        ES(3) = ENSZ(J)
+C
+        LSTRIPOFF(J) = .FALSE.
+C
+        NV = NVSTRP(J)
+        DO 105 II = 1, NV
+C
+          I = IJFRST(J) + (II-1)
+C
+          DO N = 1, NCONTROL
+            ENV_D(1,I,N) = 0.
+            ENV_D(2,I,N) = 0.
+            ENV_D(3,I,N) = 0.
+            ENC_D(1,I,N) = 0.
+            ENC_D(2,I,N) = 0.
+            ENC_D(3,I,N) = 0.
+          ENDDO
+C
+          DO N = 1, NDESIGN
+            ENV_G(1,I,N) = 0.
+            ENV_G(2,I,N) = 0.
+            ENV_G(3,I,N) = 0.
+            ENC_G(1,I,N) = 0.
+            ENC_G(2,I,N) = 0.
+            ENC_G(3,I,N) = 0.
+          ENDDO
+C
+C...Define unit vector along bound leg
+          DXB = RV2(1,I)-RV1(1,I) ! right h.v. pt - left h.v. pt 
+          DYB = RV2(2,I)-RV1(2,I)
+          DZB = RV2(3,I)-RV1(3,I)
+          EMAG = SQRT(DXB**2 + DYB**2 + DZB**2)
+          EB(1) = DXB/EMAG
+          EB(2) = DYB/EMAG
+          EB(3) = DZB/EMAG
+C
+C...Define direction of normal vector at control point 
+
+      ! First start by combining the contributions to the panel 
+      ! incidence from AVL incidence and camberline slope variables
+      ! these are not actual geometric transformations of the mesh
+      ! but rather further modifications to the chordwise vector that 
+      ! will get used to compute normals
+          ANG = AINC(J) - ATAN(SLOPEC(I))
+C--------- add design-variable contribution to angle
+           DO N = 1, NDESIGN
+             ANG = ANG + AINC_G(J,N)*DELDES(N)
+           ENDDO
+C
+          ! now we compute the chordwise panel vector
+          ! note that panel's chordwise vector has contributions
+          ! from both the geometry itself and the incidence modification
+          ! from the AVL AINC and camber slope variables
+
+          ! To avoid storing uncessary info in the common block 
+          ! Get the geometric chordwise vector using RV and RC which should
+          ! be located in the same plane given that each individual panel is a 
+          ! plane
+          
+          ! Note that like in AVL the sin of the incidence is projected
+          ! to the strip's normal in the YZ plane (Treffz plane)
+          ! which is ES(2) and ES(3) computed earlier
+          SINC = SIN(ANG)
+          COSC = COS(ANG)
+          EC(1) =  COSC + (RC(1,I)-RV(1,I))
+          EC(2) = -SINC*ES(2) + (RC(2,I)-RV(2,I))
+          EC(3) = -SINC*ES(3) + (RC(3,I)-RV(3,I))
+
+          DO N = 1, NDESIGN
+            EC_G(1,N) = -SINC      *AINC_G(J,N)
+            EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
+            EC_G(3,N) = -COSC*ES(3)*AINC_G(J,N)
+          ENDDO
+C
+C...Normal vector is perpendicular to camberline vector and to the bound leg
+          CALL CROSS(EC,EB,ECXB)
+          EMAG = SQRT(ECXB(1)**2 + ECXB(2)**2 + ECXB(3)**2)
+          IF(EMAG.NE.0.0) THEN
+            ENC(1,I) = ECXB(1)/EMAG
+            ENC(2,I) = ECXB(2)/EMAG
+            ENC(3,I) = ECXB(3)/EMAG
+            DO N = 1, NDESIGN
+              CALL CROSS(EC_G(1,N),EB,ECXB_G)
+              EMAG_G = ENC(1,I)*ECXB_G(1)
+     &               + ENC(2,I)*ECXB_G(2)
+     &               + ENC(3,I)*ECXB_G(3)
+              ENC_G(1,I,N) = (ECXB_G(1) - ENC(1,I)*EMAG_G)/EMAG
+              ENC_G(2,I,N) = (ECXB_G(2) - ENC(2,I)*EMAG_G)/EMAG
+              ENC_G(3,I,N) = (ECXB_G(3) - ENC(3,I)*EMAG_G)/EMAG
+            ENDDO
+          ELSE
+            ENC(1,I) = ES(1)
+            ENC(2,I) = ES(2)
+            ENC(3,I) = ES(3)
+          ENDIF
+
+C
+C
+C...Define direction of normal vector at vortex mid-point. 
+
+      ! This section is identical to the normal vector at the control
+      ! point. The only different is that the AVL camberline slope 
+      ! is taken at the bound vortex point rather than the control point
+      ! the geometric contributions to the normal vector at both of these
+      ! point is identical as the lie in the plane of the same panel.
+          ANG = AINC(J) - ATAN(SLOPEV(I)) 
+
+C--------- add design-variable contribution to angle
+           DO N = 1, NDESIGN
+             ANG = ANG + AINC_G(J,N)*DELDES(N)
+           ENDDO
+
+C
+          SINC = SIN(ANG)
+          COSC = COS(ANG)
+          EC(1) =  COSC + (RC(1,I)-RV(1,I))
+          EC(2) = -SINC*ES(2) + (RC(2,I)-RV(2,I))
+          EC(3) = -SINC*ES(3) + (RC(3,I)-RV(3,I))
+          DO N = 1, NDESIGN
+            EC_G(1,N) = -SINC      *AINC_G(J,N)
+            EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
+            EC_G(3,N) = -COSC*ES(3)*AINC_G(J,N)
+          ENDDO
+C
+C...Normal vector is perpendicular to camberline vector and to the bound leg
+          CALL CROSS(EC,EB,ECXB)
+          EMAG = SQRT(ECXB(1)**2 + ECXB(2)**2 + ECXB(3)**2)
+          IF(EMAG.NE.0.0) THEN
+            ENV(1,I) = ECXB(1)/EMAG
+            ENV(2,I) = ECXB(2)/EMAG
+            ENV(3,I) = ECXB(3)/EMAG
+            DO N = 1, NDESIGN
+              CALL CROSS(EC_G(1,N),EB,ECXB_G)
+              EMAG_G = ENC(1,I)*ECXB_G(1)
+     &               + ENC(2,I)*ECXB_G(2)
+     &               + ENC(3,I)*ECXB_G(3)
+              ENV_G(1,I,N) = (ECXB_G(1) - ENV(1,I)*EMAG_G)/EMAG
+              ENV_G(2,I,N) = (ECXB_G(2) - ENV(2,I)*EMAG_G)/EMAG
+              ENV_G(3,I,N) = (ECXB_G(3) - ENV(3,I)*EMAG_G)/EMAG
+            ENDDO
+          ELSE
+            ENV(1,I) = ES(1)
+            ENV(2,I) = ES(2)
+            ENV(3,I) = ES(3)
+          ENDIF
+C
+C
+ccc       write(*,*) i, dcontrol(i,1), dcontrol(i,2)
+C
+C=======================================================
+C-------- rotate normal vectors for control surface
+          ! this is a pure rotation of the normal vector
+          ! the mesh geometric contribution is already accounted for
+          DO 100 N = 1, NCONTROL
+C
+C---------- skip everything if this element is unaffected by control variable N
+            IF(DCONTROL(I,N).EQ.0.0) GO TO 100
+C
+            ANG     = DTR*DCONTROL(I,N)*DELCON(N)
+            ANG_DDC = DTR*DCONTROL(I,N)
+C
+            COSD = COS(ANG)
+            SIND = SIN(ANG)
+C
+C---------- EP = normal-vector component perpendicular to hinge line
+            ENDOT = DOT(ENC(1,I),VHINGE(1,J,N))
+            EP(1) = ENC(1,I) - ENDOT*VHINGE(1,J,N)
+            EP(2) = ENC(2,I) - ENDOT*VHINGE(2,J,N)
+            EP(3) = ENC(3,I) - ENDOT*VHINGE(3,J,N)
+C---------- EQ = unit vector perpendicular to both EP and hinge line
+            CALL CROSS(VHINGE(1,J,N),EP,EQ)
+C
+C---------- rotated vector would consist of sin,cos parts from EP and EQ,
+C-          with hinge-parallel component ENDOT restored 
+cc          ENC(1,I) = EP(1)*COSD + EQ(1)*SIND + ENDOT*VHINGE(1,J,N)
+cc          ENC(2,I) = EP(2)*COSD + EQ(2)*SIND + ENDOT*VHINGE(2,J,N)
+cc          ENC(3,I) = EP(3)*COSD + EQ(3)*SIND + ENDOT*VHINGE(3,J,N)
+C
+C---------- linearize about zero deflection (COSD=1, SIND=0)
+            ENC_D(1,I,N) = ENC_D(1,I,N) + EQ(1)*ANG_DDC
+            ENC_D(2,I,N) = ENC_D(2,I,N) + EQ(2)*ANG_DDC
+            ENC_D(3,I,N) = ENC_D(3,I,N) + EQ(3)*ANG_DDC
+C
+C
+C---------- repeat for ENV vector
+C
+C---------- EP = normal-vector component perpendicular to hinge line
+            ENDOT = DOT(ENV(1,I),VHINGE(1,J,N))
+            EP(1) = ENV(1,I) - ENDOT*VHINGE(1,J,N)
+            EP(2) = ENV(2,I) - ENDOT*VHINGE(2,J,N)
+            EP(3) = ENV(3,I) - ENDOT*VHINGE(3,J,N)
+C---------- EQ = unit vector perpendicular to both EP and hinge line
+            CALL CROSS(VHINGE(1,J,N),EP,EQ)
+C
+C---------- rotated vector would consist of sin,cos parts from EP and EQ,
+C-          with hinge-parallel component ENDOT restored 
+cc          ENV(1,I) = EP(1)*COSD + EQ(1)*SIND + ENDOT*VHINGE(1,J,N)
+cc          ENV(2,I) = EP(2)*COSD + EQ(2)*SIND + ENDOT*VHINGE(2,J,N)
+cc          ENV(3,I) = EP(3)*COSD + EQ(3)*SIND + ENDOT*VHINGE(3,J,N)
+C
+C---------- linearize about zero deflection (COSD=1, SIND=0)
+            ENV_D(1,I,N) = ENV_D(1,I,N) + EQ(1)*ANG_DDC
+            ENV_D(2,I,N) = ENV_D(2,I,N) + EQ(2)*ANG_DDC
+            ENV_D(3,I,N) = ENV_D(3,I,N) + EQ(3)*ANG_DDC
+ 100      CONTINUE
+ 101      CONTINUE
+C
+ 105    CONTINUE
+  10  CONTINUE
+C
+      LENC = .TRUE.
+C
+      RETURN
+      END ! ENCALC2

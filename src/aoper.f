@@ -1618,7 +1618,8 @@ C
         ENDIF
 C
         SAXFR = MAX( 0.0 , MIN(1.0,RINPUT(1)) )
-        CALL ENCALC
+        ! CALL ENCALC
+        CALL ENCALC2
         CALL AERO
 C
 C---------------------------------
@@ -1635,7 +1636,8 @@ C
         ENDIF
 C
         VRCORE = MAX( 0.0 , MIN(1.0,RINPUT(1)) )
-        CALL ENCALC
+        ! CALL ENCALC
+        CALL ENCALC2
         LAIC = .FALSE.
         LSRD = .FALSE.
         LSOL = .FALSE.

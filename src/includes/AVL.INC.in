@@ -505,6 +505,10 @@ c
       COMMON /SURF_MESH_R/
      & MSHBLK(3, 4*NVMAX) ! block to store all surface meshes
 
+      LOGICAL LSURFMSH
+      COMMON /SURF_MESH_L/
+     & LSURFMSH(NFMAX) ! T if surface uses a mesh cordinates for its geometry
+
 
 C      !!--- end added variables for python geometry manipulation ---
 
@@ -526,6 +530,7 @@ C      !!--- end added variables for python geometry manipulation ---
       REAL(kind=avl_real) RLE2, CHORD2
       REAL(kind=avl_real) WSTRIP
       REAL(kind=avl_real) TANLE,  TANTE
+      REAL(kind=avl_real) GINCSTRIP
       REAL(kind=avl_real) CLCD
       REAL(kind=avl_real) SAXFR
       REAL(kind=avl_real) ESS
@@ -561,6 +566,7 @@ C      !!--- end added variables for python geometry manipulation ---
      & RLE2(3,NSMAX), CHORD2(NSMAX),   ! strip right end LE point, chord
      & WSTRIP(NSMAX),                  ! strip y-z width
      & TANLE(NSMAX),  TANTE(NSMAX),    ! strip LE,TE sweep slopes
+     & GINCSTRIP(NSMAX),               ! strip geometric incidence angle
      & CLCD(NUMAX,NSMAX),              ! strip viscous polar
      & SAXFR,                       ! x/c of spanwise axis for Vperp def
      & ESS(3,NSMAX),                ! spanwise unit vector for Vperp def
@@ -618,6 +624,7 @@ C
       REAL(kind=avl_real) RS
       REAL(kind=avl_real) RL,RADL
       REAL(kind=avl_real) DXV
+      REAL(kind=avl_real) DXSTRPV
       REAL(kind=avl_real) CHORDV
       REAL(kind=avl_real) SLOPEV
       REAL(kind=avl_real) SLOPEC
@@ -662,6 +669,7 @@ C
      & RS(3,NVMAX),     ! h.v. source points
      & RL(3,NLMAX),RADL(NLMAX),  ! source line node points, body radius
      & DXV(NVMAX),               ! chord of element
+     & DXSTRPV(NVMAX),           ! chord of element projected onto chord of element-containing strip
      & CHORDV(NVMAX),            ! chord of element-containing strip
      & SLOPEV(NVMAX),            ! camber slopes at h.v. bound leg
      & SLOPEC(NVMAX),            ! camber slopes at c.p.
