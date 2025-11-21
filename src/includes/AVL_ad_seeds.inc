@@ -354,6 +354,8 @@ C
       real(kind=avl_real) XBOD_DIFF
       real(kind=avl_real) YBOD_DIFF
       real(kind=avl_real) TBOD_DIFF
+      real(kind=avl_real) XBOD_R_DIFF
+      real(kind=avl_real) YBOD_R_DIFF
       COMMON /BODY_GEOM_R_DIFF/
      & XYZSCAL_B_DIFF(3, NBMAX),
      & XYZTRAN_B_DIFF(3, NBMAX),
@@ -362,7 +364,9 @@ C
      & BSPACE_DIFF(NBMAX),
      & XBOD_DIFF(IBX, NBMAX),
      & YBOD_DIFF(IBX, NBMAX),
-     & TBOD_DIFF(IBX, NBMAX)
+     & TBOD_DIFF(IBX, NBMAX),
+     & XBOD_R_DIFF(IBX, NBMAX),
+     & YBOD_R_DIFF(IBX, NBMAX)
 C
       real(kind=avl_real) XYZSCAL_DIFF
       real(kind=avl_real) XYZTRAN_DIFF
@@ -374,8 +378,8 @@ C
       real(kind=avl_real) XYZLES_DIFF
       real(kind=avl_real) XSEC_DIFF
       real(kind=avl_real) YSEC_DIFF
-      real(kind=avl_real) XFMIN_DIFF
-      real(kind=avl_real) XFMAX_DIFF
+      real(kind=avl_real) XFMIN_R_DIFF
+      real(kind=avl_real) XFMAX_R_DIFF
       real(kind=avl_real) XLASEC_DIFF
       real(kind=avl_real) ZLASEC_DIFF
       real(kind=avl_real) XUASEC_DIFF
@@ -405,8 +409,8 @@ C
      & XYZLES_DIFF(3, NSMAX, NFMAX),
      & XSEC_DIFF(IBX, NSMAX, NFMAX),
      & YSEC_DIFF(IBX, NSMAX, NFMAX),
-     & XFMIN_DIFF(NSMAX, NFMAX),
-     & XFMAX_DIFF(NSMAX, NFMAX),
+     & XFMIN_R_DIFF(NSMAX, NFMAX),
+     & XFMAX_R_DIFF(NSMAX, NFMAX),
      & XLASEC_DIFF(IBX, NSMAX, NFMAX),
      & ZLASEC_DIFF(IBX, NSMAX, NFMAX),
      & XUASEC_DIFF(IBX, NSMAX, NFMAX),
@@ -426,6 +430,10 @@ C
      & REFLD_DIFF(ICONX, NSMAX, NFMAX),
      & GAING_DIFF(ICONX, NSMAX, NFMax)
 C
+      real(kind=avl_real) MSHBLK_DIFF
+      COMMON /SURF_MESH_R_DIFF/
+     & MSHBLK_DIFF(3, 4*NVMAX)
+C
       real(kind=avl_real) RLE_DIFF
       real(kind=avl_real) CHORD_DIFF
       real(kind=avl_real) RLE1_DIFF
@@ -435,6 +443,7 @@ C
       real(kind=avl_real) WSTRIP_DIFF
       real(kind=avl_real) TANLE_DIFF
       real(kind=avl_real) TANTE_DIFF
+      real(kind=avl_real) GINCSTRIP_DIFF
       real(kind=avl_real) CLCD_DIFF
       real(kind=avl_real) SAXFR_DIFF
       real(kind=avl_real) ESS_DIFF
@@ -505,6 +514,7 @@ C
      & WSTRIP_DIFF(NSMAX),
      & TANLE_DIFF(NSMAX),
      & TANTE_DIFF(NSMAX),
+     & GINCSTRIP_DIFF(NSMAX),
      & CLCD_DIFF(NUMAX,NSMAX),
      & SAXFR_DIFF,
      & ESS_DIFF(3,NSMAX),
@@ -574,6 +584,7 @@ C
       real(kind=avl_real) RL_DIFF
       real(kind=avl_real) RADL_DIFF
       real(kind=avl_real) DXV_DIFF
+      real(kind=avl_real) DXSTRPV_DIFF
       real(kind=avl_real) CHORDV_DIFF
       real(kind=avl_real) SLOPEV_DIFF
       real(kind=avl_real) SLOPEC_DIFF
@@ -619,6 +630,7 @@ C
      & RL_DIFF(3,NLMAX),
      & RADL_DIFF(NLMAX),
      & DXV_DIFF(NVMAX),
+     & DXSTRPV_DIFF(NVMAX),
      & CHORDV_DIFF(NVMAX),
      & SLOPEV_DIFF(NVMAX),
      & SLOPEC_DIFF(NVMAX),

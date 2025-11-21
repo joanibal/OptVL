@@ -274,7 +274,7 @@ class OVLSolver(object):
             self.avl.loadgeo("")
         else:
             raise ValueError("neither a geometry file nor an input options dictionary was specified")
-
+        
         # todo store the default dict somewhere else
         # the control surface contraints get added to this array in the __init__
         self.conval_idx_dict = {
@@ -644,6 +644,9 @@ class OVLSolver(object):
                     val = optional_header_defaults[key]
                 else:
                     raise ValueError(f"Key {key} not found in input dictionary but is required")
+            elif key == "title":
+                # We need to apply this function to the title string so that the tecplot file writing works correctly
+                val = self._str_to_fort_str(input_dict[key],num_max_char=120)
             else:
                 val = input_dict[key]
                 
@@ -665,11 +668,11 @@ class OVLSolver(object):
         
         # set the gloabl design variable options
         ndesign = len(input_dict.get("gname", []))
-        self.set_avl_fort_arr("CASE_I","NDESIGN", ncontrol)
+        self.set_avl_fort_arr("CASE_I","NDESIGN", ndesign)
         if ndesign > self.NGMAX:
             raise RuntimeError(f"Number of specified design variables exceeds {self.NGMAX}. Raise NGMAX!")
 
-        for k in range(ncontrol):
+        for k in range(ndesign):
             self.avl.CASE_C.GNAME[k] = input_dict["gname"][k]
         
 
@@ -680,7 +683,10 @@ class OVLSolver(object):
         else:
             raise RuntimeError(f"Number of specified surfaces, {num_surfs}, exceeds {self.NFMAX}. Raise NFMAX!")
         
-        
+        # Class variable to store the starting index of all meshes. Set to 0 for no mesh.
+        # We will insert entries into it for duplicate surfaces later but right now it's only for unique surfaces
+        self.mesh_idx_first = np.zeros(self.get_num_surfaces(),dtype=np.int32)
+
         # Load surfaces
         if num_surfs > 0:
             surf_names = list(input_dict["surfaces"].keys())
@@ -728,15 +734,30 @@ class OVLSolver(object):
                     "scale":                  np.array([1.,1.,1.]),   
                     "translate":              np.array([0.,0.,0.]),   
                     "angle":                  0.0,                    
+                    "aincs":                  np.zeros(num_secs, dtype=np.float64),
                     "wake":                   True,                   
                     "albe":                   True,                   
                     "load":                   True,                   
                     "clcd":                   np.zeros(6, dtype=np.float64),
-                    "nspans":                 np.zeros(num_secs, dtype=int),
-                    "sspaces":                np.zeros(num_secs, dtype=int),
+                    "nspans":                 np.zeros(num_secs, dtype=np.int32),
+                    "sspaces":                np.zeros(num_secs, dtype=np.float64),
                     "clcdsec":                np.zeros((num_secs,6)),
                     "claf":                   np.ones(num_secs),
                 }
+
+
+                ignore_if_mesh = {
+                    "xles",
+                    "yles",
+                    "zles",
+                    "chords",
+                    "nchordwise",
+                    "cspace",
+                    "sspaces"
+                    "sspace",
+                    "nspan",
+                }
+
                 # fmt: on
                 
                 # set some flags based on the options used for this surface
@@ -762,11 +783,13 @@ class OVLSolver(object):
                 ):
                     
                     if key not in surf_dict:
-                        if key in optional_surface_defaults: 
+                        if (key == "yduplicate") or (("mesh" in surf_dict) and (key in ignore_if_mesh)):
+                            continue
+                        elif key in optional_surface_defaults:
                             val = optional_surface_defaults[key]
                         else:
                             raise ValueError(f"Key {key} not found in surface dictionary, {surf_name}, but is required")
-                    else: 
+                    else:
                         val = surf_dict[key]
                     
                     check_type(key, avl_vars, val)    
@@ -858,26 +881,27 @@ class OVLSolver(object):
                         self.set_avl_fort_arr("SURF_GEOM_R", "ZLASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "ZUASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "CASEC",  np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-
-
-                        
                         
                 # --- setup control variables for each section ---
                 # Load control surfaces
                 if "icontd" in surf_dict.keys():
-                    for j in range(num_secs):
+                    for idx_sec in range(num_secs):
                         # check to make sure this section has control vars 
-                        if surf_dict["num_controls"][j] == 0:
+                        if surf_dict["num_controls"][idx_sec] == 0:
                             continue
-                        
+
                         for key, avl_vars in self.con_surf_to_fort_var[surf_name].items():
                             avl_vars_secs = self.con_surf_to_fort_var[surf_name][key]
-                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
+                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][idx_sec])
         
                             if key not in surf_dict:
                                     raise ValueError(f"Key {key} not found in surf dictionary, `{surf_name}` but is required")
-                            else: 
-                                val = surf_dict[key][j]
+                            else:
+                                # This has to be incremented by 1 for Fortran indexing
+                                if key == "icontd":
+                                    val = surf_dict[key][idx_sec] + 1
+                                else:
+                                    val = surf_dict[key][idx_sec]
                                 
                             check_type(key, avl_vars, val)
                             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
@@ -887,19 +911,23 @@ class OVLSolver(object):
                 # --- setup design variables for each section ---
                 # Load design variables
                 if "idestd" in surf_dict.keys():
-                    for j in range(num_secs):
+                    for idx_sec in range(num_secs):
                         # check to make sure this section has control vars 
-                        if surf_dict["num_design_vars"][j] == 0:
+                        if surf_dict["num_design_vars"][idx_sec] == 0:
                             continue
                         
                         for key, avl_vars in self.des_var_to_fort_var[surf_name].items():
                             avl_vars_secs = self.des_var_to_fort_var[surf_name][key]
-                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
+                            avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][idx_sec])
         
                             if key not in surf_dict:
                                     raise ValueError(f"Key {key} not found in surf dictionary, `{surf_name}` but is required")
-                            else: 
-                                val = surf_dict[key][j]
+                            else:
+                                # This has to be incremented by 1 for Fortran indexing
+                                if key == "idestd":
+                                    val = surf_dict[key][idx_sec] + 1
+                                else:
+                                    val = surf_dict[key][idx_sec]
                                 
                             check_type(key, avl_vars, val)
                             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
@@ -909,10 +937,22 @@ class OVLSolver(object):
                 # Make the surface
                 if self.debug:
                     print(f"Building surface: {surf_name}")
-                self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
+                # Load the mesh and make if one is specified otherwise just make
+                if "mesh" in surf_dict.keys():
+                    # Check if we have to define the sections for the user
+                    if "iptloc" not in surf_dict.keys():
+                         surf_dict["iptloc"] = np.zeros(surf_dict["num_sections"],dtype=np.int32)
+                         self.avl.adjust_mesh_spacing(idx_surf+1,surf_dict["mesh"].transpose((2, 0, 1)),surf_dict["iptloc"])
+                         surf_dict["iptloc"] = surf_dict["iptloc"] - 1
+                    self.set_mesh(idx_surf, surf_dict["mesh"],surf_dict["iptloc"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
+                    self.avl.makesurf_mesh(idx_surf + 1) #+1 for Fortran indexing
+                else:
+                    self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
                 
                 if "yduplicate" in surf_dict.keys():
                     self.avl.sdupl(idx_surf + 1, surf_dict["yduplicate"], "YDUP")
+                    # Insert duplicate into the mesh first index array
+                    self.mesh_idx_first = np.insert(self.mesh_idx_first,idx_surf+1,self.mesh_idx_first[idx_surf])
                     self.avl.CASE_I.NSURF += 1
                     idx_surf += 1
 
@@ -1022,6 +1062,55 @@ class OVLSolver(object):
 
         # Tell AVL that geometry exists now and is ready for analysis
         self.avl.CASE_L.LGEO = True
+
+    def set_mesh(self, idx_surf: int, mesh: np.ndarray, iptloc: np.ndarray, update_nvs: bool=False, update_nvc: bool=False):
+        """Sets a mesh directly into OptVL. Requires an iptloc vector to define the indices where the sections are defined.
+        This is required for many of AVL's features like control surfaces to work properly. OptVL's input routine has multiple
+        ways of automatically computing this vector. Alternatively, calling the adjust_mesh_spacing subroutine in the Fortran layer
+        can automatically compute the iptloc vector for a given mesh and number of sections. NOTE: the iptloc input is not differentiated.
+        Additionally, the length of iptloc cannot change (i.e the number sections cannot change for a surface that's already loaded).
+
+        Args:
+            idx_surf (int): the surface to apply the mesh to
+            mesh (np.ndarray): XYZ mesh array (nx,ny,3)
+            iptloc (np.ndarray): Vector containing the spanwise indicies where each section is defined (num_sections,)
+            update_nvs (bool): Should OptVL update the number of spanwise elements for the given mesh
+            update_nvc (bool): Should OptVL update the number of chordwise elements for the given mesh
+        """
+        nx = copy.deepcopy(mesh.shape[0])
+        ny = copy.deepcopy(mesh.shape[1])
+
+        if len(iptloc) > self.NSMAX:
+            raise RuntimeError("Length of iptloc cannot exceed NSMAX. Raise NSMAX")
+        
+        if update_nvs:
+            self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1
+
+        if update_nvc:
+            self.avl.SURF_GEOM_I.NVC[idx_surf] = nx-1
+
+        # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
+        # nspans by passing in all zeros
+        if not (iptloc == 0).all():
+            iptloc += 1
+        # set iptloc
+        self.set_avl_fort_arr("SURF_MESH_I","IPTSEC",iptloc,slicer=(idx_surf,slice(None,len(iptloc))))
+
+        # Compute and set the mesh starting index
+        if idx_surf != 0:
+           self.mesh_idx_first[idx_surf] = self.mesh_idx_first[idx_surf-1] + 3*(self.avl.SURF_GEOM_I.NVS[idx_surf-1]+1)*(self.avl.SURF_GEOM_I.NVC[idx_surf-1]+1)
+
+        self.set_avl_fort_arr("SURF_MESH_I","MFRST",self.mesh_idx_first[idx_surf]+1,slicer=idx_surf)
+
+        # Reshape the mesh
+        # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0]*mesh.shape[1]), order="F")
+        mesh = mesh.transpose((1,0,2)).reshape((mesh.shape[0]*mesh.shape[1],3))
+
+        # Set the mesh
+        self.set_avl_fort_arr("SURF_MESH_R","MSHBLK",mesh, slicer=(slice(self.mesh_idx_first[idx_surf],self.mesh_idx_first[idx_surf]+nx*ny),slice(0,3)))
+
+        # Flag surface as using mesh geometry
+        self.avl.SURF_MESH_L.LSURFMSH[idx_surf] = True
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
         """Sets the airfoil oml points for the specified surface and section. Computes camber lines, thickness, and oml shape from
@@ -1210,23 +1299,28 @@ class OVLSolver(object):
             # check number of sections, controls, and dvs
             if len(inputDict["surfaces"]) > 0:
                 surf_names = list(inputDict["surfaces"].keys())
+                idx_surf = 0
                 for i in range(len(inputDict["surfaces"])):
                     surf_dict = inputDict["surfaces"][surf_names[i]]
-                    if self.avl.SURF_GEOM_I.NSEC[i] != surf_dict["num_sections"]:
+                    if self.avl.SURF_GEOM_I.NSEC[idx_surf] != surf_dict["num_sections"]:
                         raise RuntimeError(
-                            f"Mismatch: NSEC[i] = {self.avl.SURF_GEOM_I.NSEC[i]}, Dictionary: {surf_dict['num_sections']}"
+                            f"Mismatch: NSEC[i] = {self.avl.SURF_GEOM_I.NSEC[idx_surf]}, Dictionary: {surf_dict['num_sections']}"
                         )
 
                     # Check controls and design variables per section
                     for j in range(surf_dict["num_sections"]):
-                        if self.avl.SURF_GEOM_I.NSCON[i, j] != surf_dict["num_controls"][j]:
+                        if self.avl.SURF_GEOM_I.NSCON[j, idx_surf] != surf_dict["num_controls"][j]:
                             raise RuntimeError(
-                                f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[i, j]}, Dictionary: {surf_dict['num_controls'][j]}"
+                                f"Mismatch: NSCON[i,j] = {self.avl.SURF_GEOM_I.NSCON[j, idx_surf]}, Dictionary: {surf_dict['num_controls'][j]}"
                             )
-                        if self.avl.SURF_GEOM_I.NSDES[i, j] != surf_dict["num_design_vars"][j]:
+                        if self.avl.SURF_GEOM_I.NSDES[j, idx_surf] != surf_dict["num_design_vars"][j]:
                             raise RuntimeError(
-                                f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[i, j]}, Dictionary: {surf_dict['num_design_vars'][j]}"
+                                f"Mismatch: NSDES[i,j] = {self.avl.SURF_GEOM_I.NSDES[j, idx_surf]}, Dictionary: {surf_dict['num_design_vars'][j]}"
                             )
+                    
+                    idx_surf += 1
+                    if "yduplicate" in surf_dict:
+                            idx_surf += 1
 
                 # Check the global control and design var count
                 if "dname" in inputDict.keys():
@@ -1258,7 +1352,7 @@ class OVLSolver(object):
         """Run the analysis (equivalent to the AVL command `x` in the OPER menu)
 
         Args:
-            tol: the tolerace of the Newton solver used for timing the aircraft
+            tol: the tolerace of the Newton solver used for triming the aircraft
         """
         self.set_avl_fort_arr("CASE_R", "EXEC_TOL", tol)
         self.avl.oper()

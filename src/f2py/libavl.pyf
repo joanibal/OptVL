@@ -135,6 +135,16 @@ python module libavl ! in
             real*8, intent(inout) :: asys(jemax,jemax)
         end subroutine get_system_matrix
 
+        subroutine makesurf_mesh(isurf) ! in :libavl:amake.f
+            integer :: isurf
+        end subroutine makesurf_mesh
+
+        subroutine adjust_mesh_spacing(isurf, nx, ny, mesh, iptloc, nsecsurf) ! in :libavl:amake.f
+            integer :: isurf, nx, ny, nsecsurf
+            integer, intent(inout) :: iptloc(nsecsurf)
+            real*8 :: mesh(3,nx,ny)
+        end subroutine adjust_mesh_spacing
+
         !subroutine getcam(x, y, n, xc, yc, tc, nc, lnorm) ! in :libavl:airutil.f
             !integer, intent(in) :: n
             !integer, intent(inout) :: nc
@@ -168,5 +178,12 @@ python module libavl ! in
             real*8 :: xb(nb), yb(nb)
             logical :: storecoords
         end subroutine set_body_coordinates
+
+        !subroutine update_surface_mesh_HACK(isurf,mesh,nx,ny,iptloc,nsecsurf,lcount,lcall) ! in :libavl:amake.f
+            !integer :: isurf, nx, ny, nsecsurf
+            !logical :: lcount, lcall
+            !real*8 :: mesh(3,nx,ny)
+            !integer :: iptloc(nsecsurf)
+        !end subroutine update_surfaces_mesh
     end interface 
 end python module libavl
