@@ -97,11 +97,12 @@ C
      & //'  G eometry plot               T refftz Plane plot       '
      & //'  ST  stability derivatives    FT  total   forces        '
      &  /'  SB  body-axis derivatives    FN  surface forces        '
-     &  /'  RE  reference quantities     FS  strip   forces        '
+     &  /'  RE  reference quantities     FS  strip   forces',
+     &                                         ' (FSB bodyaxes)'
      &  /'  DE  design changes           FE  element forces        '
      &  /'  O ptions                     FB  body forces           '
      &  /'                               HM  hinge moments         '
-     &  /'                               VM  strip shear,moment    '
+     &  /'  OB offbody flow survey       VM  strip shear,moment    '
      &  /'  MRF  machine-readable format CPOM OML surface pressures')
 C 
 C   A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
@@ -456,6 +457,25 @@ C          WRITE(*,*) '* Execute flow calculation first!'
 C         ENDIF
 C C
 C C------------------------------------------------------
+C       ELSE IF(COMAND.EQ.'FSB ') THEN
+C C------ print strip forces in body axes
+C         IF(LSOL) THEN
+C          CALL GETFILE(LU,COMARG)
+C C
+C          IF(LU.LE.-1) THEN
+C           WRITE(*,*) '* Filename error *'
+C          ELSEIF(LU.EQ.0) THEN
+C           WRITE(*,*) '* Data not written'
+C          ELSE
+C           CALL OUTSTRPB(LU)
+C           IF(LU.NE.5 .AND. LU.NE.6) CLOSE(LU)
+C          ENDIF
+C C
+C         ELSE
+C          WRITE(*,*) '* Execute flow calculation first!'
+C         ENDIF
+C C
+C C------------------------------------------------------
 C       ELSE IF(COMAND.EQ.'FE  ') THEN
 C C------ print vortex element forces
 C         IF(LSOL) THEN
@@ -575,6 +595,10 @@ C       ELSE IF(COMAND.EQ.'L   ') THEN
 C C------ list run cases
 C         LU = 6
 C         CALL RUNSAV(LU)
+C C------------------------------------------------------
+C       ELSE IF(COMAND.EQ.'OB  ') THEN
+C C------ off-body flow survey
+C         CALL OBOPER
 C C
 C C------------------------------------------------------
 C       ELSE IF(COMAND.EQ.'S   ') THEN
@@ -733,14 +757,23 @@ C       ELSE IF(COMAND.EQ.'CPOM') THEN
 C C------ write OML surface pressures to a file
 C         CALL CPOML()
 C cc#endif
-CC C------------------------------------------------------
+C C------------------------------------------------------
 C       ELSE IF(COMAND.EQ.'RE  ') THEN
 C C------ Change reference data 
-C  89     WRITE(*,2090) SREF,CREF,BREF
+C  89     XYZREF(1) = PARVAL(IPXCG,IRUN)
+C         XYZREF(2) = PARVAL(IPYCG,IRUN)
+C         XYZREF(3) = PARVAL(IPZCG,IRUN)
+C         CDREF     = PARVAL(IPCD0,IRUN)
+C C
+C         WRITE(*,2090) SREF,CREF,BREF,XYZREF,CDREF
 C  2090   FORMAT(/' ==========================='
 C      &         /'  S ref: ', G11.5,
 C      &         /'  C ref: ', G11.5,
-C      &         /'  B ref: ', G11.5 )
+C      &         /'  B ref: ', G11.5,
+C      &         /'  X ref: ', G11.5,
+C      &         /'  Y ref: ', G11.5,
+C      &         /'  Z ref: ', G11.5,
+C      &         /' CD ref: ', G11.5 )
 C C
 C  90     CALL ASKC(' Select item,value^',ITEMC,COMARG)
 C  2100   FORMAT(' Enter new ',A,': ', $)
@@ -752,7 +785,17 @@ C C
 C         NINP = 1
 C         CALL GETFLT(COMARG,RINP,NINP,ERROR)
 C C
-C         IF    (INDEX('Ss',ITEMC(1:1)).NE.0) THEN
+C         IF    (INDEX('Cc',ITEMC(1:1)).NE.0 .AND.
+C      &         INDEX('Dd',ITEMC(2:2)).NE.0) THEN
+C           IF(NINP.EQ.0) THEN
+C  97          WRITE(*,2100) 'Added CD0 profile drag'
+C            READ (*,*,ERR=97) CDREF
+C           ELSE
+C            CDREF = RINP(1)
+C           ENDIF
+C           PARVAL(IPCD0,IRUN) = CDREF
+C C
+C         ELSEIF(INDEX('Ss',ITEMC(1:1)).NE.0) THEN
 C           IF(NINP.EQ.0) THEN
 C  91        WRITE(*,2100) 'reference area Sref'
 C            READ (*,*,ERR=91) SREF
@@ -778,6 +821,39 @@ C           ELSE
 C            BREF = RINP(1)
 C           ENDIF
 C           LSOL = .FALSE.
+C C
+C         ELSEIF(INDEX('Xx',ITEMC(1:1)).NE.0) THEN
+C           IF(NINP.EQ.0) THEN
+C  94        WRITE(*,2100) 'reference Xref'
+C            READ (*,*,ERR=94) XREF
+C           ELSE
+C            XREF = RINP(1)
+C           ENDIF
+C           PARVAL(IPXCG,IRUN) = XREF
+C           LSOL = .FALSE.
+C           LSRD = .FALSE.
+C C
+C         ELSEIF(INDEX('Yy',ITEMC(1:1)).NE.0) THEN
+C           IF(NINP.EQ.0) THEN
+C  95        WRITE(*,2100) 'reference Yref'
+C            READ (*,*,ERR=95) YREF
+C           ELSE
+C            ZREF = RINP(1)
+C           ENDIF
+C           PARVAL(IPYCG,IRUN) = YREF
+C           LSOL = .FALSE.
+C           LSRD = .FALSE.
+C C
+C         ELSEIF(INDEX('Zz',ITEMC(1:1)).NE.0) THEN
+C           IF(NINP.EQ.0) THEN
+C  96        WRITE(*,2100) 'reference Zref'
+C            READ (*,*,ERR=96) ZREF
+C           ELSE
+C            ZREF = RINP(1)
+C           ENDIF
+C           PARVAL(IPZCG,IRUN) = ZREF
+C           LSOL = .FALSE.
+C           LSRD = .FALSE.
 C C
 C         ELSE
 C           WRITE(*,*) 'Item not recognized'
@@ -978,10 +1054,10 @@ C---------------------------------------------------
       real t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t99
 
 C
-C---- convergence epsilon, max angle limit (radians)
+C---- convergence epsilon, max angle limit (90 deg in radians)
       ! EPS replaced by EXEC_TOL
-      ! DATA EPS, DMAX / 0.00002, 1.0 /
-      DATA DMAX / 1.0 /
+      ! DATA EPS, DMAX / 0.00002, 1.5708 /
+      DATA DMAX / 1.5708 /
 
 C
       IF(LNASA_SA) THEN
@@ -991,6 +1067,9 @@ C----- NASA Std. Stability axes, X fwd, Z down
 C----- Geometric Stability axes, X aft, Z up
        DIR =  1.0
       ENDIF
+C===================================================================
+C---- start a new solution
+      LSOL = .FALSE.
 C     
       call set_par_and_cons(NITER, IR)
       
@@ -1179,72 +1258,70 @@ C
 C
 C------------------------------------
           ELSEIF(IC.EQ.ICMOMX) THEN
-           VRES(IV) = (CRTOT*CA + CNTOT*SA)*DIR - CONVAL(IC,IR)
-           VSYS(IV,IVALFA) = ( CRTOT_U(1)*VINF_A(1)
-     &                        +CRTOT_U(2)*VINF_A(2)
-     &                        +CRTOT_U(3)*VINF_A(3))*CA*DIR
-     &                     + ( CNTOT_U(1)*VINF_A(1)
-     &                        +CNTOT_U(2)*VINF_A(2)
-     &                        +CNTOT_U(3)*VINF_A(3))*SA*DIR
-     &                     + (CRTOT*CA_A + CNTOT*SA_A)*DIR
-           VSYS(IV,IVBETA) = ( CRTOT_U(1)*VINF_B(1)
-     &                        +CRTOT_U(2)*VINF_B(2)
-     &                        +CRTOT_U(3)*VINF_B(3))*CA*DIR
-     &                     + ( CNTOT_U(1)*VINF_B(1)
-     &                        +CNTOT_U(2)*VINF_B(2)
-     &                        +CNTOT_U(3)*VINF_B(3))*SA*DIR
-           VSYS(IV,IVROTX) = (CRTOT_U(4)*CA + CNTOT_U(4)*SA)*DIR
-           VSYS(IV,IVROTY) = (CRTOT_U(5)*CA + CNTOT_U(5)*SA)*DIR
-           VSYS(IV,IVROTZ) = (CRTOT_U(6)*CA + CNTOT_U(6)*SA)*DIR
+           VRES(IV) = (CMTOT(1)*CA + CMTOT(3)*SA)*DIR - CONVAL(IC,IR)
+           VSYS(IV,IVALFA) = ( CMTOT_U(1,1)*VINF_A(1)
+     &                        +CMTOT_U(1,2)*VINF_A(2)
+     &                        +CMTOT_U(1,3)*VINF_A(3))*CA*DIR
+     &                     + ( CMTOT_U(3,1)*VINF_A(1)
+     &                        +CMTOT_U(3,2)*VINF_A(2)
+     &                        +CMTOT_U(3,3)*VINF_A(3))*SA*DIR
+     &                     + (CMTOT(1)*CA_A + CMTOT(3)*SA_A)*DIR
+           VSYS(IV,IVBETA) = ( CMTOT_U(1,1)*VINF_B(1)
+     &                        +CMTOT_U(1,2)*VINF_B(2)
+     &                        +CMTOT_U(1,3)*VINF_B(3))*CA*DIR
+     &                     + ( CMTOT_U(3,1)*VINF_B(1)
+     &                        +CMTOT_U(3,2)*VINF_B(2)
+     &                        +CMTOT_U(3,3)*VINF_B(3))*SA*DIR
+           VSYS(IV,IVROTX) = (CMTOT_U(1,4)*CA + CMTOT_U(3,4)*SA)*DIR
+           VSYS(IV,IVROTY) = (CMTOT_U(1,5)*CA + CMTOT_U(3,5)*SA)*DIR
+           VSYS(IV,IVROTZ) = (CMTOT_U(1,6)*CA + CMTOT_U(3,6)*SA)*DIR
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
-             ! no *DIR here because we do *DIR in AERO now
-             VSYS(IV,NV) = (CRTOT_D(N)*CA + CNTOT_D(N)*SA)
+             VSYS(IV,NV) = (CMTOT_D(1,N)*CA + CMTOT_D(3,N)*SA)*DIR
            ENDDO
 C
 C------------------------------------
           ELSEIF(IC.EQ.ICMOMY) THEN
-           VRES(IV) = CMTOT - CONVAL(IC,IR)
-           VSYS(IV,IVALFA) = CMTOT_U(1)*VINF_A(1)
-     &                     + CMTOT_U(2)*VINF_A(2)
-     &                     + CMTOT_U(3)*VINF_A(3)
-           VSYS(IV,IVBETA) = CMTOT_U(1)*VINF_B(1)
-     &                     + CMTOT_U(2)*VINF_B(2)
-     &                     + CMTOT_U(3)*VINF_B(3)
-           VSYS(IV,IVROTX) = CMTOT_U(4)
-           VSYS(IV,IVROTY) = CMTOT_U(5)
-           VSYS(IV,IVROTZ) = CMTOT_U(6)
+           VRES(IV) = CMTOT(2) - CONVAL(IC,IR)
+           VSYS(IV,IVALFA) = CMTOT_U(2,1)*VINF_A(1)
+     &                     + CMTOT_U(2,2)*VINF_A(2)
+     &                     + CMTOT_U(2,3)*VINF_A(3)
+           VSYS(IV,IVBETA) = CMTOT_U(2,1)*VINF_B(1)
+     &                     + CMTOT_U(2,2)*VINF_B(2)
+     &                     + CMTOT_U(2,3)*VINF_B(3)
+           VSYS(IV,IVROTX) = CMTOT_U(2,4)
+           VSYS(IV,IVROTY) = CMTOT_U(2,5)
+           VSYS(IV,IVROTZ) = CMTOT_U(2,6)
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
-             VSYS(IV,NV) = CMTOT_D(N)
+             VSYS(IV,NV) = CMTOT_D(2,N)
            ENDDO
 C
 C------------------------------------
           ELSEIF(IC.EQ.ICMOMZ) THEN
-           VRES(IV) = (CNTOT*CA - CRTOT*SA)*DIR - CONVAL(IC,IR)
-           VSYS(IV,IVALFA) = ( CNTOT_U(1)*VINF_A(1)
-     &                        +CNTOT_U(2)*VINF_A(2)
-     &                        +CNTOT_U(3)*VINF_A(3))*CA*DIR
-     &                     - ( CRTOT_U(1)*VINF_A(1)
-     &                        +CRTOT_U(2)*VINF_A(2)
-     &                        +CRTOT_U(3)*VINF_A(3))*SA*DIR
-     &                     + (CNTOT*CA_A - CRTOT*SA_A)*DIR
-           VSYS(IV,IVBETA) = ( CNTOT_U(1)*VINF_B(1)
-     &                        +CNTOT_U(2)*VINF_B(2)
-     &                        +CNTOT_U(3)*VINF_B(3))*CA*DIR
-     &                     - ( CRTOT_U(1)*VINF_B(1)
-     &                        +CRTOT_U(2)*VINF_B(2)
-     &                        +CRTOT_U(3)*VINF_B(3))*SA*DIR
-           VSYS(IV,IVROTX) = (CNTOT_U(4)*CA - CRTOT_U(4)*SA)*DIR
-           VSYS(IV,IVROTY) = (CNTOT_U(5)*CA - CRTOT_U(5)*SA)*DIR
-           VSYS(IV,IVROTZ) = (CNTOT_U(6)*CA - CRTOT_U(6)*SA)*DIR
+           VRES(IV) = (CMTOT(3)*CA - CMTOT(1)*SA)*DIR - CONVAL(IC,IR)
+           VSYS(IV,IVALFA) = ( CMTOT_U(3,1)*VINF_A(1)
+     &                        +CMTOT_U(3,2)*VINF_A(2)
+     &                        +CMTOT_U(3,3)*VINF_A(3))*CA*DIR
+     &                     - ( CMTOT_U(1,1)*VINF_A(1)
+     &                        +CMTOT_U(1,2)*VINF_A(2)
+     &                        +CMTOT_U(1,3)*VINF_A(3))*SA*DIR
+     &                     + (CMTOT(3)*CA_A - CMTOT(1)*SA_A)*DIR
+           VSYS(IV,IVBETA) = ( CMTOT_U(3,1)*VINF_B(1)
+     &                        +CMTOT_U(3,2)*VINF_B(2)
+     &                        +CMTOT_U(3,3)*VINF_B(3))*CA*DIR
+     &                     - ( CMTOT_U(1,1)*VINF_B(1)
+     &                        +CMTOT_U(1,2)*VINF_B(2)
+     &                        +CMTOT_U(1,3)*VINF_B(3))*SA*DIR
+           VSYS(IV,IVROTX) = (CMTOT_U(3,4)*CA - CMTOT_U(1,4)*SA)*DIR
+           VSYS(IV,IVROTY) = (CMTOT_U(3,5)*CA - CMTOT_U(1,5)*SA)*DIR
+           VSYS(IV,IVROTZ) = (CMTOT_U(3,6)*CA - CMTOT_U(1,6)*SA)*DIR
 C
            DO N = 1, NCONTROL
              NV = IVTOT + N
-             ! no *DIR here because we do *DIR in AERO now
-             VSYS(IV,NV) = (CNTOT_D(N)*CA - CRTOT_D(N)*SA)
+             VSYS(IV,NV) = (CMTOT_D(3,N)*CA - CMTOT_D(1,N)*SA)*DIR
            ENDDO
 C
 C------------------------------------
@@ -1265,11 +1342,12 @@ C
  100    CONTINUE
 C
 
-c        write(*,*)
-c        do k = 1, nvtot
-c          write(*,'(1x,40f9.4)') (vsys(k,l), l=1, nvtot), vres(k)
-c        enddo
-c        write(*,*)
+C        write(*,*)
+C        do k = 1, nvtot
+C          write(*,'(1x,40f9.4)', advance='no') (vsys(k,l), l=1, nvtot)
+C          write(*,'(1x,a,1x,40f9.4)') '|', vres(k)
+C        enddo
+C        write(*,*)
 C
 C------ LU-factor,  and back-substitute RHS
         CALL LUDCMP(IVMAX,NVTOT,VSYS,IVSYS,WORK)
@@ -1414,6 +1492,7 @@ C------ convergence check
 C
         IF(DELMAX.LT.EXEC_TOL) THEN
          LSOL = .TRUE.
+         LOBVEL = .FALSE.
 C------- mark trim case as being converged
          ITRIM(IR) = IABS(ITRIM(IR))
          GO TO 191
@@ -1423,6 +1502,7 @@ C
       IF(NITER.GT.0) THEN
        WRITE(*,*) 'Trim convergence failed'
        LSOL = .FALSE.
+       LOBVEL = .FALSE.
        RETURN
       ENDIF
 C
@@ -1476,8 +1556,9 @@ C
 C  
       WRITE(*,1110) LPTOT,LPSURF,LPSTRP,LPELE,
      &              LPHINGE,LPDERIV,
-     &              LTRFORCE,LVISC,LBFORCE,
-     &                SATYPE,ROTTYPE,IZSYM,ZSYM,SAXFR,VRCORE
+     &              LTRFORCE,LVISC,LBFORCE,LNFLD_WV,
+     &              SATYPE,ROTTYPE,IZSYM,ZSYM,SAXFR,
+     &              VRCOREC,VRCOREW,SRCORE
  1110   FORMAT(/'   ======================================'
      &         /'    P rint default output for...'
      &         /'        total     :  ',L2,
@@ -1486,14 +1567,17 @@ C
      &         /'        elements  :  ',L2,
      &        //'    H inge mom. output:  ',L2,
      &         /'    D erivative output:  ',L2,
-     &        //'    T rail.leg forces:  ',L2,
-     &         /'    V iscous forces  :  ',L2,
-     &         /'    B ody forces     :  ',L2,
+     &        //'    T rail.leg forces :  ',L2,
+     &         /'    V iscous forces   :  ',L2,
+     &         /'    B ody forces      :  ',L2,
+     &         /'    N ear-field forces:  ',L2,
      &        //'    A xis orient. :  ', A, 
      &         /'    R ate,mom axes:  ', A,
      &         /'    Z  symmetry   :  ',I2,' @ Z =',F10.4
      &         /'    S pan axis x/c:  ',F10.4
-     &         /'    C ore/ds ratio:  ',F10.4)
+     &         /'    CC core vortex radius/chord ratio:  ',F10.5
+     &         /'    CW core radius/stripwidth ratio:  ',F10.5
+     &         /'    CS source-doublet core/radius ratio:  ',F10.5)
 C
 C
       CALL ASKC(' ..Select item to change^',ITEMC,COMARG)
@@ -1527,6 +1611,15 @@ C---------------------------------
           WRITE(*,*) 'Forces will include body forces'
          ELSE
           WRITE(*,*) 'Forces will not include body forces'
+        ENDIF
+C
+C---------------------------------
+      ELSEIF(ITEMC.EQ.'N   ') THEN
+        LNFLD_WV = .NOT.LNFLD_WV
+        IF(LNFLD_WV) THEN
+          WRITE(*,*) 'Near-field forces will include body ind. vel.'
+         ELSE
+          WRITE(*,*) 'Near-field forces only use h.v. ind. vel.'
         ENDIF
 C
 C---------------------------------
@@ -1596,9 +1689,11 @@ C---------------------------------
        ZSYM  = ZSYMIN
        LAIC = .FALSE.
        LSRD = .FALSE.
-       LSOL = .FALSE.
        LVEL = .FALSE.
+       LSOL = .FALSE.
        LSEN = .FALSE.
+       LOBAIC = .FALSE.
+       LOBVEL = .FALSE.
 C
  1015  FORMAT(' Z Symmetry: No symmetry assumed')
  1016  FORMAT(' Z Symmetry: Ground plane at Zsym =',F10.4)
@@ -1622,25 +1717,73 @@ C
         CALL AERO
 C
 C---------------------------------
-      ELSEIF(ITEMC.EQ.'C   ') THEN
+      ELSEIF(ITEMC.EQ.'CC  ') THEN
         NINP = 1
         CALL GETFLT(COMARG,RINPUT,NINP,ERROR)
 C
         IF(ERROR .OR. NINP.LE.0) THEN
-         RINPUT(1) = VRCORE
+         RINPUT(1) = VRCOREC
          WRITE(*,1040) RINPUT(1)
- 1040    FORMAT(/' Enter core/vortex-strip width:', F10.4)
+ 1040    FORMAT(/' Enter core vortex radius/strip chord:', F10.5)
          CALL READR(1,RINPUT,ERROR)
          IF(ERROR) GO TO 100
         ENDIF
 C
-        VRCORE = MAX( 0.0 , MIN(1.0,RINPUT(1)) )
+        VRCOREC = MAX( 0.0 , MIN(5.0,RINPUT(1)) )
         CALL ENCALC
         LAIC = .FALSE.
         LSRD = .FALSE.
+        LVEL = .FALSE.
         LSOL = .FALSE.
-        LVEL = .FALSE.    ! bug   22 Mar 22
         LSEN = .FALSE.
+        LOBAIC = .FALSE.
+        LOBVEL = .FALSE.
+C
+C---------------------------------
+      ELSEIF(ITEMC.EQ.'CW  ') THEN
+        NINP = 1
+        CALL GETFLT(COMARG,RINPUT,NINP,ERROR)
+C
+        IF(ERROR .OR. NINP.LE.0) THEN
+         RINPUT(1) = VRCOREW
+         WRITE(*,1042) RINPUT(1)
+ 1042    FORMAT(/' Enter core vortex radius/strip width:', F10.5)
+         CALL READR(1,RINPUT,ERROR)
+         IF(ERROR) GO TO 100
+        ENDIF
+C
+        VRCOREW = MAX( 0.0 , MIN(10.0,RINPUT(1)) )
+        CALL ENCALC
+        LAIC = .FALSE.
+        LSRD = .FALSE.
+        LVEL = .FALSE.
+        LSOL = .FALSE.
+        LSEN = .FALSE.
+
+C---------------------------------
+      ELSEIF(ITEMC.EQ.'CS  ') THEN
+        NINP = 1
+        CALL GETFLT(COMARG,RINPUT,NINP,ERROR)
+C
+        IF(ERROR .OR. NINP.LE.0) THEN
+         RINPUT(1) = SRCORE
+         WRITE(*,1044) RINPUT(1)
+ 1044    FORMAT(/' Enter core source radius/strip width:', F10.5)
+         CALL READR(1,RINPUT,ERROR)
+         IF(ERROR) GO TO 100
+        ENDIF
+C
+C---- SRCCORE>0 uses body radius, SRCORE<0 uses source line spacing
+        SRCORE = RINPUT(1)
+        SRCORE = SIGN( MIN(5.0,ABS(SRCORE)), SRCORE )
+        CALL ENCALC
+        LAIC = .FALSE.
+        LSRD = .FALSE.
+        LVEL = .FALSE.
+        LSOL = .FALSE.
+        LSEN = .FALSE.
+        LOBAIC = .FALSE.
+        LOBVEL = .FALSE.
 C
 C---------------------------------
       ELSE
@@ -1767,17 +1910,16 @@ C
 
 C ==================== addition wrapper helper programs ==============
 
-      SUBROUTINE calcST
+      SUBROUTINE calc_stab_derivs
 C C---------------------------------------------------------
 C C     Calculates and outputs stability derivative matrix
-C C     for current ALFA, BETA.
+C C     for current ALFA, BETA for both the stability axis and the body axis.
 C C---------------------------------------------------------
       INCLUDE 'AVL.INC'
       CHARACTER*50 SATYPE
       REAL WROT_RX(3), WROT_RZ(3), WROT_A(3)
       REAL
      & CRSAX_U(NUMAX),CMSAX_U(NUMAX),CNSAX_U(NUMAX),
-     & CRSAX_D(NDMAX),CMSAX_D(NDMAX),CNSAX_D(NDMAX),
      & CRSAX_G(NGMAX),CMSAX_G(NGMAX),CNSAX_G(NGMAX)
 C
       CALL GETSA(LNASA_SA,SATYPE,DIR)
@@ -1814,88 +1956,84 @@ C
       WROT_A(3)  = -RZ*SA + RX*CA   !!! =  WROT(1)
 C
 C
-      CRSAX = DIR*(CRTOT*CA + CNTOT*SA)
-      CMSAX = CMTOT              
-      CNSAX = DIR*(CNTOT*CA - CRTOT*SA)
-      CRSAX_A = -CRTOT*SA + CNTOT*CA
-      CNSAX_A = -CNTOT*SA - CRTOT*CA
+      CRSAX_A = -CMTOT(1)*SA + CMTOT(3)*CA
+      CNSAX_A = -CMTOT(3)*SA - CMTOT(1)*CA
 C
       DO K = 1, 6
-        CRSAX_U(K) = CRTOT_U(K)*CA + CNTOT_U(K)*SA
-        CMSAX_U(K) = CMTOT_U(K)              
-        CNSAX_U(K) = CNTOT_U(K)*CA - CRTOT_U(K)*SA  
+        CRSAX_U(K) = CMTOT_U(1,K)*CA + CMTOT_U(3,K)*SA
+        CMSAX_U(K) = CMTOT_U(2,K)              
+        CNSAX_U(K) = CMTOT_U(3,K)*CA - CMTOT_U(1,K)*SA  
       ENDDO
-
       DO K = 1, NCONTROL
-        CRSAX_D(K) = CRTOT_D(K)*CA + CNTOT_D(K)*SA
-        CMSAX_D(K) = CMTOT_D(K)              
-        CNSAX_D(K) = CNTOT_D(K)*CA - CRTOT_D(K)*SA  
+        CRSAX_D(K) = DIR*(CMTOT_D(1,K)*CA + CMTOT_D(3,K)*SA)
+        CMSAX_D(K) = CMTOT_D(2,K)              
+        CNSAX_D(K) = DIR*(CMTOT_D(3,K)*CA - CMTOT_D(1,K)*SA)
       ENDDO
 
       DO K = 1, NDESIGN
-        CRSAX_G(K) = CRTOT_G(K)*CA + CNTOT_G(K)*SA
-        CMSAX_G(K) = CMTOT_G(K)              
-        CNSAX_G(K) = CNTOT_G(K)*CA - CRTOT_G(K)*SA  
+        CRSAX_G(K) = CMTOT_G(1,K)*CA + CMTOT_G(3,K)*SA
+        CMSAX_G(K) = CMTOT_G(2,K)              
+        CNSAX_G(K) = CMTOT_G(3,K)*CA - CMTOT_G(1,K)*SA  
       ENDDO
 
 C
 C---- set force derivatives in stability axes
       CLTOT_AL = CLTOT_U(1)*VINF_A(1) + CLTOT_U(4)*WROT_A(1)
-     &      + CLTOT_U(2)*VINF_A(2) + CLTOT_U(5)*WROT_A(2)
-     &      + CLTOT_U(3)*VINF_A(3) + CLTOT_U(6)*WROT_A(3) + CLTOT_A
+     &         + CLTOT_U(2)*VINF_A(2) + CLTOT_U(5)*WROT_A(2)
+     &         + CLTOT_U(3)*VINF_A(3) + CLTOT_U(6)*WROT_A(3) + CLTOT_A
       CLTOT_BE = CLTOT_U(1)*VINF_B(1)
-     &      + CLTOT_U(2)*VINF_B(2)
-     &      + CLTOT_U(3)*VINF_B(3)
+     &         + CLTOT_U(2)*VINF_B(2)
+     &         + CLTOT_U(3)*VINF_B(3)
       CLTOT_RX = CLTOT_U(4)*WROT_RX(1) + CLTOT_U(6)*WROT_RX(3)
       CLTOT_RY = CLTOT_U(5)
       CLTOT_RZ = CLTOT_U(6)*WROT_RZ(3) + CLTOT_U(4)*WROT_RZ(1)
 C
-      CDTOT_AL = CDTOT_U(1)*VINF_A(1) + CDTOT_U(4)*WROT_A(1)
-     &      + CDTOT_U(2)*VINF_A(2) + CDTOT_U(5)*WROT_A(2)
-     &      + CDTOT_U(3)*VINF_A(3) + CDTOT_U(6)*WROT_A(3) + CDTOT_A
-      CDTOT_BE = CDTOT_U(1)*VINF_B(1)
-     &      + CDTOT_U(2)*VINF_B(2)
-     &      + CDTOT_U(3)*VINF_B(3)
-      CDTOT_RX = CDTOT_U(4)*WROT_RX(1) + CDTOT_U(6)*WROT_RX(3)
-      CDTOT_RY = CDTOT_U(5)
-      CDTOT_RZ = CDTOT_U(6)*WROT_RZ(3) + CDTOT_U(4)*WROT_RZ(1)
-C
       CYTOT_AL = CYTOT_U(1)*VINF_A(1) + CYTOT_U(4)*WROT_A(1)
-     &      + CYTOT_U(2)*VINF_A(2) + CYTOT_U(5)*WROT_A(2)
-     &      + CYTOT_U(3)*VINF_A(3) + CYTOT_U(6)*WROT_A(3)
+     &         + CYTOT_U(2)*VINF_A(2) + CYTOT_U(5)*WROT_A(2)
+     &         + CYTOT_U(3)*VINF_A(3) + CYTOT_U(6)*WROT_A(3)
       CYTOT_BE = CYTOT_U(1)*VINF_B(1)
-     &      + CYTOT_U(2)*VINF_B(2)
-     &      + CYTOT_U(3)*VINF_B(3)
+     &         + CYTOT_U(2)*VINF_B(2)
+     &         + CYTOT_U(3)*VINF_B(3)
       CYTOT_RX = CYTOT_U(4)*WROT_RX(1) + CYTOT_U(6)*WROT_RX(3)
       CYTOT_RY = CYTOT_U(5)
       CYTOT_RZ = CYTOT_U(6)*WROT_RZ(3) + CYTOT_U(4)*WROT_RZ(1)
 C
+      CDTOT_AL = CDTOT_U(1)*VINF_A(1) + CDTOT_U(4)*WROT_A(1)
+     &         + CDTOT_U(2)*VINF_A(2) + CDTOT_U(5)*WROT_A(2)
+     &         + CDTOT_U(3)*VINF_A(3) + CDTOT_U(6)*WROT_A(3) + CDTOT_A
+      CDTOT_BE = CDTOT_U(1)*VINF_B(1)
+     &         + CDTOT_U(2)*VINF_B(2)
+     &         + CDTOT_U(3)*VINF_B(3)
+      CDTOT_RX = CDTOT_U(4)*WROT_RX(1) + CDTOT_U(6)*WROT_RX(3)
+      CDTOT_RY = CDTOT_U(5)
+      CDTOT_RZ = CDTOT_U(6)*WROT_RZ(3) + CDTOT_U(4)*WROT_RZ(1)
+C
       CRTOT_AL = CRSAX_U(1)*VINF_A(1) + CRSAX_U(4)*WROT_A(1)
-     &      + CRSAX_U(2)*VINF_A(2) + CRSAX_U(5)*WROT_A(2)
-     &      + CRSAX_U(3)*VINF_A(3) + CRSAX_U(6)*WROT_A(3) + CRSAX_A
+     &         + CRSAX_U(2)*VINF_A(2) + CRSAX_U(5)*WROT_A(2)
+     &         + CRSAX_U(3)*VINF_A(3) + CRSAX_U(6)*WROT_A(3) + CRSAX_A
       CRTOT_BE = CRSAX_U(1)*VINF_B(1)
-     &      + CRSAX_U(2)*VINF_B(2)
-     &      + CRSAX_U(3)*VINF_B(3)
+     &         + CRSAX_U(2)*VINF_B(2)
+     &         + CRSAX_U(3)*VINF_B(3)
       CRTOT_RX = CRSAX_U(4)*WROT_RX(1) + CRSAX_U(6)*WROT_RX(3)
       CRTOT_RY = CRSAX_U(5)
       CRTOT_RZ = CRSAX_U(6)*WROT_RZ(3) + CRSAX_U(4)*WROT_RZ(1)
 C
       CMTOT_AL = CMSAX_U(1)*VINF_A(1) + CMSAX_U(4)*WROT_A(1)
-     &      + CMSAX_U(2)*VINF_A(2) + CMSAX_U(5)*WROT_A(2)
-     &      + CMSAX_U(3)*VINF_A(3) + CMSAX_U(6)*WROT_A(3)
+     &         + CMSAX_U(2)*VINF_A(2) + CMSAX_U(5)*WROT_A(2)
+     &         + CMSAX_U(3)*VINF_A(3) + CMSAX_U(6)*WROT_A(3)
       CMTOT_BE = CMSAX_U(1)*VINF_B(1)
-     &      + CMSAX_U(2)*VINF_B(2)
-     &      + CMSAX_U(3)*VINF_B(3)
+     &         + CMSAX_U(2)*VINF_B(2)
+     &         + CMSAX_U(3)*VINF_B(3)
       CMTOT_RX = CMSAX_U(4)*WROT_RX(1) + CMSAX_U(6)*WROT_RX(3)
       CMTOT_RY = CMSAX_U(5)
       CMTOT_RZ = CMSAX_U(6)*WROT_RZ(3) + CMSAX_U(4)*WROT_RZ(1)
 C
       CNTOT_AL = CNSAX_U(1)*VINF_A(1) + CNSAX_U(4)*WROT_A(1)
-     &      + CNSAX_U(2)*VINF_A(2) + CNSAX_U(5)*WROT_A(2)
-     &      + CNSAX_U(3)*VINF_A(3) + CNSAX_U(6)*WROT_A(3) + CNSAX_A
+     &         + CNSAX_U(2)*VINF_A(2) + CNSAX_U(5)*WROT_A(2)
+     &         + CNSAX_U(3)*VINF_A(3) + CNSAX_U(6)*WROT_A(3) + CNSAX_A
       CNTOT_BE = CNSAX_U(1)*VINF_B(1)
-     &      + CNSAX_U(2)*VINF_B(2)
-     &      + CNSAX_U(3)*VINF_B(3)
+     &         + CNSAX_U(2)*VINF_B(2)
+     &         + CNSAX_U(3)*VINF_B(3)
       CNTOT_RX = CNSAX_U(4)*WROT_RX(1) + CNSAX_U(6)*WROT_RX(3)
       CNTOT_RY = CNSAX_U(5)
       CNTOT_RZ = CNSAX_U(6)*WROT_RZ(3) + CNSAX_U(4)*WROT_RZ(1)
@@ -1912,15 +2050,15 @@ C
       CLTOT_RX = CLTOT_RX*2.0/BREF 
       CLTOT_RY = CLTOT_RY*2.0/CREF 
       CLTOT_RZ = CLTOT_RZ*2.0/BREF
-            
+
+      CYTOT_RX = CYTOT_RX*2.0/BREF
+      CYTOT_RY = CYTOT_RY*2.0/CREF
+      CYTOT_RZ = CYTOT_RZ*2.0/BREF      
+      
       CDTOT_RX = CDTOT_RX*2.0/BREF 
       CDTOT_RY = CDTOT_RY*2.0/CREF 
       CDTOT_RZ = CDTOT_RZ*2.0/BREF
-      
-      
-      CYTOT_RX = CYTOT_RX*2.0/BREF
-      CYTOT_RY = CYTOT_RY*2.0/CREF
-      CYTOT_RZ = CYTOT_RZ*2.0/BREF
+
       CRTOT_RX = DIR*CRTOT_RX*2.0/BREF 
       CRTOT_RY = DIR*CRTOT_RY*2.0/CREF
       CRTOT_RZ = DIR*CRTOT_RZ*2.0/BREF
@@ -1950,106 +2088,97 @@ C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
 C      &    '    (  > 1 if spirally stable )')
       ENDIF
       IF(ABS(CRTOT_BE) .GT. 0.0) THEN
+       ! this is the lateral stablity parameter suggested by John Yost
        RR = CNTOT_BE/abs(CRTOT_BE)
-C        WRITE(LU,8402) BB 
-C  8402  FORMAT(/' Clb Cnr / Clr Cnb  =', F11.6,
-C      &    '    (  > 1 if spirally stable )')
       ENDIF
+      
+      ! ---- body axis derivatives
+      ! these expressions are taken from DERMATB
+      
+      !'  axial   vel. u', ' sideslip vel. v', '  normal  vel. w'
+      
+      CXTOT_U_BA(1) = -    CFTOT_U(1,1)
+      CXTOT_U_BA(2) = -DIR*CFTOT_U(1,2)
+      CXTOT_U_BA(3) = -    CFTOT_U(1,3)
+      
+      CYTOT_U_BA(1) = -DIR*CFTOT_U(2,1)
+      CYTOT_U_BA(2) = -    CFTOT_U(2,2)
+      CYTOT_U_BA(3) = -DIR*CFTOT_U(2,3)
+      
+      CZTOT_U_BA(1) = -    CFTOT_U(3,1)
+      CZTOT_U_BA(2) = -DIR*CFTOT_U(3,2)
+      CZTOT_U_BA(3) = -    CFTOT_U(3,3)
+      
+      CRTOT_U_BA(1) = -    CMTOT_U(1,1)
+      CRTOT_U_BA(2) = -DIR*CMTOT_U(1,2)
+      CRTOT_U_BA(3) = -    CMTOT_U(1,3)
+      
+      CMTOT_U_BA(1) = -DIR*CMTOT_U(2,1)
+      CMTOT_U_BA(2) = -    CMTOT_U(2,2)
+      CMTOT_U_BA(3) = -DIR*CMTOT_U(2,3)
+      
+      CNTOT_U_BA(1) = -    CMTOT_U(3,1)
+      CNTOT_U_BA(2) = -DIR*CMTOT_U(3,2)
+      CNTOT_U_BA(3) = -    CMTOT_U(3,3)
+      
+      !'    roll rate  p','   pitch rate  q','     yaw rate  r'
+      CXTOT_U_BA(4) =     CFTOT_U(1,4)*2.0/BREF
+      CXTOT_U_BA(5) = DIR*CFTOT_U(1,5)*2.0/CREF
+      CXTOT_U_BA(6) =     CFTOT_U(1,6)*2.0/BREF
+      
+      CYTOT_U_BA(4) = DIR*CFTOT_U(2,4)*2.0/BREF
+      CYTOT_U_BA(5) =     CFTOT_U(2,5)*2.0/CREF
+      CYTOT_U_BA(6) = DIR*CFTOT_U(2,6)*2.0/BREF
+      
+      CZTOT_U_BA(4) =      CFTOT_U(3,4)*2.0/BREF
+      CZTOT_U_BA(5) =  DIR*CFTOT_U(3,5)*2.0/CREF
+      CZTOT_U_BA(6) =      CFTOT_U(3,6)*2.0/BREF
+      
+      CRTOT_U_BA(4) =     CMTOT_U(1,4)*2.0/BREF
+      CRTOT_U_BA(5) = DIR*CMTOT_U(1,5)*2.0/CREF
+      CRTOT_U_BA(6) =     CMTOT_U(1,6)*2.0/BREF
+      
+      CMTOT_U_BA(4) = DIR*CMTOT_U(2,4)*2.0/BREF
+      CMTOT_U_BA(5) =     CMTOT_U(2,5)*2.0/CREF
+      CMTOT_U_BA(6) = DIR*CMTOT_U(2,6)*2.0/BREF
+      
+      CNTOT_U_BA(4) =     CMTOT_U(3,4)*2.0/BREF
+      CNTOT_U_BA(5) = DIR*CMTOT_U(3,5)*2.0/CREF
+      CNTOT_U_BA(6) =     CMTOT_U(3,6)*2.0/BREF
+      
+      ! control surfaces
+      
+      do K=1, NCONTROL
+            CXTOT_D_BA(K) = DIR*CFTOT_D(1,K)
+            CYTOT_D_BA(K) =     CFTOT_D(2,K)
+            CZTOT_D_BA(K) = DIR*CFTOT_D(3,K)
+            CRTOT_D_BA(K) = DIR*CMTOT_D(1,K)
+            CMTOT_D_BA(K) =     CMTOT_D(2,K)
+            CNTOT_D_BA(K) = DIR*CMTOT_D(3,K)
+      enddo
+      
+      ! design variables
+      
+      do K=1, NDESIGN
+            CXTOT_G_BA(K) = DIR*CFTOT_G(1,K)
+            CYTOT_G_BA(K) =     CFTOT_G(2,K)
+            CZTOT_G_BA(K) = DIR*CFTOT_G(3,K)
+            CRTOT_G_BA(K) = DIR*CMTOT_G(1,K)
+            CMTOT_G_BA(K) =     CMTOT_G(2,K)
+            CNTOT_G_BA(K) = DIR*CMTOT_G(3,K)
+      enddo
+      
 C C
       RETURN
-      END ! calcST
-
-
-
-
-
-      SUBROUTINE calcFS
-C
-C...PURPOSE  To print out results of the vortex lattice calculation
-C            for the input configuration strip and surface forces.  
-C
-C...INPUT    Configuration data for case in labeled commons
-C          
-C...OUTPUT   Printed output on logical unit *
-C
-      INCLUDE 'AVL.INC'
-      CHARACTER*50 SATYPE
-C
- 1000 FORMAT (A)
-C
-C       IF (*.EQ.0) RETURN
-C
-      CALL GETSA(LNASA_SA,SATYPE,DIR)
-C       WRITE(*,*)  RLE(2,:)
-C
-C...Print out the results -> Forces by surface and strip
-      WRITE(*,200)
-      WRITE(*,210) 
-      WRITE(*,212) SATYPE
-      DO N = 1, NSURF
-        NS = NJ(N)
-        NV = NK(N)
-        J1 = JFRST(N)
-C
-        WRITE (*,211) N,STITLE(N),NV,NS,J1,SSURF(N),CAVESURF(N)
-        CDISURF = CDSURF(N)-CDVSURF(N)
-        WRITE (*,213) CLSURF(N),DIR*CRSURF(N),
-     &                  CYSURF(N),    CMSURF(N),
-     &                  CDSURF(N),DIR*CNSURF(N),
-     &                  CDISURF,CDVSURF(N)
-        WRITE (*,214) CL_SRF(N),CD_SRF(N)
-        WRITE (*,216) 
-        DO JJ = 1, NS
-          J = J1 + JJ-1
-          ASTRP = WSTRIP(J)*CHORD(J)
-          XCP = 999.
-cc        IF(CLSTRP(J).NE.0.)  XCP = 0.25 - CMC4(J)/CLSTRP(J)       !!! BUG  13 Jan 12   MD
-          IF(CL_LSTRP(J).NE.0.)  XCP = 0.25 - CMC4(J)/CL_LSTRP(J)
-          IF(XCP.LT.2.0 .AND. XCP.GT.-1.0) THEN
-            WRITE (*,217)
-     &            J,RLE(2,J),CHORD(J),ASTRP,CNC(J),DWWAKE(J),
-     &            CLTSTRP(J), CL_LSTRP(J),CD_LSTRP(J),CDV_LSTRP(J),
-     &            CMC4(J),CMLE(J),XCP
-           ELSE
-            WRITE (*,217)
-     &            J,RLE(2,J),CHORD(J),ASTRP,CNC(J),DWWAKE(J),
-     &            CLTSTRP(J),CL_LSTRP(J),CD_LSTRP(J),CDV_LSTRP(J),
-     &            CMC4(J),CMLE(J)
-          ENDIF
-        END DO
-      END DO
-      WRITE(*,200)
-C
-  200 FORMAT(1X,
-     &'---------------------------------------------------------------')
-  210 FORMAT (' Surface and Strip Forces by surface')
-  211 FORMAT (/2X,'Surface #',I2,5X,A/
-     &        5X,'# Chordwise =',I3,3X,'# Spanwise =',I3,
-     &        5X,'First strip =',I3/
-     &        5X,'Surface area =',F12.6,5X,'  Ave. chord =',F12.6)
-  212 FORMAT (/'  Forces referred to Sref, Cref, Bref ',
-     &        'about Xref, Yref, Zref'/
-     &         ' ',A)
-  213 FORMAT ( 5X,'CLsurf  =',F10.5,5X,'Clsurf  =',F10.5,
-     &        /5X,'CYsurf  =',F10.5,5X,'Cmsurf  =',F10.5,
-     &        /5X,'CDsurf  =',F10.5,5X,'Cnsurf  =',F10.5, 
-     &        /5X,'CDisurf =',F10.5,5x,'CDvsurf =',F10.5)
-  214 FORMAT (/'  Forces referred to Ssurf, Cave ',
-     &         'about hinge axis thru LE'/
-     &         5X,'CLsurf  =',F10.5,5X,'CDsurf  =',F10.5/
-     &         5X,'Deflect =',F10.5,5X,'CmLEsurf=',F10.5)
-  216 FORMAT (/' Strip Forces referred to Strip Area, Chord'/
-     &        2X,'  j ',5X,'Yle',4X,'Chord',5X,'Area',
-     &        5X,'c cl',6X,'ai',6X,'cl_norm',2X,'cl',7X,'cd',7X,
-     &        'cdv',4x,'cm_c/4',4x,'cm_LE',2x,'C.P.x/c')
-  217 FORMAT (2X,I4,11(1X,F8.4),1X,F8.3)
-C
-      RETURN
-      END ! OUTSTRP
+      
+      
+      
+      END ! calc_stab_derivs
 
 C ============= Added to AVL ===============
 
       subroutine exec_rhs
+      use avl_heap_inc
       include "AVL.INC"
       integer i, IU
       ! CALL EXEC(10,1,1)
@@ -2067,7 +2196,7 @@ C ============= Added to AVL ===============
             do i = 1,NVOR
                   GAM_U(i,IU) = RHS_U(i, IU)
             enddo
-            CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM_U(:,IU))
+            CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U(:,IU))
       enddo
       
       call set_vel_rhs
@@ -2077,7 +2206,7 @@ C---- copy RHS vector into GAM that will be used for soluiton
             GAM(i) = RHS(i)
       enddo
 
-      CALL BAKSUB(NVMAX,NVOR,AICN_LU,IAPIV,GAM)
+      CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM)
       
       
       IF(NCONTROL.GT.0) THEN
@@ -2091,6 +2220,7 @@ C------- set new GAM_D
 C ======================== res and Adjoint for GAM ========      
       
       subroutine get_res
+      use avl_heap_inc
       INCLUDE "AVL.INC"
       integer I, IC
       real RHS_D(NVOR)
@@ -2103,6 +2233,11 @@ C---
       CALL build_AIC
       AMACH = MACH
       BETM = SQRT(1.0 - AMACH**2)
+       CALL VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,
+     &           VRCOREC,VRCOREW,
+     &           NVOR,RV1,RV2,LVCOMP,CHORDV,
+     &           NVOR,RV ,    LVCOMP,.TRUE.,
+     &           WV_GAM,NVOR)
 
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
@@ -2149,6 +2284,8 @@ C------ don't bother if this control variable is undefined
       
       
       subroutine solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
+      use avl_heap_inc
+      use avl_heap_diff_inc
       include "AVL.INC"
       include "AVL_ad_seeds.inc"
       integer i 
@@ -2164,14 +2301,14 @@ C------ don't bother if this control variable is undefined
             RES_diff(i) = GAM_diff(i)
       enddo
 
-      CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_diff)
+      CALL BAKSUBTRANS(NVOR,NVOR,AICN_LU,IAPIV,RES_diff)
       
       if (solve_con_surf_adj) then 
       DO IC = 1, NCONTROL
             do i =1,NVOR
                   RES_D_diff(i,IC) = GAM_D_diff(i,IC)
             enddo
-            CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_D_diff(:,IC))
+            CALL BAKSUBTRANS(NVOR,NVOR,AICN_LU,IAPIV,RES_D_diff(:,IC))
       enddo
       endif 
 
@@ -2181,7 +2318,7 @@ C------ don't bother if this control variable is undefined
                   RES_U_diff(i,IU) = GAM_U_diff(i,IU)
             enddo
             
-            CALL BAKSUBTRANS(NVMAX,NVOR,AICN_LU,IAPIV,RES_U_diff(:,IU))
+            CALL BAKSUBTRANS(NVOR,NVOR,AICN_LU,IAPIV,RES_U_diff(:,IU))
       enddo
       endif
       

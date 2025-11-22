@@ -19,46 +19,37 @@ C                rs:in-out dxv:in-out chordv:in-out enc:in-out
 C                env:in-out enc_d:in-out
 C MAKESURF
       SUBROUTINE UPDATE_SURFACES_B()
+      use avl_heap_inc
+      use avl_heap_diff_inc
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      INTEGER ii
       INTEGER isurf
+      EXTERNAL AVLHEAP_CLEAN
+      EXTERNAL AVLHEAP_DIFF_CLEAN
+      EXTERNAL AVLHEAP_INIT
+      EXTERNAL AVLHEAP_DIFF_INIT
       INTEGER ii1
       INTEGER branch
       INTEGER ii2
       INTEGER ii3
       nstrip = 0
       nvor = 0
-      DO 100 isurf=1,nsurf
+      isurf = 1
+C     the iterations of this loop are not independent because we count
+C     up the size information as we make each surface
+      DO ii=1,nsurf-nsurfdupl
         IF (lverbose) WRITE(*, *) 'Updating surface ', isurf
-        IF (isurf .NE. 1) THEN
-          IF (ldupl(isurf-1)) THEN
-            CALL PUSHCONTROL2B(0)
-            GOTO 100
-          ELSE
-C this surface has already been created
-C it was probably duplicated from the previous one
-            CALL PUSHREAL8ARRAY(chord, nsmax)
-            CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
-            CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
-            CALL PUSHINTEGER4ARRAY(nvs, nfmax)
-            CALL PUSHINTEGER4ARRAY(nvc, nfmax)
-            CALL PUSHINTEGER4ARRAY(jfrst, nfmax)
-            CALL PUSHINTEGER4ARRAY(nj, nfmax)
-            CALL MAKESURF(isurf)
-            CALL PUSHCONTROL1B(0)
-          END IF
-        ELSE
-          CALL PUSHREAL8ARRAY(chord, nsmax)
-          CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
-          CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
-          CALL PUSHINTEGER4ARRAY(nvs, nfmax)
-          CALL PUSHINTEGER4ARRAY(nvc, nfmax)
-          CALL PUSHINTEGER4ARRAY(jfrst, nfmax)
-          CALL PUSHINTEGER4ARRAY(nj, nfmax)
-          CALL MAKESURF(isurf)
-          CALL PUSHCONTROL1B(1)
-        END IF
+        CALL PUSHREAL8ARRAY(chord, nsmax)
+        CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
+        CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
+        CALL PUSHINTEGER4ARRAY(nvs, nfmax)
+        CALL PUSHINTEGER4ARRAY(nvc, nfmax)
+        CALL PUSHINTEGER4ARRAY(jfrst, nfmax)
+        CALL PUSHINTEGER4ARRAY(nj, nfmax)
+        CALL MAKESURF(isurf)
         IF (ldupl(isurf)) THEN
+          IF (lverbose) WRITE(*, *) ' reduplicating ', isurf
           CALL PUSHREAL8ARRAY(vrefl, nsmax*ndmax)
           CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
           CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
@@ -68,104 +59,96 @@ C it was probably duplicated from the previous one
           CALL PUSHINTEGER4ARRAY(jfrst, nfmax)
           CALL PUSHINTEGER4ARRAY(nk, nfmax)
           CALL PUSHINTEGER4ARRAY(nj, nfmax)
-          DO ii1=1,nfmax
+          DO ii1=1,NSURF
             CALL PUSHCHARACTERARRAY(stitle(ii1), 40)
           ENDDO
           CALL SDUPL(isurf, ydupl(isurf), 'ydup')
-          CALL PUSHCONTROL2B(2)
+          CALL PUSHINTEGER4(isurf)
+          isurf = isurf + 1
+          CALL PUSHCONTROL1B(0)
         ELSE
-          CALL PUSHCONTROL2B(1)
+          CALL PUSHCONTROL1B(1)
         END IF
- 100  CONTINUE
+        CALL PUSHINTEGER4(isurf)
+        isurf = isurf + 1
+      ENDDO
       CALL ENCALC_B()
-      DO ii1=1,nfmax
+      DO ii1=1,NSURF
         DO ii2=1,3
           xyzscal_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nfmax
+      DO ii1=1,NSURF
         DO ii2=1,3
           xyztran_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nfmax
+      DO ii1=1,NSURF
         addinc_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nfmax
-        DO ii2=1,nsmax
+      DO ii1=1,NSURF
+        DO ii2=1,NSEC(ii1)
           DO ii3=1,3
             xyzles_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
         ENDDO
       ENDDO
-      DO ii1=1,nfmax
-        DO ii2=1,nsmax
+      DO ii1=1,NSURF
+        DO ii2=1,NSEC(ii1)
           chords_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nfmax
-        DO ii2=1,nsmax
+      DO ii1=1,NSURF
+        DO ii2=1,NSEC(ii1)
           aincs_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nfmax
-        DO ii2=1,nsmax
+      DO ii1=1,NSURF
+        DO ii2=1,NSEC(ii1)
           DO ii3=1,ibx
             xasec_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
         ENDDO
       ENDDO
-      DO ii1=1,nfmax
-        DO ii2=1,nsmax
+      DO ii1=1,NSURF
+        DO ii2=1,NSEC(ii1)
           DO ii3=1,ibx
             sasec_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
         ENDDO
       ENDDO
-      DO ii1=1,nfmax
-        DO ii2=1,nsmax
+      DO ii1=1,NSURF
+        DO ii2=1,NSEC(ii1)
           claf_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO isurf=nsurf,1,-1
-        CALL POPCONTROL2B(branch)
-        IF (branch .NE. 0) THEN
-          IF (branch .NE. 1) THEN
-            DO ii1=nfmax,1,-1
-              CALL POPCHARACTERARRAY(stitle(ii1), 40)
-            ENDDO
-            CALL POPINTEGER4ARRAY(nj, nfmax)
-            CALL POPINTEGER4ARRAY(nk, nfmax)
-            CALL POPINTEGER4ARRAY(jfrst, nfmax)
-            CALL POPBOOLEANARRAY(lsurfspacing, nfmax)
-            CALL POPINTEGER4ARRAY(nvc, nfmax)
-            CALL POPINTEGER4ARRAY(nvs, nfmax)
-            CALL POPINTEGER4ARRAY(ijfrst, nsmax)
-            CALL POPINTEGER4ARRAY(nvstrp, nsmax)
-            CALL POPREAL8ARRAY(vrefl, nsmax*ndmax)
-            CALL SDUPL_B(isurf, ydupl(isurf), 'ydup')
-          END IF
-          CALL POPCONTROL1B(branch)
-          IF (branch .EQ. 0) THEN
-            CALL POPINTEGER4ARRAY(nj, nfmax)
-            CALL POPINTEGER4ARRAY(jfrst, nfmax)
-            CALL POPINTEGER4ARRAY(nvc, nfmax)
-            CALL POPINTEGER4ARRAY(nvs, nfmax)
-            CALL POPINTEGER4ARRAY(ijfrst, nsmax)
-            CALL POPINTEGER4ARRAY(nvstrp, nsmax)
-            CALL POPREAL8ARRAY(chord, nsmax)
-            CALL MAKESURF_B(isurf)
-          ELSE
-            CALL POPINTEGER4ARRAY(nj, nfmax)
-            CALL POPINTEGER4ARRAY(jfrst, nfmax)
-            CALL POPINTEGER4ARRAY(nvc, nfmax)
-            CALL POPINTEGER4ARRAY(nvs, nfmax)
-            CALL POPINTEGER4ARRAY(ijfrst, nsmax)
-            CALL POPINTEGER4ARRAY(nvstrp, nsmax)
-            CALL POPREAL8ARRAY(chord, nsmax)
-            CALL MAKESURF_B(isurf)
-          END IF
+      DO ii=nsurf-nsurfdupl,1,-1
+        CALL POPINTEGER4(isurf)
+        CALL POPCONTROL1B(branch)
+        IF (branch .EQ. 0) THEN
+          CALL POPINTEGER4(isurf)
+          DO ii1=NSURF,1,-1
+            CALL POPCHARACTERARRAY(stitle(ii1), 40)
+          ENDDO
+          CALL POPINTEGER4ARRAY(nj, nfmax)
+          CALL POPINTEGER4ARRAY(nk, nfmax)
+          CALL POPINTEGER4ARRAY(jfrst, nfmax)
+          CALL POPBOOLEANARRAY(lsurfspacing, nfmax)
+          CALL POPINTEGER4ARRAY(nvc, nfmax)
+          CALL POPINTEGER4ARRAY(nvs, nfmax)
+          CALL POPINTEGER4ARRAY(ijfrst, nsmax)
+          CALL POPINTEGER4ARRAY(nvstrp, nsmax)
+          CALL POPREAL8ARRAY(vrefl, nsmax*ndmax)
+          CALL SDUPL_B(isurf, ydupl(isurf), 'ydup')
         END IF
+        CALL POPINTEGER4ARRAY(nj, nfmax)
+        CALL POPINTEGER4ARRAY(jfrst, nfmax)
+        CALL POPINTEGER4ARRAY(nvc, nfmax)
+        CALL POPINTEGER4ARRAY(nvs, nfmax)
+        CALL POPINTEGER4ARRAY(ijfrst, nsmax)
+        CALL POPINTEGER4ARRAY(nvstrp, nsmax)
+        CALL POPREAL8ARRAY(chord, nsmax)
+        CALL MAKESURF_B(isurf)
       ENDDO
       END
 
@@ -1590,134 +1573,134 @@ C
                   ENDDO
                   GOTO 140
                 ELSE
-                  DO ii1=1,nfmax
+                  DO ii1=1,NSURF
                     DO ii2=1,3
                       xyzscal_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
+                  DO ii1=1,NSURF
                     DO ii2=1,3
                       xyztran_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
+                  DO ii1=1,NSURF
                     addinc_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       DO ii3=1,3
                         xyzles_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       chords_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       aincs_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       DO ii3=1,ibx
                         xasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       DO ii3=1,ibx
                         sasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       claf_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     DO ii2=1,3
                       rle_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     chord_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     DO ii2=1,3
                       rle1_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     chord1_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     DO ii2=1,3
                       rle2_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     chord2_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     wstrip_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     ainc_diff(ii1) = 0.D0
                   ENDDO
                   DO ii1=1,ngmax
-                    DO ii2=1,nsmax
+                    DO ii2=1,NSTRIP
                       ainc_g_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rv1_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rv2_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rv_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rc_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rs_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     dxv_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     chordv_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     slopev_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     slopec_diff(ii1) = 0.D0
                   ENDDO
                   DO ii1=1,ndmax
-                    DO ii2=1,nvmax
+                    DO ii2=1,nvor
                       dcontrol_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
                   DO ii1=1,ndmax
-                    DO ii2=1,nsmax
+                    DO ii2=1,NSTRIP
                       DO ii3=1,3
                         vhinge_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
@@ -1766,134 +1749,134 @@ C
                   ENDDO
                   GOTO 160
                 ELSE IF (branch .EQ. 1) THEN
-                  DO ii1=1,nfmax
+                  DO ii1=1,NSURF
                     DO ii2=1,3
                       xyzscal_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
+                  DO ii1=1,NSURF
                     DO ii2=1,3
                       xyztran_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
+                  DO ii1=1,NSURF
                     addinc_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       DO ii3=1,3
                         xyzles_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       chords_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       aincs_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       DO ii3=1,ibx
                         xasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       DO ii3=1,ibx
                         sasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       claf_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     DO ii2=1,3
                       rle_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     chord_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     DO ii2=1,3
                       rle1_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     chord1_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     DO ii2=1,3
                       rle2_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     chord2_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     wstrip_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     ainc_diff(ii1) = 0.D0
                   ENDDO
                   DO ii1=1,ngmax
-                    DO ii2=1,nsmax
+                    DO ii2=1,NSTRIP
                       ainc_g_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rv1_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rv2_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rv_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rc_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rs_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     dxv_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     chordv_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     slopev_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     slopec_diff(ii1) = 0.D0
                   ENDDO
                   DO ii1=1,ndmax
-                    DO ii2=1,nvmax
+                    DO ii2=1,nvor
                       dcontrol_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
                   DO ii1=1,ndmax
-                    DO ii2=1,nsmax
+                    DO ii2=1,NSTRIP
                       DO ii3=1,3
                         vhinge_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
@@ -1910,134 +1893,134 @@ C
                   ENDDO
                   GOTO 150
                 ELSE
-                  DO ii1=1,nfmax
+                  DO ii1=1,NSURF
                     DO ii2=1,3
                       xyzscal_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
+                  DO ii1=1,NSURF
                     DO ii2=1,3
                       xyztran_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
+                  DO ii1=1,NSURF
                     addinc_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       DO ii3=1,3
                         xyzles_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       chords_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       aincs_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       DO ii3=1,ibx
                         xasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       DO ii3=1,ibx
                         sasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
-                  DO ii1=1,nfmax
-                    DO ii2=1,nsmax
+                  DO ii1=1,NSURF
+                    DO ii2=1,NSEC(ii1)
                       claf_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     DO ii2=1,3
                       rle_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     chord_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     DO ii2=1,3
                       rle1_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     chord1_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     DO ii2=1,3
                       rle2_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     chord2_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     wstrip_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nsmax
+                  DO ii1=1,NSTRIP
                     ainc_diff(ii1) = 0.D0
                   ENDDO
                   DO ii1=1,ngmax
-                    DO ii2=1,nsmax
+                    DO ii2=1,NSTRIP
                       ainc_g_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rv1_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rv2_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rv_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rc_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     DO ii2=1,3
                       rs_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     dxv_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     chordv_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     slopev_diff(ii1) = 0.D0
                   ENDDO
-                  DO ii1=1,nvmax
+                  DO ii1=1,nvor
                     slopec_diff(ii1) = 0.D0
                   ENDDO
                   DO ii1=1,ndmax
-                    DO ii2=1,nvmax
+                    DO ii2=1,nvor
                       dcontrol_diff(ii2, ii1) = 0.D0
                     ENDDO
                   ENDDO
                   DO ii1=1,ndmax
-                    DO ii2=1,nsmax
+                    DO ii2=1,NSTRIP
                       DO ii3=1,3
                         vhinge_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
@@ -2406,80 +2389,80 @@ C
             IF (i0 .EQ. 1) THEN
               CALL POPCONTROL1B(branch)
               IF (branch .NE. 0) THEN
-                DO ii1=1,nsmax
+                DO ii1=1,NSTRIP
                   DO ii2=1,3
                     rle_diff(ii2, ii1) = 0.D0
                   ENDDO
                 ENDDO
-                DO ii1=1,nsmax
+                DO ii1=1,NSTRIP
                   chord_diff(ii1) = 0.D0
                 ENDDO
-                DO ii1=1,nsmax
+                DO ii1=1,NSTRIP
                   DO ii2=1,3
                     rle1_diff(ii2, ii1) = 0.D0
                   ENDDO
                 ENDDO
-                DO ii1=1,nsmax
+                DO ii1=1,NSTRIP
                   chord1_diff(ii1) = 0.D0
                 ENDDO
-                DO ii1=1,nsmax
+                DO ii1=1,NSTRIP
                   DO ii2=1,3
                     rle2_diff(ii2, ii1) = 0.D0
                   ENDDO
                 ENDDO
-                DO ii1=1,nsmax
+                DO ii1=1,NSTRIP
                   chord2_diff(ii1) = 0.D0
                 ENDDO
-                DO ii1=1,nsmax
+                DO ii1=1,NSTRIP
                   wstrip_diff(ii1) = 0.D0
                 ENDDO
-                DO ii1=1,nsmax
+                DO ii1=1,NSTRIP
                   ainc_diff(ii1) = 0.D0
                 ENDDO
                 DO ii1=1,ngmax
-                  DO ii2=1,nsmax
+                  DO ii2=1,NSTRIP
                     ainc_g_diff(ii2, ii1) = 0.D0
                   ENDDO
                 ENDDO
-                DO ii1=1,nvmax
+                DO ii1=1,nvor
                   DO ii2=1,3
                     rv1_diff(ii2, ii1) = 0.D0
                   ENDDO
                 ENDDO
-                DO ii1=1,nvmax
+                DO ii1=1,nvor
                   DO ii2=1,3
                     rv2_diff(ii2, ii1) = 0.D0
                   ENDDO
                 ENDDO
-                DO ii1=1,nvmax
+                DO ii1=1,nvor
                   DO ii2=1,3
                     rv_diff(ii2, ii1) = 0.D0
                   ENDDO
                 ENDDO
-                DO ii1=1,nvmax
+                DO ii1=1,nvor
                   DO ii2=1,3
                     rc_diff(ii2, ii1) = 0.D0
                   ENDDO
                 ENDDO
-                DO ii1=1,nvmax
+                DO ii1=1,nvor
                   dxv_diff(ii1) = 0.D0
                 ENDDO
-                DO ii1=1,nvmax
+                DO ii1=1,nvor
                   chordv_diff(ii1) = 0.D0
                 ENDDO
-                DO ii1=1,nvmax
+                DO ii1=1,nvor
                   slopev_diff(ii1) = 0.D0
                 ENDDO
-                DO ii1=1,nvmax
+                DO ii1=1,nvor
                   slopec_diff(ii1) = 0.D0
                 ENDDO
                 DO ii1=1,ndmax
-                  DO ii2=1,nvmax
+                  DO ii2=1,nvor
                     dcontrol_diff(ii2, ii1) = 0.D0
                   ENDDO
                 ENDDO
                 DO ii1=1,ndmax
-                  DO ii2=1,nsmax
+                  DO ii2=1,NSTRIP
                     DO ii3=1,3
                       vhinge_diff(ii3, ii2, ii1) = 0.D0
                     ENDDO
@@ -2917,27 +2900,27 @@ C---------- linearize about zero deflection (COSD=1, SIND=0)
         ENDDO
         CALL PUSHINTEGER4(ii - 1)
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         ainc_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,ngmax
-        DO ii2=1,nsmax
+        DO ii2=1,NSTRIP
           ainc_g_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         slopev_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         slopec_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,ndmax
-        DO ii2=1,nvmax
+        DO ii2=1,nvor
           dcontrol_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
       DO ii1=1,ndmax
-        DO ii2=1,nsmax
+        DO ii2=1,NSTRIP
           DO ii3=1,3
             vhinge_diff(ii3, ii2, ii1) = 0.D0
           ENDDO

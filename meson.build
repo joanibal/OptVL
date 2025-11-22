@@ -154,7 +154,6 @@ avl_inc_dir = include_directories(incs_dir)
 inc_in = join_paths(incs_dir, 'AVL.INC.in')
 inc_out = join_paths(incs_dir, 'AVL.INC')
 
-run_command('src' / 'create_avl_inc.py', check: true)
 
 
 

@@ -16,9 +16,10 @@ import unittest
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
+geom_dir = os.path.join(base_dir, "..", "geom_files")
 
-mass_file = os.path.join(base_dir, "aircraft.mass")
+geom_file = os.path.join(geom_dir, "aircraft.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
 
 
 class TestParameterAPI(unittest.TestCase):
@@ -90,9 +91,9 @@ class TestReferenceAPI(unittest.TestCase):
         self.ref_data_baseline = {
             # "bank": 0.0,
             # "elevation": 0,
-            "Sref": 1.13047707106,
-            "Cref": 0.361159860776,
-            "Bref": 5.99996825959,
+            "Sref": 1.5825,
+            "Cref": 0.35,
+            "Bref": 4,
         }
 
     def test_get_ref_data(self):

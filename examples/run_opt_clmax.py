@@ -15,8 +15,8 @@ from optvl import OVLSolver
 import matplotlib.pyplot as plt
 
 # Initialize OptVL solver
-geo_file = "aircraft.avl"
-ovl_solver = OVLSolver(geo_file=geo_file, debug=False)
+geo_file = "aircraft.avl" 
+ovl_solver = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
 
 
 # Set Mach number for the analysis
@@ -28,11 +28,11 @@ def objective_function(dvs):
     Calculates the negative of the total lift coefficient (CL) for a given angle of attack.
     Scipy's minimize function tries to minimize this value.
     """
-    alpha = dvs[0]
-    ovl_solver.set_constraint("alpha", alpha)
+    alpha = dvs[0] 
+    ovl_solver.set_variable("alpha", alpha) 
     def_elev = dvs[1]
-    ovl_solver.set_constraint("Elevator", def_elev)
-
+    ovl_solver.set_control_deflection("Elevator", def_elev) 
+    
     ovl_solver.execute_run()
 
     total_forces = ovl_solver.get_total_forces()
@@ -48,9 +48,9 @@ def cl_con(dvs):
     Returns a value >= 0 if the constraint is met (1.75 - max_cl_sectional).
     """
     alpha = dvs[0]
-    ovl_solver.set_constraint("alpha", alpha)
+    ovl_solver.set_variable("alpha", alpha)
     def_elev = dvs[1]
-    ovl_solver.set_constraint("Elevator", def_elev)
+    ovl_solver.set_control_deflection("Elevator", def_elev) 
     ovl_solver.execute_run()
 
     strip_forces = ovl_solver.get_strip_forces()
@@ -65,13 +65,13 @@ def cl_con(dvs):
 
 def cm_con(dvs):
     alpha = dvs[0]
-    ovl_solver.set_constraint("alpha", alpha)
+    ovl_solver.set_variable("alpha", alpha)
     def_elev = dvs[1]
-    ovl_solver.set_constraint("Elevator", def_elev)
+    ovl_solver.set_control_deflection("Elevator", def_elev) 
     ovl_solver.execute_run()
-
-    cm = ovl_solver.get_total_forces()["CM"]
-
+    
+    cm = ovl_solver.get_total_forces()['Cm']
+    
     return cm
 
 
@@ -110,16 +110,16 @@ print(f"Calculated CL_max from optimizer: {calculated_cl_max:.4f}")  # Objective
 
 # Verification run at the optimized alpha to double-check AVL results
 print("\nVerification run at optimized alpha:")
-ovl_solver.set_constraint("alpha", optimized_alpha)
-ovl_solver.set_constraint("Elevator", optimized_def_elev)
+ovl_solver.set_variable("alpha", optimized_alpha)
+ovl_solver.set_control_deflection("Elevator", optimized_def_elev)
 
 
 # Recalculate max sectional Cl at the optimal alpha for verification
 ovl_solver.execute_run()
 total_forces_verify = ovl_solver.get_total_forces()
-cl_verify = total_forces_verify["CL"]
-cd_verify = total_forces_verify["CD"]
-cm_verify = total_forces_verify["CM"]
+cl_verify = total_forces_verify['CL']
+cd_verify = total_forces_verify['CD'] 
+cm_verify = total_forces_verify['Cm']
 strip_forces = ovl_solver.get_strip_forces()
 sectional_cls = strip_forces["Wing"]["CL"]
 y_le = strip_forces["Wing"]["Y LE"]
@@ -127,7 +127,7 @@ y_le = strip_forces["Wing"]["Y LE"]
 
 print(f"  Total CL from verification run: {cl_verify:.4f}")
 print(f"  Total CD from verification run: {cd_verify:.4f}")
-print(f"  Total CM from verification run: {cm_verify:.4f}")
+print(f"  Total Cm from verification run: {cm_verify:.4f}")
 print(f"  Maximum sectional Cl from verification run: {np.max(sectional_cls):.4f} (Constraint: <= 1.75)")
 
 # --- Plotting Span-wise Cl Distribution ---

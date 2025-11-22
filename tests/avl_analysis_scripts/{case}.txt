@@ -1,0 +1,52 @@
+load ./geom_files/supra.avl
+mass ./geom_files/supra.mass
+mset 0
+oper
+MRF
+D2 RM 0
+D3 PM 0
+D4 YM 0
+a c 1.0
+b b 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+a c 1.1
+b b 10
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+a c 1.2
+b b -12
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+
+
+
+q
+q

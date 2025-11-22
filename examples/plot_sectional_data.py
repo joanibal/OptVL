@@ -2,9 +2,9 @@ from optvl import OVLSolver
 import numpy as np
 import matplotlib.pyplot as plt
 
-ovl = OVLSolver(geo_file="aircraft.avl", debug=False)
-ovl.set_constraint("alpha", 5.0)
-ovl.set_constraint("beta", 10.0)
+ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
+ovl.set_variable("alpha", 5.0)
+ovl.set_variable("beta", 10.0)
 ovl.execute_run()
 
 # keys-start
@@ -38,8 +38,8 @@ plt.show()
 strip_data = ovl.get_strip_forces()
 for surf_key in strip_data:
     span_distance = strip_data[surf_key]["Y LE"]
-    plt.plot(span_distance, strip_data[surf_key]["CN"], color="C0")
-    plt.plot(span_distance, strip_data[surf_key]["CR"], color="C1")
+    plt.plot(span_distance, strip_data[surf_key]["Cn"], color="C0")
+    plt.plot(span_distance, strip_data[surf_key]["Cl"], color="C1")
 
 plt.legend(["roll distribution", "yaw distribution"])
 plt.title("roll and yaw spanwise data")

@@ -20,28 +20,25 @@ dirs:=$(addprefix ../,$(dirs))
 VPATH:=$(dirs)
 
 # Add ../ prefix to all source files, remove directories
-fortranFiles:=$(addprefix ../,$(fortranFiles))
+f90Files:=$(addprefix ../,$(f90Files))
 cFiles:=$(addprefix ../,$(cFiles))
 f77Files:=$(addprefix ../,$(f77Files))
 
-fortranFilesNoDir=$(notdir $(fortranFiles))
+f90FilesNoDir=$(notdir $(f90Files))
 cFilesNoDir=$(notdir $(cFiles))
 f77FilesNoDir=$(notdir $(f77Files))
 
 # Generate two separate list of .F90 and .f90 files using the filter command
-f90Files=$(filter %.f90,$(fortranFilesNoDir))
-F90Files=$(filter %.F90,$(fortranFilesNoDir))
 
 # Finally convert all source files to .o
-OFILES=$(f90Files:%.f90=%.o) $(F90Files:%.F90=%.o) $(f77FilesNoDir:%.f=%.o) $(cFilesNoDir:%.c=%.o)
+OFILES=$(f90Files:%.f90=%.o) $(f77FilesNoDir:%.f=%.o) $(cFilesNoDir:%.c=%.o)
 
 # Compile sources
 
-# .PHONY: ../include/AVL.INC sources lib
 
 default: lib ../f2py/libavl.pyf
 # Generate Python inlude directory
-	 $(eval PYTHON_INCLUDES = $(shell python3-config --includes))
+	 $(eval PYTHON_INCLUDES = $(shell python-config --includes))
 	 @echo "#------------------------------------------------------#"
 	 @echo Python Inclue Flags $(PYTHON_INCLUDES)
 	 @echo "#------------------------------------------------------#"
@@ -72,20 +69,22 @@ default: lib ../f2py/libavl.pyf
 	-c $(F2PY_ROOT)/src/fortranobject.c -o fortranobject.o
 
 # Compiled f2py-generated wrapper file
-	$(FF90) $(FF90_ALL_FLAGS) -I ../includes -I./ -c libavl-f2pywrappers.f
+	$(FF90) $(FF90_ALL_FLAGS) -I../includes -I./ -c libavl-f2pywrappers.f
 
 # Final Link:
 	$(FF90) $(LINKER_FLAGS) -shared fortranobject.o libavlmodule.o libavl-f2pywrappers.o libavl.a -o libavl.so
 	$(PYTHON) importTest.py libavl
 	mv libavl.*so ../../optvl/libavl.so
 
+# # asetup uses avl_heap_inc, so make sure .mod exists
+# asetup.o: avl_heap_inc.mod
 
-# # Rule to generate AVL.INC
-../includes/AVL.INC: ../includes/AVL.INC.in
-	$(PYTHON) ../create_avl_inc.py
+# build the module first
+avl_heap_inc.o avl_heap_inc.mod: ../avl_heap_inc.f90
+	$(FF90) $(FF90_ALL_FLAGS) -cpp -I ../includes -c $<
 
-# Ensure all object files are recompiled if AVL.INC changes
-# $(OFILES): ../includes/AVL.INC
+avl_heap_diff_inc.o avl_heap_diff_inc.mod: ../avl_heap_diff_inc.f90
+	$(FF90) $(FF90_ALL_FLAGS) -cpp -I ../includes -c $<
 
 sources: $(OFILES) 
 

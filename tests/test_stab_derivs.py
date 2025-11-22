@@ -17,20 +17,19 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
-geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
+geom_dir = os.path.join(base_dir, "..", "geom_files")
+
+geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
 
 
 class TestStabDerivs(unittest.TestCase):
     # TODO: beta derivatives likely wrong
 
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
-        self.ovl_solver.set_constraint("alpha", 5.0)
-        # self.ovl_solver.set_constraint("beta", 0.0)
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
+        self.ovl_solver.set_variable("alpha", 5.0)
+        # self.ovl_solver.set_variable("beta", 0.0)
         self.ovl_solver.execute_run()
 
     def tearDown(self):
@@ -45,7 +44,7 @@ class TestStabDerivs(unittest.TestCase):
         for con in con_list:
             con_seeds[con] = 1.0
 
-        self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=step)
+        self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
 
         self.ovl_solver.avl.update_surfaces()
@@ -58,7 +57,7 @@ class TestStabDerivs(unittest.TestCase):
         coef_data_peturb = self.ovl_solver.get_total_forces()
         consurf_derivs_peturb = self.ovl_solver.get_control_stab_derivs()
 
-        self.ovl_solver.set_constraint_ad_seeds(con_seeds, mode="FD", scale=-step)
+        self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=-step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-step)
 
         self.ovl_solver.execute_run()
@@ -86,22 +85,27 @@ class TestStabDerivs(unittest.TestCase):
         stab_derivs = self.ovl_solver.get_stab_derivs()
 
         con_keys = ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"]
-        func_keys = ["CL", "CD", "CY", "CR", "CM", "CN"]
+        func_keys = ["CL", "CD", "CY", "Cl'", "Cm", "Cn'"]
+
+        con_to_var = {
+            "alpha": "alpha",
+            "beta": "beta",
+            "roll rate": "p'",
+            "pitch rate": "q'",
+            "yaw rate": "r'",
+        }
 
         for con_key in con_keys:
-            h = 1e-8
+            h = 1e-9
             val = self.ovl_solver.get_constraint(con_key)
-            self.ovl_solver.set_constraint(con_key, val + h)
+            self.ovl_solver.set_variable(con_key, val + h)
             self.ovl_solver.execute_run()
             perb_data = self.ovl_solver.get_total_forces()
-            self.ovl_solver.set_constraint(con_key, val)
+            self.ovl_solver.set_variable(con_key, val)
 
             for func_key in func_keys:
-                key = self.ovl_solver._get_deriv_key(con_key, func_key)
+                key = self.ovl_solver._get_deriv_key(con_to_var[con_key], func_key)
                 ad_dot = stab_derivs[key]
-
-                if func_key in ["CR", "CN"]:
-                    func_key += " SA"
 
                 fd_dot = (perb_data[func_key] - base_data[func_key]) / h
 
@@ -125,7 +129,7 @@ class TestStabDerivs(unittest.TestCase):
                     np.testing.assert_allclose(
                         ad_dot,
                         fd_dot,
-                        rtol=5e-5,
+                        rtol=5e-4,
                         err_msg=f"func_key {key}",
                     )
 

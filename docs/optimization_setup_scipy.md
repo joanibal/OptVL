@@ -8,34 +8,24 @@ To use SciPy's SLSQP, we will need to supply it with custom objective and constr
 These functions need to take in the design variables and apply them to our OptVL solver. 
 The snippet below provides an example of an objective function.
 ```python
- def objective_function(x):
-    ovl.set_constraint("Elevator", x[0])
-    ovl.set_surface_params({"Wing":{"aincs":x[1:]}})
-    
-    ovl.execute_run()
-    cd = ovl.get_total_forces()['CD']
-    print(x, cd)
-
-    return cd
+{%
+    include-markdown "../examples/run_opt_scipy.py"
+    start="# obj-start"
+    end="# obj-end"
+%}
 ```
+
 Note: the objective function is specified by the return value of the function. 
 If you wanted to save data about each iteration or write output, the objective function would be a good place to add that functionality. 
 To supply the gradient information to SLSQP, we have to define another function that returns the gradients for a given design variable vector.
 ```python
-def objective_gradient(x):
-    # Partial derivatives of the objective_function
-    ovl.set_constraint("Elevator", x[0])
-    ovl.set_surface_params({"Wing":{"aincs":x[1:]}})
-    
-    ovl.execute_run()
-    
-    sens = ovl.execute_run_sensitivities(['CD'])
-    dcd_dele = sens['CD']['Elevator']
-    dcd_daincs = sens['CD']['Wing']['aincs']
-    
-    # concatinate the two and return the derivs
-    return np.concatenate(([dcd_dele], dcd_daincs))
+{%
+    include-markdown "../examples/run_opt_scipy.py"
+    start="# objgrad-start"
+    end="# objgrad-end"
+%}
 ```
+
 The function `ovl.execute_run_sensitivities(['CD'])` does all the necessary work to compute the derivatives for the given list of functions. 
 We just need to parse the `sens` dictionary for the derivatives with respect to the design variables we are interested in.
 

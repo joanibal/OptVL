@@ -27,10 +27,10 @@ C***********************************************************************
 C
 C
       SUBROUTINE VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, 
-     +                  zsym, zsym_diff, vrcore, nv, rv1, rv1_diff, rv2
-     +                  , rv2_diff, nsurfv, chordv, chordv_diff, nc, rc
-     +                  , rc_diff, nsurfc, lvtest, wc_gam, wc_gam_diff, 
-     +                  ncdim)
+     +                  zsym, zsym_diff, vrcorec, vrcorew, nv, rv1, 
+     +                  rv1_diff, rv2, rv2_diff, ncompv, chordv, 
+     +                  chordv_diff, nc, rc, rc_diff, ncompc, lvtest, 
+     +                  wc_gam, wc_gam_diff, ncdim)
       INCLUDE 'AVL_kinds.INC'
       INTEGER nv
 C
@@ -41,7 +41,7 @@ C
       INTEGER ncdim
       REAL(kind=avl_real) rc(3, nc), wc_gam(3, ncdim, ncdim)
       REAL(kind=avl_real) rc_diff(3, nc), wc_gam_diff(3, ncdim, ncdim)
-      INTEGER nsurfv(nv), nsurfc(nc)
+      INTEGER ncompv(nv), ncompc(nc)
       LOGICAL lvtest
 C     
       LOGICAL lbound
@@ -99,7 +99,8 @@ C
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
-      REAL vrcore
+      REAL vrcorec
+      REAL vrcorew
       REAL zsym
       REAL zsym_diff
       INTEGER izsym
@@ -112,8 +113,8 @@ C
 C     
       fysym = FLOAT(iysym)
       fzsym = FLOAT(izsym)
-      DO ii1=1,ncdim
-        DO ii2=1,ncdim
+      DO ii1=1,nc
+        DO ii2=1,nc
           DO ii3=1,3
             wc_gam_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
@@ -149,15 +150,20 @@ C--------- set vortex core
             dsyz_diff = arg1_diff/(2.0*temp)
           END IF
           dsyz = temp
-          IF (nsurfc(i) .EQ. nsurfv(j)) THEN
-            rcore_diff = 0.0001*dsyz_diff
-            rcore = 0.0001*dsyz
-          ELSE IF (vrcore*chordv(j) .LT. 2.0*vrcore*dsyz) THEN
-            rcore_diff = vrcore*2.0*dsyz_diff
-            rcore = 2.0*vrcore*dsyz
-          ELSE
-            rcore_diff = vrcore*chordv_diff(j)
-            rcore = vrcore*chordv(j)
+C---- default (non-zero) core size based on spanwise lattice spacing
+          rcore_diff = 0.0001*dsyz_diff
+          rcore = 0.0001*dsyz
+C---- if field point is not on same component use larger core size
+          IF (nc .EQ. nv) THEN
+            IF (ncompc(i) .NE. ncompv(j)) THEN
+              IF (vrcorec*chordv(j) .LT. vrcorew*dsyz) THEN
+                rcore_diff = vrcorew*dsyz_diff
+                rcore = vrcorew*dsyz
+              ELSE
+                rcore_diff = vrcorec*chordv_diff(j)
+                rcore = vrcorec*chordv(j)
+              END IF
+            END IF
           END IF
 C     
           ui = 0.0
@@ -286,8 +292,6 @@ C   variations   of useful results: w
 C   with respect to varying inputs: u v w
 C SRDSET
 C
-C
-C
       SUBROUTINE CROSS_D(u, u_diff, v, v_diff, w, w_diff)
       REAL u(3), v(3), w(3)
       REAL u_diff(3), v_diff(3), w_diff(3)
@@ -323,9 +327,6 @@ C  Differentiation of vorvelc in forward (tangent) mode (with options i4 dr8 r8)
 C   variations   of useful results: u v w
 C   with respect to varying inputs: y1 y2 rcore x y z z1 z2 x1
 C                x2 beta
-C VORVEL
-C
-C
 C
 C
       SUBROUTINE VORVELC_D(x, x_diff, y, y_diff, z, z_diff, lbound, x1, 
@@ -335,8 +336,11 @@ C
      +                     rcore, rcore_diff)
 C----------------------------------------------------------
 C     Same as VORVEL, with finite core radius
-C     Uses Scully (also Burnham-Hallock) core model 
+C     Original Scully (AKA Burnham-Hallock) core model 
 C       Vtan = Gam/2*pi . r/(r^2 +rcore^2)
+C      
+C     Uses Leishman's R^4 variant of Scully (AKA Burnham-Hallock) core model 
+C       Vtan = Gam/2*pi . r/sqrt(r^4 +rcore^4)
 C----------------------------------------------------------
       LOGICAL lbound
 C
@@ -352,38 +356,49 @@ C
       INTRINSIC SQRT
       REAL bmag
       REAL bmag_diff
+      REAL rcore2
+      REAL rcore2_diff
+      REAL rcore4
+      REAL rcore4_diff
       REAL axbsq
       REAL axbsq_diff
       REAL adb
       REAL adb_diff
       REAL alsq
       REAL alsq_diff
-      REAL ab
+      REAL abmag
       REAL t
       REAL t_diff
       REAL axisq
       REAL axisq_diff
-      REAL adi
-      REAL adi_diff
+      REAL adx
+      REAL adx_diff
       REAL rsq
       REAL rsq_diff
       REAL bxisq
       REAL bxisq_diff
-      REAL bdi
-      REAL bdi_diff
+      REAL bdx
+      REAL bdx_diff
       REAL arg1
       REAL arg1_diff
       REAL result1
       REAL result1_diff
-      REAL arg2
-      REAL arg2_diff
       REAL result2
       REAL result2_diff
+      REAL arg2
+      REAL arg2_diff
+      REAL result3
+      REAL result3_diff
+      REAL result4
+      REAL result4_diff
+      REAL arg3
+      REAL arg3_diff
+      REAL result5
+      REAL result5_diff
       INTEGER ii1
       REAL temp
       REAL temp0
       REAL temp1
-      REAL temp2
       REAL y1
       REAL y1_diff
       REAL y2
@@ -416,6 +431,7 @@ C
 C
       DATA pi4inv /0.079577472/
 C
+C---- Prandtl-Glauert coordinates 
       DO ii1=1,3
         a_diff(ii1) = 0.D0
       ENDDO
@@ -458,6 +474,11 @@ C
       END IF
       bmag = temp
 C
+      rcore2_diff = 2*rcore*rcore_diff
+      rcore2 = rcore**2
+      rcore4_diff = 2*rcore2*rcore2_diff
+      rcore4 = rcore2**2
+C
       u = 0.
       v = 0.
       w = 0.
@@ -480,49 +501,81 @@ C---- contribution from the transverse bound leg
      +    (3)*axb_diff(3)
         axbsq = axb(1)**2 + axb(2)**2 + axb(3)**2
 C
-        adb_diff = b(1)*a_diff(1) + a(1)*b_diff(1) + b(2)*a_diff(2) + a(
-     +    2)*b_diff(2) + b(3)*a_diff(3) + a(3)*b_diff(3)
-        adb = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
-        alsq_diff = asq_diff + bsq_diff - 2.0*adb_diff
-        alsq = asq + bsq - 2.0*adb
+        IF (axbsq .NE. 0.0) THEN
+          adb_diff = b(1)*a_diff(1) + a(1)*b_diff(1) + b(2)*a_diff(2) + 
+     +      a(2)*b_diff(2) + b(3)*a_diff(3) + a(3)*b_diff(3)
+          adb = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+          alsq_diff = asq_diff + bsq_diff - 2.0*adb_diff
+          alsq = asq + bsq - 2.0*adb
+Cc c     RSQ = AXBSQ / ALSQ
+C     
+          abmag = amag*bmag
+C---- Scully core model      
+Cccc        T = (AMAG+BMAG)*(1.0 - ADB/ABMAG) / (AXBSQ + ALSQ*RCORE2)
+Cc        T = (  (BSQ-ADB)/SQRT(BSQ+RCORE2)
+Cc     &       + (ASQ-ADB)/SQRT(ASQ+RCORE2) ) / (AXBSQ + ALSQ*RCORE2)
+C---- Leishman core model
+          arg1_diff = 2*bsq*bsq_diff + rcore4_diff
+          arg1 = bsq**2 + rcore4
+          temp = SQRT(arg1)
+          IF (arg1 .EQ. 0.D0) THEN
+            result1_diff = 0.D0
+          ELSE
+            result1_diff = arg1_diff/(2.0*temp)
+          END IF
+          result1 = temp
+          temp = SQRT(result1)
+          IF (result1 .EQ. 0.D0) THEN
+            result2_diff = 0.D0
+          ELSE
+            result2_diff = result1_diff/(2.0*temp)
+          END IF
+          result2 = temp
+          arg2_diff = 2*asq*asq_diff + rcore4_diff
+          arg2 = asq**2 + rcore4
+          temp = SQRT(arg2)
+          IF (arg2 .EQ. 0.D0) THEN
+            result3_diff = 0.D0
+          ELSE
+            result3_diff = arg2_diff/(2.0*temp)
+          END IF
+          result3 = temp
+          temp = SQRT(result3)
+          IF (result3 .EQ. 0.D0) THEN
+            result4_diff = 0.D0
+          ELSE
+            result4_diff = result3_diff/(2.0*temp)
+          END IF
+          result4 = temp
+          arg3_diff = 2*axbsq*axbsq_diff + rcore4*2*alsq*alsq_diff + 
+     +      alsq**2*rcore4_diff
+          arg3 = axbsq**2 + alsq**2*rcore4
+          temp = SQRT(arg3)
+          IF (arg3 .EQ. 0.D0) THEN
+            result5_diff = 0.D0
+          ELSE
+            result5_diff = arg3_diff/(2.0*temp)
+          END IF
+          result5 = temp
+          temp = (bsq-adb)/result2
+          temp0 = (asq-adb)/result4
+          temp1 = (temp+temp0)/result5
+          t_diff = ((bsq_diff-adb_diff-temp*result2_diff)/result2+(
+     +      asq_diff-adb_diff-temp0*result4_diff)/result4-temp1*
+     +      result5_diff)/result5
+          t = temp1
 C
-Ccc     RSQ = AXBSQ / ALSQ
-C
-        ab = amag*bmag
-C        T = (AMAG+BMAG)*(1.0 - ADB/AB) / (AXBSQ + ALSQ*RCORE**2)
-        arg1_diff = bsq_diff + 2*rcore*rcore_diff
-        arg1 = bsq + rcore**2
-        temp = SQRT(arg1)
-        IF (arg1 .EQ. 0.D0) THEN
-          result1_diff = 0.D0
+          u_diff = t*axb_diff(1) + axb(1)*t_diff
+          u = axb(1)*t
+          v_diff = t*axb_diff(2) + axb(2)*t_diff
+          v = axb(2)*t
+          w_diff = t*axb_diff(3) + axb(3)*t_diff
+          w = axb(3)*t
         ELSE
-          result1_diff = arg1_diff/(2.0*temp)
+          u_diff = 0.D0
+          v_diff = 0.D0
+          w_diff = 0.D0
         END IF
-        result1 = temp
-        arg2_diff = asq_diff + 2*rcore*rcore_diff
-        arg2 = asq + rcore**2
-        temp = SQRT(arg2)
-        IF (arg2 .EQ. 0.D0) THEN
-          result2_diff = 0.D0
-        ELSE
-          result2_diff = arg2_diff/(2.0*temp)
-        END IF
-        result2 = temp
-        temp = axbsq + alsq*(rcore*rcore)
-        temp0 = (bsq-adb)/result1
-        temp1 = (asq-adb)/result2
-        temp2 = (temp0+temp1)/temp
-        t_diff = ((bsq_diff-adb_diff-temp0*result1_diff)/result1+(
-     +    asq_diff-adb_diff-temp1*result2_diff)/result2-temp2*(
-     +    axbsq_diff+rcore**2*alsq_diff+alsq*2*rcore*rcore_diff))/temp
-        t = temp2
-C
-        u_diff = t*axb_diff(1) + axb(1)*t_diff
-        u = axb(1)*t
-        v_diff = t*axb_diff(2) + axb(2)*t_diff
-        v = axb(2)*t
-        w_diff = t*axb_diff(3) + axb(3)*t_diff
-        w = axb(3)*t
       ELSE
         u_diff = 0.D0
         v_diff = 0.D0
@@ -533,16 +586,27 @@ C---- trailing leg attached to A
       IF (amag .NE. 0.0) THEN
         axisq_diff = 2*a(3)*a_diff(3) + 2*a(2)*a_diff(2)
         axisq = a(3)**2 + a(2)**2
-C
-        adi_diff = a_diff(1)
-        adi = a(1)
+        adx_diff = a_diff(1)
+        adx = a(1)
         rsq_diff = axisq_diff
         rsq = axisq
 C
-        temp2 = (-(adi/amag)+1.0)/(rsq+rcore*rcore)
-        t_diff = -((-((adi_diff-adi*amag_diff/amag)/amag)-temp2*(
-     +    rsq_diff+2*rcore*rcore_diff))/(rsq+rcore**2))
-        t = -temp2
+C---- Scully core model      
+Cc        T = - (1.0 - ADX/AMAG) / (RSQ + RCORE2)
+C---- Leishman core model
+        arg1_diff = 2*rsq*rsq_diff + rcore4_diff
+        arg1 = rsq**2 + rcore4
+        temp1 = SQRT(arg1)
+        IF (arg1 .EQ. 0.D0) THEN
+          result1_diff = 0.D0
+        ELSE
+          result1_diff = arg1_diff/(2.0*temp1)
+        END IF
+        result1 = temp1
+        temp1 = (-(adx/amag)+1.0)/result1
+        t_diff = -((-((adx_diff-adx*amag_diff/amag)/amag)-temp1*
+     +    result1_diff)/result1)
+        t = -temp1
 C
         v_diff = v_diff + t*a_diff(3) + a(3)*t_diff
         v = v + a(3)*t
@@ -554,16 +618,27 @@ C---- trailing leg attached to B
       IF (bmag .NE. 0.0) THEN
         bxisq_diff = 2*b(3)*b_diff(3) + 2*b(2)*b_diff(2)
         bxisq = b(3)**2 + b(2)**2
-C
-        bdi_diff = b_diff(1)
-        bdi = b(1)
+        bdx_diff = b_diff(1)
+        bdx = b(1)
         rsq_diff = bxisq_diff
         rsq = bxisq
 C
-        temp2 = (-(bdi/bmag)+1.0)/(rsq+rcore*rcore)
-        t_diff = (-((bdi_diff-bdi*bmag_diff/bmag)/bmag)-temp2*(rsq_diff+
-     +    2*rcore*rcore_diff))/(rsq+rcore**2)
-        t = temp2
+C---- Scully core model      
+Cc        T =   (1.0 - BDX/BMAG) / (RSQ + RCORE2)
+C---- Leishman core modeld
+        arg1_diff = 2*rsq*rsq_diff + rcore4_diff
+        arg1 = rsq**2 + rcore4
+        temp1 = SQRT(arg1)
+        IF (arg1 .EQ. 0.D0) THEN
+          result1_diff = 0.D0
+        ELSE
+          result1_diff = arg1_diff/(2.0*temp1)
+        END IF
+        result1 = temp1
+        temp1 = (-(bdx/bmag)+1.0)/result1
+        t_diff = (-((bdx_diff-bdx*bmag_diff/bmag)/bmag)-temp1*
+     +    result1_diff)/result1
+        t = temp1
 C
         v_diff = v_diff + t*b_diff(3) + b(3)*t_diff
         v = v + b(3)*t

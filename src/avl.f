@@ -37,7 +37,7 @@ C
       INTEGER IINPUT(20)
 C
 
-      VERSION = 3.40
+      VERSION = 3.52
 
 C  1000 FORMAT(A)
 C
@@ -70,7 +70,11 @@ C
 C---- set basic defaults
       CALL DEFINI
       CALL MASINI
-C
+
+! c---- initialize heap storage arrays for AIC's
+!       call avlheap_init
+!       call avlheap_diff_init
+! C
 C---- initialize Xplot, and AVL plot stuff
 C       CALL PLINIT
       CPFAC = MIN(0.4*CREF,0.1*BREF)  / CREF
@@ -189,6 +193,7 @@ C      &  /'  .MODE    Eigenvalue analysis of run cases'
 C      &  /'  .TIME    Time-domain calculations'
 C      & //'   LOAD f  Read configuration input file'
 C      &  /'   MASS f  Read mass distribution file'
+C      &  /'   MSHO    Show mass distribution'
 C      &  /'   CASE f  Read run case file'
 C      & //'   CINI    Clear and initialize run cases'
 C      &  /'   MSET i  Apply mass file data to stored run case(s)'
@@ -222,6 +227,8 @@ C C===============================================
 C       ELSEIF(COMAND.EQ.'QUIT' .OR.
 C      &       COMAND.EQ.'Q   '      ) THEN
 C C        CALL PLCLOSE
+c---- free heap storage arrays for AICs
+C        call avlheap_clean
 C        STOP
 C C
 C C===============================================
@@ -235,6 +242,7 @@ C C
 C C===============================================
 C       ELSEIF(COMAND.EQ.'TIME') THEN
 C ccc       CALL TIME
+C        WRITE(*,*) '** TIME domain operation not available'
 C C
 C C===============================================
 C       ELSE IF(COMAND.EQ.'LOAD') THEN
@@ -287,6 +295,8 @@ C        LSRD = .FALSE.
 C        LVEL = .FALSE.
 C        LSOL = .FALSE.
 C        LSEN = .FALSE.
+C        LOBAIC = .FALSE.
+C        LOBVEL = .FALSE.
 C C
 C C----- set up plotting parameters for new geometry 
 C C      CALL PLPARS
@@ -330,7 +340,16 @@ C         WRITE(*,*)
 C      &    'Use MSET to apply these mass,inertias to run cases'
 C ccc        CALL MASPUT(1,NRMAX)
 C        ENDIF
-C C
+C
+C C===============================================
+C       ELSE IF(COMAND.EQ.'MSHO') THEN
+C C-----Show mass and apparent mass
+C         CALL MASSHO(6)
+C cc        CALL APPGET
+C        WRITE(*,*) 
+C      & '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -'
+C        CALL APPSHO(6,RHO0)
+C C       
 C C===============================================
 C       ELSE IF(COMAND.EQ.'CASE') THEN
 C C----- Read a new run case file
@@ -465,6 +484,11 @@ C
        LVEL = .FALSE.
        LSOL = .FALSE.
        LSEN = .FALSE.
+       
+c---- initialize heap storage arrays for AIC's
+      call avlheap_init(NVOR)
+      call avlheap_diff_init(NVOR)
+C
        
       END 
 
@@ -663,9 +687,10 @@ C         LPLTBODY(N) = .TRUE.
 C       END DO
 C C
 C C---- Scaling factors for velocity and pressure
-C       CPFAC = MIN(0.4*CREF,0.1*BREF)  / CREF
-C       ENFAC = MIN(0.3*CREF,0.06*BREF) / CREF
-C       HNFAC = MIN(CREF,0.5*BREF)      / CREF
+C      CPFAC = MIN(0.4*CREF,0.1*BREF)   / CREF
+C      ENFAC = MIN(0.3*CREF,0.06*BREF)  / CREF
+C      OBFAC = MIN(0.3*CREF,0.06*BREF)  / CREF
+C      HNFAC = MIN(CREF,0.5*BREF)       / CREF
 C C
 C C---- initialize observer position angles and perspective 1/distance
 C       AZIMOB = -45.0
@@ -703,6 +728,8 @@ C       LLABSURF   = .FALSE.
 C       LCAMBER    = .FALSE.
 C       LCHORDLINE = .TRUE.
 C       LBOUNDLEG  = .TRUE.
+C       LOBPLT     = .FALSE.
+C       LABEL_OB   = .FALSE.
 C C
 C C---- Initially assume nothing hidden
 C       LHID = .TRUE.
@@ -808,9 +835,13 @@ C
       LSOL  = .FALSE.
       LSEN  = .FALSE.
 C
+      LOBAIC = .FALSE.
+      NOB = 0
+C
       LVISC    = .TRUE.
       LBFORCE  = .TRUE.
-      LTRFORCE = .TRUE.
+      LNFLD_WV  = .FALSE.
+      LTRFORCE = .FALSE.
 C
       LMWAIT = .FALSE.
 C
@@ -819,8 +850,9 @@ C
 C
       SAXFR = 0.25  ! x/c location of spanwise axis for Vperp definition
 C
-      VRCORE = 0.25   ! vortex core radius / vortex span
-      SRCORE = 0.75   ! source core radius / body radius
+      VRCOREC = 0.00   ! vortex core radius fraction of vortex strip chord
+      VRCOREW = 2.0    ! vortex core radius fraction of vortex strip width
+      SRCORE  = 1.0    ! source core radius fraction of body radius
 C
 C---- dafault basic units
       UNITL = 1.
@@ -1051,9 +1083,11 @@ C------ default dimensional run case parameters
         DO IP = 1, NPTOT
           PARVAL(IP,IR) = 0.
         ENDDO
+C------ install default MACH (from avl input file)
+        PARVAL(IPMACH,IR) = MACH0
+C
         PARVAL(IPGEE,IR) = GEE0
         PARVAL(IPRHO,IR) = RHO0
-        PARVAL(IPMACH,IR) = MACH0
 C
 C------ default CG location is the input reference location
         PARVAL(IPXCG,IR) = XYZREF0(1)

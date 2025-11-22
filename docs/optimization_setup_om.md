@@ -25,7 +25,7 @@ To turn on other inputs such as the reference values and case parameters, use th
 ```python 
 model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl",input_param_vals=True, input_ref_vals=True))
 ```
-The force coefficients such as `CL`, `CD`, and `CM` are automatically added as outputs.
+The force coefficients such as `CL`, `CD`, and `Cm` are automatically added as outputs.
 To add stability derivatives or control surface derivatives as outputs, just use the `output_stability_derivs` and `output_con_surf_derivs` keyword arguments to the group to turn them on. 
 ```python
 model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl", output_stability_derivs=True, output_con_surf_derivs=True))

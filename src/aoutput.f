@@ -53,10 +53,10 @@ C---- set body forces in Geometric axes
       CZTOT = CDTOT*SA + CLTOT*CA
 C
 C---- set moments in stability axes
-      CRSAX = CRTOT*CA + CNTOT*SA
-      CMSAX = CMTOT              
-      CNSAX = CNTOT*CA - CRTOT*SA  
-CCC   CNSAX = CNTOT*CA - CRTOT*CA        !!! Bug   MD  02 Apr 04
+c     renamed not to interfere with common block values      
+      CRSAX_local = CMTOT(1)*CA + CMTOT(3)*SA
+      CMSAX_local = CMTOT(2)              
+      CNSAX_local = CMTOT(3)*CA - CMTOT(1)*SA  
 C
 C---- dump it
       WRITE(LUN,200)
@@ -78,9 +78,10 @@ C
      &               AMACH   , DIR*RZ_B, DIR*RZ_S
 C
       CDITOT = CDTOT - CDVTOT
-      WRITE (LUN,221) DIR*CXTOT ,  DIR*CRTOT,  DIR*CRSAX,
-     &                    CYTOT ,      CMTOT,
-     &                DIR*CZTOT ,  DIR*CNTOT,  DIR*CNSAX,
+ccc     print *,"CDTOT,CDVTOT,CFTOT ",CDTOT,CDVTOT,CFTOT
+      WRITE (LUN,221) DIR*CFTOT(1),  DIR*CMTOT(1),  DIR*CRSAX_local,
+     &                    CFTOT(2),      CMTOT(2),
+     &                DIR*CFTOT(3),  DIR*CMTOT(3),  DIR*CNSAX_local,
      &                CLTOT ,
      &                CDTOT ,
      &                CDVTOT,  CDITOT,
@@ -139,6 +140,131 @@ C
       END ! OUTTOT
 
 
+      SUBROUTINE OUTTOT2(LUN)
+C
+C...PURPOSE  To print out results of the vortex lattice calculation
+C            for the input configuration.  
+C
+C...INPUT    Configuration data for case in labeled commons
+C          
+C...OUTPUT   Printed output on logical unit LUN
+C
+      INCLUDE 'AVL.INC'
+      CHARACTER*50 SATYPE
+C
+ 1000 FORMAT (A)
+C
+      IF (LUN.EQ.0) RETURN
+C
+C
+      CALL GETSA(LNASA_SA,SATYPE,DIR)
+C
+      CA = COS(ALFA)
+      SA = SIN(ALFA)
+C
+C---- set normalized rates in Stability or Body axes
+      RX_S = (WROT(1)*CA + WROT(3)*SA) * BREF/2.0
+      RY_S =  WROT(2)                  * CREF/2.0
+      RZ_S = (WROT(3)*CA - WROT(1)*SA) * BREF/2.0
+      RX_B =  WROT(1) * BREF/2.0
+      RY_B =  WROT(2) * CREF/2.0
+      RZ_B =  WROT(3) * BREF/2.0
+C
+C---- set body forces in Geometric axes
+      CXTOT = CDTOT*CA - CLTOT*SA
+      CZTOT = CDTOT*SA + CLTOT*CA
+C
+C---- set moments in stability axes
+c     renamed not to interfere with common block values      
+      CRSAX_local = CMTOT(1)*CA + CMTOT(3)*SA
+      CMSAX_local = CMTOT(2)              
+      CNSAX_local = CMTOT(3)*CA - CMTOT(1)*SA  
+C
+C---- dump it
+      WRITE(LUN,200)
+      WRITE(LUN,201) 
+      WRITE(LUN,202) TITLE(1:60),NSURF,NSTRIP,NVOR
+      IF(IYSYM.GT.0) WRITE (*,2034) YSYM
+      IF(IYSYM.LT.0) WRITE (*,2035) YSYM
+      IF(IZSYM.GT.0) WRITE (*,2036) ZSYM
+      IF(IZSYM.LT.0) WRITE (*,2037) ZSYM
+
+      WRITE(LUN,204) SREF,CREF,BREF, 
+     &               XYZREF(1), XYZREF(2), XYZREF(3)
+C
+      WRITE(LUN,205) SATYPE
+C
+      WRITE(LUN,218) RTITLE(IRUN)
+      WRITE(LUN,220) ALFA/DTR, DIR*RX_B, DIR*RX_S, 
+     &               BETA/DTR,     RY_B,     RY_S,
+     &               AMACH   , DIR*RZ_B, DIR*RZ_S
+C
+      CDITOT = CDTOT - CDVTOT
+ccc     print *,"CDTOT,CDVTOT,CFTOT ",CDTOT,CDVTOT,CFTOT
+      WRITE (LUN,221) DIR*CFTOT(1),  DIR*CMTOT(1),  DIR*CRSAX_local,
+     &                    CFTOT(2),      CMTOT(2),      CMSAX_local,
+     &                DIR*CFTOT(3),  DIR*CMTOT(3),  DIR*CNSAX_local,
+     &                    CDTOT,        CDITOT,
+     &                    CYTOT,        CDVTOT,
+     &                    CLTOT,
+     &                    CLFF  ,  CDFF  ,
+     &                    CYFF  ,  SPANEF
+C
+      WRITE(LUN,*)
+      DO K = 1, NCONTROL
+        WRITE(LUN,231) DNAME(K), DELCON(K)
+      ENDDO
+
+      WRITE(LUN,*)
+      DO K = 1, NDESIGN
+        WRITE(LUN,231) GNAME(K), DELDES(K)
+      ENDDO
+C
+      WRITE(LUN,200)
+ 200  FORMAT(1X,
+     &'---------------------------------------------------------------')
+ 201  FORMAT(' Vortex Lattice Output -- Total Forces')
+ 202  FORMAT(/' Configuration: ',A
+     &       /5X,'# Surfaces =',I4
+     &       /5X,'# Strips   =',I4
+     &       /5X,'# Vortices =',I4)
+C
+ 2034 FORMAT(' Y Symmetry: Wall plane   at Ysym =',F10.4)
+ 2035 FORMAT(' Y Symmetry: Free surface at Ysym =',F10.4)
+ 2036 FORMAT(' Z Symmetry: Ground plane at Zsym =',F10.4)
+ 2037 FORMAT(' Z Symmetry: Free surface at Zsym =',F10.4)
+C
+ 204  FORMAT(/2X, 'Sref =',G12.5,3X,'Cref =',G12.5,3X,'Bref =',G12.5
+     &       /2X, 'Xref =',G12.5,3X,'Yref =',G12.5,3X,'Zref =',G12.5 )
+
+ 205  FORMAT(/1X, A)
+ 218  FORMAT(/' Run case: ', A)
+ 220  FORMAT(
+     & /2X,'Flow   ',     15X,'BodyAxes',14X,'StabAxes'
+     & /2X,'Alpha =',F10.5,5X,'pb/2V =',F10.5,5X,'p''b/2V =',F10.5
+     & /2X,'Beta  =',F10.5,5X,'qc/2V =',F10.5,5X,'q''c/2V =',F10.5
+     & /2X,'Mach  =',F10.3,5X,'rb/2V =',F10.5,5X,'r''b/2V =',F10.5)
+C
+ 221  FORMAT (
+     & /2X,'BodyAxes Force',8X,'BodyAxes Momnt',8X,'StabAxes Momnt'
+     & /2X,'CXtot =',F10.5,5X,'Cltot =',F10.5,5X,'Cl''tot =',F10.5
+     & /2X,'CYtot =',F10.5,5X,'Cmtot =',F10.5,5X,'Cm''tot =',F10.5 
+     & /2X,'CZtot =',F10.5,5X,'Cntot =',F10.5,5X,'Cn''tot =',F10.5
+     & /2X,'StabAxes Force',8X,'StabAxes Drag',
+     & /2X,'CDtot =',F10.5,5X,'CDind =',F10.7,
+     & /2X,'CYtot =',F10.5,5X,'CDvis =',F10.5,
+     & /2X,'CLtot =',F10.5,
+     & //2X,'CLff  =',F10.5,5X,'CDff  =',F10.7,4X,'| Trefftz'
+     &  /2X,'CYff  =',F10.5,5X,'    e =',F10.4,4X,'| Plane  ' )
+C
+ 231  FORMAT(3X,A,'=',F10.5)
+C
+ 240  FORMAT (/)
+C
+      RETURN
+      END ! OUTTOT2
+
+
       SUBROUTINE OUTSURF(LUN)
 C
 C...PURPOSE  To print out surface forces from the vortex lattice calculation
@@ -167,9 +293,9 @@ C...Force components from each surface
      &                XYZREF(1), XYZREF(2), XYZREF(3)
       DO N = 1, NSURF
         CALL STRIP(STITLE(N),NT)
-        WRITE (LUN,211) N,SSURF(N),CLSURF(N),CDSURF(N),CMSURF(N),
-     &                  CYSURF(N),DIR*CNSURF(N),DIR*CRSURF(N),
-     &                  CDSURF(N)-CDVSURF(N),CDVSURF(N),
+        WRITE (LUN,211) N,SSURF(N),CLSURF(N),CDSURF(N),CMSURF(2,N),
+     &                  CFSURF(2,N),DIR*CMSURF(3,N),DIR*CMSURF(1,N),
+     &                  CDISURF(N),CDVSURF(N),
      &                  STITLE(N)(1:NT)
       END DO
 cc      WRITE(LUN,212)
@@ -179,7 +305,7 @@ C--- Surface forces normalized by local reference quantities
       DO N = 1, NSURF
         CALL STRIP(STITLE(N),NT)
         WRITE (LUN,221) N,SSURF(N),CAVESURF(N),
-     &                  CL_SRF(N),CD_SRF(N),
+     &                  CL_LSRF(N),CD_LSRF(N),
      &                  CDVSURF(N)*SREF/SSURF(N),
      &                  STITLE(N)(1:NT)
       END DO
@@ -222,23 +348,43 @@ C
 C
       CALL GETSA(LNASA_SA,SATYPE,DIR)
 C
-C...Print out the results
+      CA = COS(ALFA)
+      SA = SIN(ALFA)
 C
-C...Force components from each body 
+C---- set normalized rates in Stability or Body axes
+      RX_S = (WROT(1)*CA + WROT(3)*SA) * BREF/2.0
+      RY_S =  WROT(2)                  * CREF/2.0
+      RZ_S = (WROT(3)*CA - WROT(1)*SA) * BREF/2.0
+      RX_B =  WROT(1) * BREF/2.0
+      RY_B =  WROT(2) * CREF/2.0
+      RZ_B =  WROT(3) * BREF/2.0
+C
+C...Print out the forces 
+C
       WRITE(LUN,200)
  200  FORMAT(1X,
      &'---------------------------------------------------------------')
+C
       WRITE (LUN,210) SATYPE,
      &                SREF,CREF,BREF, 
      &                XYZREF(1), XYZREF(2), XYZREF(3)
+C
+      WRITE(LUN,218) RTITLE(IRUN)
+      WRITE(LUN,220) ALFA/DTR, DIR*RX_B, DIR*RX_S, 
+     &               BETA/DTR,     RY_B,     RY_S,
+     &               AMACH   , DIR*RZ_B, DIR*RZ_S
+C
+C...Force components from each body 
+      WRITE(LUN,212)
+      WRITE(LUN,211)
       DO IB = 1, NBODY
         CALL STRIP(BTITLE(IB),NT)
         ELBD = ELBDY(IB)
         SBDY = SRFBDY(IB)
         VBDY = VOLBDY(IB)
-        WRITE (LUN,211) IB,ELBD,SBDY,VBDY,
-     &                  CLBDY(IB),CDBDY(IB),CMBDY(IB),
-     &                  CYBDY(IB),DIR*CNBDY(IB),DIR*CRBDY(IB),  
+        WRITE (LUN,230) IB,ELBD,SBDY,VBDY,
+     &                  CLBDY(IB),CDBDY(IB),CMBDY(2,IB),
+     &                  CFBDY(2,IB),DIR*CMBDY(3,IB),DIR*CMBDY(1,IB),  
      &                  BTITLE(IB)(1:NT)
       END DO
 cc      WRITE(LUN,212)
@@ -247,17 +393,20 @@ C
   210 FORMAT ( ' Body Forces (referred to Sref,Cref,Bref',
      &                            ' about Xref,Yref,Zref)',
      &        /' ',A //
-     &      5X,'Sref =',G12.4,   3X,'Cref =',F10.4,3X,'Bref =',F10.4/
-     &      5X,'Xref =',2X,F10.4,3X,'Yref =',F10.4,3X,'Zref =',F10.4//
-c     &     'Ibdy',4X,'Length',5X,'Asurf',7X,'Vol',
-c     &      6X,'CL',6X,'CD',6X,'Cm',
-c     &      6X,'CY',6X,'Cn',6X,'Cl')
-c  211 FORMAT (I4,3(1X,F9.3),6F8.4,3X,A)
-     &     'Ibdy',7X,'Length',8X,'Asurf',10X,'Vol',
+     &      2X,'Sref =',G12.4,   3X,'Cref =',F10.4,3X,'Bref =',F10.4/
+     &      2X,'Xref =',2X,F10.4,3X,'Yref =',F10.4,3X,'Zref =',F10.4 )
+ 211  FORMAT ( 
+     &      1X,'Ibdy',7X,'Length',8X,'Asurf',10X,'Vol',
      &      10X,'CL',10X,'CD',10X,'Cm',
      &      10X,'CY',10X,'Cn',10X,'Cl')
-  211 FORMAT (I4,3(1X,F12.6),6F12.6,3X,A)
-  212 FORMAT (/)
+ 230  FORMAT (1X,I4,3(1X,F12.6),6F12.6,3X,A)
+ 212  FORMAT (/)
+C
+ 218  FORMAT(/' Run case: ', A)
+ 220  FORMAT(
+     &  2X,'Alpha =',F10.5,5X,'pb/2V =',F10.5,5X,'p''b/2V =',F10.5
+     & /2X,'Beta  =',F10.5,5X,'qc/2V =',F10.5,5X,'q''c/2V =',F10.5
+     & /2X,'Mach  =',F10.3,5X,'rb/2V =',F10.5,5X,'r''b/2V =',F10.5)
 C
       RETURN
       END ! OUTBODY
@@ -295,29 +444,29 @@ C
         WRITE (LUN,211) N,STITLE(N),NV,NS,J1,SSURF(N),CAVESURF(N)
         CDISURF = CDSURF(N)-CDVSURF(N)
         WRITE (LUN,212) SATYPE
-        WRITE (LUN,213) CLSURF(N),DIR*CRSURF(N),
-     &                  CYSURF(N),    CMSURF(N),
-     &                  CDSURF(N),DIR*CNSURF(N),
+        WRITE (LUN,213) CLSURF(N),DIR*CMSURF(1,N),
+     &                  CFSURF(2,N),    CMSURF(2,N),
+     &                  CDSURF(N),DIR*CMSURF(3,N),
      &                  CDISURF,CDVSURF(N)
-        WRITE (LUN,214) CL_SRF(N),CD_SRF(N)
+        WRITE (LUN,214) CL_LSRF(N),CD_LSRF(N)
         WRITE (LUN,216) 
         DO JJ = 1, NS
           J = J1 + JJ-1
           ASTRP = WSTRIP(J)*CHORD(J)
           XCP = 999.
-          IF(CL_LSTRP(J).NE.0.)  XCP = 0.25 - CMC4(J)/CL_LSTRP(J)
+          IF(CL_LSTRP(J).NE.0.)  XCP = 0.25 - CMC4_LSTRP(J)/CL_LSTRP(J)
           IF(XCP.LT.2.0 .AND. XCP.GT.-1.0) THEN
             WRITE (LUN,217)
      &            J,RLE(1,J),RLE(2,J),RLE(3,J),
      &            CHORD(J),ASTRP,CNC(J),DWWAKE(J),
-     &            CLTSTRP(J), CL_LSTRP(J),CD_LSTRP(J),CDV_LSTRP(J),
-     &            CMC4(J),CMLE(J),XCP
+     &            CLT_LSTRP(J), CL_LSTRP(J),CD_LSTRP(J),CDV_LSTRP(J),
+     &            CMC4_LSTRP(J),CMLE_LSTRP(J),XCP
            ELSE
             WRITE (LUN,217)
      &             J,RLE(1,J),RLE(2,J),RLE(3,J),
      &            CHORD(J),ASTRP,CNC(J),DWWAKE(J),
-     &            CLTSTRP(J),CL_LSTRP(J),CD_LSTRP(J),CDV_LSTRP(J),
-     &            CMC4(J),CMLE(J),999.
+     &            CLT_LSTRP(J),CL_LSTRP(J),CD_LSTRP(J),CDV_LSTRP(J),
+     &            CMC4_LSTRP(J),CMLE_LSTRP(J),999.
           ENDIF
         END DO
       END DO
@@ -352,6 +501,89 @@ C
       END ! OUTSTRP
 
 
+      SUBROUTINE OUTSTRPB(LUN)
+C
+C...PURPOSE  TO PRINT OUT FORCES FOR THE VORTEX LATTICE CALCULATION
+C            FOR THE INPUT CONFIGURATION STRIP AND SURFACE FORCES.  
+C
+C...INPUT    CONFIGURATION DATA FOR CASE IN LABELED COMMONS
+C          
+C...OUTPUT   PRINTED OUTPUT ON LOGICAL UNIT LUN
+C
+      INCLUDE 'AVL.INC'
+      CHARACTER*50 SATYPE
+C
+ 1000 FORMAT (A)
+C
+      IF (LUN.EQ.0) RETURN
+C
+      CALL GETSA(LNASA_SA,SATYPE,DIR)
+C
+C...PRINT OUT THE RESULTS -> FORCES BY SURFACE AND STRIP
+      WRITE(LUN,200)
+      WRITE(LUN,205) 
+      WRITE (LUN,206) SREF,CREF,BREF, 
+     &                XYZREF(1), XYZREF(2), XYZREF(3)
+      DO N = 1, NSURF
+        NS = NJ(N)
+        NV = NK(N)
+        J1 = JFRST(N)
+C
+        WRITE (LUN,211) N,STITLE(N),NV,NS,J1,SSURF(N),CAVESURF(N)
+        CDISURF = CDSURF(N)-CDVSURF(N)
+        WRITE (LUN,212) SATYPE
+        WRITE (LUN,213) DIR*CFSURF(1,N),DIR*CMSURF(1,N),
+     &                  CFSURF(2,N),        CMSURF(2,N),
+     &                  DIR*CFSURF(3,N),DIR*CMSURF(3,N)
+C
+        WRITE (LUN,215) 
+        WRITE (LUN,216) 
+        DO JJ = 1, NS
+          J = J1 + JJ-1
+          ASTRP = WSTRIP(J)*CHORD(J)
+          XCO4 = RLE(1,J)+0.25*CHORD(J)
+          DIHED = -ATAN2(ENSY(J),ENSZ(J))/DTR
+          WRITE (LUN,217)
+     &           J,XCO4,RLE(2,J),RLE(3,J),
+     &           CHORD(J),ASTRP,DIHED,AINC(J)/DTR,
+     &           DIR*CF_LSTRP(1,J),CF_LSTRP(2,J),DIR*CF_LSTRP(3,J),
+     &           DIR*CM_LSTRP(1,J),CM_LSTRP(2,J),DIR*CM_LSTRP(3,J),
+     &           CN_LSTRP(J),CA_LSTRP(J)
+C
+         END DO
+      END DO
+      WRITE (LUN,200)
+C
+  200 FORMAT(1X,
+     &'---------------------------------------------------------------')
+  205 FORMAT (' Surface and Strip Forces by surface')
+  206 FORMAT(/2X, 'Sref =',G12.5,3X,'Cref =',G12.5,3X,'Bref =',G12.5
+     &       /2X, 'Xref =',G12.5,3X,'Yref =',G12.5,3X,'Zref =',G12.5 )
+C
+  211 FORMAT (/2X,'Surface #',I2,5X,A/
+     &        5X,'# Chordwise =',I3,3X,'# Spanwise =',I3,
+     &        5X,'First strip =',I3/
+     &        5X,'Surface area Ssurf =',F12.6,
+     &        5X,'Ave. chord Cave =',F12.6)
+  212 FORMAT (/' Body Axes Forces referred to Sref, Cref, Bref ',
+     &        'about Xref, Yref, Zref'/' ',A)
+  213 FORMAT ( 5X,'CFXsurf  =',G12.5,5X,'CMXsurf  =',G12.5,
+     &        /5X,'CFYsurf  =',G12.5,5X,'CMYsurf  =',G12.5,
+     &        /5X,'CFZsurf  =',G12.5,5X,'CMZsurf  =',G12.5)
+C
+ 215  FORMAT (/' Body Axes Strip Forces referred to Strip Area, Chord,',
+     &         ' about strip c/4'/' ',A)
+  216 FORMAT ( 2X,'  j ',5X,'Xc/4',7X,'Yc/4',7X,'Zc/4',
+     &         7X,'Chord',6X,'Area',6X,'Dihedral',4X,'Incid',5X,
+     &         2X,'CFXstrp',6X,'CFYstrp',6X,'CFZstrp',
+     &         6X,'CMXstrp',6X,'CMYstrp',6X,'CMZstrp',
+     &         6X,'CNRMstrp',5X,'CAXLstrp')
+  217 FORMAT (2X,I4,3(1X,F10.5),4(1X,F10.5),3X,6(1X,G12.5),2(1X,G12.5))
+C
+      RETURN
+      END ! OUTSTRPB
+
+
       SUBROUTINE OUTELE(LUN)
       INCLUDE 'AVL.INC'
       CHARACTER*50 SATYPE
@@ -375,11 +607,11 @@ C
      &                  SSURF(N),CAVESURF(N)
 C
         CDISURF = CDSURF(N)-CDVSURF(N)
-        WRITE (LUN,213) CLSURF(N),DIR*CRSURF(N),
-     &                  CYSURF(N),    CMSURF(N),
-     &                  CDSURF(N),DIR*CNSURF(N),
+        WRITE (LUN,213) CLSURF(N),DIR*CMSURF(1,N),
+     &                  CFSURF(2,N),  CMSURF(2,N),
+     &                  CDSURF(N),DIR*CMSURF(3,N),
      &                  CDISURF,CDVSURF(N)
-        WRITE (LUN,214) CL_SRF(N),CD_SRF(N)
+        WRITE (LUN,214) CL_LSRF(N),CD_LSRF(N)
 C
         DO JJ = 1, NS
           J = J1 + JJ-1
@@ -391,9 +623,9 @@ C
      &                    RLE(2,J),WSTRIP(J),ASTRP,
      &                    RLE(3,J),DIHED
           WRITE (LUN,233) CL_LSTRP(J), CD_LSTRP(J), CDV_LSTRP(J),
-     &                    CNRMSTRP(J), CAXLSTRP(J), 
+     &                    CN_LSTRP(J), CA_LSTRP(J), 
      &                    CNC(J),    DWWAKE(J),
-     &                    CMLE(J),   CMC4(J)
+     &                    CMLE_LSTRP(J),   CMC4_LSTRP(J)
           DO II = 1, NV
             I = I1 + (II-1)
             XM = 0.5*(RV1(1,I)+RV2(1,I))
@@ -437,13 +669,12 @@ C
   233 FORMAT (/4X,'cl  =',F10.5,4X,'   cd  =',F10.5,4X,'  cdv =',F10.5,
      &        /4X,'cn  =',F10.5,4X,'   ca  =',F10.5,
      &         4X,'  cnc =',F10.5,4X,'wake dnwsh =',F10.5,
-     &        /4X,'cmLE=',F10.5,4X,'cm c/4 =',F10.5,
+     &        /4X,'CMLE_LSTRP=',F10.5,4X,'cm c/4 =',F10.5,
      &       //4X,'I',8X,'X   ',8X,'Y   ',8X,'Z   ',8X,'DX  ',
      &         6X,'Slope',8X,'dCp')
   234 FORMAT (1X,I4,6(2X,F10.5))
 C
       END ! OUTELE
-
 
 
       SUBROUTINE OUTHINGE(LUN)
@@ -456,12 +687,19 @@ C
 C...OUTPUT   Printed output on logical unit LUN
 C
       INCLUDE 'AVL.INC'
+      LOGICAL LDIMF
 C
  1000 FORMAT (A)
 C
       IF (LUN.EQ.0) RETURN
 C
 C...Print out the results
+C---- check dimensional quantities
+      RHO = PARVAL(IPRHO,IRUN)
+      VEE = PARVAL(IPVEE,IRUN)
+      LDIMF = .NOT. (RHO.EQ.1.0 .AND. VEE.EQ.1.0)
+      QUE = 1.0
+      IF(LDIMF) QUE = 0.5*RHO*VEE**2
 C
 C...Hinge moments for each CONTROL
       WRITE(LUN,200)
@@ -473,14 +711,28 @@ C
      & ' Control Hinge Moments' /
      & ' (referred to    Sref =',G12.4,   3X,'Cref =',F10.4,')' )
 C
-      WRITE (LUN,212) 
- 212  FORMAT(/' Control          Chinge'
-     &       /' ---------------- -----------')
+      IF(LDIMF) THEN
+        WRITE (LUN,213)
+      ELSE
+        WRITE (LUN,212)
+      ENDIF
+C
+ 212  FORMAT(/' Control          Chinge      Deflection'
+     &       /' ---------------- ----------- -----------')
+ 213  FORMAT(/' Control          Chinge      Deflection'
+     &        '   Moment(N-m)'
+     &     /' ---------------- ----------- ------------'
+     &      ' -------------')
 C
       DO N = 1, NCONTROL
-        WRITE (LUN,220) DNAME(N),CHINGE(N)
-  220   FORMAT (1X,A16,G12.4)
+         IF(LDIMF) THEN
+          HMOM = CHINGE(N)*QUE*SREF*CREF
+          WRITE (LUN,220) DNAME(N),CHINGE(N),DELCON(N),HMOM
+        ELSE
+          WRITE (LUN,220) DNAME(N),CHINGE(N),DELCON(N)
+        ENDIF
       END DO
+  220 FORMAT (1X,A16,G12.4,3X,G12.4,3X,G12.4)
 C
       WRITE(LUN,200)
 C
@@ -560,9 +812,6 @@ C
 C---- set freestream velocity components from alpha, beta
       CALL VINFAB
 C
-C---- calculate forces and sensitivities
-      CALL AERO
-C
 C---- set stability-axes rates (RX,RY,RZ) in terms of body-axes rates
       CA = COS(ALFA)
       SA = SIN(ALFA)
@@ -608,35 +857,45 @@ C
       CY_RY = CYTOT_U(5)
       CY_RZ = CYTOT_U(6)*WROT_RZ(3) + CYTOT_U(4)*WROT_RZ(1)
 C
-      CR_AL = CRTOT_U(1)*VINF_A(1) + CRTOT_U(4)*WROT_A(1)
-     &      + CRTOT_U(2)*VINF_A(2) + CRTOT_U(5)*WROT_A(2)
-     &      + CRTOT_U(3)*VINF_A(3) + CRTOT_U(6)*WROT_A(3)
-      CR_BE = CRTOT_U(1)*VINF_B(1)
-     &      + CRTOT_U(2)*VINF_B(2)
-     &      + CRTOT_U(3)*VINF_B(3)
-      CR_RX = CRTOT_U(4)*WROT_RX(1) + CRTOT_U(6)*WROT_RX(3)
-      CR_RY = CRTOT_U(5)
-      CR_RZ = CRTOT_U(6)*WROT_RZ(3) + CRTOT_U(4)*WROT_RZ(1)
+      CD_AL = CDTOT_U(1)*VINF_A(1) + CDTOT_U(4)*WROT_A(1)
+     &      + CDTOT_U(2)*VINF_A(2) + CDTOT_U(5)*WROT_A(2)
+     &      + CDTOT_U(3)*VINF_A(3) + CDTOT_U(6)*WROT_A(3) + CDTOT_A
+      CD_BE = CDTOT_U(1)*VINF_B(1)
+     &      + CDTOT_U(2)*VINF_B(2)
+     &      + CDTOT_U(3)*VINF_B(3)
+      CD_RX = CDTOT_U(4)*WROT_RX(1) + CDTOT_U(6)*WROT_RX(3)
+      CD_RY = CDTOT_U(5)
+      CD_RZ = CDTOT_U(6)*WROT_RZ(3) + CDTOT_U(4)*WROT_RZ(1)
 C
-      CM_AL = CMTOT_U(1)*VINF_A(1) + CMTOT_U(4)*WROT_A(1)
-     &      + CMTOT_U(2)*VINF_A(2) + CMTOT_U(5)*WROT_A(2)
-     &      + CMTOT_U(3)*VINF_A(3) + CMTOT_U(6)*WROT_A(3)
-      CM_BE = CMTOT_U(1)*VINF_B(1)
-     &      + CMTOT_U(2)*VINF_B(2)
-     &      + CMTOT_U(3)*VINF_B(3)
-      CM_RX = CMTOT_U(4)*WROT_RX(1) + CMTOT_U(6)*WROT_RX(3)
-      CM_RY = CMTOT_U(5)
-      CM_RZ = CMTOT_U(6)*WROT_RZ(3) + CMTOT_U(4)*WROT_RZ(1)
+      CR_AL = CMTOT_U(1,1)*VINF_A(1) + CMTOT_U(1,4)*WROT_A(1)
+     &      + CMTOT_U(1,2)*VINF_A(2) + CMTOT_U(1,5)*WROT_A(2)
+     &      + CMTOT_U(1,3)*VINF_A(3) + CMTOT_U(1,6)*WROT_A(3)
+      CR_BE = CMTOT_U(1,1)*VINF_B(1)
+     &      + CMTOT_U(1,2)*VINF_B(2)
+     &      + CMTOT_U(1,3)*VINF_B(3)
+      CR_RX = CMTOT_U(1,4)*WROT_RX(1) + CMTOT_U(1,6)*WROT_RX(3)
+      CR_RY = CMTOT_U(1,5)
+      CR_RZ = CMTOT_U(1,6)*WROT_RZ(3) + CMTOT_U(1,4)*WROT_RZ(1)
 C
-      CN_AL = CNTOT_U(1)*VINF_A(1) + CNTOT_U(4)*WROT_A(1)
-     &      + CNTOT_U(2)*VINF_A(2) + CNTOT_U(5)*WROT_A(2)
-     &      + CNTOT_U(3)*VINF_A(3) + CNTOT_U(6)*WROT_A(3)
-      CN_BE = CNTOT_U(1)*VINF_B(1)
-     &      + CNTOT_U(2)*VINF_B(2)
-     &      + CNTOT_U(3)*VINF_B(3)
-      CN_RX = CNTOT_U(4)*WROT_RX(1) + CNTOT_U(6)*WROT_RX(3)
-      CN_RY = CNTOT_U(5)
-      CN_RZ = CNTOT_U(6)*WROT_RZ(3) + CNTOT_U(4)*WROT_RZ(1)
+      CM_AL = CMTOT_U(2,1)*VINF_A(1) + CMTOT_U(2,4)*WROT_A(1)
+     &      + CMTOT_U(2,2)*VINF_A(2) + CMTOT_U(2,5)*WROT_A(2)
+     &      + CMTOT_U(2,3)*VINF_A(3) + CMTOT_U(2,6)*WROT_A(3)
+      CM_BE = CMTOT_U(2,1)*VINF_B(1)
+     &      + CMTOT_U(2,2)*VINF_B(2)
+     &      + CMTOT_U(2,3)*VINF_B(3)
+      CM_RX = CMTOT_U(2,4)*WROT_RX(1) + CMTOT_U(2,6)*WROT_RX(3)
+      CM_RY = CMTOT_U(2,5)
+      CM_RZ = CMTOT_U(2,6)*WROT_RZ(3) + CMTOT_U(2,4)*WROT_RZ(1)
+C
+      CN_AL = CMTOT_U(3,1)*VINF_A(1) + CMTOT_U(3,4)*WROT_A(1)
+     &      + CMTOT_U(3,2)*VINF_A(2) + CMTOT_U(3,5)*WROT_A(2)
+     &      + CMTOT_U(3,3)*VINF_A(3) + CMTOT_U(3,6)*WROT_A(3)
+      CN_BE = CMTOT_U(3,1)*VINF_B(1)
+     &      + CMTOT_U(3,2)*VINF_B(2)
+     &      + CMTOT_U(3,3)*VINF_B(3)
+      CN_RX = CMTOT_U(3,4)*WROT_RX(1) + CMTOT_U(3,6)*WROT_RX(3)
+      CN_RY = CMTOT_U(3,5)
+      CN_RZ = CMTOT_U(3,6)*WROT_RZ(3) + CMTOT_U(3,4)*WROT_RZ(1)
 C
 C...  machine-readable output format
       IF(USEMRF) THEN
@@ -648,6 +907,9 @@ C
         WRITE(LU,'(2(ES23.15),2X,A)')
      &    CL_AL, CL_BE,
      &    '| z force CL   : CLa, CLb'
+        WRITE(LU,'(2(ES23.15),2X,A)')
+     &    CD_AL, CD_BE,
+     &    '| x force CD   : CDa, CDb'
         WRITE(LU,'(2(ES23.15),2X,A)')
      &    CY_AL, CY_BE,
      &    '| y force CY   : CYa, CYb'
@@ -672,6 +934,11 @@ C
      &    CY_RY*2.0/CREF,
      &    CY_RZ*2.0/BREF,
      &    '| y force      : CYp, CYq, CYr'
+        WRITE(LU,'(3(ES23.15),2X,A)')
+     &    CD_RX*2.0/BREF,
+     &    CD_RY*2.0/CREF,
+     &    CD_RZ*2.0/BREF,
+     &    '| x force      : CDp, CDq, CDr'
         WRITE(LU,'(3(ES23.15),2X,A)')
      &    DIR*CR_RX*2.0/BREF,
      &    DIR*CR_RY*2.0/CREF,
@@ -700,13 +967,16 @@ C
      &      (    CYTOT_D(K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| y force      : CYd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CRTOT_D(K), K=1, NCONTROL)
+     &      (    CDTOT_D(K), K=1, NCONTROL)
+          WRITE(LU,'(2X,A)') '| x force      : CDd*'
+          WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
+     &      (DIR*CMTOT_D(1,K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| roll  x mom. : Cld*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CMTOT_D(K), K=1, NCONTROL)
+     &      (    CMTOT_D(2,K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| pitch y mom. : Cmd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CNTOT_D(K), K=1, NCONTROL)
+     &      (DIR*CMTOT_D(3,K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| yaw   z mom. : Cnd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
      &      (    CDFF_D(K), K=1, NCONTROL)
@@ -722,25 +992,25 @@ C
             WRITE(LU,'(A)') GNAME(K)
           ENDDO
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CLTOT_G(K), K=1, NCONTROL)
+     &      (    CLTOT_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| z force      : CLg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CYTOT_G(K), K=1, NCONTROL)
+     &      (    CYTOT_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| y force      : CYg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CRTOT_G(K), K=1, NCONTROL)
+     &      (DIR*CMTOT_G(1,K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| roll  x mom. : Clg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CMTOT_G(K), K=1, NCONTROL)
+     &      (    CMTOT_G(2,K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| pitch y mom. : Cmg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CNTOT_G(K), K=1, NCONTROL)
+     &      (DIR*CMTOT_G(3,K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| yaw   z mom. : Cng*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CDFF_G(K), K=1, NCONTROL)
+     &      (    CDFF_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| Trefftz drag : CDffg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    SPANEF_G(K), K=1, NCONTROL)
+     &      (    SPANEF_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| span eff.    : eg*'
         ENDIF
 C
@@ -781,6 +1051,9 @@ C
       WRITE(LU,7020) CY_AL, CY_BE
  7020 FORMAT(' y force     |','    CYa =',F11.6,'    CYb =',F11.6)
 C
+      WRITE(LU,7025) CD_AL, CD_BE
+ 7025 FORMAT(' x force     |','    CDa =',F11.6,'    CDb =',F11.6)
+C
       WRITE(LU,7040) DIR*CR_AL, DIR*CR_BE
  7040 FORMAT(' roll  x mom.|','    Cla =',F11.6,'    Clb =',F11.6)
 C
@@ -813,6 +1086,13 @@ C
      &                        '    CYq =',F11.6,
      &                        '    CYr =',F11.6 )
 C
+      WRITE(LU,7125) CD_RX*2.0/BREF,
+     &               CD_RY*2.0/CREF,
+     &               CD_RZ*2.0/BREF
+ 7125 FORMAT(' x force     |','    CDp =',F11.6,
+     &                        '    CDq =',F11.6,
+     &                        '    CDr =',F11.6 )
+C
       WRITE(LU,7140) DIR*CR_RX*2.0/BREF, 
      &               DIR*CR_RY*2.0/CREF,
      &               DIR*CR_RZ*2.0/BREF
@@ -837,30 +1117,33 @@ C
       IF(NCONTROL.GT.0) THEN
 C
       WRITE(LU,8106) (DNAME(K), K, K=1, NCONTROL)
- 8106 FORMAT(/14X,20(4X,A12, ' d',I2.2,' '))
+ 8106 FORMAT(/14X,30(4X,A12, ' d',I2.2,' '))
       WRITE(LU,8107) (' ',K=1, NCONTROL)
- 8107 FORMAT( 14X,20(3X,A,'----------------'))
+ 8107 FORMAT( 14X,30(3X,A,'----------------'))
 C
       WRITE(LU,8110) (' ',K,CLTOT_D(K), K=1, NCONTROL)
- 8110 FORMAT(' z force     |',20(A,'  CLd',I2.2,' =',F11.6))
+ 8110 FORMAT(' z force     |',30(A,'  CLd',I2.2,' =',F11.6))
 C
       WRITE(LU,8120) (' ',K,CYTOT_D(K), K=1, NCONTROL)
- 8120 FORMAT(' y force     |',20(A,'  CYd',I2.2,' =',F11.6))
+ 8120 FORMAT(' y force     |',30(A,'  CYd',I2.2,' =',F11.6))
 C
-      WRITE(LU,8140) (' ',K,DIR*CRTOT_D(K), K=1, NCONTROL)
- 8140 FORMAT(' roll  x mom.|',20(A,'  Cld',I2.2,' =',F11.6))
+      WRITE(LU,8125) (' ',K,CDTOT_D(K), K=1, NCONTROL)
+ 8125 FORMAT(' x force     |',30(A,'  CDd',I2.2,' =',F11.6))
 C
-      WRITE(LU,8150) (' ',K,    CMTOT_D(K), K=1, NCONTROL)
- 8150 FORMAT(' pitch y mom.|',20(A,'  Cmd',I2.2,' =',F11.6))
+      WRITE(LU,8140) (' ',K,DIR*CMTOT_D(1,K), K=1, NCONTROL)
+ 8140 FORMAT(' roll  x mom.|',30(A,'  Cld',I2.2,' =',F11.6))
 C
-      WRITE(LU,8160) (' ',K,DIR*CNTOT_D(K), K=1, NCONTROL)
- 8160 FORMAT(' yaw   z mom.|',20(A,'  Cnd',I2.2,' =',F11.6))
+      WRITE(LU,8150) (' ',K,    CMTOT_D(2,K), K=1, NCONTROL)
+ 8150 FORMAT(' pitch y mom.|',30(A,'  Cmd',I2.2,' =',F11.6))
+C
+      WRITE(LU,8160) (' ',K,DIR*CMTOT_D(3,K), K=1, NCONTROL)
+ 8160 FORMAT(' yaw   z mom.|',30(A,'  Cnd',I2.2,' =',F11.6))
 C
       WRITE(LU,8170) (' ',K,    CDFF_D(K), K=1, NCONTROL)
- 8170 FORMAT(' Trefftz drag|',20(A,'CDffd',I2.2,' =',F11.6))
+ 8170 FORMAT(' Trefftz drag|',30(A,'CDffd',I2.2,' =',F11.6))
 C
       WRITE(LU,8180) (' ',K,  SPANEF_D(K), K=1, NCONTROL)
- 8180 FORMAT(' span eff.   |',20(A,'   ed',I2.2,' =',F11.6))
+ 8180 FORMAT(' span eff.   |',30(A,'   ed',I2.2,' =',F11.6))
 C
       WRITE(LU,*)
       WRITE(LU,*)
@@ -880,13 +1163,16 @@ C
       WRITE(LU,8220) (' ',K,CYTOT_G(K), K=1, NDESIGN)
  8220 FORMAT(' y force     |',20(A,'  CYg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8230) (' ',K,DIR*CRTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8225) (' ',K,CDTOT_G(K), K=1, NDESIGN)
+ 8225 FORMAT(' x force     |',20(A,'  CDg',I2.2,' =',F11.6))
+C
+      WRITE(LU,8230) (' ',K,DIR*CMTOT_G(1,K), K=1, NDESIGN)
  8230 FORMAT(' roll  x mom.|',20(A,'  Clg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8240) (' ',K,    CMTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8240) (' ',K,    CMTOT_G(2,K), K=1, NDESIGN)
  8240 FORMAT(' pitch y mom.|',20(A,'  Cmg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8250) (' ',K,DIR*CNTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8250) (' ',K,DIR*CMTOT_G(3,K), K=1, NDESIGN)
  8250 FORMAT(' yaw   z mom.|',20(A,'  Cng',I2.2,' =',F11.6))
 C
       WRITE(LU,8260) (' ',K,    CDFF_G(K), K=1, NDESIGN)
@@ -930,16 +1216,13 @@ C---------------------------------------------------------
       REAL WROT_RX(3), WROT_RZ(3), WROT_A(3)
       REAL
      & CRSAX_U(NUMAX),CMSAX_U(NUMAX),CNSAX_U(NUMAX),
-     & CRSAX_D(NDMAX),CMSAX_D(NDMAX),CNSAX_D(NDMAX),
+     & CRSAX_D_local(NDMAX),CMSAX_D_local(NDMAX),CNSAX_D_local(NDMAX),
      & CRSAX_G(NGMAX),CMSAX_G(NGMAX),CNSAX_G(NGMAX)
 C
       CALL GETSA(LNASA_SA,SATYPE,DIR)
 C
 C---- set freestream velocity components from alpha, beta
       CALL VINFAB
-C
-C---- calculate forces and sensitivities
-      CALL AERO
 C
 C---- set stability-axes rates (RX,RY,RZ) in terms of body-axes rates
       CA = COS(ALFA)
@@ -966,31 +1249,32 @@ C
       WROT_A(2)  =  0.
       WROT_A(3)  = -RZ*SA + RX*CA   !!! =  WROT(1)
 C
-C
-      CRSAX = CRTOT*CA + CNTOT*SA
-      CMSAX = CMTOT              
-      CNSAX = CNTOT*CA - CRTOT*SA  
-      CRSAX_A = -CRTOT*SA + CNTOT*CA
-      CNSAX_A = -CNTOT*SA - CRTOT*CA
+C---- moments about stability axes
+c     renamed not to interfere with common block values      
+      CRSAX_local = CMTOT(1)*CA + CMTOT(3)*SA
+      CMSAX_local = CMTOT(2)              
+      CNSAX_local = CMTOT(3)*CA - CMTOT(1)*SA  
+      CRSAX_A = -CMTOT(1)*SA + CMTOT(3)*CA
+      CNSAX_A = -CMTOT(3)*SA - CMTOT(1)*CA
 C
       DO K = 1, 6
-        CRSAX_U(K) = CRTOT_U(K)*CA + CNTOT_U(K)*SA
-        CMSAX_U(K) = CMTOT_U(K)              
-        CNSAX_U(K) = CNTOT_U(K)*CA - CRTOT_U(K)*SA  
+        CRSAX_U(K) = CMTOT_U(1,K)*CA + CMTOT_U(3,K)*SA
+        CMSAX_U(K) = CMTOT_U(2,K)              
+        CNSAX_U(K) = CMTOT_U(3,K)*CA - CMTOT_U(1,K)*SA  
       ENDDO
       DO K = 1, NCONTROL
-        CRSAX_D(K) = CRTOT_D(K)*CA + CNTOT_D(K)*SA
-        CMSAX_D(K) = CMTOT_D(K)              
-        CNSAX_D(K) = CNTOT_D(K)*CA - CRTOT_D(K)*SA  
+        CRSAX_D_local(K) = CMTOT_D(1,K)*CA + CMTOT_D(3,K)*SA
+        CMSAX_D_local(K) = CMTOT_D(2,K)              
+        CNSAX_D_local(K) = CMTOT_D(3,K)*CA - CMTOT_D(1,K)*SA  
       ENDDO
       DO K = 1, NDESIGN
-        CRSAX_G(K) = CRTOT_G(K)*CA + CNTOT_G(K)*SA
-        CMSAX_G(K) = CMTOT_G(K)              
-        CNSAX_G(K) = CNTOT_G(K)*CA - CRTOT_G(K)*SA  
+        CRSAX_G(K) = CMTOT_G(1,K)*CA + CMTOT_G(3,K)*SA
+        CMSAX_G(K) = CMTOT_G(2,K)              
+        CNSAX_G(K) = CMTOT_G(3,K)*CA - CMTOT_G(1,K)*SA  
       ENDDO
 
 C
-C---- set force derivatives in stability axes
+C---- set force and moment derivatives in stability axes
       CL_AL = CLTOT_U(1)*VINF_A(1) + CLTOT_U(4)*WROT_A(1)
      &      + CLTOT_U(2)*VINF_A(2) + CLTOT_U(5)*WROT_A(2)
      &      + CLTOT_U(3)*VINF_A(3) + CLTOT_U(6)*WROT_A(3) + CLTOT_A
@@ -1010,6 +1294,16 @@ C
       CY_RX = CYTOT_U(4)*WROT_RX(1) + CYTOT_U(6)*WROT_RX(3)
       CY_RY = CYTOT_U(5)
       CY_RZ = CYTOT_U(6)*WROT_RZ(3) + CYTOT_U(4)*WROT_RZ(1)
+C
+      CD_AL = CDTOT_U(1)*VINF_A(1) + CDTOT_U(4)*WROT_A(1)
+     &      + CDTOT_U(2)*VINF_A(2) + CDTOT_U(5)*WROT_A(2)
+     &      + CDTOT_U(3)*VINF_A(3) + CDTOT_U(6)*WROT_A(3) + CDTOT_A
+      CD_BE = CDTOT_U(1)*VINF_B(1)
+     &      + CDTOT_U(2)*VINF_B(2)
+     &      + CDTOT_U(3)*VINF_B(3)
+      CD_RX = CDTOT_U(4)*WROT_RX(1) + CDTOT_U(6)*WROT_RX(3)
+      CD_RY = CDTOT_U(5)
+      CD_RZ = CDTOT_U(6)*WROT_RZ(3) + CDTOT_U(4)*WROT_RZ(1)
 C
       CR_AL = CRSAX_U(1)*VINF_A(1) + CRSAX_U(4)*WROT_A(1)
      &      + CRSAX_U(2)*VINF_A(2) + CRSAX_U(5)*WROT_A(2)
@@ -1055,6 +1349,9 @@ C
      &    CY_AL, CY_BE,
      &    '| y force CY   : CYa, CYb'
         WRITE(LU,'(2(ES23.15),2X,A)')
+     &    CD_AL, CD_BE,
+     &    '| x'' force CD  : CDa, CDb'
+        WRITE(LU,'(2(ES23.15),2X,A)')
      &    DIR*CR_AL, DIR*CR_BE,
      &    '| x'' mom.  Cl'' : Cla, Clb'
         WRITE(LU,'(2(ES23.15),2X,A)')
@@ -1075,6 +1372,11 @@ C
      &    CY_RY*2.0/CREF,
      &    CY_RZ*2.0/BREF,
      &    '| y force CY   : CYp, CYq, CYr'
+        WRITE(LU,'(3(ES23.15),2X,A)')
+     &    CD_RX*2.0/BREF,
+     &    CD_RY*2.0/CREF,
+     &    CD_RZ*2.0/BREF,
+     &    '| x'' force CD  : CDp, CDq, CDr'
         WRITE(LU,'(3(ES23.15),2X,A)')
      &    DIR*CR_RX*2.0/BREF,
      &    DIR*CR_RY*2.0/CREF,
@@ -1103,13 +1405,16 @@ C
      &      (    CYTOT_D(K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| y force CY   : CYd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CRTOT_D(K), K=1, NCONTROL)
+     &      (    CDTOT_D(K), K=1, NCONTROL)
+          WRITE(LU,'(2X,A)') '| x force CD   : CDd*'
+          WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
+     &      (DIR*CRSAX_D_local(K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| x'' mom.  Cl'' : Cld*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CMTOT_D(K), K=1, NCONTROL)
+     &      (    CMSAX_D_local(K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| y mom.  Cm   : Cmd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CNTOT_D(K), K=1, NCONTROL)
+     &      (DIR*CNSAX_D_local(K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| z'' mom.  Cn  : Cnd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
      &      (    CDFF_D(K), K=1, NCONTROL)
@@ -1125,25 +1430,28 @@ C
             WRITE(LU,'(A)') GNAME(K)
           ENDDO
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CLTOT_G(K), K=1, NCONTROL)
+     &      (    CLTOT_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| z'' force CL  : CLg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CYTOT_G(K), K=1, NCONTROL)
+     &      (    CYTOT_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| y force CY   : CYg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CRTOT_G(K), K=1, NCONTROL)
+     &      (    CDTOT_G(K), K=1, NDESIGN)
+          WRITE(LU,'(2X,A)') '| x force CD   : CDg*'
+          WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
+     &      (DIR*CRSAX_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| x'' mom.  Cl'' : Clg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CMTOT_G(K), K=1, NCONTROL)
+     &      (    CMSAX_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| y mom.  Cm   : Cmg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CNTOT_G(K), K=1, NCONTROL)
+     &      (DIR*CNSAX_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| z'' mom.  Cn  : Cng*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CDFF_G(K), K=1, NCONTROL)
+     &      (    CDFF_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| Trefftz drag : CDffg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    SPANEF_G(K), K=1, NCONTROL)
+     &      (    SPANEF_G(K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| span eff.    : eg*'
         ENDIF
 C
@@ -1184,6 +1492,9 @@ C
       WRITE(LU,7020) CY_AL, CY_BE
  7020 FORMAT(' y  force CY |'  ,'    CYa =',F11.6,'    CYb =',F11.6)
 C
+      WRITE(LU,7025) CD_AL, CD_BE
+ 7025 FORMAT(' x  force CD |'  ,'    CDa =',F11.6,'    CDb =',F11.6)
+C
       WRITE(LU,7040) DIR*CR_AL, DIR*CR_BE
  7040 FORMAT(' x'' mom.  Cl''|','    Cla =',F11.6,'    Clb =',F11.6)
 C
@@ -1216,6 +1527,13 @@ C
      &                        '    CYq =',F11.6,
      &                        '    CYr =',F11.6 )
 C
+      WRITE(LU,7125) CD_RX*2.0/BREF,
+     &               CD_RY*2.0/CREF,
+     &               CD_RZ*2.0/BREF
+ 7125 FORMAT(' x  force CD |','    CDp =',F11.6,
+     &                        '    CDq =',F11.6,
+     &                        '    CDr =',F11.6 )
+C
       WRITE(LU,7140) DIR*CR_RX*2.0/BREF, 
      &               DIR*CR_RY*2.0/CREF,
      &               DIR*CR_RZ*2.0/BREF
@@ -1240,30 +1558,33 @@ C
       IF(NCONTROL.GT.0) THEN
 C
       WRITE(LU,8106) (DNAME(K), K, K=1, NCONTROL)
- 8106 FORMAT(/14X,20(4X,A12, ' d',I2.2,' '))
+ 8106 FORMAT(/14X,30(4X,A12, ' d',I2.2,' '))
       WRITE(LU,8107) (' ',K=1, NCONTROL)
- 8107 FORMAT( 14X,20(3X,A,'----------------'))
+ 8107 FORMAT( 14X,30(3X,A,'----------------'))
 C
       WRITE(LU,8110) (' ',K,CLTOT_D(K), K=1, NCONTROL)
- 8110 FORMAT(' z'' force CL |' ,20(A,'  CLd',I2.2,' =',F11.6))
+ 8110 FORMAT(' z'' force CL |' ,30(A,'  CLd',I2.2,' =',F11.6))
 C
       WRITE(LU,8120) (' ',K,CYTOT_D(K), K=1, NCONTROL)
- 8120 FORMAT(' y  force CY |'  ,20(A,'  CYd',I2.2,' =',F11.6))
+ 8120 FORMAT(' y  force CY |'  ,30(A,'  CYd',I2.2,' =',F11.6))
 C
-      WRITE(LU,8140) (' ',K,DIR*CRTOT_D(K), K=1, NCONTROL)
- 8140 FORMAT(' x'' mom.  Cl''|',20(A,'  Cld',I2.2,' =',F11.6))
+      WRITE(LU,8125) (' ',K,CDTOT_D(K), K=1, NCONTROL)
+ 8125 FORMAT(' x  force CD |'  ,30(A,'  CDd',I2.2,' =',F11.6))
 C
-      WRITE(LU,8150) (' ',K,    CMTOT_D(K), K=1, NCONTROL)
- 8150 FORMAT(' y  mom.  Cm |'  ,20(A,'  Cmd',I2.2,' =',F11.6))
+      WRITE(LU,8140) (' ',K,DIR*CRSAX_D_local(K), K=1, NCONTROL)
+ 8140 FORMAT(' x'' mom.  Cl''|',30(A,'  Cld',I2.2,' =',F11.6))
 C
-      WRITE(LU,8160) (' ',K,DIR*CNTOT_D(K), K=1, NCONTROL)
- 8160 FORMAT(' z'' mom.  Cn''|',20(A,'  Cnd',I2.2,' =',F11.6))
+      WRITE(LU,8150) (' ',K,    CMSAX_D_local(K), K=1, NCONTROL)
+ 8150 FORMAT(' y  mom.  Cm |'  ,30(A,'  Cmd',I2.2,' =',F11.6))
+C
+      WRITE(LU,8160) (' ',K,DIR*CNSAX_D_local(K), K=1, NCONTROL)
+ 8160 FORMAT(' z'' mom.  Cn''|',30(A,'  Cnd',I2.2,' =',F11.6))
 C
       WRITE(LU,8170) (' ',K,    CDFF_D(K), K=1, NCONTROL)
- 8170 FORMAT(' Trefftz drag|'  ,20(A,'CDffd',I2.2,' =',F11.6))
+ 8170 FORMAT(' Trefftz drag|'  ,30(A,'CDffd',I2.2,' =',F11.6))
 C
       WRITE(LU,8180) (' ',K,  SPANEF_D(K), K=1, NCONTROL)
- 8180 FORMAT(' span eff.   |'  ,20(A,'   ed',I2.2,' =',F11.6))
+ 8180 FORMAT(' span eff.   |'  ,30(A,'   ed',I2.2,' =',F11.6))
 C
       WRITE(LU,*)
       WRITE(LU,*)
@@ -1283,13 +1604,16 @@ C
       WRITE(LU,8220) (' ',K,CYTOT_G(K), K=1, NDESIGN)
  8220 FORMAT(' y  force CY |'   ,20(A,'  CYg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8230) (' ',K,DIR*CRTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8225) (' ',K,CDTOT_G(K), K=1, NDESIGN)
+ 8225 FORMAT(' x  force CD |'   ,20(A,'  CDg',I2.2,' =',F11.6))
+C
+      WRITE(LU,8230) (' ',K,DIR*CRSAX_G(K), K=1, NDESIGN)
  8230 FORMAT(' x'' mom.  Cl''|' ,20(A,'  Clg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8240) (' ',K,    CMTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8240) (' ',K,    CMSAX_G(K), K=1, NDESIGN)
  8240 FORMAT(' y  mom.  Cm |'    ,20(A,'  Cmg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8250) (' ',K,DIR*CNTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8250) (' ',K,DIR*CNSAX_G(K), K=1, NDESIGN)
  8250 FORMAT(' z'' mom.  Cn''|',20(A,'  Cng',I2.2,' =',F11.6))
 C
       WRITE(LU,8260) (' ',K,    CDFF_G(K), K=1, NDESIGN)
@@ -1334,9 +1658,6 @@ C
 C---- set freestream velocity components from alpha, beta
       CALL VINFAB
 C
-C---- calculate forces and sensitivities
-      CALL AERO
-C
 C...  machine-readable output format
       IF(USEMRF) THEN
         CALL MRFTOT(LU, 'DERMATB')
@@ -1346,66 +1667,66 @@ C
         WRITE(LU,'(A)')
      &    'axial   vel. u, sideslip vel. v, normal  vel. w'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &    -    CXTOT_U(1),
-     &    -DIR*CXTOT_U(2),
-     &    -    CXTOT_U(3),
+     &    -    CFTOT_U(1,1),
+     &    -DIR*CFTOT_U(1,2),
+     &    -    CFTOT_U(1,3),
      &    '| x force CX : CXu, CXv, CXw'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &    -DIR*CYTOT_U(1),
-     &    -    CYTOT_U(2),
-     &    -DIR*CYTOT_U(3),
+     &    -DIR*CFTOT_U(2,1),
+     &    -    CFTOT_U(2,2),
+     &    -DIR*CFTOT_U(2,3),
      &    '| y force CY : CYu, CYv, CYw'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &    -    CZTOT_U(1),
-     &    -DIR*CZTOT_U(2),
-     &    -    CZTOT_U(3),
+     &    -    CFTOT_U(3,1),
+     &    -DIR*CFTOT_U(3,2),
+     &    -    CFTOT_U(3,3),
      &    '| z force CZ : CZu, CZv, CZw'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &    -    CRTOT_U(1),
-     &    -DIR*CRTOT_U(2),
-     &    -    CRTOT_U(3),
+     &    -    CMTOT_U(1,1),
+     &    -DIR*CMTOT_U(1,2),
+     &    -    CMTOT_U(1,3),
      &    '| x mom.  Cl : Clu, Clv, Clw'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &    -DIR*CMTOT_U(1),
-     &    -    CMTOT_U(2),
-     &    -DIR*CMTOT_U(3),
+     &    -DIR*CMTOT_U(2,1),
+     &    -    CMTOT_U(2,2),
+     &    -DIR*CMTOT_U(2,3),
      &    '| y mom.  Cm : Cmu, Cmv, Cmw'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &    -    CNTOT_U(1),
-     &    -DIR*CNTOT_U(2),
-     &    -    CNTOT_U(3),
+     &    -    CMTOT_U(3,1),
+     &    -DIR*CMTOT_U(3,2),
+     &    -    CMTOT_U(3,3),
      &    '| z mom.  Cn : Cnu, Cnv, Cnw'
 C
         WRITE(LU,'(A)') 'roll rate  p, pitch rate  q, yaw rate  r'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &        CXTOT_U(4)*2.0/BREF,
-     &    DIR*CXTOT_U(5)*2.0/CREF,
-     &        CXTOT_U(6)*2.0/BREF,
+     &        CFTOT_U(1,4)*2.0/BREF,
+     &    DIR*CFTOT_U(1,5)*2.0/CREF,
+     &        CFTOT_U(1,6)*2.0/BREF,
      &    '| x force CX : CXp, CXq ,CXr'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &    DIR*CYTOT_U(4)*2.0/BREF,
-     &        CYTOT_U(5)*2.0/CREF,
-     &    DIR*CYTOT_U(6)*2.0/BREF,
+     &    DIR*CFTOT_U(2,4)*2.0/BREF,
+     &        CFTOT_U(2,5)*2.0/CREF,
+     &    DIR*CFTOT_U(2,6)*2.0/BREF,
      &    '| y force CY : CYp, CYq, CYr'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &        CZTOT_U(4)*2.0/BREF,
-     &    DIR*CZTOT_U(5)*2.0/CREF,
-     &        CZTOT_U(6)*2.0/BREF,
+     &        CFTOT_U(3,4)*2.0/BREF,
+     &    DIR*CFTOT_U(3,5)*2.0/CREF,
+     &        CFTOT_U(3,6)*2.0/BREF,
      &    '| z force CZ : CZp, CZq, CZr'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &        CRTOT_U(4)*2.0/BREF,
-     &    DIR*CRTOT_U(5)*2.0/CREF,
-     &        CRTOT_U(6)*2.0/BREF,
+     &        CMTOT_U(1,4)*2.0/BREF,
+     &    DIR*CMTOT_U(1,5)*2.0/CREF,
+     &        CMTOT_U(1,6)*2.0/BREF,
      &    '| x mom.  Cl : Clp, Clq, Clr'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &    DIR*CMTOT_U(4)*2.0/BREF,
-     &        CMTOT_U(5)*2.0/CREF,
-     &    DIR*CMTOT_U(6)*2.0/BREF,
+     &    DIR*CMTOT_U(2,4)*2.0/BREF,
+     &        CMTOT_U(2,5)*2.0/CREF,
+     &    DIR*CMTOT_U(2,6)*2.0/BREF,
      &    '| y mom.  Cm : Cmp, Cmq, Cmr'
         WRITE(LU,'(3(ES23.15),2X,A)')
-     &        CNTOT_U(4)*2.0/BREF,
-     &    DIR*CNTOT_U(5)*2.0/CREF,
-     &        CNTOT_U(6)*2.0/BREF,
+     &        CMTOT_U(3,4)*2.0/BREF,
+     &    DIR*CMTOT_U(3,5)*2.0/CREF,
+     &        CMTOT_U(3,6)*2.0/BREF,
      &    '| z mom.  Cn : Cnp, Cnq, Cnr'
 C
         WRITE(LU,'(I4,2X,A)') NCONTROL, '| # control vars'
@@ -1414,22 +1735,22 @@ C
             WRITE(LU,'(A)') DNAME(K)
           ENDDO
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CXTOT_D(K), K=1, NCONTROL)
+     &      (DIR*CFTOT_D(1,K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| x force CX : CXd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CYTOT_D(K), K=1, NCONTROL)
+     &      (    CFTOT_D(2,K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| y force CY : CYd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CZTOT_D(K), K=1, NCONTROL)
+     &      (DIR*CFTOT_D(3,K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| z force CZ : CZd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CRTOT_D(K), K=1, NCONTROL)
+     &      (DIR*CMTOT_D(1,K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| x mom.  Cl : Cld*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CMTOT_D(K), K=1, NCONTROL)
+     &      (    CMTOT_D(2,K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| y mom.  Cm : Cmd*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CNTOT_D(K), K=1, NCONTROL)
+     &      (DIR*CMTOT_D(3,K), K=1, NCONTROL)
           WRITE(LU,'(2X,A)') '| z mom.  Cn : Cnd*'
         ENDIF
 C
@@ -1439,22 +1760,22 @@ C
             WRITE(LU,'(A)') GNAME(K)
           ENDDO
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CXTOT_G(K), K=1, NDESIGN)
+     &      (DIR*CFTOT_G(1,K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| x force CX : CXg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CYTOT_G(K), K=1, NDESIGN)
+     &      (    CFTOT_G(2,K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| y force CY : CYg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CZTOT_G(K), K=1, NDESIGN)
+     &      (DIR*CFTOT_G(3,K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| z force CZ : CZg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CRTOT_G(K), K=1, NDESIGN)
+     &      (DIR*CMTOT_G(1,K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| x mom.  Cl : Clg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (    CMTOT_G(K), K=1, NDESIGN)
+     &      (    CMTOT_G(2,K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| y mom.  Cm : Cmg*'
           WRITE(LU,'(40(ES23.15))',ADVANCE='NO')
-     &      (DIR*CNTOT_G(K), K=1, NDESIGN)
+     &      (DIR*CMTOT_G(3,K), K=1, NDESIGN)
           WRITE(LU,'(2X,A)') '| z mom.  Cn : Cng*'
         ENDIF
 C
@@ -1476,44 +1797,44 @@ C
      &             4X,'----------------',
      &             4X,'----------------' )
 C
-      WRITE(LU,7010) -    CXTOT_U(1),
-     &               -DIR*CXTOT_U(2),
-     &               -    CXTOT_U(3)
+      WRITE(LU,7010) -    CFTOT_U(1,1),
+     &               -DIR*CFTOT_U(1,2),
+     &               -    CFTOT_U(1,3)
  7010 FORMAT(' x force CX  |','    CXu =',F11.6,
      &                        '    CXv =',F11.6,
      &                        '    CXw =',F11.6 )
 C
-      WRITE(LU,7020) -DIR*CYTOT_U(1),
-     &               -    CYTOT_U(2),
-     &               -DIR*CYTOT_U(3)
+      WRITE(LU,7020) -DIR*CFTOT_U(2,1),
+     &               -    CFTOT_U(2,2),
+     &               -DIR*CFTOT_U(2,3)
  7020 FORMAT(' y force CY  |','    CYu =',F11.6,
      &                        '    CYv =',F11.6,
      &                        '    CYw =',F11.6 )
 C
-      WRITE(LU,7030) -    CZTOT_U(1),
-     &               -DIR*CZTOT_U(2),
-     &               -    CZTOT_U(3)
+      WRITE(LU,7030) -    CFTOT_U(3,1),
+     &               -DIR*CFTOT_U(3,2),
+     &               -    CFTOT_U(3,3)
  7030 FORMAT(' z force CZ  |','    CZu =',F11.6,
      &                        '    CZv =',F11.6,
      &                        '    CZw =',F11.6 )
 C
-      WRITE(LU,7040) -    CRTOT_U(1),
-     &               -DIR*CRTOT_U(2),
-     &               -    CRTOT_U(3)
+      WRITE(LU,7040) -    CMTOT_U(1,1),
+     &               -DIR*CMTOT_U(1,2),
+     &               -    CMTOT_U(1,3)
  7040 FORMAT(' x mom.  Cl  |','    Clu =',F11.6,
      &                        '    Clv =',F11.6,
      &                        '    Clw =',F11.6 )
 C
-      WRITE(LU,7050) -DIR*CMTOT_U(1),
-     &               -    CMTOT_U(2),
-     &               -DIR*CMTOT_U(3)
+      WRITE(LU,7050) -DIR*CMTOT_U(2,1),
+     &               -    CMTOT_U(2,2),
+     &               -DIR*CMTOT_U(2,3)
  7050 FORMAT(' y mom.  Cm  |','    Cmu =',F11.6,
      &                        '    Cmv =',F11.6,
      &                        '    Cmw =',F11.6 )
 C
-      WRITE(LU,7060) -    CNTOT_U(1),
-     &               -DIR*CNTOT_U(2),
-     &               -    CNTOT_U(3)
+      WRITE(LU,7060) -    CMTOT_U(3,1),
+     &               -DIR*CMTOT_U(3,2),
+     &               -    CMTOT_U(3,3)
  7060 FORMAT(' z mom.  Cn  |','    Cnu =',F11.6,
      &                        '    Cnv =',F11.6,
      &                        '    Cnw =',F11.6 )
@@ -1527,44 +1848,44 @@ C
      &             4X,'----------------',
      &             4X,'----------------' )
 C
-      WRITE(LU,7110)     CXTOT_U(4)*2.0/BREF, 
-     &               DIR*CXTOT_U(5)*2.0/CREF, 
-     &                   CXTOT_U(6)*2.0/BREF
+      WRITE(LU,7110)     CFTOT_U(1,4)*2.0/BREF, 
+     &               DIR*CFTOT_U(1,5)*2.0/CREF, 
+     &                   CFTOT_U(1,6)*2.0/BREF
  7110 FORMAT(' x force CX  |','    CXp =',F11.6,
      &                        '    CXq =',F11.6,
      &                        '    CXr =',F11.6 )
 C
-      WRITE(LU,7120) DIR*CYTOT_U(4)*2.0/BREF,
-     &                   CYTOT_U(5)*2.0/CREF,
-     &               DIR*CYTOT_U(6)*2.0/BREF
+      WRITE(LU,7120) DIR*CFTOT_U(2,4)*2.0/BREF,
+     &                   CFTOT_U(2,5)*2.0/CREF,
+     &               DIR*CFTOT_U(2,6)*2.0/BREF
  7120 FORMAT(' y force CY  |','    CYp =',F11.6,
      &                        '    CYq =',F11.6,
      &                        '    CYr =',F11.6 )
 C
-      WRITE(LU,7130)     CZTOT_U(4)*2.0/BREF,
-     &               DIR*CZTOT_U(5)*2.0/CREF,
-     &                   CZTOT_U(6)*2.0/BREF
+      WRITE(LU,7130)     CFTOT_U(3,4)*2.0/BREF,
+     &               DIR*CFTOT_U(3,5)*2.0/CREF,
+     &                   CFTOT_U(3,6)*2.0/BREF
  7130 FORMAT(' z force CZ  |','    CZp =',F11.6,
      &                        '    CZq =',F11.6,
      &                        '    CZr =',F11.6 )
 C
-      WRITE(LU,7140)     CRTOT_U(4)*2.0/BREF, 
-     &               DIR*CRTOT_U(5)*2.0/CREF,
-     &                   CRTOT_U(6)*2.0/BREF
+      WRITE(LU,7140)     CMTOT_U(1,4)*2.0/BREF, 
+     &               DIR*CMTOT_U(1,5)*2.0/CREF,
+     &                   CMTOT_U(1,6)*2.0/BREF
  7140 FORMAT(' x mom.  Cl  |','    Clp =',F11.6,
      &                        '    Clq =',F11.6,
      &                        '    Clr =',F11.6 )
 C
-      WRITE(LU,7150) DIR*CMTOT_U(4)*2.0/BREF,
-     &                   CMTOT_U(5)*2.0/CREF,
-     &               DIR*CMTOT_U(6)*2.0/BREF
+      WRITE(LU,7150) DIR*CMTOT_U(2,4)*2.0/BREF,
+     &                   CMTOT_U(2,5)*2.0/CREF,
+     &               DIR*CMTOT_U(2,6)*2.0/BREF
  7150 FORMAT(' y mom.  Cm  |','    Cmp =',F11.6,
      &                        '    Cmq =',F11.6,
      &                        '    Cmr =',F11.6 )
 C
-      WRITE(LU,7160)     CNTOT_U(4)*2.0/BREF,
-     &               DIR*CNTOT_U(5)*2.0/CREF,
-     &                   CNTOT_U(6)*2.0/BREF
+      WRITE(LU,7160)     CMTOT_U(3,4)*2.0/BREF,
+     &               DIR*CMTOT_U(3,5)*2.0/CREF,
+     &                   CMTOT_U(3,6)*2.0/BREF
  7160 FORMAT(' z mom.  Cn  |','    Cnp =',F11.6,
      &                        '    Cnq =',F11.6,
      &                        '    Cnr =',F11.6 )
@@ -1572,27 +1893,27 @@ C
       IF(NCONTROL.GT.0) THEN
 C
       WRITE(LU,8106) (DNAME(K), K, K=1, NCONTROL)
- 8106 FORMAT(/14X,20(4X,A12, ' d',I2.2,' '))
+ 8106 FORMAT(/14X,30(4X,A12, ' d',I2.2,' '))
       WRITE(LU,8107) (' ',K=1, NCONTROL)
- 8107 FORMAT( 14X,20(3X,A,'----------------'))
+ 8107 FORMAT( 14X,30(3X,A,'----------------'))
 C
-      WRITE(LU,8110) (' ',K,DIR*CXTOT_D(K), K=1, NCONTROL)
- 8110 FORMAT(' x force CX  |',20(A,'  CXd',I2.2,' =',F11.6))
+      WRITE(LU,8110) (' ',K,DIR*CFTOT_D(1,K), K=1, NCONTROL)
+ 8110 FORMAT(' x force CX  |',30(A,'  CXd',I2.2,' =',F11.6))
 C
-      WRITE(LU,8120) (' ',K,    CYTOT_D(K), K=1, NCONTROL)
- 8120 FORMAT(' y force CY  |',20(A,'  CYd',I2.2,' =',F11.6))
+      WRITE(LU,8120) (' ',K,    CFTOT_D(2,K), K=1, NCONTROL)
+ 8120 FORMAT(' y force CY  |',30(A,'  CYd',I2.2,' =',F11.6))
 C
-      WRITE(LU,8130) (' ',K,DIR*CZTOT_D(K), K=1, NCONTROL)
- 8130 FORMAT(' z force CZ  |',20(A,'  CZd',I2.2,' =',F11.6))
+      WRITE(LU,8130) (' ',K,DIR*CFTOT_D(3,K), K=1, NCONTROL)
+ 8130 FORMAT(' z force CZ  |',30(A,'  CZd',I2.2,' =',F11.6))
 C
-      WRITE(LU,8140) (' ',K,DIR*CRTOT_D(K), K=1, NCONTROL)
- 8140 FORMAT(' x mom.  Cl  |',20(A,'  Cld',I2.2,' =',F11.6))
+      WRITE(LU,8140) (' ',K,DIR*CMTOT_D(1,K), K=1, NCONTROL)
+ 8140 FORMAT(' x mom.  Cl  |',30(A,'  Cld',I2.2,' =',F11.6))
 C
-      WRITE(LU,8150) (' ',K,    CMTOT_D(K), K=1, NCONTROL)
- 8150 FORMAT(' y mom.  Cm  |',20(A,'  Cmd',I2.2,' =',F11.6))
+      WRITE(LU,8150) (' ',K,    CMTOT_D(2,K), K=1, NCONTROL)
+ 8150 FORMAT(' y mom.  Cm  |',30(A,'  Cmd',I2.2,' =',F11.6))
 C
-      WRITE(LU,8160) (' ',K,DIR*CNTOT_D(K), K=1, NCONTROL)
- 8160 FORMAT(' z mom.  Cn  |',20(A,'  Cnd',I2.2,' =',F11.6))
+      WRITE(LU,8160) (' ',K,DIR*CMTOT_D(3,K), K=1, NCONTROL)
+ 8160 FORMAT(' z mom.  Cn  |',30(A,'  Cnd',I2.2,' =',F11.6))
 C
       WRITE(LU,*)
       WRITE(LU,*)
@@ -1606,22 +1927,22 @@ C
       WRITE(LU,8207) (' ',K=1, NDESIGN)
  8207 FORMAT( 14X,20(3X,A,'----------------'))
 C
-      WRITE(LU,8210) (' ',K,DIR*CXTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8210) (' ',K,DIR*CFTOT_G(1,K), K=1, NDESIGN)
  8210 FORMAT(' x force CX  |',20(A,'  CXg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8220) (' ',K,    CYTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8220) (' ',K,    CFTOT_G(2,K), K=1, NDESIGN)
  8220 FORMAT(' y force CY  |',20(A,'  CYg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8230) (' ',K,DIR*CZTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8230) (' ',K,DIR*CFTOT_G(3,K), K=1, NDESIGN)
  8230 FORMAT(' z force CZ  |',20(A,'  CZg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8240) (' ',K,DIR*CRTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8240) (' ',K,DIR*CMTOT_G(1,K), K=1, NDESIGN)
  8240 FORMAT(' x mom.  Cl  |',20(A,'  Clg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8250) (' ',K,    CMTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8250) (' ',K,    CMTOT_G(2,K), K=1, NDESIGN)
  8250 FORMAT(' y mom.  Cm  |',20(A,'  Cmg',I2.2,' =',F11.6))
 C
-      WRITE(LU,8260) (' ',K,DIR*CNTOT_G(K), K=1, NDESIGN)
+      WRITE(LU,8260) (' ',K,DIR*CMTOT_G(3,K), K=1, NDESIGN)
  8260 FORMAT(' z mom.  Cn  |',20(A,'  Cng',I2.2,' =',F11.6))
 C
       WRITE(LU,*)

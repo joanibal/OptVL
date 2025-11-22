@@ -3,7 +3,8 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of tpforc in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: bref clff cyff cdff spanef
-C   with respect to varying inputs: sref bref rv1 rv2 rc gam
+C   with respect to varying inputs: sref bref chord rv1 rv2 rc
+C                gam
 C***********************************************************************
 C    Module:  atpforc.f
 C 
@@ -65,7 +66,9 @@ C
       REAL vz_diff
       INTEGER jv
       REAL dsyz
+      REAL dsyz_diff
       REAL rcore
+      REAL rcore_diff
       INTRINSIC MAX
       REAL dy1
       REAL dy1_diff
@@ -85,11 +88,15 @@ C
       REAL spanef_cl
       REAL spanef_cy
       REAL spanef_cd
+      REAL temp
+      REAL temp0
+      REAL temp1
       REAL temp_diff
       REAL temp_diff0
-      REAL(kind=8) temp
-      REAL(kind=8) temp_diff1
+      REAL temp_diff1
+      REAL(kind=8) temp2
       REAL(kind=8) temp_diff2
+      REAL(kind=8) temp_diff3
       INTEGER ad_from
       INTEGER ad_to
       INTEGER branch
@@ -113,7 +120,7 @@ C
       DO jc=1,nstrip
         gams(jc) = 0.
 C
-Ccc        ISURF = NSURFS(JC)
+Ccc        ISURF = LSSURF(JC)
 Ccc        IF(LFLOAD(ISURF)) THEN   !Bug 6/13/14 HHY 
 C------- add circulation of this strip only if it contributes to total load
         i1 = ijfrst(jc)
@@ -156,15 +163,33 @@ C
 C
 C...Sum velocity contributions from wake vortices
         DO jv=1,nstrip
-C
-          rcore = 0.
+          dsyz = SQRT((rt2(2, jv)-rt1(2, jv))**2 + (rt2(3, jv)-rt1(3, jv
+     +      ))**2)
+          IF (lncomp(lssurf(jc)) .EQ. lncomp(lssurf(jv))) THEN
+Ccc        RCORE = 0.0001*DSYZ
+            CALL PUSHREAL8(rcore)
+            rcore = 0.
+            CALL PUSHCONTROL2B(0)
+          ELSE IF (vrcorec*chord(jv) .LT. vrcorew*dsyz) THEN
+            CALL PUSHREAL8(rcore)
+            rcore = vrcorew*dsyz
+            CALL PUSHCONTROL2B(2)
+          ELSE
+            CALL PUSHREAL8(rcore)
+            rcore = vrcorec*chord(jv)
+            CALL PUSHCONTROL2B(1)
+          END IF
 C
           dy1 = ycntr - rt1(2, jv)
           dy2 = ycntr - rt2(2, jv)
           dz1 = zcntr - rt1(3, jv)
           dz2 = zcntr - rt2(3, jv)
-          rsq1 = dy1*dy1 + dz1*dz1 + rcore**2
-          rsq2 = dy2*dy2 + dz2*dz2 + rcore**2
+          CALL PUSHREAL8(rsq1)
+          rsq1 = SQRT((dy1**2+dz1**2)**2 + rcore**4)
+          CALL PUSHREAL8(rsq2)
+          rsq2 = SQRT((dy2**2+dz2**2)**2 + rcore**4)
+Cc          RSQ1 = DY1*DY1 + DZ1*DZ1 + RCORE**2
+Cc          RSQ2 = DY2*DY2 + DZ2*DZ2 + RCORE**2
           vy = vy + hpi*gams(jv)*(dz1/rsq1-dz2/rsq2)
           vz = vz + hpi*gams(jv)*(-(dy1/rsq1)+dy2/rsq2)
 C
@@ -175,7 +200,9 @@ C
             dz2 = zcntr - (zoff-rt2(3, jv))
 CCC         DZ1 = ZCNTR - (ZOFF-RT1(3,JV)+ALFA*RT1(1,JV))
 CCC         DZ2 = ZCNTR - (ZOFF-RT2(3,JV)+ALFA*RT2(1,JV))
+            CALL PUSHREAL8(rsq1)
             rsq1 = dy1*dy1 + dz1*dz1
+            CALL PUSHREAL8(rsq2)
             rsq2 = dy2*dy2 + dz2*dz2
             vy = vy - hpi*gams(jv)*(dz1/rsq1-dz2/rsq2)*izsym
             vz = vz - hpi*gams(jv)*(-(dy1/rsq1)+dy2/rsq2)*izsym
@@ -189,7 +216,9 @@ C
             dy2 = ycntr - (yoff-rt2(2, jv))
             dz1 = zcntr - rt1(3, jv)
             dz2 = zcntr - rt2(3, jv)
+            CALL PUSHREAL8(rsq1)
             rsq1 = dy1*dy1 + dz1*dz1
+            CALL PUSHREAL8(rsq2)
             rsq2 = dy2*dy2 + dz2*dz2
             vy = vy - hpi*gams(jv)*(dz1/rsq1-dz2/rsq2)*iysym
             vz = vz - hpi*gams(jv)*(-(dy1/rsq1)+dy2/rsq2)*iysym
@@ -218,7 +247,7 @@ C
 C
 C...Trefftz-plane drag is kinetic energy in crossflow
 C
-        isurf = nsurfs(jc)
+        isurf = lssurf(jc)
         IF (lfload(isurf)) THEN
 C-------add load from this strip only if it contributes to total load
           clff = clff + 2.0*gams(jc)*dyt/sref
@@ -230,7 +259,11 @@ C-------add load from this strip only if it contributes to total load
         END IF
       ENDDO
 C
-C---- Double the X,Z forces, zero Y force for a Y symmetric case
+C
+C---------------------------------------------------------
+C--- If case is XZ symmetric (IYSYM=1), add contributions from images,
+C    zero out the asymmetric forces and double the symmetric ones
+C
       IF (iysym .EQ. 1) THEN
         clff = 2.0*clff
         cyff = 0.0
@@ -239,6 +272,7 @@ C---- Double the X,Z forces, zero Y force for a Y symmetric case
       ELSE
         CALL PUSHCONTROL1B(1)
       END IF
+C---------------------------------------------------------
 C
 C---- aspect ratio
       ar = bref**2/sref
@@ -247,13 +281,13 @@ C---- span efficiency
       IF (cdff .EQ. 0.0) THEN
         ar_diff = 0.D0
       ELSE
-        temp = pi*ar*cdff
-        temp_diff2 = spanef_diff/temp
-        clff_diff = clff_diff + 2*clff*temp_diff2
-        cyff_diff = cyff_diff + 2*cyff*temp_diff2
-        temp_diff1 = -((clff**2+cyff**2)*temp_diff2/temp)
-        ar_diff = pi*cdff*temp_diff1
-        cdff_diff = cdff_diff + pi*ar*temp_diff1
+        temp2 = pi*ar*cdff
+        temp_diff3 = spanef_diff/temp2
+        clff_diff = clff_diff + 2*clff*temp_diff3
+        cyff_diff = cyff_diff + 2*cyff*temp_diff3
+        temp_diff2 = -((clff**2+cyff**2)*temp_diff3/temp2)
+        ar_diff = pi*cdff*temp_diff2
+        cdff_diff = cdff_diff + pi*ar*temp_diff2
       END IF
       bref_diff = bref_diff + 2*bref*ar_diff/sref
       sref_diff = -(bref**2*ar_diff/sref**2)
@@ -263,20 +297,23 @@ C---- span efficiency
         clff_diff = 2.0*clff_diff
         cyff_diff = 0.D0
       END IF
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
+        chord_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           rt2_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           rtc_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         gams_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           rt1_diff(ii2, ii1) = 0.D0
         ENDDO
@@ -286,20 +323,20 @@ C---- span efficiency
         IF (branch .EQ. 0) THEN
           dyt = rt2(2, jc) - rt1(2, jc)
           dzt = rt2(3, jc) - rt1(3, jc)
-          temp = gams(jc)/sref
-          temp_diff1 = (dzt*vy-dyt*vz)*cdff_diff/sref
-          temp_diff0 = temp*cdff_diff
-          vy_diff = dzt*temp_diff0
-          vz_diff = -(dyt*temp_diff0)
-          gams_diff(jc) = gams_diff(jc) + temp_diff1 + dyt*2.0*clff_diff
+          temp2 = gams(jc)/sref
+          temp_diff2 = (dzt*vy-dyt*vz)*cdff_diff/sref
+          temp_diff = temp2*cdff_diff
+          vy_diff = dzt*temp_diff
+          vz_diff = -(dyt*temp_diff)
+          gams_diff(jc) = gams_diff(jc) + temp_diff2 + dyt*2.0*clff_diff
      +      /sref - dzt*2.0*cyff_diff/sref
-          sref_diff = sref_diff - temp*temp_diff1
-          temp_diff1 = -(gams(jc)*2.0*cyff_diff/sref)
-          dzt_diff = vy*temp_diff0 + temp_diff1
-          sref_diff = sref_diff - dzt*temp_diff1/sref
-          temp_diff1 = gams(jc)*2.0*clff_diff/sref
-          dyt_diff = temp_diff1 - vz*temp_diff0
-          sref_diff = sref_diff - dyt*temp_diff1/sref
+          sref_diff = sref_diff - temp2*temp_diff2
+          temp_diff2 = -(gams(jc)*2.0*cyff_diff/sref)
+          dzt_diff = vy*temp_diff + temp_diff2
+          sref_diff = sref_diff - dzt*temp_diff2/sref
+          temp_diff2 = gams(jc)*2.0*clff_diff/sref
+          dyt_diff = temp_diff2 - vz*temp_diff
+          sref_diff = sref_diff - dyt*temp_diff2/sref
         ELSE
           dyt_diff = 0.D0
           vy_diff = 0.D0
@@ -319,22 +356,22 @@ C---- span efficiency
             dz2 = zcntr - (zoff-rt2(3, jv))
             rsq1 = dy1*dy1 + dz1*dz1
             rsq2 = dy2*dy2 + dz2*dz2
-            temp_diff0 = hpi*iysym*izsym*vz_diff
+            temp_diff = hpi*iysym*izsym*vz_diff
             gams_diff(jv) = gams_diff(jv) + (dy2/rsq2-dy1/rsq1)*
-     +        temp_diff0
-            temp_diff = gams(jv)*temp_diff0
-            dy2_diff = temp_diff/rsq2
-            rsq2_diff = -(dy2*temp_diff/rsq2**2)
-            dy1_diff = -(temp_diff/rsq1)
-            rsq1_diff = dy1*temp_diff/rsq1**2
-            temp_diff0 = hpi*iysym*izsym*vy_diff
+     +        temp_diff
+            temp_diff0 = gams(jv)*temp_diff
+            dy2_diff = temp_diff0/rsq2
+            rsq2_diff = -(dy2*temp_diff0/rsq2**2)
+            dy1_diff = -(temp_diff0/rsq1)
+            rsq1_diff = dy1*temp_diff0/rsq1**2
+            temp_diff = hpi*iysym*izsym*vy_diff
             gams_diff(jv) = gams_diff(jv) + (dz1/rsq1-dz2/rsq2)*
-     +        temp_diff0
-            temp_diff = gams(jv)*temp_diff0
-            rsq1_diff = rsq1_diff - dz1*temp_diff/rsq1**2
-            dz1_diff = temp_diff/rsq1 + 2*dz1*rsq1_diff
-            rsq2_diff = rsq2_diff + dz2*temp_diff/rsq2**2
-            dz2_diff = 2*dz2*rsq2_diff - temp_diff/rsq2
+     +        temp_diff
+            temp_diff0 = gams(jv)*temp_diff
+            rsq1_diff = rsq1_diff - dz1*temp_diff0/rsq1**2
+            dz1_diff = temp_diff0/rsq1 + 2*dz1*rsq1_diff
+            rsq2_diff = rsq2_diff + dz2*temp_diff0/rsq2**2
+            dz2_diff = 2*dz2*rsq2_diff - temp_diff0/rsq2
             dy2_diff = dy2_diff + 2*dy2*rsq2_diff
             dy1_diff = dy1_diff + 2*dy1*rsq1_diff
             zcntr_diff = zcntr_diff + dz2_diff + dz1_diff
@@ -352,21 +389,23 @@ C---- span efficiency
           dz2 = zcntr - rt2(3, jv)
           rsq1 = dy1*dy1 + dz1*dz1
           rsq2 = dy2*dy2 + dz2*dz2
-          temp_diff0 = -(hpi*iysym*vz_diff)
-          gams_diff(jv) = gams_diff(jv) + (dy2/rsq2-dy1/rsq1)*temp_diff0
-          temp_diff = gams(jv)*temp_diff0
-          dy2_diff = temp_diff/rsq2
-          rsq2_diff = -(dy2*temp_diff/rsq2**2)
-          dy1_diff = -(temp_diff/rsq1)
-          rsq1_diff = dy1*temp_diff/rsq1**2
-          temp_diff0 = -(hpi*iysym*vy_diff)
-          gams_diff(jv) = gams_diff(jv) + (dz1/rsq1-dz2/rsq2)*temp_diff0
-          temp_diff = gams(jv)*temp_diff0
-          rsq1_diff = rsq1_diff - dz1*temp_diff/rsq1**2
-          dz1_diff = temp_diff/rsq1 + 2*dz1*rsq1_diff
-          rsq2_diff = rsq2_diff + dz2*temp_diff/rsq2**2
-          dz2_diff = 2*dz2*rsq2_diff - temp_diff/rsq2
+          temp_diff = -(hpi*iysym*vz_diff)
+          gams_diff(jv) = gams_diff(jv) + (dy2/rsq2-dy1/rsq1)*temp_diff
+          temp_diff0 = gams(jv)*temp_diff
+          dy2_diff = temp_diff0/rsq2
+          rsq2_diff = -(dy2*temp_diff0/rsq2**2)
+          dy1_diff = -(temp_diff0/rsq1)
+          rsq1_diff = dy1*temp_diff0/rsq1**2
+          temp_diff = -(hpi*iysym*vy_diff)
+          gams_diff(jv) = gams_diff(jv) + (dz1/rsq1-dz2/rsq2)*temp_diff
+          temp_diff0 = gams(jv)*temp_diff
+          rsq1_diff = rsq1_diff - dz1*temp_diff0/rsq1**2
+          dz1_diff = temp_diff0/rsq1 + 2*dz1*rsq1_diff
+          rsq2_diff = rsq2_diff + dz2*temp_diff0/rsq2**2
+          dz2_diff = 2*dz2*rsq2_diff - temp_diff0/rsq2
+          CALL POPREAL8(rsq2)
           dy2_diff = dy2_diff + 2*dy2*rsq2_diff
+          CALL POPREAL8(rsq1)
           dy1_diff = dy1_diff + 2*dy1*rsq1_diff
           zcntr_diff = zcntr_diff + dz2_diff + dz1_diff
           rt2_diff(3, jv) = rt2_diff(3, jv) - dz2_diff
@@ -382,21 +421,25 @@ C---- span efficiency
             dz2 = zcntr - (zoff-rt2(3, jv))
             rsq1 = dy1*dy1 + dz1*dz1
             rsq2 = dy2*dy2 + dz2*dz2
-            temp_diff0 = -(hpi*izsym*vz_diff)
-            temp_diff = gams(jv)*temp_diff0
-            dy2_diff = temp_diff/rsq2
-            rsq2_diff = -(dy2*temp_diff/rsq2**2)
-            dy1_diff = -(temp_diff/rsq1)
-            rsq1_diff = dy1*temp_diff/rsq1**2
-            temp_diff = -(hpi*izsym*vy_diff)
+            temp_diff = -(hpi*izsym*vz_diff)
             gams_diff(jv) = gams_diff(jv) + (dy2/rsq2-dy1/rsq1)*
-     +        temp_diff0 + (dz1/rsq1-dz2/rsq2)*temp_diff
+     +        temp_diff
+            temp_diff0 = gams(jv)*temp_diff
+            dy2_diff = temp_diff0/rsq2
+            rsq2_diff = -(dy2*temp_diff0/rsq2**2)
+            dy1_diff = -(temp_diff0/rsq1)
+            rsq1_diff = dy1*temp_diff0/rsq1**2
+            temp_diff = -(hpi*izsym*vy_diff)
+            gams_diff(jv) = gams_diff(jv) + (dz1/rsq1-dz2/rsq2)*
+     +        temp_diff
             temp_diff0 = gams(jv)*temp_diff
             rsq1_diff = rsq1_diff - dz1*temp_diff0/rsq1**2
             dz1_diff = temp_diff0/rsq1 + 2*dz1*rsq1_diff
             rsq2_diff = rsq2_diff + dz2*temp_diff0/rsq2**2
             dz2_diff = 2*dz2*rsq2_diff - temp_diff0/rsq2
+            CALL POPREAL8(rsq2)
             dy2_diff = dy2_diff + 2*dy2*rsq2_diff
+            CALL POPREAL8(rsq1)
             dy1_diff = dy1_diff + 2*dy1*rsq1_diff
             zcntr_diff = zcntr_diff + dz2_diff + dz1_diff
             rt2_diff(3, jv) = rt2_diff(3, jv) + dz2_diff
@@ -405,13 +448,10 @@ C---- span efficiency
             rt2_diff(2, jv) = rt2_diff(2, jv) - dy2_diff
             rt1_diff(2, jv) = rt1_diff(2, jv) - dy1_diff
           END IF
+          dz2 = zcntr - rt2(3, jv)
+          dz1 = zcntr - rt1(3, jv)
           dy1 = ycntr - rt1(2, jv)
           dy2 = ycntr - rt2(2, jv)
-          rcore = 0.
-          dz1 = zcntr - rt1(3, jv)
-          dz2 = zcntr - rt2(3, jv)
-          rsq1 = dy1*dy1 + dz1*dz1 + rcore**2
-          rsq2 = dy2*dy2 + dz2*dz2 + rcore**2
           gams_diff(jv) = gams_diff(jv) + (dy2/rsq2-dy1/rsq1)*hpi*
      +      vz_diff + (dz1/rsq1-dz2/rsq2)*hpi*vy_diff
           temp_diff = gams(jv)*hpi*vz_diff
@@ -420,18 +460,63 @@ C---- span efficiency
           dy1_diff = -(temp_diff/rsq1)
           rsq1_diff = dy1*temp_diff/rsq1**2
           temp_diff = gams(jv)*hpi*vy_diff
+          dz1_diff = temp_diff/rsq1
           rsq1_diff = rsq1_diff - dz1*temp_diff/rsq1**2
-          dz1_diff = temp_diff/rsq1 + 2*dz1*rsq1_diff
+          dz2_diff = -(temp_diff/rsq2)
           rsq2_diff = rsq2_diff + dz2*temp_diff/rsq2**2
-          dz2_diff = 2*dz2*rsq2_diff - temp_diff/rsq2
-          dy2_diff = dy2_diff + 2*dy2*rsq2_diff
-          dy1_diff = dy1_diff + 2*dy1*rsq1_diff
+          CALL POPREAL8(rsq2)
+          temp1 = dy2*dy2 + dz2*dz2
+          IF (temp1**2 + rcore**4 .EQ. 0.D0) THEN
+            temp_diff0 = 0.D0
+          ELSE
+            temp_diff0 = rsq2_diff/(2.0*SQRT(temp1**2+rcore**4))
+          END IF
+          temp_diff = 2*temp1*temp_diff0
+          rcore_diff = 4*rcore**3*temp_diff0
+          dy2_diff = dy2_diff + 2*dy2*temp_diff
+          dz2_diff = dz2_diff + 2*dz2*temp_diff
+          CALL POPREAL8(rsq1)
+          temp1 = dy1*dy1 + dz1*dz1
+          IF (temp1**2 + rcore**4 .EQ. 0.D0) THEN
+            temp_diff0 = 0.D0
+          ELSE
+            temp_diff0 = rsq1_diff/(2.0*SQRT(temp1**2+rcore**4))
+          END IF
+          temp_diff = 2*temp1*temp_diff0
+          rcore_diff = rcore_diff + 4*rcore**3*temp_diff0
+          dy1_diff = dy1_diff + 2*dy1*temp_diff
+          dz1_diff = dz1_diff + 2*dz1*temp_diff
           zcntr_diff = zcntr_diff + dz2_diff + dz1_diff
           rt2_diff(3, jv) = rt2_diff(3, jv) - dz2_diff
           rt1_diff(3, jv) = rt1_diff(3, jv) - dz1_diff
           ycntr_diff = ycntr_diff + dy2_diff + dy1_diff
           rt2_diff(2, jv) = rt2_diff(2, jv) - dy2_diff
           rt1_diff(2, jv) = rt1_diff(2, jv) - dy1_diff
+          CALL POPCONTROL2B(branch)
+          IF (branch .EQ. 0) THEN
+            CALL POPREAL8(rcore)
+            dsyz_diff = 0.D0
+          ELSE IF (branch .EQ. 1) THEN
+            CALL POPREAL8(rcore)
+            chord_diff(jv) = chord_diff(jv) + vrcorec*rcore_diff
+            dsyz_diff = 0.D0
+          ELSE
+            CALL POPREAL8(rcore)
+            dsyz_diff = vrcorew*rcore_diff
+          END IF
+          temp = rt2(3, jv) - rt1(3, jv)
+          temp0 = rt2(2, jv) - rt1(2, jv)
+          IF (temp0**2 + temp**2 .EQ. 0.D0) THEN
+            temp_diff = 0.D0
+          ELSE
+            temp_diff = dsyz_diff/(2.0*SQRT(temp0**2+temp**2))
+          END IF
+          temp_diff0 = 2*temp0*temp_diff
+          temp_diff1 = 2*temp*temp_diff
+          rt2_diff(3, jv) = rt2_diff(3, jv) + temp_diff1
+          rt1_diff(3, jv) = rt1_diff(3, jv) - temp_diff1
+          rt2_diff(2, jv) = rt2_diff(2, jv) + temp_diff0
+          rt1_diff(2, jv) = rt1_diff(2, jv) - temp_diff0
         ENDDO
         CALL POPREAL8(vz)
         CALL POPREAL8(vy)
@@ -442,17 +527,17 @@ C---- span efficiency
         rt2_diff(2, jc) = rt2_diff(2, jc) + dyt_diff
         rt1_diff(2, jc) = rt1_diff(2, jc) - dyt_diff
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           rv1_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           rv2_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           rc_diff(ii2, ii1) = 0.D0
         ENDDO
@@ -474,7 +559,7 @@ C---- span efficiency
         ENDDO
         CALL POPINTEGER4(ic)
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         gam_diff(ii1) = 0.D0
       ENDDO
       DO jc=nstrip,1,-1
