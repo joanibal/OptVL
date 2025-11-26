@@ -9,7 +9,7 @@ I'm using Github to track issues and bugs so open a new issue there with any con
 OptVL should be easy to install and use. 
 To make it easy to install, OptVL should always be pip installable and only rely on core scientific Python packages like NumPy, and Matplotlib.
 The user could have additional programs like Tecplot and ParaView, but they should never be required.
-To keep OptVL easy to use, it is import to keep the required level of Python knowledge low as most users will be aerospace engineers first and may not have much Python experience.
+To keep OptVL easy to use, it is important to keep the required level of Python knowledge low as most users will be aerospace engineers first and may not have much Python experience.
  
 
 ## Development roadmap 
