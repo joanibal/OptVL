@@ -60,7 +60,7 @@ print(
 ovl.plot_cp()
 ```
 The plotting calls in this example use matplotlib to produce visualizations like this 
-![aircraft cp](figures/aircraft_cp.png)
+![aircraft cp](docs/figures/aircraft_cp.png)
 
 # Examples
 - [Eigen value analysis](https://joanibal.github.io/OptVL/modal_analysis/)
