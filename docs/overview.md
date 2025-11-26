@@ -19,9 +19,12 @@ and the CP surface plot should look like this
 You can rotate, zoom, and pan in the window to look at different parts for the aircraft.
 ![aircraft cp view 2](figures/aircraft_cp_view2.png)
 
+## v1 to v2 changes
+See [this page](v1_to_v2_changes.md) for an overview of the API changes from V1 to v2
+
+
 # Limitations
 1. OptVL does not support multiple run cases
 <!-- 2. There is no single precision version (8 digit output instead of 16 digits) of OptVL available for download
    - You could compile one yourself if you really need this -->
 2. No support for the DESIGN keyword for setting twist in the avl geometry file since we use a different system for modifying all aspects of the geometry.
-3. OptVL on Windows can only use a maximum of 5000 vortices compared to the default of 6000. 

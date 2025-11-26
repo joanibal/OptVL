@@ -12,11 +12,12 @@ nav:
   - Analysis:
       - making_a_script.md
       - optvl_api.md
+      - v1_to_v2_changes.md
       - optvl_changes_from_avl.md
       - alpha_cl_sweep.md
       - modal_analysis.md
       - parameter_sweeps.md
-  - Optmization:
+  - Optimization:
       - optimization_overview.md
       - optimization_setup_scipy.md
       - optimization_setup_om.md
@@ -27,7 +28,7 @@ nav:
       - making_a_movie.md
   - Development:
       - dev_docs.md
-      - common_developement_tasks.md
+      - common_development_tasks.md
       - building_optvl_locally.md
       - pyavl_changes.md  
   # defer to gen-files + literate-nav
