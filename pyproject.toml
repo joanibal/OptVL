@@ -13,7 +13,7 @@ requires = [
     # Note that building against numpy 1.x works fine too - users and
     # redistributors can do this by installing the numpy version they like and
     # disabling build isolation.
-    "numpy>=2.0.1",
+    "numpy>=2.0.0",
     
     "meson-python>=0.9.0", # python build-backend interface for meson
     "wheel", 
@@ -28,7 +28,7 @@ dependencies = [
     "numpy>=1.19",
 ]
 readme = "README.md"
-version = "2.0.0" # this automatically updates __init__.py and setup_deprecated.py
+version = "2.0.1" # this automatically updates __init__.py and setup_deprecated.py
 
 
 [tool.cibuildwheel]
