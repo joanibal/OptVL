@@ -60,12 +60,12 @@ class TestOutput(unittest.TestCase):
         """check that the file written by OptVL is the same as the original file"""
         ovl_solver = OVLSolver(geo_file=supra_geom_file)
         ovl_solver.write_geom_file(geom_output_file)
-        baseline_data = ovl_solver.get_surface_params()
+        baseline_data = ovl_solver.get_surface_params(include_airfoils=True, include_con_surf=True, include_des_vars=True, include_paneling=True)
         baseline_data_body = ovl_solver.get_body_params()
 
         del ovl_solver
         ovl_solver = OVLSolver(geo_file=geom_output_file)
-        new_data = ovl_solver.get_surface_params()
+        new_data = ovl_solver.get_surface_params(include_airfoils=True, include_con_surf=True, include_des_vars=True, include_paneling=True)
         new_data_body = ovl_solver.get_body_params()
 
         for surf in baseline_data:
@@ -76,12 +76,22 @@ class TestOutput(unittest.TestCase):
                     for a, b in zip(data, baseline_data[surf][key]):
                         assert a == b
                 else:
-                    np.testing.assert_allclose(
-                        new_data[surf][key],
-                        baseline_data[surf][key],
-                        atol=1e-8,
-                        err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
-                    )
+                    if isinstance(data, list):
+                        # go section by section 
+                        for i in range(len(data)):
+                            np.testing.assert_allclose(
+                            new_data[surf][key][i],
+                            baseline_data[surf][key][i],
+                            atol=1e-8,
+                            err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
+                            )
+                    else:
+                        np.testing.assert_allclose(
+                            new_data[surf][key],
+                            baseline_data[surf][key],
+                            atol=1e-8,
+                            err_msg=f"Surface `{surf}` key `{key}` does not match reference data",
+                        )
 
         for body in baseline_data_body:
             for key in baseline_data_body[body]:

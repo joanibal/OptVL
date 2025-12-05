@@ -16,6 +16,7 @@ import platform
 from collections import OrderedDict
 import operator
 from itertools import chain
+import importlib.metadata
 
 # =============================================================================
 # External Python modules
@@ -30,6 +31,8 @@ from . import MExt
 from .utils.check_surface_dict import pre_check_input_dict
 from .utils.airfoil_utils import read_coordinates_files
 
+# import the version of the package to include in some io and help messages
+__version__ = importlib.metadata.version(__package__ or __name__)
 
 class OVLSolver(object):
     # these at technically parameters, but they are also specified as contraints
@@ -2645,7 +2648,7 @@ class OVLSolver(object):
         """
         with open(filename, "w") as fid:
             # write the header
-            fid.write("# generated using OptVL\n")
+            fid.write(f"# generated using OptVL v{__version__}\n")
             self._write_header(fid)
 
             surf_data = self.get_surface_params(

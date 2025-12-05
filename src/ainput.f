@@ -659,6 +659,8 @@ C------- read optional airfoil x/c limits
           XFMAX = MIN( 1.0 , RINPUT(2) )
          ENDIF
         ENDIF
+        XFMIN_R(isec,isurf) = XFMIN
+        XFMAX_R(isec,isurf) = XFMAX
 C
         IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
           LRANGE(ISURF) = .FALSE.
@@ -767,6 +769,8 @@ C------- read optional airfoil x/c limits
           XFMAX = MIN( 1.0 , RINPUT(2) )
          ENDIF
         ENDIF
+        XFMIN_R(isec,isurf) = XFMIN
+        XFMAX_R(isec,isurf) = XFMAX
 C
         IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
           write(*,*) 'aifoil Lrange false', ISURF, isec
@@ -864,6 +868,8 @@ C------- read optional airfoil x/c limits
           XFMAX = MIN( 1.0 , RINPUT(2) )
          ENDIF
         ENDIF
+        XFMIN_R(isec,isurf) = XFMIN
+        XFMAX_R(isec,isurf) = XFMAX
 C
         IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
           LRANGE(ISURF) = .FALSE.
