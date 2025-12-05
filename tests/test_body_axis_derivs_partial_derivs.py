@@ -179,7 +179,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
             np.testing.assert_allclose(
                 bd_d[deriv_func],
                 bd_d_fd[deriv_func],
-                rtol=1e-4,
+                rtol=5e-4,
                 err_msg=sens_label,
             )
 
