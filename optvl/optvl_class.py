@@ -1975,29 +1975,46 @@ class OVLSolver(object):
         return eig_vecs
 
     def get_system_matrix(self, in_body_axis=False) -> np.ndarray:
-        """returns the system matrix used for the eigenmode calculation
+        """ returns just the A system matrix used for the eigenmode calculation"""
+        # this routine is mostly to not introduce breaking chnages
+        
+        # call the routine for getting them all, but just ignore the B and R parts
+        Asys, _, _ = self.get_system_matrices(in_body_axis=in_body_axis)
+        
+        return Asys
+
+    def get_system_matrices(self, in_body_axis=False) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """returns the A,B, and R system matrices used in amode.f
         
         args:
             in_body_axis: apply the sign changes to the matrix to put it in the body axis
         
         Returns:
-            asys: 2D array representing the system matrix for the eigen value analysis
+            Asys: 2D array representing the system matrix for the eigen value analysis
+            Bsys: 2D array representing the system matrix for control surfaces
+            Rsys: 1D array representing the RHS of the dynamics equation
         """
         
         # get the dimesion of the A matrix from the eig_vals    
         eig_vals = self.get_avl_fort_arr("CASE_Z", "EVAL")
         jemax = eig_vals.shape[1]
-        asys = np.zeros((jemax,jemax), order="F")
+        Asys = np.zeros((jemax,jemax), order="F")
+        Bsys = np.zeros((jemax,self.NDMAX), order="F")
+        Rsys = np.zeros((jemax), order="F")
         
         # 1 because optvl only supports 1 run case and we are using fortran base 1 indexing
         irun_case = 1
-        self.avl.get_system_matrix(irun_case,asys)
+        self.avl.get_system_matrices(irun_case,Asys, Bsys, Rsys)
         
-        def apply_state_signs(asys):
+        num_controls = self.get_num_control_surfs()
+        # trim the columns of the Bsys matrix
+        Bsys = Bsys[:, 0:num_controls]
+        
+        def apply_state_signs(Asys, Bsys, Rsys):
             """
             Apply sign changes to the state matrix A and return the modified version.
             """
-            nsys = asys.shape[0]
+            nsys = Asys.shape[0]
 
             # Indices for sign flip
             jeu   = 0
@@ -2019,19 +2036,26 @@ class OVLSolver(object):
                     usgn[idx] = -1.0
 
             # Allocate result
-            asys_signed = np.zeros_like(asys)
+            Asys_signed = np.zeros_like(Asys)
+            Bsys_signed = np.zeros_like(Bsys)
+            Rsys_signed = np.zeros_like(Rsys)
 
             # Apply row/column sign flips explicitly
             for i in range(nsys):
                 for j in range(nsys):
-                    asys_signed[i, j] = asys[i, j] * usgn[i] * usgn[j]
+                    Asys_signed[i, j] = Asys[i, j] * usgn[i] * usgn[j]
+                
+                for j in range(num_controls):
+                    Bsys_signed[i,j] = Bsys[i, j] * usgn[i]
+                
+                Rsys_signed = Rsys[i]*usgn[i]
 
-            return asys_signed
+            return Asys_signed, Bsys_signed, Rsys_signed
         
         if in_body_axis:
-            asys = apply_state_signs(asys)
+            Asys, Bsys, Rsys = apply_state_signs(Asys, Bsys, Rsys)
         
-        return asys
+        return Asys, Bsys, Rsys
 
     # region --- geometry api
     def get_control_names(self) -> List[str]:

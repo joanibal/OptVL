@@ -129,11 +129,13 @@ python module libavl ! in
         subroutine execute_eigenmode_calc
         end subroutine execute_eigenmode_calc
         
-        subroutine get_system_matrix(ir, asys)
+        subroutine get_system_matrices(ir, asys, bsys, rsys)
             include '../includes/AVL.INC'
             integer :: ir
             real*8, intent(inout) :: asys(jemax,jemax)
-        end subroutine get_system_matrix
+            real*8, intent(inout) :: bsys(jemax,ndmax)
+            real*8, intent(inout) :: rsys(jemax)
+        end subroutine get_system_matrices
 
         !subroutine getcam(x, y, n, xc, yc, tc, nc, lnorm) ! in :libavl:airutil.f
             !integer, intent(in) :: n

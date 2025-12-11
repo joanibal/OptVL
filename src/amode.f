@@ -2293,21 +2293,22 @@ C
             
       end subroutine execute_eigenmode_calc
       
-      subroutine get_system_matrix(ir, ASYS)
+      subroutine get_system_matrices(ir, ASYS, BSYS, RSYS)
             INCLUDE 'AVL.INC'
       
             ! input/output
             REAL*8 :: ASYS(JEMAX,JEMAX)
+            REAL*8 :: BSYS(JEMAX,NDMAX)
+            REAL*8 :: RSYS(JEMAX)
             
             ! working
-            REAL*8 :: BSYS(JEMAX,NDMAX),RSYS(JEMAX)
             REAL*8 :: ETOL
             integer :: NSYS, i
             
             CALL SYSMAT(IR,ASYS,BSYS,RSYS,NSYS)
             
             
-      end subroutine
+      end subroutine get_system_matrices
 C
 
             
