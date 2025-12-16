@@ -1039,7 +1039,8 @@ c--------------------------------------------------------------
 
       ! Set the strip geometry data
       ! Note these computations assume the mesh is not necessarily planar
-      ! but will still work correctly for a planar mesh as well
+      ! ultimately if/when we flatten the mesh into a planar one we will want
+      ! to use the leading edge positions and chords from the original input mesh
 
       ! Loop over strips in section
       do ispan = 1,nspan
@@ -1078,14 +1079,14 @@ c--------------------------------------------------------------
       ! Strip geometric incidence angle at the mid-point
       ! This is strip incidence angle is computed from the LE and TE points
       ! of the given geometry and is completely independent of AINC
-      ! This quantity is needed to correctly handle nonplanar meshes
+      ! This quantity is needed to correctly handle nonplanar meshes and is only needed if the mesh isn't flattened
       GINCSTRIP(idx_strip) = atan2(((mesh_surf(3,idx_node_nx) 
      &  + mesh_surf(3,idx_node_nx_yp1))/2.- (mesh_surf(3,idx_node) + 
      &  mesh_surf(3,idx_node_yp1))/2.),
      & ((mesh_surf(1,idx_node_nx) + mesh_surf(1,idx_node_nx_yp1))/2. 
      &  - (mesh_surf(1,idx_node) + mesh_surf(1,idx_node_yp1))/2.))
 
-      ! Strip width (leading edge)
+      ! Strip width
       m2 = mesh_surf(2,idx_node_yp1)-mesh_surf(2,idx_node)
       m3 = mesh_surf(3,idx_node_yp1)-mesh_surf(3,idx_node)
       WSTRIP(idx_strip) = sqrt(m2**2 + m3**2)
@@ -1268,42 +1269,86 @@ c--------------------------------------------------------------
       do idx_x = 1, nvc(isurf)
        
        ! Left bound vortex points 
-       ! Y- point
        idx_node = flatidx(idx_x,idx_y,isurf)
-       RV1(2,idx_vor) = mesh_surf(2,idx_node)  
-      ! Compute the panel's left side chord and angle
+      ! Compute the panel's left side chord
        dc1 = sqrt((mesh_surf(1,idx_node+1) - mesh_surf(1,idx_node))**2
      &          + (mesh_surf(3,idx_node+1) - mesh_surf(3,idx_node))**2)
+
+       if (LMESHFLAT(isurf)) then
+       ! Place vortex at panel quarter chord of the flat mesh
+       dx1 = sqrt((mesh_surf(1,idx_node) - RLE1(1,idx_strip))**2
+     &          + (mesh_surf(3,idx_node) - RLE1(3,idx_strip))**2)
+       RV1(2,idx_vor) = RLE1(2,idx_strip)
+       RV1(3,idx_vor) = RLE1(3,idx_strip)
+       RV1(1,idx_vor) = RLE1(1,idx_strip) + dx1 + (dc1/4.)
+
+       ! Compute the panel's left side angle
        a1 = atan2((mesh_surf(3,idx_node+1) - mesh_surf(3,idx_node)),
      &            (mesh_surf(1,idx_node+1) - mesh_surf(1,idx_node)))
       ! Place vortex at panel quarter chord
+       RV1MSH(2,idx_vor) = mesh_surf(2,idx_node)  
+       RV1MSH(1,idx_vor) = mesh_surf(1,idx_node) + (dc1/4.)*cos(a1)
+       RV1MSH(3,idx_vor) = mesh_surf(3,idx_node) + (dc1/4.)*sin(a1) 
+       else
+      ! Compute the panel's left side angle
+       a1 = atan2((mesh_surf(3,idx_node+1) - mesh_surf(3,idx_node)),
+     &            (mesh_surf(1,idx_node+1) - mesh_surf(1,idx_node)))
+      ! Place vortex at panel quarter chord
+       RV1(2,idx_vor) = mesh_surf(2,idx_node)  
        RV1(1,idx_vor) = mesh_surf(1,idx_node) + (dc1/4.)*cos(a1)
-       RV1(3,idx_vor) = mesh_surf(3,idx_node) + (dc1/4.)*sin(a1)
+       RV1(3,idx_vor) = mesh_surf(3,idx_node) + (dc1/4.)*sin(a1)  
+       
+       ! Copy to Mesh
+       RV1MSH(2,idx_vor) = RV1(2,idx_vor)
+       RV1MSH(1,idx_vor) = RV1(1,idx_vor)
+       RV1MSH(3,idx_vor) = RV1(3,idx_vor)
+       end if
 
        ! Right bound vortex points 
-       ! Y- point
        idx_node_yp1 = flatidx(idx_x,idx_y+1,isurf)
-       RV2(2,idx_vor) = mesh_surf(2,idx_node_yp1)  
-      ! Compute the panel's right side chord and angle
+      ! Compute the panel's right side chord
        dc2 = sqrt((mesh_surf(1,idx_node_yp1+1) 
      &  - mesh_surf(1,idx_node_yp1))**2 + (mesh_surf(3,idx_node_yp1+1) 
      &  - mesh_surf(3,idx_node_yp1))**2)
+
+      if (LMESHFLAT(isurf)) then
+      ! Place vortex at panel quarter chord of the flat mesh
+       dx2 = sqrt((mesh_surf(1,idx_node_yp1) - RLE2(1,idx_strip))**2
+     & + (mesh_surf(3,idx_node_yp1) - RLE2(3,idx_strip))**2)
+       RV2(2,idx_vor) = RLE2(2,idx_strip)
+       RV2(3,idx_vor) = RLE2(3,idx_strip)
+       RV2(1,idx_vor) = RLE2(1,idx_strip) + dx2 + (dc2/4.)
+      ! Compute the panel's right side angle
        a2 = atan2((mesh_surf(3,idx_node_yp1+1) -
      & mesh_surf(3,idx_node_yp1)), (mesh_surf(1,idx_node_yp1+1) - 
      & mesh_surf(1,idx_node_yp1)))
       ! Place vortex at panel quarter chord
+       RV2MSH(2,idx_vor) = mesh_surf(2,idx_node_yp1)  
+       RV2MSH(1,idx_vor) = mesh_surf(1,idx_node_yp1) + (dc2/4.)*cos(a2)
+       RV2MSH(3,idx_vor) = mesh_surf(3,idx_node_yp1) + (dc2/4.)*sin(a2)
+      else
+      ! Compute the panel's right side angle
+       a2 = atan2((mesh_surf(3,idx_node_yp1+1) -
+     & mesh_surf(3,idx_node_yp1)), (mesh_surf(1,idx_node_yp1+1) - 
+     & mesh_surf(1,idx_node_yp1)))
+      ! Place vortex at panel quarter chord
+       RV2(2,idx_vor) = mesh_surf(2,idx_node_yp1)  
        RV2(1,idx_vor) = mesh_surf(1,idx_node_yp1) + (dc2/4.)*cos(a2)
        RV2(3,idx_vor) = mesh_surf(3,idx_node_yp1) + (dc2/4.)*sin(a2)
 
+       ! Copy to Mesh
+       RV2MSH(2,idx_vor) = RV2(2,idx_vor)
+       RV2MSH(1,idx_vor) = RV2(1,idx_vor)
+       RV2MSH(3,idx_vor) = RV2(3,idx_vor)    
+      end if
+
       ! Mid-point bound vortex points 
-      ! Y- point
-       RV(2,idx_vor) = (mesh_surf(2,idx_node_yp1) 
-     &  + mesh_surf(2,idx_node))/2.
-      ! Compute the panel's mid-point chord and angle
+      ! Compute the panel's mid-point chord
       ! Panels themselves can never be curved so just interpolate the chord
       ! store as the panel chord in common block
        DXV(idx_vor) = (dc1+dc2)/2.
-      ! However compute the mid-point angle straight up since Drela never interpolates angles
+      ! We need to compute the midpoint angle and panel strip chord projection 
+      ! as we need them to compute normals based on the real mesh
        a3 = atan2(((mesh_surf(3,idx_node_yp1+1) 
      &  + mesh_surf(3,idx_node+1))/2.- (mesh_surf(3,idx_node_yp1) + 
      &  mesh_surf(3,idx_node))/2.),
@@ -1311,11 +1356,38 @@ c--------------------------------------------------------------
      &  - (mesh_surf(1,idx_node_yp1) + mesh_surf(1,idx_node))/2.))
       ! project the panel chord onto the strip chord
        DXSTRPV(idx_vor) = DXV(idx_vor)*cos(a3-GINCSTRIP(idx_strip))
+
+       if (LMESHFLAT(isurf)) then
+      ! Place vortex at panel quarter chord of the flat mesh
+       dx3 = sqrt(((mesh_surf(1,idx_node_yp1)+mesh_surf(1,idx_node))/2 
+     &            - RLE(1,idx_strip))**2
+     &            + ((mesh_surf(3,idx_node_yp1)+mesh_surf(3,idx_node))/2
+     &            - RLE(3,idx_strip))**2)
+       RV(2,idx_vor) = RLE(2,idx_strip)
+       RV(3,idx_vor) = RLE(3,idx_strip)
+       RV(1,idx_vor) = RLE(1,idx_strip) + dx3 + (DXV(idx_vor)/4.)
+
+       ! Place vortex at panel quarter chord
+       RVMSH(2,idx_vor) = (mesh_surf(2,idx_node_yp1) 
+     &  + mesh_surf(2,idx_node))/2.
+       RVMSH(1,idx_vor) = (mesh_surf(1,idx_node_yp1)
+     & +mesh_surf(1,idx_node))/2.+ (DXV(idx_vor)/4.)*cos(a3)
+       RVMSH(3,idx_vor) = (mesh_surf(3,idx_node_yp1) 
+     & +mesh_surf(3,idx_node))/2. + (DXV(idx_vor)/4.)*sin(a3)
+      else
       ! Place vortex at panel quarter chord
+       RV(2,idx_vor) = (mesh_surf(2,idx_node_yp1) 
+     &  + mesh_surf(2,idx_node))/2.
        RV(1,idx_vor) = (mesh_surf(1,idx_node_yp1)
      & +mesh_surf(1,idx_node))/2.+ (DXV(idx_vor)/4.)*cos(a3)
        RV(3,idx_vor) = (mesh_surf(3,idx_node_yp1) 
      & +mesh_surf(3,idx_node))/2. + (DXV(idx_vor)/4.)*sin(a3)
+
+       ! Copy to Mesh
+       RVMSH(2,idx_vor) = RV(2,idx_vor)
+       RVMSH(1,idx_vor) = RV(1,idx_vor)
+       RVMSH(3,idx_vor) = RV(3,idx_vor)
+      end if
 
 
       ! Panel Control points
@@ -1325,8 +1397,23 @@ c--------------------------------------------------------------
       ! Place the control point at the quarter chord + half chord*clafc
       ! note that clafc is a scaler so is 1. is for 2pi
       ! use data from vortex mid-point computation
+       if (LMESHFLAT(isurf)) then
+       RC(1,idx_vor) = RV(1,idx_vor) + clafc*(DXV(idx_vor)/2.)
+       RC(3,idx_vor) = RV(3,idx_vor)
+
+       RCMSH(1,idx_vor) = RVMSH(1,idx_vor) 
+     &  + clafc*(DXV(idx_vor)/2.)*cos(a3)
+       RCMSH(3,idx_vor) = RVMSH(3,idx_vor) 
+     &  + clafc*(DXV(idx_vor)/2.)*sin(a3)
+       RCMSH(2,idx_vor) = RVMSH(2,idx_vor)
+       else
        RC(1,idx_vor) = RV(1,idx_vor) + clafc*(DXV(idx_vor)/2.)*cos(a3)
        RC(3,idx_vor) = RV(3,idx_vor) + clafc*(DXV(idx_vor)/2.)*sin(a3)
+
+       RCMSH(1,idx_vor) = RC(1,idx_vor)
+       RCMSH(3,idx_vor) = RC(3,idx_vor)
+       RCMSH(2,idx_vor) = RC(2,idx_vor)
+       end if
 
       ! Source points
       ! Y- point
@@ -1334,8 +1421,13 @@ c--------------------------------------------------------------
       ! Place the source point at the half chord
       ! use data from vortex mid-point computation
       ! add another quarter chord to the quarter chord
+       if (LMESHFLAT(isurf)) then
+       RS(1,idx_vor) = RV(1,idx_vor) + (DXV(idx_vor)/4.)
+       RS(3,idx_vor) = RV(3,idx_vor) + (DXV(idx_vor)/4.)
+       else
        RS(1,idx_vor) = RV(1,idx_vor) + (DXV(idx_vor)/4.)*cos(a3) 
        RS(3,idx_vor) = RV(3,idx_vor) + (DXV(idx_vor)/4.)*sin(a3)
+       end if
 
 
        ! Set the camber slopes for the panel
@@ -1404,6 +1496,7 @@ c--------------------------------------------------------------
 
       ! Store the panel LE mid point for the next panel in the strip
       ! This gets used a lot here 
+      ! We use the original input mesh to compute point for the OML
       xptxind1 = ((mesh_surf(1,idx_node+1)+mesh_surf(1,idx_node_yp1+1))
      &         /2 - RLE(1,idx_strip))/CHORD(idx_strip)
 
@@ -1804,6 +1897,7 @@ C---- same various logical flags
       LFLOAD(NNI) = LFLOAD(NN)
       LRANGE(NNI) = LRANGE(NN)
       LSURFSPACING(NNI) = LSURFSPACING(NN)
+      LMESHFLAT(NNI) = LMESHFLAT(NN)
 
 C---- accumulate stuff for new image surface 
       ! IFRST(NNI) = NVOR   + 1
@@ -1926,6 +2020,18 @@ C
           RC(1,III)     =  RC(1,II)
           RC(2,III)     = -RC(2,II) + YOFF
           RC(3,III)     =  RC(3,II)
+          RV1MSH(1,III) = RV2MSH(1,II)
+          RV1MSH(2,III) = -RV2MSH(2,II) + YOFF
+          RV1MSH(3,III) = RV2MSH(3,II)
+          RV2MSH(1,III) = RV1MSH(1,II)
+          RV2MSH(2,III) = -RV1MSH(2,II) + YOFF
+          RV2MSH(3,III) = RV1MSH(3,II)
+          RVMSH(1,III) = RVMSH(1,II)
+          RVMSH(2,III) = -RVMSH(2,II) + YOFF
+          RVMSH(3,III) = RVMSH(3,II)
+          RCMSH(1,III) = RCMSH(1,II)
+          RCMSH(2,III) = -RCMSH(2,II) + YOFF
+          RCMSH(3,III) = RCMSH(3,II)
           SLOPEC(III) = SLOPEC(II)
           SLOPEV(III) = SLOPEV(II)
           DXV(III)     = DXV(II)
@@ -2366,12 +2472,12 @@ C...Calculate normal vector for the strip (normal to X axis)
       !   print *, "I", I
 
         ! compute the spanwise unit vector for Vperp def
-        DXT =  RV2(1,I)-RV1(1,I)
-        DYT =  RV2(2,I)-RV1(2,I)
-        DZT =  RV2(3,I)-RV1(3,I)
-        XSREF(J) = RV(1,I)
-        YSREF(J) = RV(2,I)
-        ZSREF(J) = RV(3,I)
+        DXT =  RV2MSH(1,I)-RV1MSH(1,I)
+        DYT =  RV2MSH(2,I)-RV1MSH(2,I)
+        DZT =  RV2MSH(3,I)-RV1MSH(3,I)
+        XSREF(J) = RVMSH(1,I)
+        YSREF(J) = RVMSH(2,I)
+        ZSREF(J) = RVMSH(3,I)
 
       !   print *, "DVT", DYT
       !   print *, "RV2(2,I)-RV1(2,I)", RV2(2,I)-RV1(2,I)
@@ -2417,9 +2523,9 @@ C
           ENDDO
 C
 C...Define unit vector along bound leg
-          DXB = RV2(1,I)-RV1(1,I) ! right h.v. pt - left h.v. pt 
-          DYB = RV2(2,I)-RV1(2,I)
-          DZB = RV2(3,I)-RV1(3,I)
+          DXB = RV2MSH(1,I)-RV1MSH(1,I) ! right h.v. pt - left h.v. pt 
+          DYB = RV2MSH(2,I)-RV1MSH(2,I)
+          DZB = RV2MSH(3,I)-RV1MSH(3,I)
           EMAG = SQRT(DXB**2 + DYB**2 + DZB**2)
           EB(1) = DXB/EMAG
           EB(2) = DYB/EMAG
@@ -2453,9 +2559,9 @@ C
           ! which is ES(2) and ES(3) computed earlier
           SINC = SIN(ANG)
           COSC = COS(ANG)
-          EC(1) =  COSC + (RC(1,I)-RV(1,I))
-          EC(2) = -SINC*ES(2) + (RC(2,I)-RV(2,I))
-          EC(3) = -SINC*ES(3) + (RC(3,I)-RV(3,I))
+          EC(1) =  COSC + (RCMSH(1,I)-RVMSH(1,I))
+          EC(2) = -SINC*ES(2) + (RCMSH(2,I)-RVMSH(2,I))
+          EC(3) = -SINC*ES(3) + (RCMSH(3,I)-RVMSH(3,I))
 
           DO N = 1, NDESIGN
             EC_G(1,N) = -SINC      *AINC_G(J,N)
@@ -2504,9 +2610,9 @@ C--------- add design-variable contribution to angle
 C
           SINC = SIN(ANG)
           COSC = COS(ANG)
-          EC(1) =  COSC + (RC(1,I)-RV(1,I))
-          EC(2) = -SINC*ES(2) + (RC(2,I)-RV(2,I))
-          EC(3) = -SINC*ES(3) + (RC(3,I)-RV(3,I))
+          EC(1) =  COSC + (RCMSH(1,I)-RVMSH(1,I))
+          EC(2) = -SINC*ES(2) + (RCMSH(2,I)-RVMSH(2,I))
+          EC(3) = -SINC*ES(3) + (RCMSH(3,I)-RVMSH(3,I))
           DO N = 1, NDESIGN
             EC_G(1,N) = -SINC      *AINC_G(J,N)
             EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)

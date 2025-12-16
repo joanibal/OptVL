@@ -502,12 +502,22 @@ c
      & IPTSEC(NSMAX,NFMAX) ! stores the iptloc vector for each surface
 
       REAL(kind=avl_real) MSHBLK
+      REAL(kind=avl_real) RV1MSH
+      REAL(kind=avl_real) RV2MSH
+      REAL(kind=avl_real) RVMSH
+      REAL(kind=avl_real) RCMSH
       COMMON /SURF_MESH_R/
-     & MSHBLK(3, 4*NVMAX) ! block to store all surface meshes
+     & MSHBLK(3, 4*NVMAX), ! block to store all surface meshes
+     & RV1MSH(3,NVMAX),    !  mesh h.v. vortex left  points
+     & RV2MSH(3,NVMAX),    !  mesh h.v. vortex right  points
+     & RVMSH(3,NVMAX),    ! mesh h.v. vortex center points
+     & RCMSH(3,NVMAX)    ! mesh h.v. control points
 
       LOGICAL LSURFMSH
+      LOGICAL LMESHFLAT
       COMMON /SURF_MESH_L/
-     & LSURFMSH(NFMAX) ! T if surface uses a mesh cordinates for its geometry
+     & LSURFMSH(NFMAX), ! T if surface uses a mesh cordinates for its geometry
+     & LMESHFLAT(NFMAX) ! T if the surface's mesh should be flattened when computing vorticies and control points
 
 
 C      !!--- end added variables for python geometry manipulation ---

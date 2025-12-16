@@ -109,6 +109,7 @@ def pre_check_input_dict(input_dict: dict):
         # Geometery: Mesh
         "mesh",
         "iptloc",
+        "flatten_mesh",
         # Control Surfaces
         # "dname" # IMPLEMENT THIS
         "icontd",  # control variable index

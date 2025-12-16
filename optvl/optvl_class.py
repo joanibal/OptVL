@@ -823,7 +823,7 @@ class OVLSolver(object):
                 # Load airfoil data sections
                 # Load the Airfoil Section into AVL
                 for j in range(num_secs):
-                    xfminmax = xfminmax_arr[j]           
+                    xfminmax = xfminmax_arr[j]
                     
                     # Manually Specify Coordiantes (no camberline verification, only use if you know what you're doing)
                     if "xasec" in surf_dict.keys():
@@ -944,7 +944,9 @@ class OVLSolver(object):
                          surf_dict["iptloc"] = np.zeros(surf_dict["num_sections"],dtype=np.int32)
                          self.avl.adjust_mesh_spacing(idx_surf+1,surf_dict["mesh"].transpose((2, 0, 1)),surf_dict["iptloc"])
                          surf_dict["iptloc"] = surf_dict["iptloc"] - 1
-                    self.set_mesh(idx_surf, surf_dict["mesh"],surf_dict["iptloc"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
+                    if "flatten mesh" not in surf_dict.keys():
+                         surf_dict["flatten mesh"] = True
+                    self.set_mesh(idx_surf, surf_dict["mesh"],surf_dict["iptloc"],flatten=surf_dict["flatten mesh"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
                     self.avl.makesurf_mesh(idx_surf + 1) #+1 for Fortran indexing
                 else:
                     self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
@@ -1063,7 +1065,7 @@ class OVLSolver(object):
         # Tell AVL that geometry exists now and is ready for analysis
         self.avl.CASE_L.LGEO = True
 
-    def set_mesh(self, idx_surf: int, mesh: np.ndarray, iptloc: np.ndarray, update_nvs: bool=False, update_nvc: bool=False):
+    def set_mesh(self, idx_surf: int, mesh: np.ndarray, iptloc: np.ndarray, flatten:bool=True, update_nvs: bool=False, update_nvc: bool=False):
         """Sets a mesh directly into OptVL. Requires an iptloc vector to define the indices where the sections are defined.
         This is required for many of AVL's features like control surfaces to work properly. OptVL's input routine has multiple
         ways of automatically computing this vector. Alternatively, calling the adjust_mesh_spacing subroutine in the Fortran layer
@@ -1074,6 +1076,7 @@ class OVLSolver(object):
             idx_surf (int): the surface to apply the mesh to
             mesh (np.ndarray): XYZ mesh array (nx,ny,3)
             iptloc (np.ndarray): Vector containing the spanwise indicies where each section is defined (num_sections,)
+            flatten (bool): Should OptVL flatten the mesh when placing vorticies and control points
             update_nvs (bool): Should OptVL update the number of spanwise elements for the given mesh
             update_nvc (bool): Should OptVL update the number of chordwise elements for the given mesh
         """
@@ -1088,6 +1091,11 @@ class OVLSolver(object):
 
         if update_nvc:
             self.avl.SURF_GEOM_I.NVC[idx_surf] = nx-1
+
+        if flatten:
+            self.avl.SURF_MESH_L.LMESHFLAT[idx_surf] = True
+        else:
+            self.avl.SURF_MESH_L.LMESHFLAT[idx_surf] = False
 
         # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
         # nspans by passing in all zeros
