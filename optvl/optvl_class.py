@@ -114,6 +114,19 @@ class OVLSolver(object):
         # spanwise efficiency
         "e": ["CASE_R", "SPANEF"],
     }
+    
+    body_forces_var_to_fort_var = {
+        'length':        ['BODY_R', 'ELBDY'],
+        'surface area':  ['BODY_R', 'SRFBDY'],
+        'volume':        ['BODY_R', 'VOLBDY'],
+        'CL':            ['BODY_R', 'CLBDY'],
+        'CD':            ['BODY_R', 'CDBDY'],
+        'Cm':            ['BODY_R', 'CMBDY', 1],
+        'CY':            ['BODY_R', 'CFBDY', 1],
+        'Cn':            ['BODY_R', 'CMBDYBAX', 2],
+        'Cl':            ['BODY_R', 'CMBDYBAX', 0]
+    }
+    
     ref_var_to_fort_var = {
         "Sref": ["CASE_R", "SREF"],
         "Cref": ["CASE_R", "CREF"],
@@ -1096,7 +1109,7 @@ class OVLSolver(object):
         zf = np.zeros_like(xf)
         zf[xf < pos] = cam * (2.0 * pos * xf[xf < pos] - 1.0) * xf[xf < pos] / (pos**2)
         zf[xf > pos] = cam * ((1 - 2.0 * pos) + (2.0 * pos - xf[xf > pos]) * xf[xf > pos]) / (1 - pos) ** 2
-        theta = np.atan(slopes)
+        theta = np.arctan(slopes)
 
         # Set airfoil section
         self.set_avl_fort_arr("SURF_GEOM_I", "NASEC", nasec, slicer=(isurf, isec))
@@ -1502,6 +1515,29 @@ class OVLSolver(object):
             total_data[key] = val[()]
 
         return total_data
+
+    def get_body_forces(self) -> Dict[str, float]:
+        """Get the aerodynamic data for the last run case and return it as a dictionary.
+
+        Returns:
+            Dict[str, float]: Dictionary of aerodynamic data. The keys the aerodyanmic coefficients.
+        """
+
+        body_data = {}
+        body_names = self.get_body_names()
+        
+        for body_name in body_names:
+            body_data[body_name] = {}
+        
+        for key, avl_key in self.body_forces_var_to_fort_var.items():
+            val = self.get_avl_fort_arr(avl_key[0], avl_key[1])
+            for idx_body, body_name in enumerate(body_names):
+                if (len(avl_key) > 2):
+                    body_data[body_name][key] = val[idx_body,avl_key[2]]
+                else:
+                    body_data[body_name][key] = val[idx_body]
+
+        return body_data
 
     def get_control_stab_derivs(self) -> Dict[str, float]:
         """Get the control surface derivative data, i.e. dCL/dElevator,

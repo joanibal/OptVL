@@ -151,13 +151,6 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
         # This is the method that acutally runs the analysis
         ovl.execute_run()
 
-        force_data = ovl.get_total_forces()
-
-        for key in force_data:
-            avl_key = get_avl_output_name(key, ovl)
-            avl_val = ref_data["outputs"]["total_forces"][avl_key]
-            check_vals(force_data[key], avl_val, key, **kwargs)
-
         mesh_data = ovl.get_mesh_data()
         for key in ref_data["outputs"]["mesh_data"]:
             mesh_avl_val = ref_data["outputs"]["mesh_data"][key]
@@ -167,6 +160,28 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
         for key in reference_data:
             ref_avl_val = ref_data["outputs"]["reference_data"][key]
             check_vals(reference_data[key], ref_avl_val, f"ref:{key}", **kwargs)
+
+        force_data = ovl.get_total_forces()
+        for key in force_data:
+            avl_key = get_avl_output_name(key, ovl)
+            avl_val = ref_data["outputs"]["total_forces"][avl_key]
+            check_vals(force_data[key], avl_val, key, **kwargs)
+        
+        body_avl_keys = {
+            'length':"Length",
+            'surface area': "Asurf",
+            'volume': "Vol",
+        }
+        
+        body_force_data = ovl.get_body_forces()
+        for idx_body, body in enumerate(body_force_data):
+            for key in body_force_data[body]:
+                if key in body_avl_keys:
+                    avl_key = body_avl_keys[key]
+                else:
+                    avl_key = key
+                avl_val = ref_data["outputs"]["body_forces"][str(idx_body+1)][avl_key]
+                check_vals(body_force_data[body][key], avl_val, key, **kwargs)
 
         control_def = ovl.get_control_deflections()
         for key in control_def:

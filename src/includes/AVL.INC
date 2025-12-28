@@ -737,6 +737,7 @@ C
       REAL(kind=avl_real) CDBDY,CYBDY, CLBDY
       REAL(kind=avl_real) CFBDY
       REAL(kind=avl_real) CMBDY
+      REAL(kind=avl_real) CMBDYBAX
       COMMON /BODY_R/
      & ELBDY(NBMAX),                            ! body length
      & SRFBDY(NBMAX),                           ! body surface area
@@ -744,7 +745,8 @@ C
      & DCPB(3,NLMAX),                           ! dCp loading on sources
      & CDBDY(NBMAX),CYBDY(NBMAX),CLBDY(NBMAX),  ! body CD,CY,CL referred to SREF in stability axes
      & CFBDY(3,NBMAX),                            ! body axes CFX,CFY,CFZ referred to SREF
-     & CMBDY(3,NBMAX)                             ! body axes CMX,CMY,CMZ referred to SREF, CREF about XYZref
+     & CMBDY(3,NBMAX),                            ! body axes CMX,CMY,CMZ referred to SREF, CREF about XYZref
+     & CMBDYBAX(3,NBMAX)
 C
       COMMON /SOLV_I/
      & IAPIV(NVMAX)           ! pivot indices for LU solver

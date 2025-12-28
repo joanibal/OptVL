@@ -21,10 +21,6 @@ clean:
 	rm -fr src/build/*.o
 	rm -fr src/build/*.a
 	rm -fr src/build/*.so
-	rm -fr src_cs/build/*.mod
-	rm -fr src_cs/build/*.o
-	rm -fr src_cs/build/*.a
-	rm -fr src_cs/build/*.so
 	rm -fr optvl/*.so
 	rm -f *~ config.mk;
 

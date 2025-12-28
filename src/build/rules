@@ -1,7 +1,7 @@
 # These are the rules to make each of the 4 different types of files.
 
 
-%.o : %.f90 avl_heap_inc.o avl_heap_diff_inc.o
+%.o : %.f90 avl_heap_inc.mod avl_heap_diff_inc.mod
 	$(FF90) $(FF90_ALL_FLAGS) -I ../includes -c $< -o $*.o
 	@echo
 	@echo "        --- Compiled $*.f90 successfully ---"
@@ -19,7 +19,7 @@
 	@echo "        --- Compiled $*.c successfully ---"
 	@echo
 
-%.o: %.f avl_heap_inc.o avl_heap_diff_inc.o
+%.o: %.f avl_heap_inc.mod avl_heap_diff_inc.mod
 	$(FF90) $(FF90_ALL_FLAGS) -I ../includes -c $< -o $*.o
 	@echo
 	@echo "        --- Compiled $*.f successfully ---"

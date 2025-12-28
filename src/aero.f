@@ -1470,6 +1470,8 @@ C
       REAL CDBDY_U(NUMAX), CYBDY_U(NUMAX), CLBDY_U(NUMAX), 
      &     CFBDY_U(3,NUMAX), 
      &     CMBDY_U(3,NUMAX)
+      CHARACTER*50 SATYPE
+
 C
 C
       BETM = SQRT(1.0 - MACH**2)
@@ -1635,6 +1637,13 @@ C
         ENDDO
  200  CONTINUE
 C
+      ! compute the forces on the body in the body axis
+      CALL GETSA(LNASA_SA,SATYPE,DIR)
+
+      do IB = 1,NBODY
+            CMBDYBAX(3,IB) = DIR*CMBDY(3,IB)
+            CMBDYBAX(1,IB) = DIR*CMBDY(1,IB)
+      enddo
       RETURN
       END ! BDFORC
 

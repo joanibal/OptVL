@@ -64,6 +64,7 @@ def parse_avl_output(run_output_files):
                         "reference_data": {},
                         "variables": {},
                         "total_forces": {},
+                        "body_forces": {},
                         "controls": {},
                         "stability_derivatives": {},
                         "body_axis_derivatives": {}
@@ -129,7 +130,30 @@ def parse_avl_output(run_output_files):
                     l = next(lines).strip()
                     val, name  = l.split("  ")
                     current_case["outputs"]["controls"][name.strip()] = float(val)
-
+            
+            elif "s>  BODY" in line:
+                # skip version line
+                # and reference info
+                for _ in range(4):
+                    next(lines)                # skip a
+                
+                nbodys, _ = next(lines).split("|")
+                nbodys = int(nbodys)
+                
+                # skip next two lines
+                for _ in range(2):
+                    next(lines)
+                          
+                for idx_body in range(1,nbodys+1):
+                    vals, keys = next(lines).split("|")
+                    vals = parse_floats(vals)
+                    keys = keys.split(':')[-1].strip()
+                    keys = keys.split(' ')
+                    
+                    current_case["outputs"]["body_forces"][idx_body] = {}
+                
+                    for k, v in zip(keys, vals):
+                        current_case["outputs"]["body_forces"][idx_body][k] = v
 
             # --- Stability derivatives ---
             elif "Stability-axis derivatives" in line or "Geometry-axis derivatives" in line:
