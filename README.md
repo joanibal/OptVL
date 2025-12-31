@@ -32,7 +32,7 @@ Below is a basic example of this workflow and [this page](https://joanibal.githu
 ```python
 from optvl import OVLSolver
 
-ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=True)
+ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
 
 # look at the geometry to see that everything is right
 ovl.plot_geom()
@@ -45,7 +45,8 @@ ovl.set_parameter("Mach", 0.3)
 # set the deflection of the elevator to trim the pitching moment
 ovl.set_constraint("Elevator", "Cm", 0.00)
 
-ovl.set_control_deflection("Elevator", 10.0)
+# set the rudder deflection to set value
+ovl.set_control_deflection("Rudder", 10.0)
 
 # This is the method that acutally runs the analysis
 ovl.execute_run()

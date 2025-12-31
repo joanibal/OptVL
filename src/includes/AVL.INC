@@ -534,7 +534,7 @@ C      !!--- end added variables for python geometry minipulation ---
       REAL(kind=avl_real) AINC
       REAL(kind=avl_real) AINC_G
       REAL(kind=avl_real) CDSTRP, CYSTRP, CLSTRP
-      REAL(kind=avl_real) CDST_A, CYST_A  CLST_A
+      REAL(kind=avl_real) CDST_A, CYST_A,  CLST_A
       REAL(kind=avl_real) CDST_U, CYST_U, CLST_U
       REAL(kind=avl_real) CDST_D, CYST_D, CLST_D
       REAL(kind=avl_real) CDST_G, CYST_G, CLST_G
