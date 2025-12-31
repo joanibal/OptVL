@@ -154,14 +154,14 @@ class OVLSolver(object):
         "average chord": ["SURF_R", "CAVESURF"],
         
         # non-dimensionalized forces 
-        "CX": ["SURF_R", "CXSURF"], 
-        "CY": ["SURF_R", "CYSURF"], 
-        "CZ": ["SURF_R", "CZSURF"],   
+        "CX": ["SURF_R", "CFSURF", 0], 
+        "CY": ["SURF_R", "CFSURF", 1], 
+        "CZ": ["SURF_R", "CFSURF", 2],
          
-        # non-dimensionalized momen ts (body frame)
-        "Cl": ["SURF_R", "CRSURF"  ],
-        "Cm": ["SURF_R", "CMSUR  F"],
-        "Cn": ["SURF_R", "CNSURF"],
+        # non-dimensionalized moments (body frame)
+        "Cl": ["SURF_R", "CMSURF", 0],
+        "Cm": ["SURF_R", "CMSURF", 1],
+        "Cn": ["SURF_R", "CMSURF", 2],
         
         # forces non-dimentionalized by surface quantities
         # uses surface area instead of sref and takes moments about leading edge
@@ -1660,8 +1660,14 @@ class OVLSolver(object):
             surf_data[surf] = {}
 
         for key, avl_key in self.case_surf_var_to_fort_var.items():
-            vals = self.get_avl_fort_arr(*avl_key)
+            if len(avl_key) != 2:
+                # if the avl_key is multi-dimensional then we need to specify the component 
+                slicer = (slice(None), avl_key[2])
+            else:
+                slicer = None
 
+            vals = self.get_avl_fort_arr(avl_key[0], avl_key[1], slicer=slicer)
+            
             # add the values to corresponding surface dict
             for idx_surf, surf_name in enumerate(self.surface_names):
                 surf_data[surf_name][key] = vals[idx_surf]
