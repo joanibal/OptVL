@@ -64,17 +64,17 @@ for case in case_data:
     avl_script_file = f"avl_analysis_scripts/{case}.txt"
     avl_script_file = os.path.join(test_dir, f"avl_analysis_scripts/{case}.txt")
     # generate the script first
-    _ = generate_avl_script(**case_data[case], output_file=avl_script_file)
+    # _ = generate_avl_script(**case_data[case], output_file=avl_script_file)
 
     # run the script
     avl_run_file = os.path.join(test_dir, f"avl_analysis_references/{case}.output")
     cmd = [avl_exe, "<", avl_script_file, "| tee", avl_run_file]
 
-    with open(avl_script_file, "r") as fin, open(avl_run_file, "w") as fout:
-        result = subprocess.run(
-            [avl_exe], stdin=fin, stdout=fout, stderr=subprocess.PIPE, cwd=test_dir, text=True, timeout=120
-        )
-    print(f"{case} piped through avl and exited with:", result.returncode)
+    # with open(avl_script_file, "r") as fin, open(avl_run_file, "w") as fout:
+    #     result = subprocess.run(
+    #         [avl_exe], stdin=fin, stdout=fout, stderr=subprocess.PIPE, cwd=test_dir, text=True, timeout=120
+    #     )
+    # print(f"{case} piped through avl and exited with:", result.returncode)
 
     cases = parse_avl_output(avl_run_file)
     reference_file = os.path.join(test_dir, f"avl_analysis_references/{case}.json")

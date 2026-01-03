@@ -361,6 +361,7 @@ cc#endif
       REAL(kind=avl_real) CFS_D
       REAL(kind=avl_real) CFS_G
       REAL(kind=avl_real) CMSURF
+      REAL(kind=avl_real) CMSURFBAX
       REAL(kind=avl_real) CMS_U
       REAL(kind=avl_real) CMS_D
       REAL(kind=avl_real) CMS_G
@@ -381,7 +382,8 @@ C    forces
      & CFS_D(3,NFMAX,NDMAX),                       ! control sens.		 
      & CFS_G(3,NFMAX,NGMAX),                       ! design sens.                
 C    moments
-     & CMSURF(3,NFMAX),                            ! body axes surface CMx,CMy,CMz referred to SREF, CREF about XYZref
+     & CMSURF(3,NFMAX),                            ! geom axes surface CMx,CMy,CMz referred to SREF, CREF about XYZref
+     & CMSURFBAX(3,NFMAX),                         ! body axes surface CMx,CMy,CMz referred to SREF, CREF about XYZref
      & CMS_U(3,NFMAX,NUMAX),                       ! velocity and rotation sens.
      & CMS_D(3,NFMAX,NDMAX),                       ! control sens.
      & CMS_G(3,NFMAX,NGMAX),                       ! design sens.

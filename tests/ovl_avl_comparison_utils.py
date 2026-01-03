@@ -166,6 +166,32 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
             avl_key = get_avl_output_name(key, ovl)
             avl_val = ref_data["outputs"]["total_forces"][avl_key]
             check_vals(force_data[key], avl_val, key, **kwargs)
+
+        surf_avl_keys = {
+            'length':"Length",
+            'area': "Area",
+            # 'area': "Ssurf",
+            'volume': "Vol",
+            "average chord":"Cave",
+            "CL surf" : "cl",
+            "CD surf" : "cd",
+            "CDv surf" : "cdv",
+        }
+
+        surface_data = ovl.get_surface_forces()
+        for idx_surf, surf in enumerate(surface_data):
+            for key in surface_data[surf]:
+                
+                if key in surf_avl_keys:
+                    avl_key = surf_avl_keys[key]
+                elif key in ["CX", "CY", "CZ", "CMLE_LSTRP surf"]:
+                    # avl output does not provide this data
+                    continue
+                else:
+                    avl_key = key
+
+                avl_val = ref_data["outputs"]["surface_forces"][surf][avl_key]
+                check_vals(surface_data[surf][key], avl_val, key, **kwargs)
         
         body_avl_keys = {
             'length':"Length",

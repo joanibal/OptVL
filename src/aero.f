@@ -193,6 +193,12 @@ C     calculate stability axis based values
       CRBAX = DIR*CMTOT(1)  
       CMBAX =     CMTOT(2)
       CNBAX = DIR*CMTOT(3)
+      
+      do IS = 1,NSURF
+        CMSURFBAX(1,IS) = DIR*CMSURF(1,IS) 
+        CMSURFBAX(2,IS) =     CMSURF(2,IS)
+        CMSURFBAX(3,IS) = DIR*CMSURF(3,IS)
+      enddo
 
 C
       ! compute the stability derivatives every time (it's quite cheap)

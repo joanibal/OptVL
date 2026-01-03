@@ -172,14 +172,15 @@ class OVLSolver(object):
         "CZ": ["SURF_R", "CFSURF", 2],
          
         # non-dimensionalized moments (body frame)
-        "Cl": ["SURF_R", "CMSURF", 0],
-        "Cm": ["SURF_R", "CMSURF", 1],
-        "Cn": ["SURF_R", "CMSURF", 2],
+        "Cl": ["SURF_R", "CMSURFBAX", 0],
+        "Cm": ["SURF_R", "CMSURFBAX", 1],
+        "Cn": ["SURF_R", "CMSURFBAX", 2],
         
         # forces non-dimentionalized by surface quantities
         # uses surface area instead of sref and takes moments about leading edge
         "CL surf" : ["SURF_R", "CL_LSRF"],
         "CD surf" : ["SURF_R", "CD_LSRF"],
+        "CDv surf" : ["SURF_R", "CDVSURF"],
         "CMLE_LSTRP surf" : ["SURF_R", "CMLE_LSRF"],
         
         #TODO: add CF_LSRF(3,NFMAX), CM_LSRF(3,NFMAX)

@@ -64,6 +64,7 @@ def parse_avl_output(run_output_files):
                         "reference_data": {},
                         "variables": {},
                         "total_forces": {},
+                        "surface_forces": {},
                         "body_forces": {},
                         "controls": {},
                         "stability_derivatives": {},
@@ -141,10 +142,14 @@ def parse_avl_output(run_output_files):
                 nbodys = int(nbodys)
                 
                 # skip next two lines
-                for _ in range(2):
-                    next(lines)
-                          
                 for idx_body in range(1,nbodys+1):
+                    for _ in range(1):
+                        next(lines)
+                    
+                    body_key = next(lines).strip()
+                    # For some reason the body_key characters are all \x00
+                    # so we will use idx_body for the dict key
+                            
                     vals, keys = next(lines).split("|")
                     vals = parse_floats(vals)
                     keys = keys.split(':')[-1].strip()
@@ -154,6 +159,34 @@ def parse_avl_output(run_output_files):
                 
                     for k, v in zip(keys, vals):
                         current_case["outputs"]["body_forces"][idx_body][k] = v
+
+            elif "s>  SURF" in line:
+                # skip version line
+                # and reference info
+                for _ in range(4):
+                    next(lines)                # skip a
+                
+                nsurfs, _ = next(lines).split("|")
+                nsurfs = int(nsurfs)
+                
+                for idx_surf in range(1,nsurfs+1):
+                    # skip next  line
+                    for _ in range(1):
+                        next(lines)
+                    
+                    surf_key = next(lines).strip()
+                    
+                    current_case["outputs"]["surface_forces"][surf_key] = {}
+                    
+                    # two data lines 
+                    for _ in range(2):
+                        vals, keys = next(lines).split("|")
+                        vals = parse_floats(vals)
+                        keys = keys.split(':')[-1].strip()
+                        keys = keys.split(' ')
+                        
+                        for k, v in zip(keys, vals):
+                            current_case["outputs"]["surface_forces"][surf_key][k] = v
 
             # --- Stability derivatives ---
             elif "Stability-axis derivatives" in line or "Geometry-axis derivatives" in line:
