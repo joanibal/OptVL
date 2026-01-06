@@ -192,13 +192,49 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
 
                 avl_val = ref_data["outputs"]["surface_forces"][surf][avl_key]
                 check_vals(surface_data[surf][key], avl_val, key, **kwargs)
+
+        strip_avl_keys = {
+            'X LE':"Xle",
+            'Y LE':"Yle",
+            'Z LE':"Zle",
+            'chord':"Chord",
+            'area': "Area",
+            'spanloading': "c_cl",
+            "downwash":"ai",
+            "CL perp" : "cl_perp",
+            "CL strip" : "cl",
+            "CD strip" : "cd",
+            "CDv" : "cdv",
+            "Cm c/4" : "cm_c/4",
+            "Cm LE" : "cm_LE",
+            "CP x/c" : "C.P.x/c",
+        }
+
+        strip_data = ovl.get_strip_forces()
+        
+        
+        for idx_surf, surf in enumerate(strip_data):
+            for key in strip_data[surf]:
+            
+                
+                if key in strip_avl_keys:
+                    avl_key = strip_avl_keys[key]
+                elif key in ["S LE", "width", "twist", "CL", "CD", "CX", "CY", "CZ", "Cl", "Cm", "Cn", "CF strip", "Cm strip", "CP x/c", "lift dist", "drag dist", "roll dist", "yaw dist"]:
+                    # avl output does not provide this data
+                    continue
+                else:
+                    avl_key = key
+
+                
+                avl_val = ref_data["outputs"]["strip_forces"][surf][avl_key]
+                check_vals(strip_data[surf][key], avl_val, key, **kwargs)
+
         
         body_avl_keys = {
             'length':"Length",
             'surface area': "Asurf",
             'volume': "Vol",
         }
-        
         body_force_data = ovl.get_body_forces()
         for idx_body, body in enumerate(body_force_data):
             for key in body_force_data[body]:

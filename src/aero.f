@@ -1143,6 +1143,12 @@ C   HHY bugfix 01102024 added rotation by AINC
         CA_LSTRP(J) = CAXL0*COSAINC - CNRM0*SINAINC
         CN_LSTRP(J) = CNRM0*COSAINC + CAXL0*SINAINC
 C
+C------ vector at chord reference point from rotation axes
+        RROT(1) = XSREF(J) - XYZREF(1)
+        RROT(2) = YSREF(J) - XYZREF(2)
+        RROT(3) = ZSREF(J) - XYZREF(3)
+c        print *,"WROT ",WROT
+C
 C------ set total effective velocity = freestream + rotation
         CALL CROSS(RROT,WROT,VROT)
         VEFF(1) = VINF(1) + VROT(1)

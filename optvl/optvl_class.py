@@ -1934,7 +1934,7 @@ class OVLSolver(object):
             strip_data[surf_key]["area"] = strip_data[surf_key]["width"] * strip_data[surf_key]["chord"]
 
             # formula is directly from AVL
-            xcp = 0.25 - strip_data[surf_key]["Cm c/4"] / strip_data[surf_key]["CL perp"]
+            xcp = 0.25 - strip_data[surf_key]["Cm c/4"] / strip_data[surf_key]["CL strip"]
             strip_data[surf_key]["CP x/c"] = xcp
 
         # get length of along the surface of each strip
