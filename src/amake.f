@@ -650,6 +650,12 @@ c--------------------------------------------------------------
       NVOR = 0
       
       ISURF = 1
+      
+      NSURFDUPL = 0
+      do ii=1,(NSURF)
+            if (ldupl(ii)) NSURFDUPL = NSURFDUPL + 1
+      enddo 
+      
 c     the iterations of this loop are not independent because we count
 c     up the size information as we make each surface
       do ii=1,(NSURF-NSURFDUPL)

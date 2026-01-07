@@ -324,10 +324,47 @@ def main():
     baseline_coeffs  = np.array([0.02, 0.0])
     baseline_cambers = quadratic_camber_distribution(baseline_coeffs, Y_POSITIONS)
     incidences       = linear_incidence_distribution(Y_POSITIONS)
-    create_avl_file_with_naca_airfoils(baseline_cambers, incidences, TEMP_AVL_FILE)
+    
+    geom_dict = {
+        "title": "AIRCRAFT", # Aicraft name (MUST BE SET)
+        "mach": 0.0, # Reference Mach number
+        "iysym": 0, # y-symmetry settings
+        "izsym": 0, # z-symmetry settings
+        "zsym": 0.0, # z-symmetry plane
+        "Sref": 0.8127, # Reference planform area
+        "Cref": 0.2286, # Reference chord area
+        "Bref": 3.556, # Reference span length
+        "XYZref": np.array([0.0, 0, 0]), # Reference x,y,z position
+        "CDp": 0.0, # Reference profile drag adjustment
+        "surfaces": { # dictionary of surface dictionaries
+            "Wing": {
+                # General
+                "num_sections": NUM_SECTIONS, # number of sections in surface
+                "num_controls": np.array([0]*NUM_SECTIONS), # number of control surfaces assocaited with each section (in order)
+                "num_design_vars": np.array([0]*NUM_SECTIONS), # number of AVL design variables assocaited with each section (in order)
+                "component": 1,  # logical surface component index (for grouping interacting surfaces, see AVL manual)
+                "yduplicate": 0.0,  # surface is duplicated over the ysymm plane
+                "xles": np.zeros(NUM_SECTIONS),  # leading edge cordinate vector(x component)
+                "yles": np.linspace(0, Y_TIP, NUM_SECTIONS),  # leading edge cordinate vector(y component)
+                "zles": np.zeros(NUM_SECTIONS),  # leading edge cordinate vector(z component)
+                "chords": np.ones(NUM_SECTIONS)*0.2286,  # chord length vector
+                "aincs": incidences,  # incidence angle vector
+                # NACA
+                'naca' : np.array(['2412']*NUM_SECTIONS), # 4-digit NACA airfoil
+                # Paneling
+                "nchordwise": 8,  # number of chordwise horseshoe vortice s placed on the surface
+                "cspace": 1.0,  # chordwise vortex spacing parameter
+                "nspan": 20,  # number of spanwise horseshoe vortices placed on the entire surface
+                "sspace": -2.0,  # spanwise vortex spacing parameter for entire surface
+                "nspans": np.array([5]*NUM_SECTIONS),  # number of spanwise elements vector
+                "sspaces": np.array([3.0]*NUM_SECTIONS),  # spanwise spacing vector (for each section)
+                "use surface spacing": 1,  # surface spacing set for the entire surface (known as LSURFSPACING in AVL)
+        },
+        }
+    }
 
     # Initialize solver ONCE - this will be reused throughout optimization
-    ovl = OVLSolver(geo_file=TEMP_AVL_FILE, debug=DEBUG)
+    ovl = OVLSolver(input_dict=geom_dict, debug=DEBUG)
     ovl.set_constraint('alpha', None, TRIM_AOA)
     ovl.set_parameter('velocity', TRIM_VELOCITY)
     ovl.execute_run()
