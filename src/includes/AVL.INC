@@ -361,6 +361,7 @@ cc#endif
       REAL(kind=avl_real) CFS_D
       REAL(kind=avl_real) CFS_G
       REAL(kind=avl_real) CMSURF
+      REAL(kind=avl_real) CMSURFBAX
       REAL(kind=avl_real) CMS_U
       REAL(kind=avl_real) CMS_D
       REAL(kind=avl_real) CMS_G
@@ -381,7 +382,8 @@ C    forces
      & CFS_D(3,NFMAX,NDMAX),                       ! control sens.		 
      & CFS_G(3,NFMAX,NGMAX),                       ! design sens.                
 C    moments
-     & CMSURF(3,NFMAX),                            ! body axes surface CMx,CMy,CMz referred to SREF, CREF about XYZref
+     & CMSURF(3,NFMAX),                            ! geom axes surface CMx,CMy,CMz referred to SREF, CREF about XYZref
+     & CMSURFBAX(3,NFMAX),                         ! body axes surface CMx,CMy,CMz referred to SREF, CREF about XYZref
      & CMS_U(3,NFMAX,NUMAX),                       ! velocity and rotation sens.
      & CMS_D(3,NFMAX,NDMAX),                       ! control sens.
      & CMS_G(3,NFMAX,NGMAX),                       ! design sens.
@@ -534,7 +536,7 @@ C      !!--- end added variables for python geometry minipulation ---
       REAL(kind=avl_real) AINC
       REAL(kind=avl_real) AINC_G
       REAL(kind=avl_real) CDSTRP, CYSTRP, CLSTRP
-      REAL(kind=avl_real) CDST_A, CYST_A,  CLST_A
+      REAL(kind=avl_real) CDST_A, CYST_A, CLST_A
       REAL(kind=avl_real) CDST_U, CYST_U, CLST_U
       REAL(kind=avl_real) CDST_D, CYST_D, CLST_D
       REAL(kind=avl_real) CDST_G, CYST_G, CLST_G
@@ -737,6 +739,7 @@ C
       REAL(kind=avl_real) CDBDY,CYBDY, CLBDY
       REAL(kind=avl_real) CFBDY
       REAL(kind=avl_real) CMBDY
+      REAL(kind=avl_real) CMBDYBAX
       COMMON /BODY_R/
      & ELBDY(NBMAX),                            ! body length
      & SRFBDY(NBMAX),                           ! body surface area
@@ -744,7 +747,8 @@ C
      & DCPB(3,NLMAX),                           ! dCp loading on sources
      & CDBDY(NBMAX),CYBDY(NBMAX),CLBDY(NBMAX),  ! body CD,CY,CL referred to SREF in stability axes
      & CFBDY(3,NBMAX),                            ! body axes CFX,CFY,CFZ referred to SREF
-     & CMBDY(3,NBMAX)                             ! body axes CMX,CMY,CMZ referred to SREF, CREF about XYZref
+     & CMBDY(3,NBMAX),                            ! body axes CMX,CMY,CMZ referred to SREF, CREF about XYZref
+     & CMBDYBAX(3,NBMAX)
 C
       COMMON /SOLV_I/
      & IAPIV(NVMAX)           ! pivot indices for LU solver

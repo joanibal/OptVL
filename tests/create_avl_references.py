@@ -12,8 +12,8 @@ avl_exe = os.path.join(test_dir, "../external/avl_db")
 # fmt:off
 case_data = {
     "unconstrained_supra": {
-        "geometry_file": "./geom_files/supra.avl",
-        "mass_file": "./geom_files/supra.mass",
+        "geometry_file": "../geom_files/supra.avl",
+        "mass_file": "../geom_files/supra.mass",
         "alphas":      [0, 45, 0, -45],
         "betas":       [0, 0,  0, -45],
         "roll_rates":  [0, 0,  0, 0.1],
@@ -26,8 +26,8 @@ case_data = {
         },
     },
     "constrained_supra": {
-        "geometry_file": "./geom_files/supra.avl",
-        "mass_file": "./geom_files/supra.mass",
+        "geometry_file": "../geom_files/supra.avl",
+        "mass_file": "../geom_files/supra.mass",
         "CLs": [1.0, 1.1, 1.2],
         "betas": [0, 10, -12],
         "roll_rates": [0, 0, 0.1],
@@ -36,8 +36,8 @@ case_data = {
         "pre_commands": [("D2", "RM", 0), ("D3", "PM", 0), ("D4", "YM", 0)],
     },
     "unconstrained_aircraft": {
-        "geometry_file": "./geom_files/aircraft.avl",
-        "mass_file": "./geom_files/aircraft.mass",
+        "geometry_file": "../geom_files/aircraft.avl",
+        "mass_file": "../geom_files/aircraft.mass",
         "alphas":      [0, 45,  0,   0,   0,   0,  0,  0,  -45],
         "betas":       [0,  0, 45,   0,   0,   0,  0,  0,  -45],
         "roll_rates":  [0,  0,  0, 0.1,   0,   0,  0,  0,  0.1],
@@ -49,8 +49,8 @@ case_data = {
         },
     },
     "constrained_aircraft": {
-        "geometry_file": "./geom_files/aircraft.avl",
-        "mass_file": "./geom_files/aircraft.mass",
+        "geometry_file": "../geom_files/aircraft.avl",
+        "mass_file": "../geom_files/aircraft.mass",
         "CLs": [0.0, 0.5, 1.01],
         "betas": [0, 10, -12],
         "roll_rates":  [0, 0, 0.5],
