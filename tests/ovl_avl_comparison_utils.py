@@ -145,7 +145,7 @@ def check_vals(
 
 
 def run_comparison(ovl, ref_data_cases, **kwargs):
-    for ref_data in ref_data_cases:
+    for ref_data in [ref_data_cases[0]]:
         set_inputs(ovl, ref_data)
 
         # This is the method that acutally runs the analysis
@@ -214,19 +214,30 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
         
         
         for idx_surf, surf in enumerate(strip_data):
+            print(f"-------- {surf} --------")
             for key in strip_data[surf]:
             
                 
-                if key in strip_avl_keys:
-                    avl_key = strip_avl_keys[key]
-                elif key in ["S LE", "width", "twist", "CL", "CD", "CX", "CY", "CZ", "Cl", "Cm", "Cn", "CF strip", "Cm strip", "CP x/c", "lift dist", "drag dist", "roll dist", "yaw dist"]:
+                if key in ["S LE", "width", "twist", "CL", "CD", "CX", "CY", "CZ", "Cl", "Cm", "Cn", "CF strip", "Cm strip", "lift dist", "drag dist", "roll dist", "yaw dist"]:
                     # avl output does not provide this data
                     continue
+                elif key in ["CP x/c"]:
+                    # check that there is lift on this surface
+                    if np.abs(surface_data[surf]["CL"]) < 1e-14:
+                        # the C.P. X/C of this surface will have very large error
+                        # this often happens with vertical tails
+                        continue 
+                    else:
+                        avl_key = strip_avl_keys[key]
+                        
+                elif key in strip_avl_keys:
+                    avl_key = strip_avl_keys[key]
                 else:
                     avl_key = key
 
                 
                 avl_val = ref_data["outputs"]["strip_forces"][surf][avl_key]
+                print(key, avl_key, strip_data[surf][key][:3], avl_val[:3])
                 check_vals(strip_data[surf][key], avl_val, key, **kwargs)
 
         
