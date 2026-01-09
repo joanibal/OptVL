@@ -653,11 +653,32 @@ C$AD II-LOOP
             
            ENDIF
            
+           !TODO-opt: only do this if bodires
+           VUNIT(1) = VUNIT(1) + WCSRD_U(1,I,1)*VINF(1)
+     &                         + WCSRD_U(1,I,2)*VINF(2)
+     &                         + WCSRD_U(1,I,3)*VINF(3)
+           VUNIT(2) = VUNIT(2) + WCSRD_U(2,I,1)*VINF(1)
+     &                         + WCSRD_U(2,I,2)*VINF(2)
+     &                         + WCSRD_U(2,I,3)*VINF(3)
+           VUNIT(3) = VUNIT(3) + WCSRD_U(3,I,1)*VINF(1)
+     &                         + WCSRD_U(3,I,2)*VINF(2)
+     &                         + WCSRD_U(3,I,3)*VINF(3)
+                               
            RROT(1) = RC(1,I) - XYZREF(1)
            RROT(2) = RC(2,I) - XYZREF(2)
            RROT(3) = RC(3,I) - XYZREF(3)
            CALL CROSS(RROT,WUNIT,VUNIT_W_term)
-           
+
+           VUNIT_W_term(1) = VUNIT_W_term(1) + WCSRD_U(1,I,1)*WROT(1)
+     &                                       + WCSRD_U(1,I,2)*WROT(2)
+     &                                       + WCSRD_U(1,I,3)*WROT(3)
+           VUNIT_W_term(2) = VUNIT_W_term(2) + WCSRD_U(2,I,1)*WROT(1)
+     &                                       + WCSRD_U(2,I,2)*WROT(2)
+     &                                       + WCSRD_U(2,I,3)*WROT(3)
+           VUNIT_W_term(3) = VUNIT_W_term(3) + WCSRD_U(3,I,1)*WROT(1)
+     &                                       + WCSRD_U(3,I,2)*WROT(2)
+     &                                       + WCSRD_U(3,I,3)*WROT(3)
+
            VUNIT = VUNIT + VUNIT_W_term
            
            RHS(I) = -DOT(ENC(1,I),VUNIT)

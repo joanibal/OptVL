@@ -2191,6 +2191,15 @@ C ============= Added to AVL ===============
       
       CALL VINFAB
       
+      DO L = 1, NLNODE
+        SRC(L) = SRC_U(L,1)*VINF(1)
+     &         + SRC_U(L,2)*VINF(2)
+     &         + SRC_U(L,3)*VINF(3)
+     &         + SRC_U(L,4)*WROT(1)
+     &         + SRC_U(L,5)*WROT(2)
+     &         + SRC_U(L,6)*WROT(3)
+      ENDDO
+      ! this is meant to replace GUCALC
       DO IU = 1,6
             call set_vel_rhs_u(IU)
             do i = 1,NVOR

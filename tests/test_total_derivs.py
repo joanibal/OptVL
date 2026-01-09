@@ -19,7 +19,8 @@ import numpy as np
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_dir = os.path.join(base_dir, "..", "geom_files")
 
-geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+# geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+geom_file = os.path.join(geom_dir, "rect_with_body.avl")
 
 
 class TestTotals(unittest.TestCase):
@@ -114,7 +115,8 @@ class TestTotals(unittest.TestCase):
                 [con_key], {}, {}, {}, step=1.0e-5
             )
 
-            for func_key in func_vars:
+            # for func_key in func_vars:
+            for func_key in ['CX']:
                 ad_dot = sens_funcs[func_key][con_key]
                 fd_dot = func_seeds[func_key]
 

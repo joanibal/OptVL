@@ -19,9 +19,11 @@ import numpy as np
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
-geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
-mass_file = os.path.join(geom_dir, "aircraft.mass")
-rect_file = os.path.join(geom_dir, 'rect.avl')
+# geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+# mass_file = os.path.join(geom_dir, "aircraft.mass")
+# rect_file = os.path.join(geom_dir, 'rect.avl')
+rect_file = os.path.join(geom_dir, 'rect_with_body.avl')
+geom_file = os.path.join(geom_dir, 'rect_with_body.avl')
 
 class TestFunctionPartials(unittest.TestCase):
     def setUp(self):
