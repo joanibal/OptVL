@@ -243,10 +243,10 @@ C       WC_U(3,c,u)  velocity per unit freestream
 C
 C--------------------------------------------------------------------
       INTEGER LFRST(*),NL(*)
-      REAL RL(3,*), RADL(*)
-      REAL SRC_U(NLDIM,*), DBL_U(3,NLDIM,*),
+      REAL RL(3,NLDIM), RADL(NLDIM)
+      REAL SRC_U(NLDIM,NU), DBL_U(3,NLDIM,NU),
      &     RC(3,NCDIM),
-     &     WC_U(3,NCDIM,*)
+     &     WC_U(3,NCDIM,NU)
 C
 C
       REAL VSRC(3), VDBL(3,3)
@@ -372,7 +372,7 @@ C
 
 
       SUBROUTINE SRDSET(BETM,XYZREF,IYSYM,
-     &                  NBODY,LFRST,NLDIM,
+     &                  NBODY,LFRST,NLDIM, NUMAX,
      &                  NL,RL,RADL,
      &                  SRC_U,DBL_U )
 C----------------------------------------------------------
@@ -387,6 +387,7 @@ C
 C       NBODY      number of bodies
 C       LFRST(b)   index of first node in body b
 C       NLDIM      size of SRC_U, DBL_U matrices
+C       NUMAX      outer size of SRC_U, DBL_U matrices
 C       NL(b)      number of source-line nodes in each body
 C       RL(3,b)    source-line node
 C       RADL(b)    body radius at node
@@ -398,9 +399,9 @@ C       DBL_U(3,u) doublet strength per unit freestream component
 C
 C----------------------------------------------------------
       REAL XYZREF(3)
-      REAL RL(3,*), RADL(*)
+      REAL RL(3,NLDIM), RADL(NLDIM)
       INTEGER LFRST(*), NL(*), IYSYM
-      REAL SRC_U(NLDIM,*), DBL_U(3,NLDIM,*)
+      REAL SRC_U(NLDIM,NUMAX), DBL_U(3,NLDIM,NUMAX)
 C
 C
       REAL DRL(3), VSRC(3), VDBL(3,3)

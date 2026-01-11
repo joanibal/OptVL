@@ -82,6 +82,7 @@ C$BWD-OF II-LOOP
           aicn_diff(i, j) = 0.D0
         ENDDO
       ENDDO
+      betm_diff = 0.D0
       CALL VVOR_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
      +            zsym_diff, vrcorec, vrcorew, nvor, rv1, rv1_diff, rv2
      +            , rv2_diff, lvcomp, chordv, chordv_diff, nvor, rc, 
@@ -299,9 +300,9 @@ C$BWD-OF II-LOOP
 
 C  Differentiation of set_vel_rhs in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: vinf wrot delcon xyzref rc
-C                enc_d rhs
+C                enc_d wcsrd_u rhs
 C   with respect to varying inputs: vinf wrot delcon xyzref rc
-C                enc enc_d
+C                enc enc_d wcsrd_u
       SUBROUTINE SET_VEL_RHS_B()
 C
       INCLUDE 'AVL.INC'
@@ -329,6 +330,7 @@ C$BWD-OF II-LOOP
           wunit(1) = 0.
           wunit(2) = 0.
           wunit(3) = 0.
+CTODO-opt: only do this if boddies
           IF (lvalbe(i)) THEN
             vunit(1) = vinf(1)
             vunit(2) = vinf(2)
@@ -340,10 +342,24 @@ C$BWD-OF II-LOOP
           ELSE
             CALL PUSHCONTROL1B(1)
           END IF
+          vunit(1) = vunit(1) + wcsrd_u(1, i, 1)*vinf(1) + wcsrd_u(1, i
+     +      , 2)*vinf(2) + wcsrd_u(1, i, 3)*vinf(3)
+          vunit(2) = vunit(2) + wcsrd_u(2, i, 1)*vinf(1) + wcsrd_u(2, i
+     +      , 2)*vinf(2) + wcsrd_u(2, i, 3)*vinf(3)
+          vunit(3) = vunit(3) + wcsrd_u(3, i, 1)*vinf(1) + wcsrd_u(3, i
+     +      , 2)*vinf(2) + wcsrd_u(3, i, 3)*vinf(3)
           rrot(1) = rc(1, i) - xyzref(1)
           rrot(2) = rc(2, i) - xyzref(2)
           rrot(3) = rc(3, i) - xyzref(3)
           CALL CROSS(rrot, wunit, vunit_w_term)
+C
+          vunit_w_term(1) = vunit_w_term(1) + wcsrd_u(1, i, 1)*wrot(1) +
+     +      wcsrd_u(1, i, 2)*wrot(2) + wcsrd_u(1, i, 3)*wrot(3)
+          vunit_w_term(2) = vunit_w_term(2) + wcsrd_u(2, i, 1)*wrot(1) +
+     +      wcsrd_u(2, i, 2)*wrot(2) + wcsrd_u(2, i, 3)*wrot(3)
+          vunit_w_term(3) = vunit_w_term(3) + wcsrd_u(3, i, 1)*wrot(1) +
+     +      wcsrd_u(3, i, 2)*wrot(2) + wcsrd_u(3, i, 3)*wrot(3)
+C
           vunit = vunit + vunit_w_term
 C Add contribution from control surfaces
 C$BWD-OF II-LOOP 
@@ -359,6 +375,33 @@ C$BWD-OF II-LOOP
           CALL DOT_B(enc(1, i), enc_diff(1, i), vunit, vunit_diff, 
      +               result1_diff)
           vunit_w_term_diff = vunit_w_term_diff + vunit_diff
+          wcsrd_u_diff(3, i, 1) = wcsrd_u_diff(3, i, 1) + wrot(1)*
+     +      vunit_w_term_diff(3) + vinf(1)*vunit_diff(3)
+          wrot_diff(1) = wrot_diff(1) + wcsrd_u(3, i, 1)*
+     +      vunit_w_term_diff(3) + wcsrd_u(2, i, 1)*vunit_w_term_diff(2)
+     +      + wcsrd_u(1, i, 1)*vunit_w_term_diff(1)
+          wcsrd_u_diff(3, i, 2) = wcsrd_u_diff(3, i, 2) + wrot(2)*
+     +      vunit_w_term_diff(3) + vinf(2)*vunit_diff(3)
+          wrot_diff(2) = wrot_diff(2) + wcsrd_u(3, i, 2)*
+     +      vunit_w_term_diff(3) + wcsrd_u(2, i, 2)*vunit_w_term_diff(2)
+     +      + wcsrd_u(1, i, 2)*vunit_w_term_diff(1)
+          wcsrd_u_diff(3, i, 3) = wcsrd_u_diff(3, i, 3) + wrot(3)*
+     +      vunit_w_term_diff(3) + vinf(3)*vunit_diff(3)
+          wrot_diff(3) = wrot_diff(3) + wcsrd_u(3, i, 3)*
+     +      vunit_w_term_diff(3) + wcsrd_u(2, i, 3)*vunit_w_term_diff(2)
+     +      + wcsrd_u(1, i, 3)*vunit_w_term_diff(1)
+          wcsrd_u_diff(2, i, 1) = wcsrd_u_diff(2, i, 1) + wrot(1)*
+     +      vunit_w_term_diff(2) + vinf(1)*vunit_diff(2)
+          wcsrd_u_diff(2, i, 2) = wcsrd_u_diff(2, i, 2) + wrot(2)*
+     +      vunit_w_term_diff(2) + vinf(2)*vunit_diff(2)
+          wcsrd_u_diff(2, i, 3) = wcsrd_u_diff(2, i, 3) + wrot(3)*
+     +      vunit_w_term_diff(2) + vinf(3)*vunit_diff(2)
+          wcsrd_u_diff(1, i, 1) = wcsrd_u_diff(1, i, 1) + wrot(1)*
+     +      vunit_w_term_diff(1) + vinf(1)*vunit_diff(1)
+          wcsrd_u_diff(1, i, 2) = wcsrd_u_diff(1, i, 2) + wrot(2)*
+     +      vunit_w_term_diff(1) + vinf(2)*vunit_diff(1)
+          wcsrd_u_diff(1, i, 3) = wcsrd_u_diff(1, i, 3) + wrot(3)*
+     +      vunit_w_term_diff(1) + vinf(3)*vunit_diff(1)
           CALL CROSS_B(rrot, rrot_diff, wunit, wunit_diff, vunit_w_term
      +                 , vunit_w_term_diff)
           rc_diff(3, i) = rc_diff(3, i) + rrot_diff(3)
@@ -370,6 +413,15 @@ C$BWD-OF II-LOOP
           rc_diff(1, i) = rc_diff(1, i) + rrot_diff(1)
           xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
           rrot_diff(1) = 0.D0
+          vinf_diff(1) = vinf_diff(1) + wcsrd_u(3, i, 1)*vunit_diff(3) +
+     +      wcsrd_u(2, i, 1)*vunit_diff(2) + wcsrd_u(1, i, 1)*vunit_diff
+     +      (1)
+          vinf_diff(2) = vinf_diff(2) + wcsrd_u(3, i, 2)*vunit_diff(3) +
+     +      wcsrd_u(2, i, 2)*vunit_diff(2) + wcsrd_u(1, i, 2)*vunit_diff
+     +      (1)
+          vinf_diff(3) = vinf_diff(3) + wcsrd_u(3, i, 3)*vunit_diff(3) +
+     +      wcsrd_u(2, i, 3)*vunit_diff(2) + wcsrd_u(1, i, 3)*vunit_diff
+     +      (1)
           CALL POPCONTROL1B(branch)
           IF (branch .EQ. 0) THEN
             wrot_diff(3) = wrot_diff(3) + wunit_diff(3)
@@ -399,9 +451,9 @@ C$BWD-OF II-LOOP
 
 C  Differentiation of set_vel_rhs_u in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: delcon xyzref rc enc enc_d
-C                rhs_u
+C                wcsrd_u rhs_u
 C   with respect to varying inputs: delcon xyzref rc enc enc_d
-C                rhs_u
+C                wcsrd_u rhs_u
 Cset_vel_rhs
 C
       SUBROUTINE SET_VEL_RHS_U_B(iu)
@@ -478,6 +530,12 @@ C$BWD-OF II-LOOP
           rc_diff(1, i) = rc_diff(1, i) + rrot_diff(1)
           xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
           rrot_diff(1) = 0.D0
+          wcsrd_u_diff(3, i, iu) = wcsrd_u_diff(3, i, iu) + vunit_diff(3
+     +      )
+          wcsrd_u_diff(2, i, iu) = wcsrd_u_diff(2, i, iu) + vunit_diff(2
+     +      )
+          wcsrd_u_diff(1, i, iu) = wcsrd_u_diff(1, i, iu) + vunit_diff(1
+     +      )
           CALL POPCONTROL2B(branch)
           vunit_diff(3) = 0.D0
           vunit_diff(2) = 0.D0
@@ -489,10 +547,10 @@ C$BWD-OF II-LOOP
       END
 
 C  Differentiation of set_gam_d_rhs in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: vinf wrot xyzref rc rhs_vec
-C                enc_q
-C   with respect to varying inputs: vinf wrot xyzref rc rhs_vec
-C                enc_q
+C   gradient     of useful results: vinf wrot xyzref rc wcsrd_u
+C                rhs_vec enc_q
+C   with respect to varying inputs: vinf wrot xyzref rc wcsrd_u
+C                rhs_vec enc_q
 Cset_vel_rhs_u
       SUBROUTINE SET_GAM_D_RHS_B(iq, enc_q, enc_q_diff, rhs_vec, 
      +                           rhs_vec_diff)
@@ -550,11 +608,23 @@ C$FWD-OF II-LOOP
      +               , result1_diff)
 C$BWD-OF II-LOOP 
           DO k=1,3
+            wcsrd_u_diff(k, i, 1) = wcsrd_u_diff(k, i, 1) + vinf(1)*
+     +        vq_diff(k)
             vinf_diff(1) = vinf_diff(1) + wcsrd_u(k, i, 1)*vq_diff(k)
+            wcsrd_u_diff(k, i, 2) = wcsrd_u_diff(k, i, 2) + vinf(2)*
+     +        vq_diff(k)
             vinf_diff(2) = vinf_diff(2) + wcsrd_u(k, i, 2)*vq_diff(k)
+            wcsrd_u_diff(k, i, 3) = wcsrd_u_diff(k, i, 3) + vinf(3)*
+     +        vq_diff(k)
             vinf_diff(3) = vinf_diff(3) + wcsrd_u(k, i, 3)*vq_diff(k)
+            wcsrd_u_diff(k, i, 4) = wcsrd_u_diff(k, i, 4) + wrot(1)*
+     +        vq_diff(k)
             wrot_diff(1) = wrot_diff(1) + wcsrd_u(k, i, 4)*vq_diff(k)
+            wcsrd_u_diff(k, i, 5) = wcsrd_u_diff(k, i, 5) + wrot(2)*
+     +        vq_diff(k)
             wrot_diff(2) = wrot_diff(2) + wcsrd_u(k, i, 5)*vq_diff(k)
+            wcsrd_u_diff(k, i, 6) = wcsrd_u_diff(k, i, 6) + wrot(3)*
+     +        vq_diff(k)
             wrot_diff(3) = wrot_diff(3) + wcsrd_u(k, i, 6)*vq_diff(k)
           ENDDO
           CALL POPCONTROL1B(branch)

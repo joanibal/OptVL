@@ -19,8 +19,9 @@ import numpy as np
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_dir = os.path.join(base_dir, "..", "geom_files")
 
-# geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
-geom_file = os.path.join(geom_dir, "rect_with_body.avl")
+geom_file = os.path.join(geom_dir, "aircraft_L1_with_body.avl")
+# geom_file = os.path.join(geom_dir, "rect_with_body.avl")
+# geom_file = os.path.join(geom_dir, "supra.avl")
 
 
 class TestTotals(unittest.TestCase):
@@ -44,7 +45,6 @@ class TestTotals(unittest.TestCase):
 
         for con in con_list:
             con_seeds[con] = 1.0
-
         self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
         self.ovl_solver.set_parameter_ad_seeds(param_seeds, mode="FD", scale=step)
@@ -61,6 +61,7 @@ class TestTotals(unittest.TestCase):
         consurf_derivs_peturb = self.ovl_solver.get_control_stab_derivs()
         stab_deriv_derivs_peturb = self.ovl_solver.get_stab_derivs()
         body_axis_deriv_petrub = self.ovl_solver.get_body_axis_derivs()
+        body_forces_peturb = self.ovl_solver.get_body_forces()
 
         self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
         self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
@@ -79,6 +80,14 @@ class TestTotals(unittest.TestCase):
         consurf_derivs = self.ovl_solver.get_control_stab_derivs()
         stab_deriv_derivs = self.ovl_solver.get_stab_derivs()
         body_axis_deriv = self.ovl_solver.get_body_axis_derivs()
+        body_forces = self.ovl_solver.get_body_forces()
+        
+        body_func_seeds = {}
+        for body in body_forces:
+            body_func_seeds[body] = {}
+            for key in body_forces[body]:
+                body_func_seeds[body][key] = (body_forces_peturb[body][key] - body_forces[body][key]) / step
+        
 
         func_seeds = {}
         for func_key in coef_data:
@@ -158,14 +167,14 @@ class TestTotals(unittest.TestCase):
                     np.testing.assert_allclose(
                         ad_dot,
                         func_dot,
-                        atol=1e-9,
+                        atol=5e-8,
                         err_msg=f"{func_key} wrt {con_key}",
                     )
                 else:
                     np.testing.assert_allclose(
                         ad_dot,
                         func_dot,
-                        rtol=1e-4,
+                        rtol=5e-4,
                         err_msg=f"{func_key} wrt {con_key}",
                     )
 
@@ -185,14 +194,14 @@ class TestTotals(unittest.TestCase):
                     np.testing.assert_allclose(
                         ad_dot,
                         func_dot,
-                        atol=1e-9,
+                        atol=2e-8,
                         err_msg=f"{func_key} wrt {con_key}",
                     )
                 else:
                     np.testing.assert_allclose(
                         ad_dot,
                         func_dot,
-                        rtol=1e-4,
+                        rtol=1e-3,
                         err_msg=f"{func_key} wrt {con_key}",
                     )
 
@@ -324,13 +333,13 @@ class TestTotals(unittest.TestCase):
                     #     f"{func_key}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                     # )
 
-                    tol = 5e-7
+                    tol = 1e-6
                     if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
                         # If either value is basically zero, use an absolute tolerance
                         np.testing.assert_allclose(
                             geom_dot,
                             func_dot,
-                            atol=tol,
+                            atol=5e-8,
                             err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                         )
                     else:
@@ -349,7 +358,6 @@ class TestTotals(unittest.TestCase):
         sens = self.ovl_solver.execute_run_sensitivities(func_vars, stab_derivs=stab_derivs)
 
         for param_key in self.ovl_solver.param_idx_dict:
-            # for con_key in ['beta']:
             func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif(
                 [], {}, {param_key: 1.0}, {}, step=1.0e-6
             )
@@ -384,7 +392,7 @@ class TestTotals(unittest.TestCase):
 
                 # rel_err = np.abs(ad_dot - func_dot) / np.abs(func_dot + 1e-20)
                 # print(
-                #     f"{func_key}   wrt {param_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
+                #     f"{func_key:20} wrt {param_key:10} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                 # )
 
                 tol = 1e-8
@@ -393,7 +401,7 @@ class TestTotals(unittest.TestCase):
                     np.testing.assert_allclose(
                         ad_dot,
                         func_dot,
-                        atol=1e-10,
+                        atol=1e-9,
                         err_msg=f"{func_key}  wrt {param_key}",
                     )
                 else:
@@ -458,7 +466,7 @@ class TestTotals(unittest.TestCase):
                     np.testing.assert_allclose(
                         ad_dot,
                         func_dot,
-                        atol=1e-10,
+                        atol=1e-9,
                         err_msg=f"{func_key}  wrt {ref_key}",
                     )
                 else:

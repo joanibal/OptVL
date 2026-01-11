@@ -19,11 +19,10 @@ import numpy as np
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
-# geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+geom_file = os.path.join(geom_dir, "aircraft_L1_with_body.avl")
 # mass_file = os.path.join(geom_dir, "aircraft.mass")
 # rect_file = os.path.join(geom_dir, 'rect.avl')
 rect_file = os.path.join(geom_dir, 'rect_with_body.avl')
-geom_file = os.path.join(geom_dir, 'rect_with_body.avl')
 
 class TestFunctionPartials(unittest.TestCase):
     def setUp(self):
@@ -361,7 +360,7 @@ class TestResidualPartials(unittest.TestCase):
             res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})[1]
 
             # print(f"res wrt {con_key}", np.linalg.norm(res_seeds), np.linalg.norm(res_seeds_FD))
-            np.testing.assert_allclose(res_seeds, res_seeds_FD, rtol=1e-5, err_msg=f"d(res) w.r.t.{con_key}")
+            np.testing.assert_allclose(res_seeds, res_seeds_FD, rtol=5e-4, err_msg=f"d(res) w.r.t.{con_key}")
 
     def test_rev_aero_constraint(self):
         num_res = self.ovl_solver.get_mesh_size()

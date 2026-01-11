@@ -69,12 +69,12 @@ C
       end if
 C
 C
-      IF(.NOT.LSRD) THEN
+      ! IF(.NOT.LSRD) THEN
         if(lverbose) then
           WRITE(*,*) ' Building source+doublet strength AIC matrix...'
         end if
         CALL SRDSET(BETM,XYZREF,IYSYM,
-     &              NBODY,LFRST,NLMAX,
+     &              NBODY,LFRST,NLMAX, NUMAX,
      &              NL,RL,RADL,
      &              SRC_U,DBL_U)
         if(lverbose) then
@@ -87,8 +87,8 @@ C
      &            NU,SRC_U,DBL_U,
      &            NVOR,RC,
      &            WCSRD_U,NVMAX)
-        LSRD = .TRUE.
-      ENDIF
+      !   LSRD = .TRUE.
+      ! ENDIF
       if (ltiming) then 
         call cpu_time(t4)
         write(*,*) '  s+doub time: ', t4 - t3
@@ -489,6 +489,7 @@ C---- Set source and doublet strengths
      &         + SRC_U(L,4)*WROT(1)
      &         + SRC_U(L,5)*WROT(2)
      &         + SRC_U(L,6)*WROT(3)
+
         DO K = 1, 3
           DBL(K,L) = DBL_U(K,L,1)*VINF(1)
      &             + DBL_U(K,L,2)*VINF(2)
@@ -653,7 +654,7 @@ C$AD II-LOOP
             
            ENDIF
            
-           !TODO-opt: only do this if bodires
+           !TODO-opt: only do this if boddies
            VUNIT(1) = VUNIT(1) + WCSRD_U(1,I,1)*VINF(1)
      &                         + WCSRD_U(1,I,2)*VINF(2)
      &                         + WCSRD_U(1,I,3)*VINF(3)

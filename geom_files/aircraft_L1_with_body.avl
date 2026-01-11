@@ -1,0 +1,83 @@
+MACH MDAO AVL
+
+#======================================================
+#------------------- Geometry File --------------------
+#======================================================
+# AVL Conventions
+# SI Used: m, kg, etc
+
+#Mach
+0.0
+#IYsym   IZsym   Zsym
+ 0       0       0
+#Sref    Cref    b_wing
+1.13  0.4  1
+#Xref    Yref    Zref
+0.0 0.0 0.0
+
+
+#======================================================
+#--------------------- Main Wing ----------------------
+#======================================================
+SURFACE
+Wing
+#Nchordwise  Cspace   [Nspan   Sspace]
+     2        1.0     2      0.0
+
+SCALE
+1.0  1.0  1.0
+TRANSLATE
+0.0  0.0  0.0
+ANGLE
+0.0
+#------------------------------------------------------
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    0.0    0       0.4     0.0      5      3
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+0.0    1.0    0       0.14    0.0      5      3
+
+
+
+#======================================================
+#------------------- Horizontal Tail ------------------
+#======================================================
+SURFACE
+Horizontal Tail
+#Nchordwise  Cspace   Nspan   Sspace
+10       1.0           1         2 
+
+#------------------TAIL ROOT/ELEVATOR------------------
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+1.5    0.0    0       0.325     0.0       
+
+CONTROL
+#surface gain xhinge hvec SgnDup
+Elevator -1.00 0.0 0 1 0 1.00
+
+SECTION
+#Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
+1.5    0.5    0       0.325     0.0       
+
+CONTROL
+#surface gain xhinge hvec SgnDup
+Elevator -1.00 0.0 0 1 0 1.00
+
+
+BODY
+Fuse pod
+4   2.0
+#
+TRANSLATE
+# 0.0  0.0  -1.75
+0.0  0.0  0.0
+#
+BFIL
+../geom_files/fuseSimple.dat
+
+
+# -- END OF FILE --
