@@ -2,7 +2,7 @@ project(
   'optvl',
   'c',
   # don't forget to change the value in pyproject.toml
-  version: '2.2.0',
+  version: '2.2.1',
   license: 'GPL-3.0',
   meson_version: '>= 0.64.0',
   default_options: [
