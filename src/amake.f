@@ -1285,7 +1285,7 @@ c--------------------------------------------------------------
        ! Compute the panel's left side angle
        a1 = atan2((mesh_surf(3,idx_node+1) - mesh_surf(3,idx_node)),
      &            (mesh_surf(1,idx_node+1) - mesh_surf(1,idx_node)))
-      ! Place vortex at panel quarter chord
+      ! Place vortex at panel quarter chord of the true mesh
        RV1MSH(2,idx_vor) = mesh_surf(2,idx_node)  
        RV1MSH(1,idx_vor) = mesh_surf(1,idx_node) + (dc1/4.)*cos(a1)
        RV1MSH(3,idx_vor) = mesh_surf(3,idx_node) + (dc1/4.)*sin(a1) 
@@ -1298,7 +1298,7 @@ c--------------------------------------------------------------
        RV1(1,idx_vor) = mesh_surf(1,idx_node) + (dc1/4.)*cos(a1)
        RV1(3,idx_vor) = mesh_surf(3,idx_node) + (dc1/4.)*sin(a1)  
        
-       ! Copy to Mesh
+       ! Make a copy in the true mesh array for post processing
        RV1MSH(2,idx_vor) = RV1(2,idx_vor)
        RV1MSH(1,idx_vor) = RV1(1,idx_vor)
        RV1MSH(3,idx_vor) = RV1(3,idx_vor)
@@ -1318,11 +1318,12 @@ c--------------------------------------------------------------
        RV2(2,idx_vor) = RLE2(2,idx_strip)
        RV2(3,idx_vor) = RLE2(3,idx_strip)
        RV2(1,idx_vor) = RLE2(1,idx_strip) + dx2 + (dc2/4.)
+
       ! Compute the panel's right side angle
        a2 = atan2((mesh_surf(3,idx_node_yp1+1) -
      & mesh_surf(3,idx_node_yp1)), (mesh_surf(1,idx_node_yp1+1) - 
      & mesh_surf(1,idx_node_yp1)))
-      ! Place vortex at panel quarter chord
+      ! Place vortex at panel quarter chord of the true mesh
        RV2MSH(2,idx_vor) = mesh_surf(2,idx_node_yp1)  
        RV2MSH(1,idx_vor) = mesh_surf(1,idx_node_yp1) + (dc2/4.)*cos(a2)
        RV2MSH(3,idx_vor) = mesh_surf(3,idx_node_yp1) + (dc2/4.)*sin(a2)
@@ -1336,7 +1337,7 @@ c--------------------------------------------------------------
        RV2(1,idx_vor) = mesh_surf(1,idx_node_yp1) + (dc2/4.)*cos(a2)
        RV2(3,idx_vor) = mesh_surf(3,idx_node_yp1) + (dc2/4.)*sin(a2)
 
-       ! Copy to Mesh
+      ! Make a copy in the true mesh array for post processing
        RV2MSH(2,idx_vor) = RV2(2,idx_vor)
        RV2MSH(1,idx_vor) = RV2(1,idx_vor)
        RV2MSH(3,idx_vor) = RV2(3,idx_vor)    
@@ -1367,7 +1368,7 @@ c--------------------------------------------------------------
        RV(3,idx_vor) = RLE(3,idx_strip)
        RV(1,idx_vor) = RLE(1,idx_strip) + dx3 + (DXV(idx_vor)/4.)
 
-       ! Place vortex at panel quarter chord
+       ! Place vortex at panel quarter chord of the true mesh
        RVMSH(2,idx_vor) = (mesh_surf(2,idx_node_yp1) 
      &  + mesh_surf(2,idx_node))/2.
        RVMSH(1,idx_vor) = (mesh_surf(1,idx_node_yp1)
@@ -1383,7 +1384,7 @@ c--------------------------------------------------------------
        RV(3,idx_vor) = (mesh_surf(3,idx_node_yp1) 
      & +mesh_surf(3,idx_node))/2. + (DXV(idx_vor)/4.)*sin(a3)
 
-       ! Copy to Mesh
+      ! Make a copy in the true mesh array for post processing
        RVMSH(2,idx_vor) = RV(2,idx_vor)
        RVMSH(1,idx_vor) = RV(1,idx_vor)
        RVMSH(3,idx_vor) = RV(3,idx_vor)
@@ -1410,6 +1411,7 @@ c--------------------------------------------------------------
        RC(1,idx_vor) = RV(1,idx_vor) + clafc*(DXV(idx_vor)/2.)*cos(a3)
        RC(3,idx_vor) = RV(3,idx_vor) + clafc*(DXV(idx_vor)/2.)*sin(a3)
 
+      ! Make a copy in the true mesh array for post processing
        RCMSH(1,idx_vor) = RC(1,idx_vor)
        RCMSH(3,idx_vor) = RC(3,idx_vor)
        RCMSH(2,idx_vor) = RC(2,idx_vor)
@@ -1496,7 +1498,7 @@ c--------------------------------------------------------------
 
       ! Store the panel LE mid point for the next panel in the strip
       ! This gets used a lot here 
-      ! We use the original input mesh to compute point for the OML
+      ! We use the original input mesh (true mesh) to compute points for the OML
       xptxind1 = ((mesh_surf(1,idx_node+1)+mesh_surf(1,idx_node_yp1+1))
      &         /2 - RLE(1,idx_strip))/CHORD(idx_strip)
 
@@ -1557,7 +1559,7 @@ c--------------------------------------------------------------
 
       end do ! End section loop
 
-      ! Compute the wetted area
+      ! Compute the wetted area and cave from the true mesh
       sum = 0.0
       wtot = 0.0
       DO JJ = 1, NJ(isurf)
@@ -1623,14 +1625,17 @@ c--------------------------------------------------------------
             endif
       end do 
       
-      !CALL ENCALC
-      CALL ENCALC2
+      if (lsurfmsh(isurf)) then
+        CALL ENCALCMSH
+      else
+        CALL ENCALC
+      end if
       
       LAIC = .FALSE. ! Tell AVL that the AIC is no longer valid and to regenerate it
       LSRD = .FALSE. ! Tell AVL that unit source+doublet strengths are no longer valid and to regenerate them
       LVEL = .FALSE. ! Tell AVL that the induced velocity matrix is no longer valid and to regenerate it
       LSOL = .FALSE. ! Tell AVL that a valid solution no longer exists
-      LSEN = .FALSE. ! Tell AVL that valid sensitives no longer exists
+      LSEN = .FALSE. ! Tell AVL that valid sensitives no longer exist
       
       end subroutine update_surfaces
             
@@ -2020,18 +2025,6 @@ C
           RC(1,III)     =  RC(1,II)
           RC(2,III)     = -RC(2,II) + YOFF
           RC(3,III)     =  RC(3,II)
-          RV1MSH(1,III) = RV2MSH(1,II)
-          RV1MSH(2,III) = -RV2MSH(2,II) + YOFF
-          RV1MSH(3,III) = RV2MSH(3,II)
-          RV2MSH(1,III) = RV1MSH(1,II)
-          RV2MSH(2,III) = -RV1MSH(2,II) + YOFF
-          RV2MSH(3,III) = RV1MSH(3,II)
-          RVMSH(1,III) = RVMSH(1,II)
-          RVMSH(2,III) = -RVMSH(2,II) + YOFF
-          RVMSH(3,III) = RVMSH(3,II)
-          RCMSH(1,III) = RCMSH(1,II)
-          RCMSH(2,III) = -RCMSH(2,II) + YOFF
-          RCMSH(3,III) = RCMSH(3,II)
           SLOPEC(III) = SLOPEC(II)
           SLOPEV(III) = SLOPEV(II)
           DXV(III)     = DXV(II)
@@ -2040,6 +2033,22 @@ C
           NSURFV(III) = LSCOMP(NNI)
           LVALBE(III) = LVALBE(II)
           LVNC(III) = LVNC(II)
+          ! Duplicate mesh data if we are using a mesh
+          if (lsurfmsh(NN)) then
+            RV1MSH(1,III) = RV2MSH(1,II)
+            RV1MSH(2,III) = -RV2MSH(2,II) + YOFF
+            RV1MSH(3,III) = RV2MSH(3,II)
+            RV2MSH(1,III) = RV1MSH(1,II)
+            RV2MSH(2,III) = -RV1MSH(2,II) + YOFF
+            RV2MSH(3,III) = RV1MSH(3,II)
+            RVMSH(1,III) = RVMSH(1,II)
+            RVMSH(2,III) = -RVMSH(2,II) + YOFF
+            RVMSH(3,III) = RVMSH(3,II)
+            RCMSH(1,III) = RCMSH(1,II)
+            RCMSH(2,III) = -RCMSH(2,II) + YOFF
+            RCMSH(3,III) = RCMSH(3,II)
+          end if
+          
 C
           DO N = 1, NCONTROL
 ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
@@ -2413,11 +2422,11 @@ C
 
 
 
-      SUBROUTINE ENCALC2
+      SUBROUTINE ENCALCMSH
 C
 C...PURPOSE  To calculate the normal vectors for the strips, 
 C            the horseshoe vortices, and the control points.
-C            Assuming arbitrary point cloud geometry
+C            Assuming arbitrary point cloud mesh
 C            Incorporates surface deflections.
 C
 C...INPUT    NVOR      Number of vortices
@@ -2647,7 +2656,7 @@ C
 C=======================================================
 C-------- rotate normal vectors for control surface
           ! this is a pure rotation of the normal vector
-          ! the mesh geometric contribution is already accounted for
+          ! the geometric contribution from the mesh is already accounted for
           DO 100 N = 1, NCONTROL
 C
 C---------- skip everything if this element is unaffected by control variable N
@@ -2708,4 +2717,4 @@ C
       LENC = .TRUE.
 C
       RETURN
-      END ! ENCALC2
+      END ! ENCALCMSH
