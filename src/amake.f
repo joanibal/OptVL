@@ -1625,11 +1625,7 @@ c--------------------------------------------------------------
             endif
       end do 
       
-      if (lsurfmsh(isurf)) then
-        CALL ENCALCMSH
-      else
-        CALL ENCALC
-      end if
+      CALL ENCALC
       
       LAIC = .FALSE. ! Tell AVL that the AIC is no longer valid and to regenerate it
       LSRD = .FALSE. ! Tell AVL that unit source+doublet strengths are no longer valid and to regenerate them
@@ -1769,8 +1765,7 @@ c--------------------------------------------------------------
       endif
       end do 
       
-      !CALL ENCALC
-      CALL ENCALC2
+      CALL ENCALC
       
       LAIC = .FALSE.
       LSRD = .FALSE.
@@ -1903,6 +1898,7 @@ C---- same various logical flags
       LRANGE(NNI) = LRANGE(NN)
       LSURFSPACING(NNI) = LSURFSPACING(NN)
       LMESHFLAT(NNI) = LMESHFLAT(NN)
+      LSURFMSH(NNI) = LSURFMSH(NN)
 
 C---- accumulate stuff for new image surface 
       ! IFRST(NNI) = NVOR   + 1
@@ -2156,6 +2152,8 @@ C
 C...PURPOSE  To calculate the normal vectors for the strips, 
 C            the horseshoe vortices, and the control points.
 C            Incorporates surface deflections.
+             ! Also checks if surface has been assigned a point cloud mesh
+             ! and uses the real mesh to compute normals if it is
 C
 C...INPUT    NVOR      Number of vortices
 C            X1        Coordinates of endpoint #1 of the vortices
@@ -2179,10 +2177,46 @@ C
 C
       REAL EP(3), EQ(3), ES(3), EB(3), EC(3), ECXB(3)
       REAL EC_G(3,NDMAX), ECXB_G(3)
+      real(kind=avl_real) :: dchstrip, DXT, DYT, DZT
 C
 C...Calculate the normal vector at control points and bound vortex midpoints
 C
       DO 10 J = 1, NSTRIP
+
+        ! Since we cannot seperate the encalc routine for direct mesh assignment we have to make it a branch here
+        if (lsurfmsh(nsurfs(J))) then
+
+        ! Calculate normal vector for the strip (normal to X axis)
+        ! we can't just interpolate this anymore given that 
+        ! the strip is no longer necessarily linear chordwise
+
+        ! We want the spanwise unit vector for the strip at the 
+        ! chordwise location specified by SAXFR (usually set to 0.25)
+        ! Loop over all panels in the strip until we find the one that contains
+        ! the SAXFR position in it's projected chord. Since the panels themselves are still linear
+        ! we can just use the bound vortex unit vector of that panel as 
+        ! the spanwise unit vector of the strip at SAXFR
+
+        ! SAB: This is slow, find a better way to do this
+        dchstrip = 0.0
+        searchSAXFR: do i = IJFRST(J),IJFRST(J) + (NVSTRP(J)-1)
+            dchstrip = dchstrip+DXSTRPV(i)
+            if (dchstrip .ge. CHORD(J)*SAXFR) then
+                  exit searchSAXFR
+            end if
+        end do searchSAXFR
+
+
+        ! compute the spanwise unit vector for Vperp def
+        DXT =  RV2MSH(1,I)-RV1MSH(1,I)
+        DYT =  RV2MSH(2,I)-RV1MSH(2,I)
+        DZT =  RV2MSH(3,I)-RV1MSH(3,I)
+        XSREF(J) = RVMSH(1,I)
+        YSREF(J) = RVMSH(2,I)
+        ZSREF(J) = RVMSH(3,I)
+
+        else
+        ! original encalc routine for standard AVL geometry
 C
 C...Calculate normal vector for the strip (normal to X axis)
         I = IJFRST(J)
@@ -2211,289 +2245,12 @@ C
         DYT = (1.0-SAXFR)*DYLE + SAXFR*DYTE
         DZT = (1.0-SAXFR)*DZLE + SAXFR*DZTE
 C
-        ESS(1,J) =  DXT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
-        ESS(2,J) =  DYT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
-        ESS(3,J) =  DZT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
-C
-        ENSY(J) = -DZT/SQRT(DYT*DYT + DZT*DZT)
-        ENSZ(J) =  DYT/SQRT(DYT*DYT + DZT*DZT)
-C
         XSREF(J) = (1.0-SAXFR)*AXLE + SAXFR*AXTE
         YSREF(J) = (1.0-SAXFR)*AYLE + SAXFR*AYTE
         ZSREF(J) = (1.0-SAXFR)*AZLE + SAXFR*AZTE
+        end if
 C
 C
-        ES(1) = 0.
-        ES(2) = ENSY(J)
-        ES(3) = ENSZ(J)
-C
-        LSTRIPOFF(J) = .FALSE.
-C
-        NV = NVSTRP(J)
-        DO 105 II = 1, NV
-C
-          I = IJFRST(J) + (II-1)
-C
-          DO N = 1, NCONTROL
-            ENV_D(1,I,N) = 0.
-            ENV_D(2,I,N) = 0.
-            ENV_D(3,I,N) = 0.
-            ENC_D(1,I,N) = 0.
-            ENC_D(2,I,N) = 0.
-            ENC_D(3,I,N) = 0.
-          ENDDO
-C
-          DO N = 1, NDESIGN
-            ENV_G(1,I,N) = 0.
-            ENV_G(2,I,N) = 0.
-            ENV_G(3,I,N) = 0.
-            ENC_G(1,I,N) = 0.
-            ENC_G(2,I,N) = 0.
-            ENC_G(3,I,N) = 0.
-          ENDDO
-C
-C...Define unit vector along bound leg
-          DXB = RV2(1,I)-RV1(1,I) ! right h.v. pt - left h.v. pt 
-          DYB = RV2(2,I)-RV1(2,I)
-          DZB = RV2(3,I)-RV1(3,I)
-          EMAG = SQRT(DXB**2 + DYB**2 + DZB**2)
-          EB(1) = DXB/EMAG
-          EB(2) = DYB/EMAG
-          EB(3) = DZB/EMAG
-C
-C...Define direction of normal vector at control point 
-C   The YZ projection of the normal vector matches the camber slope
-C   + section local incidence in the YZ defining plane for the section
-          ANG = AINC(J) - ATAN(SLOPEC(I))
-cc          IF(LDES) THEN
-C--------- add design-variable contribution to angle
-           DO N = 1, NDESIGN
-             ANG = ANG + AINC_G(J,N)*DELDES(N)
-           ENDDO
-cc          ENDIF
-C
-          SINC = SIN(ANG)
-          COSC = COS(ANG)
-          EC(1) =  COSC
-          EC(2) = -SINC*ES(2)
-          EC(3) = -SINC*ES(3)
-      !     EC  = rotation of strip normal vector? or along chord?
-          DO N = 1, NDESIGN
-            EC_G(1,N) = -SINC      *AINC_G(J,N)
-            EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
-            EC_G(3,N) = -COSC*ES(3)*AINC_G(J,N)
-          ENDDO
-C
-C...Normal vector is perpendicular to camberline vector and to the bound leg
-          CALL CROSS(EC,EB,ECXB)
-          EMAG = SQRT(ECXB(1)**2 + ECXB(2)**2 + ECXB(3)**2)
-          IF(EMAG.NE.0.0) THEN
-            ENC(1,I) = ECXB(1)/EMAG
-            ENC(2,I) = ECXB(2)/EMAG
-            ENC(3,I) = ECXB(3)/EMAG
-            DO N = 1, NDESIGN
-              CALL CROSS(EC_G(1,N),EB,ECXB_G)
-              EMAG_G = ENC(1,I)*ECXB_G(1)
-     &               + ENC(2,I)*ECXB_G(2)
-     &               + ENC(3,I)*ECXB_G(3)
-              ENC_G(1,I,N) = (ECXB_G(1) - ENC(1,I)*EMAG_G)/EMAG
-              ENC_G(2,I,N) = (ECXB_G(2) - ENC(2,I)*EMAG_G)/EMAG
-              ENC_G(3,I,N) = (ECXB_G(3) - ENC(3,I)*EMAG_G)/EMAG
-            ENDDO
-          ELSE
-            ENC(1,I) = ES(1)
-            ENC(2,I) = ES(2)
-            ENC(3,I) = ES(3)
-          ENDIF
-C
-C
-C...Define direction of normal vector at vortex mid-point. 
-C   The YZ projection of the normal vector matches the camber slope
-C   + section local incidence in the YZ defining plane for the section
-          ANG = AINC(J) - ATAN(SLOPEV(I)) 
-cc          IF(LDES) THEN
-C--------- add design-variable contribution to angle
-           DO N = 1, NDESIGN
-             ANG = ANG + AINC_G(J,N)*DELDES(N)
-           ENDDO
-cc          ENDIF
-C
-          SINC = SIN(ANG)
-          COSC = COS(ANG)
-          EC(1) =  COSC
-          EC(2) = -SINC*ES(2)
-          EC(3) = -SINC*ES(3)
-          DO N = 1, NDESIGN
-            EC_G(1,N) = -SINC      *AINC_G(J,N)
-            EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
-            EC_G(3,N) = -COSC*ES(3)*AINC_G(J,N)
-          ENDDO
-C
-C...Normal vector is perpendicular to camberline vector and to the bound leg
-          CALL CROSS(EC,EB,ECXB)
-          EMAG = SQRT(ECXB(1)**2 + ECXB(2)**2 + ECXB(3)**2)
-          IF(EMAG.NE.0.0) THEN
-            ENV(1,I) = ECXB(1)/EMAG
-            ENV(2,I) = ECXB(2)/EMAG
-            ENV(3,I) = ECXB(3)/EMAG
-            DO N = 1, NDESIGN
-              CALL CROSS(EC_G(1,N),EB,ECXB_G)
-              EMAG_G = ENC(1,I)*ECXB_G(1)
-     &               + ENC(2,I)*ECXB_G(2)
-     &               + ENC(3,I)*ECXB_G(3)
-              ENV_G(1,I,N) = (ECXB_G(1) - ENV(1,I)*EMAG_G)/EMAG
-              ENV_G(2,I,N) = (ECXB_G(2) - ENV(2,I)*EMAG_G)/EMAG
-              ENV_G(3,I,N) = (ECXB_G(3) - ENV(3,I)*EMAG_G)/EMAG
-            ENDDO
-          ELSE
-            ENV(1,I) = ES(1)
-            ENV(2,I) = ES(2)
-            ENV(3,I) = ES(3)
-          ENDIF
-C
-C
-ccc       write(*,*) i, dcontrol(i,1), dcontrol(i,2)
-C
-C=======================================================
-C-------- rotate normal vectors for control surface
-          DO 100 N = 1, NCONTROL
-C
-C---------- skip everything if this element is unaffected by control variable N
-            IF(DCONTROL(I,N).EQ.0.0) GO TO 100
-C
-            ANG     = DTR*DCONTROL(I,N)*DELCON(N)
-            ANG_DDC = DTR*DCONTROL(I,N)
-C
-            COSD = COS(ANG)
-            SIND = SIN(ANG)
-C
-C---------- EP = normal-vector component perpendicular to hinge line
-            ENDOT = DOT(ENC(1,I),VHINGE(1,J,N))
-            EP(1) = ENC(1,I) - ENDOT*VHINGE(1,J,N)
-            EP(2) = ENC(2,I) - ENDOT*VHINGE(2,J,N)
-            EP(3) = ENC(3,I) - ENDOT*VHINGE(3,J,N)
-C---------- EQ = unit vector perpendicular to both EP and hinge line
-            CALL CROSS(VHINGE(1,J,N),EP,EQ)
-C
-C---------- rotated vector would consist of sin,cos parts from EP and EQ,
-C-          with hinge-parallel component ENDOT restored 
-cc          ENC(1,I) = EP(1)*COSD + EQ(1)*SIND + ENDOT*VHINGE(1,J,N)
-cc          ENC(2,I) = EP(2)*COSD + EQ(2)*SIND + ENDOT*VHINGE(2,J,N)
-cc          ENC(3,I) = EP(3)*COSD + EQ(3)*SIND + ENDOT*VHINGE(3,J,N)
-C
-C---------- linearize about zero deflection (COSD=1, SIND=0)
-            ENC_D(1,I,N) = ENC_D(1,I,N) + EQ(1)*ANG_DDC
-            ENC_D(2,I,N) = ENC_D(2,I,N) + EQ(2)*ANG_DDC
-            ENC_D(3,I,N) = ENC_D(3,I,N) + EQ(3)*ANG_DDC
-C
-C
-C---------- repeat for ENV vector
-C
-C---------- EP = normal-vector component perpendicular to hinge line
-            ENDOT = DOT(ENV(1,I),VHINGE(1,J,N))
-            EP(1) = ENV(1,I) - ENDOT*VHINGE(1,J,N)
-            EP(2) = ENV(2,I) - ENDOT*VHINGE(2,J,N)
-            EP(3) = ENV(3,I) - ENDOT*VHINGE(3,J,N)
-C---------- EQ = unit vector perpendicular to both EP and hinge line
-            CALL CROSS(VHINGE(1,J,N),EP,EQ)
-C
-C---------- rotated vector would consist of sin,cos parts from EP and EQ,
-C-          with hinge-parallel component ENDOT restored 
-cc          ENV(1,I) = EP(1)*COSD + EQ(1)*SIND + ENDOT*VHINGE(1,J,N)
-cc          ENV(2,I) = EP(2)*COSD + EQ(2)*SIND + ENDOT*VHINGE(2,J,N)
-cc          ENV(3,I) = EP(3)*COSD + EQ(3)*SIND + ENDOT*VHINGE(3,J,N)
-C
-C---------- linearize about zero deflection (COSD=1, SIND=0)
-            ENV_D(1,I,N) = ENV_D(1,I,N) + EQ(1)*ANG_DDC
-            ENV_D(2,I,N) = ENV_D(2,I,N) + EQ(2)*ANG_DDC
-            ENV_D(3,I,N) = ENV_D(3,I,N) + EQ(3)*ANG_DDC
- 100      CONTINUE
- 101      CONTINUE
-C
- 105    CONTINUE
-  10  CONTINUE
-C
-      LENC = .TRUE.
-C
-      RETURN
-      END ! ENCALC
-
-
-
-
-
-      SUBROUTINE ENCALCMSH
-C
-C...PURPOSE  To calculate the normal vectors for the strips, 
-C            the horseshoe vortices, and the control points.
-C            Assuming arbitrary point cloud mesh
-C            Incorporates surface deflections.
-C
-C...INPUT    NVOR      Number of vortices
-C            X1        Coordinates of endpoint #1 of the vortices
-C            X2        Coordinates of endpoint #2 of the vortices
-C            SLOPEV    Slope at bound vortices
-C            SLOPEC    Slope at control points
-C            NSTRIP    Number of strips
-C            IJFRST    Index of first element in strip
-C            NVSTRP    No. of vortices in strip
-C            AINC      Angle of incidence of strip
-C            LDES      include design-variable deflections if TRUE
-C
-C...OUTPUT   ENC(3)        Normal vector at control point
-C            ENV(3)        Normal vector at bound vortices
-C            ENSY, ENSZ    Strip normal vector (ENSX=0)
-C            LSTRIPOFF     Non-used strip (T) (below z=ZSYM)
-C
-C...COMMENTS   
-C
-      INCLUDE 'AVL.INC'
-C
-      REAL EP(3), EQ(3), ES(3), EB(3), EC(3), ECXB(3)
-      REAL EC_G(3,NDMAX), ECXB_G(3)
-
-      real(kind=avl_real) :: dchstrip, DXT, DYT, DZT
-C
-C...Calculate the normal vector at control points and bound vortex midpoints
-C
-      DO 10 J = 1, NSTRIP
-C
-C...Calculate normal vector for the strip (normal to X axis)
-        ! we can't just interpolate this anymore given that 
-        ! the strip is no longer necessarily linear chordwise
-
-        ! We want the spanwise unit vector for the strip at the 
-        ! chordwise location specified by SAXFR (usually set to 0.25)
-        ! Loop over all panels in the strip until we find the one that contains
-        ! the SAXFR position in it's projected chord. Since the panels themselves are still linear
-        ! we can just use the bound vortex unit vector of that panel as 
-        ! the spanwise unit vector of the strip at SAXFR
-
-        ! SAB: This is slow, find a better way to do this
-        dchstrip = 0.0
-        searchSAXFR: do i = IJFRST(J),IJFRST(J) + (NVSTRP(J)-1)
-            dchstrip = dchstrip+DXSTRPV(i)
-            if (dchstrip .ge. CHORD(J)*SAXFR) then
-                  exit searchSAXFR
-            end if
-        end do searchSAXFR
-
-      !   print *, "I", I
-
-        ! compute the spanwise unit vector for Vperp def
-        DXT =  RV2MSH(1,I)-RV1MSH(1,I)
-        DYT =  RV2MSH(2,I)-RV1MSH(2,I)
-        DZT =  RV2MSH(3,I)-RV1MSH(3,I)
-        XSREF(J) = RVMSH(1,I)
-        YSREF(J) = RVMSH(2,I)
-        ZSREF(J) = RVMSH(3,I)
-
-      !   print *, "DVT", DYT
-      !   print *, "RV2(2,I)-RV1(2,I)", RV2(2,I)-RV1(2,I)
-      !   print *, "RV2(2,I)", RV2(2,I)
-      !   print *, "RV1(2,I)", RV1(2,I)
-      !   print *, "NSTRIP", NSTRIP
-      !   print *, "J", J
         ESS(1,J) =  DXT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
         ESS(2,J) =  DYT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
         ESS(3,J) =  DZT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
@@ -2530,48 +2287,68 @@ C
             ENC_G(2,I,N) = 0.
             ENC_G(3,I,N) = 0.
           ENDDO
-C
-C...Define unit vector along bound leg
+
+          if (lsurfmsh(nsurfs(J))) then
+          ! Define unit vector along bound leg
           DXB = RV2MSH(1,I)-RV1MSH(1,I) ! right h.v. pt - left h.v. pt 
           DYB = RV2MSH(2,I)-RV1MSH(2,I)
           DZB = RV2MSH(3,I)-RV1MSH(3,I)
+          else
+C
+C...Define unit vector along bound leg
+          DXB = RV2(1,I)-RV1(1,I) ! right h.v. pt - left h.v. pt 
+          DYB = RV2(2,I)-RV1(2,I)
+          DZB = RV2(3,I)-RV1(3,I)
+          end if
           EMAG = SQRT(DXB**2 + DYB**2 + DZB**2)
           EB(1) = DXB/EMAG
           EB(2) = DYB/EMAG
           EB(3) = DZB/EMAG
 C
 C...Define direction of normal vector at control point 
-
+C   The YZ projection of the normal vector matches the camber slope
+C   + section local incidence in the YZ defining plane for the section
       ! First start by combining the contributions to the panel 
       ! incidence from AVL incidence and camberline slope variables
       ! these are not actual geometric transformations of the mesh
       ! but rather further modifications to the chordwise vector that 
       ! will get used to compute normals
           ANG = AINC(J) - ATAN(SLOPEC(I))
+cc          IF(LDES) THEN
 C--------- add design-variable contribution to angle
            DO N = 1, NDESIGN
              ANG = ANG + AINC_G(J,N)*DELDES(N)
            ENDDO
+cc          ENDIF
 C
+          SINC = SIN(ANG)
+          COSC = COS(ANG)
+
+          if (lsurfmsh(nsurfs(J))) then
+          ! direct mesh assignemnt branch
           ! now we compute the chordwise panel vector
           ! note that panel's chordwise vector has contributions
           ! from both the geometry itself and the incidence modification
           ! from the AVL AINC and camber slope variables
 
           ! To avoid storing uncessary info in the common block 
-          ! Get the geometric chordwise vector using RV and RC which should
+          ! Get the geometric chordwise vector using RVMSH and RCMSH which should
           ! be located in the same plane given that each individual panel is a 
           ! plane
           
           ! Note that like in AVL the sin of the incidence is projected
           ! to the strip's normal in the YZ plane (Treffz plane)
           ! which is ES(2) and ES(3) computed earlier
-          SINC = SIN(ANG)
-          COSC = COS(ANG)
           EC(1) =  COSC + (RCMSH(1,I)-RVMSH(1,I))
           EC(2) = -SINC*ES(2) + (RCMSH(2,I)-RVMSH(2,I))
           EC(3) = -SINC*ES(3) + (RCMSH(3,I)-RVMSH(3,I))
 
+          else
+          EC(1) =  COSC
+          EC(2) = -SINC*ES(2)
+          EC(3) = -SINC*ES(3)
+      !     EC  = rotation of strip normal vector? or along chord?
+          end if
           DO N = 1, NDESIGN
             EC_G(1,N) = -SINC      *AINC_G(J,N)
             EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
@@ -2599,29 +2376,37 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
             ENC(2,I) = ES(2)
             ENC(3,I) = ES(3)
           ENDIF
-
 C
 C
 C...Define direction of normal vector at vortex mid-point. 
-
+C   The YZ projection of the normal vector matches the camber slope
+C   + section local incidence in the YZ defining plane for the section
       ! This section is identical to the normal vector at the control
       ! point. The only different is that the AVL camberline slope 
       ! is taken at the bound vortex point rather than the control point
       ! the geometric contributions to the normal vector at both of these
       ! point is identical as the lie in the plane of the same panel.
           ANG = AINC(J) - ATAN(SLOPEV(I)) 
-
+cc          IF(LDES) THEN
 C--------- add design-variable contribution to angle
            DO N = 1, NDESIGN
              ANG = ANG + AINC_G(J,N)*DELDES(N)
            ENDDO
-
+cc          ENDIF
 C
           SINC = SIN(ANG)
           COSC = COS(ANG)
+          if (lsurfmsh(nsurfs(J))) then
+          ! direct mesh assignment branch
           EC(1) =  COSC + (RCMSH(1,I)-RVMSH(1,I))
           EC(2) = -SINC*ES(2) + (RCMSH(2,I)-RVMSH(2,I))
           EC(3) = -SINC*ES(3) + (RCMSH(3,I)-RVMSH(3,I))
+          else
+          EC(1) =  COSC
+          EC(2) = -SINC*ES(2)
+          EC(3) = -SINC*ES(3)
+          end if
+
           DO N = 1, NDESIGN
             EC_G(1,N) = -SINC      *AINC_G(J,N)
             EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
@@ -2717,4 +2502,305 @@ C
       LENC = .TRUE.
 C
       RETURN
-      END ! ENCALCMSH
+      END ! ENCALC
+
+
+
+
+
+!       SUBROUTINE ENCALCMSH
+! C
+! C...PURPOSE  To calculate the normal vectors for the strips, 
+! C            the horseshoe vortices, and the control points.
+! C            Assuming arbitrary point cloud mesh
+! C            Incorporates surface deflections.
+! C
+! C...INPUT    NVOR      Number of vortices
+! C            X1        Coordinates of endpoint #1 of the vortices
+! C            X2        Coordinates of endpoint #2 of the vortices
+! C            SLOPEV    Slope at bound vortices
+! C            SLOPEC    Slope at control points
+! C            NSTRIP    Number of strips
+! C            IJFRST    Index of first element in strip
+! C            NVSTRP    No. of vortices in strip
+! C            AINC      Angle of incidence of strip
+! C            LDES      include design-variable deflections if TRUE
+! C
+! C...OUTPUT   ENC(3)        Normal vector at control point
+! C            ENV(3)        Normal vector at bound vortices
+! C            ENSY, ENSZ    Strip normal vector (ENSX=0)
+! C            LSTRIPOFF     Non-used strip (T) (below z=ZSYM)
+! C
+! C...COMMENTS   
+! C
+!       INCLUDE 'AVL.INC'
+! C
+!       REAL EP(3), EQ(3), ES(3), EB(3), EC(3), ECXB(3)
+!       REAL EC_G(3,NDMAX), ECXB_G(3)
+
+!       real(kind=avl_real) :: dchstrip, DXT, DYT, DZT
+! C
+! C...Calculate the normal vector at control points and bound vortex midpoints
+! C
+!       DO 10 J = 1, NSTRIP
+! C
+! C...Calculate normal vector for the strip (normal to X axis)
+!         ! we can't just interpolate this anymore given that 
+!         ! the strip is no longer necessarily linear chordwise
+
+!         ! We want the spanwise unit vector for the strip at the 
+!         ! chordwise location specified by SAXFR (usually set to 0.25)
+!         ! Loop over all panels in the strip until we find the one that contains
+!         ! the SAXFR position in it's projected chord. Since the panels themselves are still linear
+!         ! we can just use the bound vortex unit vector of that panel as 
+!         ! the spanwise unit vector of the strip at SAXFR
+
+!         ! SAB: This is slow, find a better way to do this
+!         dchstrip = 0.0
+!         searchSAXFR: do i = IJFRST(J),IJFRST(J) + (NVSTRP(J)-1)
+!             dchstrip = dchstrip+DXSTRPV(i)
+!             if (dchstrip .ge. CHORD(J)*SAXFR) then
+!                   exit searchSAXFR
+!             end if
+!         end do searchSAXFR
+
+!       !   print *, "I", I
+
+!         ! compute the spanwise unit vector for Vperp def
+!         DXT =  RV2MSH(1,I)-RV1MSH(1,I)
+!         DYT =  RV2MSH(2,I)-RV1MSH(2,I)
+!         DZT =  RV2MSH(3,I)-RV1MSH(3,I)
+!         XSREF(J) = RVMSH(1,I)
+!         YSREF(J) = RVMSH(2,I)
+!         ZSREF(J) = RVMSH(3,I)
+
+!       !   print *, "DVT", DYT
+!       !   print *, "RV2(2,I)-RV1(2,I)", RV2(2,I)-RV1(2,I)
+!       !   print *, "RV2(2,I)", RV2(2,I)
+!       !   print *, "RV1(2,I)", RV1(2,I)
+!       !   print *, "NSTRIP", NSTRIP
+!       !   print *, "J", J
+!         ESS(1,J) =  DXT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
+!         ESS(2,J) =  DYT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
+!         ESS(3,J) =  DZT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
+
+!         ! Treffz plane normals
+!         ENSY(J) = -DZT/SQRT(DYT*DYT + DZT*DZT)
+!         ENSZ(J) =  DYT/SQRT(DYT*DYT + DZT*DZT)
+
+!         ES(1) = 0.
+!         ES(2) = ENSY(J)
+!         ES(3) = ENSZ(J)
+! C
+!         LSTRIPOFF(J) = .FALSE.
+! C
+!         NV = NVSTRP(J)
+!         DO 105 II = 1, NV
+! C
+!           I = IJFRST(J) + (II-1)
+! C
+!           DO N = 1, NCONTROL
+!             ENV_D(1,I,N) = 0.
+!             ENV_D(2,I,N) = 0.
+!             ENV_D(3,I,N) = 0.
+!             ENC_D(1,I,N) = 0.
+!             ENC_D(2,I,N) = 0.
+!             ENC_D(3,I,N) = 0.
+!           ENDDO
+! C
+!           DO N = 1, NDESIGN
+!             ENV_G(1,I,N) = 0.
+!             ENV_G(2,I,N) = 0.
+!             ENV_G(3,I,N) = 0.
+!             ENC_G(1,I,N) = 0.
+!             ENC_G(2,I,N) = 0.
+!             ENC_G(3,I,N) = 0.
+!           ENDDO
+! C
+! C...Define unit vector along bound leg
+!           DXB = RV2MSH(1,I)-RV1MSH(1,I) ! right h.v. pt - left h.v. pt 
+!           DYB = RV2MSH(2,I)-RV1MSH(2,I)
+!           DZB = RV2MSH(3,I)-RV1MSH(3,I)
+!           EMAG = SQRT(DXB**2 + DYB**2 + DZB**2)
+!           EB(1) = DXB/EMAG
+!           EB(2) = DYB/EMAG
+!           EB(3) = DZB/EMAG
+! C
+! C...Define direction of normal vector at control point 
+
+!       ! First start by combining the contributions to the panel 
+!       ! incidence from AVL incidence and camberline slope variables
+!       ! these are not actual geometric transformations of the mesh
+!       ! but rather further modifications to the chordwise vector that 
+!       ! will get used to compute normals
+!           ANG = AINC(J) - ATAN(SLOPEC(I))
+! C--------- add design-variable contribution to angle
+!            DO N = 1, NDESIGN
+!              ANG = ANG + AINC_G(J,N)*DELDES(N)
+!            ENDDO
+! C
+!           ! now we compute the chordwise panel vector
+!           ! note that panel's chordwise vector has contributions
+!           ! from both the geometry itself and the incidence modification
+!           ! from the AVL AINC and camber slope variables
+
+!           ! To avoid storing uncessary info in the common block 
+!           ! Get the geometric chordwise vector using RV and RC which should
+!           ! be located in the same plane given that each individual panel is a 
+!           ! plane
+          
+!           ! Note that like in AVL the sin of the incidence is projected
+!           ! to the strip's normal in the YZ plane (Treffz plane)
+!           ! which is ES(2) and ES(3) computed earlier
+!           SINC = SIN(ANG)
+!           COSC = COS(ANG)
+!           EC(1) =  COSC + (RCMSH(1,I)-RVMSH(1,I))
+!           EC(2) = -SINC*ES(2) + (RCMSH(2,I)-RVMSH(2,I))
+!           EC(3) = -SINC*ES(3) + (RCMSH(3,I)-RVMSH(3,I))
+
+!           DO N = 1, NDESIGN
+!             EC_G(1,N) = -SINC      *AINC_G(J,N)
+!             EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
+!             EC_G(3,N) = -COSC*ES(3)*AINC_G(J,N)
+!           ENDDO
+! C
+! C...Normal vector is perpendicular to camberline vector and to the bound leg
+!           CALL CROSS(EC,EB,ECXB)
+!           EMAG = SQRT(ECXB(1)**2 + ECXB(2)**2 + ECXB(3)**2)
+!           IF(EMAG.NE.0.0) THEN
+!             ENC(1,I) = ECXB(1)/EMAG
+!             ENC(2,I) = ECXB(2)/EMAG
+!             ENC(3,I) = ECXB(3)/EMAG
+!             DO N = 1, NDESIGN
+!               CALL CROSS(EC_G(1,N),EB,ECXB_G)
+!               EMAG_G = ENC(1,I)*ECXB_G(1)
+!      &               + ENC(2,I)*ECXB_G(2)
+!      &               + ENC(3,I)*ECXB_G(3)
+!               ENC_G(1,I,N) = (ECXB_G(1) - ENC(1,I)*EMAG_G)/EMAG
+!               ENC_G(2,I,N) = (ECXB_G(2) - ENC(2,I)*EMAG_G)/EMAG
+!               ENC_G(3,I,N) = (ECXB_G(3) - ENC(3,I)*EMAG_G)/EMAG
+!             ENDDO
+!           ELSE
+!             ENC(1,I) = ES(1)
+!             ENC(2,I) = ES(2)
+!             ENC(3,I) = ES(3)
+!           ENDIF
+
+! C
+! C
+! C...Define direction of normal vector at vortex mid-point. 
+
+!       ! This section is identical to the normal vector at the control
+!       ! point. The only different is that the AVL camberline slope 
+!       ! is taken at the bound vortex point rather than the control point
+!       ! the geometric contributions to the normal vector at both of these
+!       ! point is identical as the lie in the plane of the same panel.
+!           ANG = AINC(J) - ATAN(SLOPEV(I)) 
+
+! C--------- add design-variable contribution to angle
+!            DO N = 1, NDESIGN
+!              ANG = ANG + AINC_G(J,N)*DELDES(N)
+!            ENDDO
+
+! C
+!           SINC = SIN(ANG)
+!           COSC = COS(ANG)
+!           EC(1) =  COSC + (RCMSH(1,I)-RVMSH(1,I))
+!           EC(2) = -SINC*ES(2) + (RCMSH(2,I)-RVMSH(2,I))
+!           EC(3) = -SINC*ES(3) + (RCMSH(3,I)-RVMSH(3,I))
+!           DO N = 1, NDESIGN
+!             EC_G(1,N) = -SINC      *AINC_G(J,N)
+!             EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
+!             EC_G(3,N) = -COSC*ES(3)*AINC_G(J,N)
+!           ENDDO
+! C
+! C...Normal vector is perpendicular to camberline vector and to the bound leg
+!           CALL CROSS(EC,EB,ECXB)
+!           EMAG = SQRT(ECXB(1)**2 + ECXB(2)**2 + ECXB(3)**2)
+!           IF(EMAG.NE.0.0) THEN
+!             ENV(1,I) = ECXB(1)/EMAG
+!             ENV(2,I) = ECXB(2)/EMAG
+!             ENV(3,I) = ECXB(3)/EMAG
+!             DO N = 1, NDESIGN
+!               CALL CROSS(EC_G(1,N),EB,ECXB_G)
+!               EMAG_G = ENC(1,I)*ECXB_G(1)
+!      &               + ENC(2,I)*ECXB_G(2)
+!      &               + ENC(3,I)*ECXB_G(3)
+!               ENV_G(1,I,N) = (ECXB_G(1) - ENV(1,I)*EMAG_G)/EMAG
+!               ENV_G(2,I,N) = (ECXB_G(2) - ENV(2,I)*EMAG_G)/EMAG
+!               ENV_G(3,I,N) = (ECXB_G(3) - ENV(3,I)*EMAG_G)/EMAG
+!             ENDDO
+!           ELSE
+!             ENV(1,I) = ES(1)
+!             ENV(2,I) = ES(2)
+!             ENV(3,I) = ES(3)
+!           ENDIF
+! C
+! C
+! ccc       write(*,*) i, dcontrol(i,1), dcontrol(i,2)
+! C
+! C=======================================================
+! C-------- rotate normal vectors for control surface
+!           ! this is a pure rotation of the normal vector
+!           ! the geometric contribution from the mesh is already accounted for
+!           DO 100 N = 1, NCONTROL
+! C
+! C---------- skip everything if this element is unaffected by control variable N
+!             IF(DCONTROL(I,N).EQ.0.0) GO TO 100
+! C
+!             ANG     = DTR*DCONTROL(I,N)*DELCON(N)
+!             ANG_DDC = DTR*DCONTROL(I,N)
+! C
+!             COSD = COS(ANG)
+!             SIND = SIN(ANG)
+! C
+! C---------- EP = normal-vector component perpendicular to hinge line
+!             ENDOT = DOT(ENC(1,I),VHINGE(1,J,N))
+!             EP(1) = ENC(1,I) - ENDOT*VHINGE(1,J,N)
+!             EP(2) = ENC(2,I) - ENDOT*VHINGE(2,J,N)
+!             EP(3) = ENC(3,I) - ENDOT*VHINGE(3,J,N)
+! C---------- EQ = unit vector perpendicular to both EP and hinge line
+!             CALL CROSS(VHINGE(1,J,N),EP,EQ)
+! C
+! C---------- rotated vector would consist of sin,cos parts from EP and EQ,
+! C-          with hinge-parallel component ENDOT restored 
+! cc          ENC(1,I) = EP(1)*COSD + EQ(1)*SIND + ENDOT*VHINGE(1,J,N)
+! cc          ENC(2,I) = EP(2)*COSD + EQ(2)*SIND + ENDOT*VHINGE(2,J,N)
+! cc          ENC(3,I) = EP(3)*COSD + EQ(3)*SIND + ENDOT*VHINGE(3,J,N)
+! C
+! C---------- linearize about zero deflection (COSD=1, SIND=0)
+!             ENC_D(1,I,N) = ENC_D(1,I,N) + EQ(1)*ANG_DDC
+!             ENC_D(2,I,N) = ENC_D(2,I,N) + EQ(2)*ANG_DDC
+!             ENC_D(3,I,N) = ENC_D(3,I,N) + EQ(3)*ANG_DDC
+! C
+! C
+! C---------- repeat for ENV vector
+! C
+! C---------- EP = normal-vector component perpendicular to hinge line
+!             ENDOT = DOT(ENV(1,I),VHINGE(1,J,N))
+!             EP(1) = ENV(1,I) - ENDOT*VHINGE(1,J,N)
+!             EP(2) = ENV(2,I) - ENDOT*VHINGE(2,J,N)
+!             EP(3) = ENV(3,I) - ENDOT*VHINGE(3,J,N)
+! C---------- EQ = unit vector perpendicular to both EP and hinge line
+!             CALL CROSS(VHINGE(1,J,N),EP,EQ)
+! C
+! C---------- rotated vector would consist of sin,cos parts from EP and EQ,
+! C-          with hinge-parallel component ENDOT restored 
+! cc          ENV(1,I) = EP(1)*COSD + EQ(1)*SIND + ENDOT*VHINGE(1,J,N)
+! cc          ENV(2,I) = EP(2)*COSD + EQ(2)*SIND + ENDOT*VHINGE(2,J,N)
+! cc          ENV(3,I) = EP(3)*COSD + EQ(3)*SIND + ENDOT*VHINGE(3,J,N)
+! C
+! C---------- linearize about zero deflection (COSD=1, SIND=0)
+!             ENV_D(1,I,N) = ENV_D(1,I,N) + EQ(1)*ANG_DDC
+!             ENV_D(2,I,N) = ENV_D(2,I,N) + EQ(2)*ANG_DDC
+!             ENV_D(3,I,N) = ENV_D(3,I,N) + EQ(3)*ANG_DDC
+!  100      CONTINUE
+!  101      CONTINUE
+! C
+!  105    CONTINUE
+!   10  CONTINUE
+! C
+!       LENC = .TRUE.
+! C
+!       RETURN
+!       END ! ENCALCMSH

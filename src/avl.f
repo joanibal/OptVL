@@ -96,8 +96,7 @@ C
 C----- process geometry to define strip and vortex data
        LPLTNEW = .TRUE.
        ! TODO remove?
-       ! CALL ENCALC
-       CALL ENCALC2
+       CALL ENCALC
 C
 C----- initialize state
        CALL VARINI
@@ -456,8 +455,7 @@ C
 C
 C----- process geometry to define strip and vortex data
        LPLTNEW = .TRUE.
-       ! CALL ENCALC
-       CALL ENCALC2
+       CALL ENCALC
 C
 C----- initialize state
 C        CALL VARINI
