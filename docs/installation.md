@@ -6,7 +6,7 @@ The recommended method to install `optvl` is via pip:
 ```shell
 pip install optvl
 ```
-This package is packaged with an OpenBLAS linear solver for quicker analysis.
+This python package is comes with an OpenBLAS linear solver for quicker analysis.
 
 ### Supported Platforms
 Currently, `optvl` supports Linux, macOS (Apple Silicon and Intel), and Windows!

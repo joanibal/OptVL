@@ -2166,10 +2166,6 @@ C                slopev slopec dcontrol vhinge
 C   with respect to varying inputs: rle chord rle1 chord1 rle2
 C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc dxv chordv
 C                slopev slopec dcontrol vhinge
-C MAKEBODY
-C
-C
-C
 C
       SUBROUTINE SDUPL_B(nn, ypt, msg)
       INCLUDE 'AVL.INC'

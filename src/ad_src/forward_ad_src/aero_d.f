@@ -17,8 +17,9 @@ C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
 C                rr
 C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
 C                sref cref bref xyzref mach cdref rle chord rle1
-C                chord1 rle2 chord2 wstrip ensy ensz rv1 rv2 rv
-C                rc gam gam_u gam_d vv vv_u vv_d wv wv_u wv_d
+C                chord1 rle2 chord2 wstrip ensy ensz xsref ysref
+C                zsref rv1 rv2 rv rc gam gam_u gam_d src src_u
+C                vv vv_u vv_d wv wv_u wv_d
 C   RW status of diff variables: alfa:in vinf:in vinf_a:in vinf_b:in
 C                wrot:in sref:in cref:in bref:in xyzref:in mach:in
 C                cdref:in clff:out cyff:out cdff:out spanef:out
@@ -39,9 +40,9 @@ C                crtot_ry:out cmtot_ry:out cntot_ry:out cdtot_rz:out
 C                cltot_rz:out cytot_rz:out crtot_rz:out cmtot_rz:out
 C                cntot_rz:out xnp:out sm:out bb:out rr:out rle:in
 C                chord:in rle1:in chord1:in rle2:in chord2:in wstrip:in
-C                ensy:in ensz:in rv1:in rv2:in rv:in rc:in gam:in
-C                gam_u:in gam_d:in vv:in vv_u:in vv_d:in wv:in
-C                wv_u:in wv_d:in
+C                ensy:in ensz:in xsref:in ysref:in zsref:in rv1:in
+C                rv2:in rv:in rc:in gam:in gam_u:in gam_d:in src:in
+C                src_u:in vv:in vv_u:in vv_d:in wv:in wv_u:in wv_d:in
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -82,6 +83,7 @@ C
       INTRINSIC COS
       REAL dir
       EXTERNAL GETSA
+      INTEGER is
       REAL temp
       REAL(kind=8) temp0
       REAL(kind=avl_real) temp1
@@ -313,9 +315,14 @@ C apply sign to body-axis variables
       crbax = dir*cmtot(1)
       cmbax_diff = cmtot_diff(2)
       cmbax = cmtot(2)
-C compute the stability derivatives every time (it's quite cheap)
       cnbax_diff = dir*cmtot_diff(3)
       cnbax = dir*cmtot(3)
+      DO is=1,nsurf
+        cmsurfbax(1, is) = dir*cmsurf(1, is)
+        cmsurfbax(2, is) = cmsurf(2, is)
+        cmsurfbax(3, is) = dir*cmsurf(3, is)
+      ENDDO
+C compute the stability derivatives every time (it's quite cheap)
 C
 C
       CALL CALC_STAB_DERIVS_D()
@@ -328,8 +335,8 @@ C                cdtot_u cytot_u cltot_u cdtot_d cytot_d cltot_d
 C                cftot cftot_u cftot_d cmtot cmtot_u cmtot_d cdvtot
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref rle chord rle1 chord1 rle2 chord2 wstrip
-C                ensy ensz rv1 rv2 rv gam gam_u gam_d vv vv_u vv_d
-C                wv wv_u wv_d
+C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_u
+C                gam_d vv vv_u vv_d wv wv_u wv_d
 C AERO
 C
 C
@@ -1999,6 +2006,15 @@ C   HHY bugfix 01102024 added rotation by AINC
         ca_lstrp(j) = caxl0*cosainc - cnrm0*sinainc
         cn_lstrp(j) = cnrm0*cosainc + caxl0*sinainc
 C
+C------ vector at chord reference point from rotation axes
+        rrot_diff(1) = xsref_diff(j) - xyzref_diff(1)
+        rrot(1) = xsref(j) - xyzref(1)
+        rrot_diff(2) = ysref_diff(j) - xyzref_diff(2)
+        rrot(2) = ysref(j) - xyzref(2)
+        rrot_diff(3) = zsref_diff(j) - xyzref_diff(3)
+        rrot(3) = zsref(j) - xyzref(3)
+C        print *,"WROT ",WROT
+C
 C------ set total effective velocity = freestream + rotation
         CALL CROSS_D(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff)
         veff_diff(1) = vinf_diff(1) + vrot_diff(1)
@@ -2606,7 +2622,7 @@ C   variations   of useful results: cdtot cytot cltot cdtot_u cytot_u
 C                cltot_u cftot cftot_u cmtot cmtot_u
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref mach cdtot cytot cltot cdtot_u cytot_u
-C                cltot_u cftot cftot_u cmtot cmtot_u
+C                cltot_u cftot cftot_u cmtot cmtot_u src src_u
 C SFFORC
 C
 C
@@ -2627,6 +2643,7 @@ C
      +     numax), cmbdy_u(3, numax)
       REAL cdbdy_u_diff(numax), cybdy_u_diff(numax), clbdy_u_diff(numax)
      +     , cfbdy_u_diff(3, numax), cmbdy_u_diff(3, numax)
+      CHARACTER*50 satype
       REAL betm
       REAL betm_diff
       INTRINSIC SQRT
@@ -2655,6 +2672,8 @@ C
       REAL un_diff
       REAL un_u
       REAL un_u_diff
+      REAL dir
+      EXTERNAL GETSA
       REAL(kind=8) arg1
       REAL(kind=8) arg1_diff
       REAL arg10
@@ -2664,6 +2683,7 @@ C
       REAL temp1
       INTEGER ii1
       INTEGER ii2
+C
 C
 C
       arg1_diff = -(2*mach*mach_diff)
@@ -2757,6 +2777,7 @@ C
       DO ii1=1,3
         rrot_diff(ii1) = 0.D0
       ENDDO
+C compute the forces on the body in the body axis
 C
 C
 C---- add on body force contributions
@@ -2897,7 +2918,7 @@ C-------- velocity projected on normal plane = U - (U.es) es
           DO k=1,3
             un_diff = veff_diff(k) - esl(k)*us_diff - us*esl_diff(k)
             un = veff(k) - us*esl(k)
-            fb_diff(k) = src(l)*un_diff
+            fb_diff(k) = src(l)*un_diff + un*src_diff(l)
             fb(k) = un*src(l)
 C
             DO iu=1,6
@@ -2909,7 +2930,8 @@ C
      +          veff_u_diff(3, iu)+veff_u(3, iu)*esl_diff(3)) - temp1*
      +          esl_diff(k)
               un_u = veff_u(k, iu) - temp1*esl(k)
-              fb_u_diff(k, iu) = src_u(l, iu)*un_diff + src(l)*un_u_diff
+              fb_u_diff(k, iu) = src_u(l, iu)*un_diff + un*src_u_diff(l
+     +          , iu) + src(l)*un_u_diff + un_u*src_diff(l)
               fb_u(k, iu) = un*src_u(l, iu) + un_u*src(l)
             ENDDO
 C
@@ -3027,6 +3049,12 @@ C
         ENDDO
       ENDDO
 C
+      CALL GETSA(lnasa_sa, satype, dir)
+C
+      DO ib=1,nbody
+        cmbdybax(3, ib) = dir*cmbdy(3, ib)
+        cmbdybax(1, ib) = dir*cmbdy(1, ib)
+      ENDDO
       RETURN
       END
 

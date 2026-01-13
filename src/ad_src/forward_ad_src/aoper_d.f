@@ -597,16 +597,16 @@ C        WRITE(*,8401) XNP
 
 C  Differentiation of get_res in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: wv_gam alfa beta vinf vinf_a
-C                vinf_b wrot delcon xyzref mach cdref res res_u
-C                res_d
-C   with respect to varying inputs: ysym zsym parval conval rv1
-C                rv2 rv rc chordv enc enc_d gam gam_u gam_d
+C                vinf_b wrot delcon xyzref mach cdref src src_u
+C                res res_u res_d
+C   with respect to varying inputs: ysym zsym parval conval xyzref
+C                rv1 rv2 rv rc rl chordv enc enc_d gam gam_u gam_d
 C   RW status of diff variables: wv_gam:out ysym:in zsym:in alfa:out
 C                beta:out vinf:out vinf_a:out vinf_b:out wrot:out
-C                parval:in conval:in delcon:out xyzref:out mach:out
-C                cdref:out rv1:in rv2:in rv:in rc:in chordv:in
-C                enc:in enc_d:in gam:in gam_u:in gam_d:in res:out
-C                res_u:out res_d:out
+C                parval:in conval:in delcon:out xyzref:in-out mach:out
+C                cdref:out rv1:in rv2:in rv:in rc:in rl:in chordv:in
+C                enc:in enc_d:in gam:in gam_u:in gam_d:in src:out
+C                src_u:out res:out res_u:out res_d:out
 Csubroutine exec_rhs
 C
 C
@@ -623,12 +623,13 @@ C
       REAL betm
       REAL betm_diff
       INTRINSIC SQRT
+      INTEGER l
       INTEGER iu
       REAL(kind=avl_real) arg1
       REAL(kind=avl_real) arg1_diff
       REAL(kind=avl_real) temp
-      INTEGER ii2
       INTEGER ii1
+      INTEGER ii2
       CALL SET_PAR_AND_CONS_D(nitmax, irun)
 C Do not use this routine in the sovler
 C IF(.NOT.LAIC) THEN
@@ -652,8 +653,32 @@ C---
      +            , rv2_diff, lvcomp, chordv, chordv_diff, nvor, rv, 
      +            rv_diff, lvcomp, .true., wv_gam, wv_gam_diff, nvor)
 C
+      CALL SRDSET_D(betm, betm_diff, xyzref, xyzref_diff, iysym, nbody, 
+     +              lfrst, nlmax, numax, nl, rl, rl_diff, radl, src_u, 
+     +              src_u_diff, dbl_u, dbl_u_diff)
+C
+      CALL VSRD_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
+     +            zsym_diff, srcore, nbody, lfrst, nlmax, nl, rl, 
+     +            rl_diff, radl, numax, src_u, src_u_diff, dbl_u, 
+     +            dbl_u_diff, nvor, rc, rc_diff, wcsrd_u, wcsrd_u_diff, 
+     +            nvmax)
+C
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB_D()
+      DO ii1=1,nlmax
+        src_diff(ii1) = 0.D0
+      ENDDO
+      DO l=1,nlnode
+        src_diff(l) = vinf(1)*src_u_diff(l, 1) + src_u(l, 1)*vinf_diff(1
+     +    ) + vinf(2)*src_u_diff(l, 2) + src_u(l, 2)*vinf_diff(2) + vinf
+     +    (3)*src_u_diff(l, 3) + src_u(l, 3)*vinf_diff(3) + wrot(1)*
+     +    src_u_diff(l, 4) + src_u(l, 4)*wrot_diff(1) + wrot(2)*
+     +    src_u_diff(l, 5) + src_u(l, 5)*wrot_diff(2) + wrot(3)*
+     +    src_u_diff(l, 6) + src_u(l, 6)*wrot_diff(3)
+        src(l) = src_u(l, 1)*vinf(1) + src_u(l, 2)*vinf(2) + src_u(l, 3)
+     +    *vinf(3) + src_u(l, 4)*wrot(1) + src_u(l, 5)*wrot(2) + src_u(l
+     +    , 6)*wrot(3)
+      ENDDO
       DO ii1=1,numax
         DO ii2=1,nvor
           rhs_u_diff(ii2, ii1) = 0.D0

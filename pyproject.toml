@@ -28,7 +28,8 @@ dependencies = [
     "numpy>=1.19",
 ]
 readme = "README.md"
-version = "2.2.0" # this automatically updates __init__.py and setup_deprecated.py
+version = "2.2.1" # this automatically updates __init__.py and setup_deprecated.py
+# don't forget to change the value in meson.build!
 
 
 [tool.cibuildwheel]

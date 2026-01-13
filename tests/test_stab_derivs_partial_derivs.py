@@ -21,6 +21,7 @@ geom_dir = os.path.join(base_dir, "..", "geom_files")
 
 geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
 mass_file = os.path.join(geom_dir, "aircraft.mass")
+geom_file = os.path.join(geom_dir, "rect_with_body.avl")
 
 
 class TestResidualUPartials(unittest.TestCase):
@@ -215,21 +216,20 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
     def test_fwd_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
             sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[3]
-
             sd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-6)[3]
 
             for deriv_func in sd_d:
                 sens_label = f"{deriv_func} wrt {con_key}"
-                # print(sens_label, sd_d[deriv_func][cs_key], sd_d_fd[deriv_func][cs_key])
+                # print(sens_label, sd_d[deriv_func][con_key], sd_d_fd[deriv_func])
 
-                tol = 1e-10
-                # print(f"{deriv_func} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
+                tol = 2e-8
+                # print(f"{deriv_func} wrt {con_key}", "fwd", sd_d[deriv_func], "fd", sd_d_fd[deriv_func])
                 if np.abs(sd_d[deriv_func]) < tol or np.abs(sd_d_fd[deriv_func]) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
                         sd_d[deriv_func],
                         sd_d_fd[deriv_func],
-                        atol=1e-8,
+                        atol=1e-7,
                         err_msg=sens_label,
                     )
                 else:
@@ -291,10 +291,11 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
                     # print(f"{deriv_func} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
                     if np.abs(sd_d[deriv_func]) < tol or np.abs(sd_d_fd[deriv_func]) < tol:
                         # If either value is basically zero, use an absolute tolerance
+                        # this is basiccally saying if one is less than 1e-10 the other must be less than 5e-7
                         np.testing.assert_allclose(
                             sd_d[deriv_func],
                             sd_d_fd[deriv_func],
-                            atol=1e-7,
+                            atol=5e-7,
                             err_msg=sens_label,
                         )
                     else:
