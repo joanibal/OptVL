@@ -306,13 +306,13 @@ class TestTotals(unittest.TestCase):
                     #     f"{func_key}  wrt {surf_key}:{geom_key:10} | AD:{geom_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                     # )
 
-                    tol = 1e-10
+                    tol = 5e-7
                     if np.abs(geom_dot) < tol or np.abs(func_dot) < tol:
                         # If either value is basically zero, use an absolute tolerance
                         np.testing.assert_allclose(
                             geom_dot,
                             func_dot,
-                            atol=1e-7,
+                            atol=5e-9,
                             err_msg=f"{func_key} wrt {surf_key}:{geom_key:10}",
                         )
                     else:
