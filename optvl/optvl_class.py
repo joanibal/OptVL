@@ -780,8 +780,8 @@ class OVLSolver(object):
                     "albe":                   True,                   
                     "load":                   True,                   
                     "clcd":                   np.zeros(6, dtype=np.float64),
-                    "nspans":                 np.zeros(num_secs, dtype=int),
-                    "sspaces":                np.zeros(num_secs, dtype=int),
+                    "nspans":                 np.zeros(num_secs, dtype=np.int32),
+                    "sspaces":                np.zeros(num_secs, dtype=np.float64),
                     "clcdsec":                np.zeros((num_secs,6)),
                     "claf":                   np.ones(num_secs),
                 }
