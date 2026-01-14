@@ -31,7 +31,7 @@ f77FilesNoDir=$(notdir $(f77Files))
 # Generate two separate list of .F90 and .f90 files using the filter command
 
 # Finally convert all source files to .o
-OFILES=$(f90Files:%.f90=%.o) $(f77FilesNoDir:%.f=%.o) $(cFilesNoDir:%.c=%.o)
+OFILES=$(f90FilesNoDir:%.f90=%.o) $(f77FilesNoDir:%.f=%.o) $(cFilesNoDir:%.c=%.o)
 
 # Compile sources
 
@@ -81,10 +81,16 @@ default: lib ../f2py/libavl.pyf
 
 # build the module first
 avl_heap_inc.o avl_heap_inc.mod: ../avl_heap_inc.f90
-	$(FF90) $(FF90_ALL_FLAGS) -cpp -I ../includes -c $<
+	$(FF90) $(FF90_ALL_FLAGS) -cpp -I ../includes -c $<  -o $*.o
+	@echo
+	@echo "        --- Compiled $*.f90 successfully ---"
+	@echo
 
 avl_heap_diff_inc.o avl_heap_diff_inc.mod: ../avl_heap_diff_inc.f90
-	$(FF90) $(FF90_ALL_FLAGS) -cpp -I ../includes -c $<
+	$(FF90) $(FF90_ALL_FLAGS) -cpp -I ../includes -c  $< -o $*.o
+	@echo
+	@echo "        --- Compiled $*.f90 successfully ---"
+	@echo
 
 sources: $(OFILES) 
 

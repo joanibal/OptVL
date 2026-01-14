@@ -1,5 +1,5 @@
-load ./geom_files/supra.avl
-mass ./geom_files/supra.mass
+load ../geom_files/supra.avl
+mass ../geom_files/supra.mass
 mset 0
 oper
 MRF
@@ -22,6 +22,8 @@ ST
 
 SB
 
+FS
+
 a c 1.1
 b b 10
 r r 0
@@ -38,6 +40,8 @@ ST
 
 SB
 
+FS
+
 a c 1.2
 b b -12
 r r 0.1
@@ -53,6 +57,8 @@ FN
 ST
 
 SB
+
+FS
 
 
 

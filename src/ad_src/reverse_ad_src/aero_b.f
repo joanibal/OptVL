@@ -29,8 +29,8 @@ C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
 C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
 C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
 C                rr rle chord rle1 chord1 rle2 chord2 wstrip ensy
-C                ensz rv1 rv2 rv rc gam gam_u gam_d vv vv_u vv_d
-C                wv wv_u wv_d
+C                ensz xsref ysref zsref rv1 rv2 rv rc gam gam_u
+C                gam_d src src_u vv vv_u vv_d wv wv_u wv_d
 C   RW status of diff variables: alfa:out vinf:out vinf_a:out vinf_b:out
 C                wrot:out sref:out cref:out bref:out xyzref:out
 C                mach:out cdref:out clff:in-zero cyff:in-zero cdff:in-zero
@@ -57,8 +57,9 @@ C                cytot_rz:in-zero crtot_rz:in-zero cmtot_rz:in-zero
 C                cntot_rz:in-zero xnp:in-out sm:in-out bb:in-out
 C                rr:in-out rle:out chord:out rle1:out chord1:out
 C                rle2:out chord2:out wstrip:out ensy:out ensz:out
-C                rv1:out rv2:out rv:out rc:out gam:out gam_u:out
-C                gam_d:out vv:out vv_u:out vv_d:out wv:out wv_u:out
+C                xsref:out ysref:out zsref:out rv1:out rv2:out
+C                rv:out rc:out gam:out gam_u:out gam_d:out src:out
+C                src_u:out vv:out vv_u:out vv_d:out wv:out wv_u:out
 C                wv_d:out
 C***********************************************************************
 C    Module:  aero.f
@@ -100,6 +101,7 @@ C
       INTRINSIC COS
       REAL dir
       EXTERNAL GETSA
+      INTEGER is
       REAL(kind=8) temp
       REAL(kind=8) temp_diff
       INTEGER branch
@@ -247,11 +249,8 @@ C included in the derivative routines
 C     calculate stability axis based values
       CALL GETSA(lnasa_sa, satype, dir)
 C apply sign to body-axis variables
-C compute the stability derivatives every time (it's quite cheap)
-C
-C
-      temp_diff = dir*cnsax_diff
       CALL CALC_STAB_DERIVS_B()
+      temp_diff = dir*cnsax_diff
       cmtot_diff(3) = cmtot_diff(3) + dir*cnbax_diff + cosa*temp_diff
       cmtot_diff(2) = cmtot_diff(2) + cmbax_diff
       cmtot_diff(1) = cmtot_diff(1) + dir*crbax_diff - sina*temp_diff
@@ -436,8 +435,8 @@ C                rv1 rv2 gam
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref cdtot_d cytot_d cltot_d cftot cftot_d cmtot
 C                cmtot_d rle chord rle1 chord1 rle2 chord2 wstrip
-C                ensy ensz rv1 rv2 rv gam gam_u gam_d vv vv_u vv_d
-C                wv wv_u wv_d
+C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_u
+C                gam_d vv vv_u vv_d wv wv_u wv_d
 C AERO
 C
 C
@@ -1472,6 +1471,12 @@ C   HHY bugfix 01102024 added rotation by AINC
         ca_lstrp(j) = caxl0*cosainc - cnrm0*sinainc
         cn_lstrp(j) = cnrm0*cosainc + caxl0*sinainc
 C
+C------ vector at chord reference point from rotation axes
+        rrot(1) = xsref(j) - xyzref(1)
+        rrot(2) = ysref(j) - xyzref(2)
+        rrot(3) = zsref(j) - xyzref(3)
+C        print *,"WROT ",WROT
+C
 C------ set total effective velocity = freestream + rotation
         CALL CROSS(rrot, wrot, vrot)
         veff(1) = vinf(1) + vrot(1)
@@ -2004,6 +2009,15 @@ C
       ENDDO
       DO ii1=1,NSTRIP
         ensz_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        xsref_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        ysref_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        zsref_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,nvor
         DO ii2=1,3
@@ -2985,6 +2999,24 @@ C------ vector from chord c/4 reference point to case reference point XYZREF
         r(3) = rc4(3) - xyzref(3)
 C... Strip moments in body axes about the case moment reference point XYZREF 
 C    normalized by strip area and chord
+C
+C...Components of X,Y,Z forces in local strip axes 
+C
+C...Axial/normal forces and lift/drag in plane normal to dihedral of strip
+C...CN,CA forces are rotated to be in and normal to strip incidence
+C   HHY bugfix 01102024 added rotation by AINC
+C
+C------ vector at chord reference point from rotation axes
+        CALL PUSHREAL8(rrot(1))
+        rrot(1) = xsref(j) - xyzref(1)
+        CALL PUSHREAL8(rrot(2))
+        rrot(2) = ysref(j) - xyzref(2)
+        CALL PUSHREAL8(rrot(3))
+        rrot(3) = zsref(j) - xyzref(3)
+C        print *,"WROT ",WROT
+C
+C------ set total effective velocity = freestream + rotation
+C
         rc4_diff(3) = rc4_diff(3) + r_diff(3)
         rle_diff(3, j) = rle_diff(3, j) - r_diff(3)
         r_diff(3) = 0.D0
@@ -3004,6 +3036,18 @@ C    normalized by strip area and chord
         vrot_diff(1) = vrot_diff(1) + veff_diff(1)
         veff_diff(1) = 0.D0
         CALL CROSS_B(rrot, rrot_diff, wrot, wrot_diff, vrot, vrot_diff)
+        CALL POPREAL8(rrot(3))
+        zsref_diff(j) = zsref_diff(j) + rrot_diff(3)
+        xyzref_diff(3) = xyzref_diff(3) - rrot_diff(3)
+        rrot_diff(3) = 0.D0
+        CALL POPREAL8(rrot(2))
+        ysref_diff(j) = ysref_diff(j) + rrot_diff(2)
+        xyzref_diff(2) = xyzref_diff(2) - rrot_diff(2)
+        rrot_diff(2) = 0.D0
+        CALL POPREAL8(rrot(1))
+        xsref_diff(j) = xsref_diff(j) + rrot_diff(1)
+        xyzref_diff(1) = xyzref_diff(1) - rrot_diff(1)
+        rrot_diff(1) = 0.D0
         cr_diff = 0.D0
 C$BWD-OF II-LOOP 
         DO n=1,ncontrol
@@ -4384,7 +4428,7 @@ C                xyzref cdtot cytot cltot cdtot_u cytot_u cltot_u
 C                cftot cftot_u cmtot cmtot_u
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref mach cdtot cytot cltot cdtot_u cytot_u
-C                cltot_u cftot cftot_u cmtot cmtot_u
+C                cltot_u cftot cftot_u cmtot cmtot_u src src_u
 C SFFORC
 C
 C
@@ -4405,6 +4449,7 @@ C
      +     numax), cmbdy_u(3, numax)
       REAL cdbdy_u_diff(numax), cybdy_u_diff(numax), clbdy_u_diff(numax)
      +     , cfbdy_u_diff(3, numax), cmbdy_u_diff(3, numax)
+      CHARACTER*50 satype
       REAL betm
       REAL betm_diff
       INTRINSIC SQRT
@@ -4433,6 +4478,8 @@ C
       REAL un_diff
       REAL un_u
       REAL un_u_diff
+      REAL dir
+      EXTERNAL GETSA
       REAL temp_diff
       REAL(kind=8) temp_diff0
       INTEGER ii1
@@ -4441,10 +4488,19 @@ C
       INTEGER ii2
 C
 C
+C
       betm = SQRT(1.0 - mach**2)
 C
       sina = SIN(alfa)
       cosa = COS(alfa)
+      DO ii1=1,nlmax
+        src_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,numax
+        DO ii2=1,nlmax
+          src_u_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
       DO ii1=1,nbmax
         cdbdy_diff(ii1) = 0.D0
       ENDDO
@@ -4620,6 +4676,7 @@ C-------- velocity projected on normal plane = U - (U.es) es
             fb(k) = un*src(l)
 C
             DO iu=1,6
+              CALL PUSHREAL8(un_u)
               un_u = veff_u(k, iu) - (veff_u(1, iu)*esl(1)+veff_u(2, iu)
      +          *esl(2)+veff_u(3, iu)*esl(3))*esl(k)
               CALL PUSHREAL8(fb_u(k, iu))
@@ -4747,12 +4804,17 @@ C
           us = veff(1)*esl(1) + veff(2)*esl(2) + veff(3)*esl(3)
           us_diff = 0.D0
           DO k=3,1,-1
+            un = veff(k) - us*esl(k)
             un_diff = 0.D0
             DO iu=6,1,-1
               CALL POPREAL8(fb_u(k, iu))
               un_diff = un_diff + src_u(l, iu)*fb_u_diff(k, iu)
+              src_u_diff(l, iu) = src_u_diff(l, iu) + un*fb_u_diff(k, iu
+     +          )
               un_u_diff = src(l)*fb_u_diff(k, iu)
+              src_diff(l) = src_diff(l) + un_u*fb_u_diff(k, iu)
               fb_u_diff(k, iu) = 0.D0
+              CALL POPREAL8(un_u)
               veff_u_diff(k, iu) = veff_u_diff(k, iu) + un_u_diff
               temp_diff = -(esl(k)*un_u_diff)
               esl_diff(k) = esl_diff(k) - (veff_u(1, iu)*esl(1)+veff_u(2
@@ -4766,6 +4828,7 @@ C
             ENDDO
             CALL POPREAL8(fb(k))
             un_diff = un_diff + src(l)*fb_diff(k)
+            src_diff(l) = src_diff(l) + un*fb_diff(k)
             fb_diff(k) = 0.D0
             veff_diff(k) = veff_diff(k) + un_diff
             us_diff = us_diff - esl(k)*un_diff

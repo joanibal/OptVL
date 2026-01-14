@@ -77,6 +77,8 @@ def generate_avl_script(
             lines.append("")
             lines.append("SB")
             lines.append("")
+            lines.append("FS")
+            lines.append("")
 
     if alphas is None:
         # CL sweeps
@@ -99,6 +101,8 @@ def generate_avl_script(
             lines.append("ST")
             lines.append("")
             lines.append("SB")
+            lines.append("")
+            lines.append("FS")
             lines.append("")
 
     # Quit AVL
