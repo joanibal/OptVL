@@ -18,7 +18,7 @@ TRANSLATE
 0.0  0.0  0.0
 #
 BFIL
-fuseSupra.dat
+../geom_files/fuseSupra.dat
 
 #==============================================================
 SURFACE

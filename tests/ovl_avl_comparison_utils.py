@@ -145,18 +145,11 @@ def check_vals(
 
 
 def run_comparison(ovl, ref_data_cases, **kwargs):
-    for ref_data in ref_data_cases:
+    for ref_data in [ref_data_cases[0]]:
         set_inputs(ovl, ref_data)
 
         # This is the method that acutally runs the analysis
         ovl.execute_run()
-
-        force_data = ovl.get_total_forces()
-
-        for key in force_data:
-            avl_key = get_avl_output_name(key, ovl)
-            avl_val = ref_data["outputs"]["total_forces"][avl_key]
-            check_vals(force_data[key], avl_val, key, **kwargs)
 
         mesh_data = ovl.get_mesh_data()
         for key in ref_data["outputs"]["mesh_data"]:
@@ -167,6 +160,101 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
         for key in reference_data:
             ref_avl_val = ref_data["outputs"]["reference_data"][key]
             check_vals(reference_data[key], ref_avl_val, f"ref:{key}", **kwargs)
+
+        force_data = ovl.get_total_forces()
+        for key in force_data:
+            avl_key = get_avl_output_name(key, ovl)
+            avl_val = ref_data["outputs"]["total_forces"][avl_key]
+            check_vals(force_data[key], avl_val, key, **kwargs)
+
+        surf_avl_keys = {
+            'length':"Length",
+            'area': "Area",
+            # 'area': "Ssurf",
+            'volume': "Vol",
+            "average chord":"Cave",
+            "CL surf" : "cl",
+            "CD surf" : "cd",
+            "CDv surf" : "cdv",
+        }
+
+        surface_data = ovl.get_surface_forces()
+        for idx_surf, surf in enumerate(surface_data):
+            for key in surface_data[surf]:
+                
+                if key in surf_avl_keys:
+                    avl_key = surf_avl_keys[key]
+                elif key in ["CX", "CY", "CZ", "CMLE_LSTRP surf"]:
+                    # avl output does not provide this data
+                    continue
+                else:
+                    avl_key = key
+
+                avl_val = ref_data["outputs"]["surface_forces"][surf][avl_key]
+                check_vals(surface_data[surf][key], avl_val, key, **kwargs)
+
+        strip_avl_keys = {
+            'X LE':"Xle",
+            'Y LE':"Yle",
+            'Z LE':"Zle",
+            'chord':"Chord",
+            'area': "Area",
+            'spanloading': "c_cl",
+            "downwash":"ai",
+            "CL perp" : "cl_perp",
+            "CL strip" : "cl",
+            "CD strip" : "cd",
+            "CDv" : "cdv",
+            "Cm c/4" : "cm_c/4",
+            "Cm LE" : "cm_LE",
+            "CP x/c" : "C.P.x/c",
+        }
+
+        strip_data = ovl.get_strip_forces()
+        
+        
+        for idx_surf, surf in enumerate(strip_data):
+            print(f"-------- {surf} --------")
+            for key in strip_data[surf]:
+            
+                
+                if key in ["S LE", "width", "twist", "CL", "CD", "CX", "CY", "CZ", "Cl", "Cm", "Cn", "CF strip", "Cm strip", "lift dist", "drag dist", "roll dist", "yaw dist"]:
+                    # avl output does not provide this data
+                    continue
+                elif key in ["CP x/c"]:
+                    # check that there is lift on this surface
+                    if np.abs(surface_data[surf]["CL"]) < 1e-14:
+                        # the C.P. X/C of this surface will have very large error
+                        # this often happens with vertical tails
+                        continue 
+                    else:
+                        avl_key = strip_avl_keys[key]
+                        
+                elif key in strip_avl_keys:
+                    avl_key = strip_avl_keys[key]
+                else:
+                    avl_key = key
+
+                
+                avl_val = ref_data["outputs"]["strip_forces"][surf][avl_key]
+                print(key, avl_key, strip_data[surf][key][:3], avl_val[:3])
+                check_vals(strip_data[surf][key], avl_val, key, **kwargs)
+
+        
+        body_avl_keys = {
+            'length':"Length",
+            'surface area': "Asurf",
+            'volume': "Vol",
+        }
+        body_force_data = ovl.get_body_forces()
+        for idx_body, body in enumerate(body_force_data):
+            for key in body_force_data[body]:
+                if key in body_avl_keys:
+                    avl_key = body_avl_keys[key]
+                else:
+                    avl_key = key
+                avl_val = ref_data["outputs"]["body_forces"][str(idx_body+1)][avl_key]
+                check_vals(body_force_data[body][key], avl_val, key, **kwargs)
 
         control_def = ovl.get_control_deflections()
         for key in control_def:

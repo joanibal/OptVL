@@ -50,13 +50,13 @@ The commands from the oper and mode menus are available
 | get shear moment distribution | VM | ovl.get_strip_forces() |
 | get control surface derivatives (e.g. dCL/dElevator)| ST | ovl.get_control_derivs() |
 | get stability derivatives | ST | ovl.get_stab_derivs()|
-| get stability derivatives in the body axis| SB | - |
+| get stability derivatives in the body axis| SB | ovl.get_body_axis_derivs() |
 | get/set reference data | RE | ovl.get_reference_data/set_reference_data()|
-| get/set  design variables specified in AVL file | DE | -|
+| get/set twist design variables specified in AVL file | DE | not supported (set twist directly)|
 | get surface forces | FN | ovl.get_surface_forces() |
 | get force distribution on strips| FS| ovl.get_strip_forces() |
 | get force distribution on elements | FE | - |
-| get body forces| FB | -|
+| get body forces| FB | ovl.get_body_forces()|
 | get high moments| HM | ovl.get_hinge_moments() |
 
 

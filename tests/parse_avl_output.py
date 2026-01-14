@@ -64,6 +64,9 @@ def parse_avl_output(run_output_files):
                         "reference_data": {},
                         "variables": {},
                         "total_forces": {},
+                        "surface_forces": {},
+                        "strip_forces": {},
+                        "body_forces": {},
                         "controls": {},
                         "stability_derivatives": {},
                         "body_axis_derivatives": {}
@@ -129,7 +132,110 @@ def parse_avl_output(run_output_files):
                     l = next(lines).strip()
                     val, name  = l.split("  ")
                     current_case["outputs"]["controls"][name.strip()] = float(val)
+            
+            elif "s>  BODY" in line:
+                # skip version line
+                # and reference info
+                for _ in range(4):
+                    next(lines)                # skip a
+                
+                nbodys, _ = next(lines).split("|")
+                nbodys = int(nbodys)
+                
+                # skip next two lines
+                for idx_body in range(1,nbodys+1):
+                    for _ in range(1):
+                        next(lines)
+                    
+                    body_key = next(lines).strip()
+                    # For some reason the body_key characters are all \x00
+                    # so we will use idx_body for the dict key
+                            
+                    vals, keys = next(lines).split("|")
+                    vals = parse_floats(vals)
+                    keys = keys.split(':')[-1].strip()
+                    keys = keys.split(' ')
+                    
+                    current_case["outputs"]["body_forces"][idx_body] = {}
+                
+                    for k, v in zip(keys, vals):
+                        current_case["outputs"]["body_forces"][idx_body][k] = v
 
+            elif "s>  SURF" in line:
+                # skip version line
+                # and reference info
+                for _ in range(4):
+                    next(lines)                # skip a
+                
+                nsurfs, _ = next(lines).split("|")
+                nsurfs = int(nsurfs)
+                
+                for idx_surf in range(1,nsurfs+1):
+                    # skip next  line
+                    for _ in range(1):
+                        next(lines)
+                    
+                    surf_key = next(lines).strip()
+                    
+                    current_case["outputs"]["surface_forces"][surf_key] = {}
+                    
+                    # two data lines 
+                    for _ in range(2):
+                        vals, keys = next(lines).split("|")
+                        vals = parse_floats(vals)
+                        keys = keys.split(':')[-1].strip()
+                        keys = keys.split(' ')
+                        
+                        for k, v in zip(keys, vals):
+                            current_case["outputs"]["surface_forces"][surf_key][k] = v
+
+            elif "s>  STRP" in line:
+                # skip version line
+                # and reference info
+                for _ in range(5):
+                    next(lines)                # skip a
+                
+                nsurfs, _ = next(lines).split("|")
+                nsurfs = int(nsurfs)
+                
+                for idx_surf in range(1,nsurfs+1):
+                    # skip next  line
+                    for _ in range(1):
+                        next(lines)
+                    
+                    surf_key = next(lines).strip()
+                    
+                    current_case["outputs"]["strip_forces"][surf_key] = {}
+                    
+                    surf_parms = next(lines).split("|")[0]
+                    surf_parms = surf_parms.strip().split("   ")
+                    # idx_surf = surf_parms[0]
+                    nchord = int(surf_parms[1])
+                    nspan = int(surf_parms[2])
+                    first_strip = int(surf_parms[3])
+                    
+                    
+                    # skip the surface data
+                    for _ in range(4):
+                        next(lines)
+                    
+                    # get the keys of the strips 
+                    strip_vars = next(lines).strip().split(", ")  # skip header    
+                    
+                    # construct arrays of the strip data with the size of the nspan strips
+                    for var in strip_vars:
+                        var = var.strip()
+                        current_case["outputs"]["strip_forces"][surf_key][var] = [0.0]*nspan
+                    
+                    # looop over the rows of data for each strip
+                    # this is where you stopped
+                    for idx_strip in range(nspan):
+                        vals = parse_floats(next(lines))
+                        
+                        for idx, var in enumerate(strip_vars):
+                            var = var.strip()
+                            current_case["outputs"]["strip_forces"][surf_key][var][idx_strip] = vals[idx]
+                    
 
             # --- Stability derivatives ---
             elif "Stability-axis derivatives" in line or "Geometry-axis derivatives" in line:

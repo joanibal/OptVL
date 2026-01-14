@@ -1,5 +1,5 @@
-load ./geom_files/aircraft.avl
-mass ./geom_files/aircraft.mass
+load ../geom_files/aircraft.avl
+mass ../geom_files/aircraft.mass
 mset 0
 oper
 MRF
@@ -21,6 +21,8 @@ ST
 
 SB
 
+FS
+
 a a 45
 b b 0
 r r 0
@@ -38,6 +40,8 @@ FN
 ST
 
 SB
+
+FS
 
 a a 0
 b b 45
@@ -57,6 +61,8 @@ ST
 
 SB
 
+FS
+
 a a 0
 b b 0
 r r 0.1
@@ -74,6 +80,8 @@ FN
 ST
 
 SB
+
+FS
 
 a a 0
 b b 0
@@ -93,6 +101,8 @@ ST
 
 SB
 
+FS
+
 a a 0
 b b 0
 r r 0
@@ -110,6 +120,8 @@ FN
 ST
 
 SB
+
+FS
 
 a a 0
 b b 0
@@ -129,6 +141,8 @@ ST
 
 SB
 
+FS
+
 a a 0
 b b 0
 r r 0
@@ -146,6 +160,8 @@ FN
 ST
 
 SB
+
+FS
 
 a a -45
 b b -45
@@ -164,6 +180,8 @@ FN
 ST
 
 SB
+
+FS
 
 
 

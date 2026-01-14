@@ -255,7 +255,7 @@ C
 C  Differentiation of set_par_and_cons in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: alfa beta wrot delcon xyzref
 C                mach cdref
-C   with respect to varying inputs: parval conval
+C   with respect to varying inputs: parval conval xyzref
 C VELSUM
       SUBROUTINE SET_PAR_AND_CONS_D(niter, ir)
       INCLUDE 'AVL.INC'
@@ -268,9 +268,6 @@ C mach setting is done in here. Should it be?
       INTEGER ii1
       CALL SET_PARAMS_D(ir)
 C Additionally set the reference point to be at the cg
-      DO ii1=1,3
-        xyzref_diff(ii1) = 0.D0
-      ENDDO
       xyzref_diff(1) = parval_diff(ipxcg, ir)
       xyzref(1) = parval(ipxcg, ir)
       xyzref_diff(2) = parval_diff(ipycg, ir)
@@ -351,7 +348,7 @@ C----- might as well directly set operating variables if they are known
 C  Differentiation of set_vel_rhs in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rhs
 C   with respect to varying inputs: vinf wrot delcon xyzref rc
-C                enc enc_d
+C                enc enc_d wcsrd_u
       SUBROUTINE SET_VEL_RHS_D()
 C
       INCLUDE 'AVL.INC'
@@ -384,6 +381,7 @@ C
           wunit(2) = 0.
           wunit_diff(3) = 0.D0
           wunit(3) = 0.
+CTODO-opt: only do this if boddies
           IF (lvalbe(i)) THEN
             vunit_diff(1) = vinf_diff(1)
             vunit(1) = vinf(1)
@@ -398,6 +396,24 @@ C
             wunit_diff(3) = wrot_diff(3)
             wunit(3) = wrot(3)
           END IF
+          vunit_diff(1) = vunit_diff(1) + vinf(1)*wcsrd_u_diff(1, i, 1) 
+     +      + wcsrd_u(1, i, 1)*vinf_diff(1) + vinf(2)*wcsrd_u_diff(1, i
+     +      , 2) + wcsrd_u(1, i, 2)*vinf_diff(2) + vinf(3)*wcsrd_u_diff(
+     +      1, i, 3) + wcsrd_u(1, i, 3)*vinf_diff(3)
+          vunit(1) = vunit(1) + wcsrd_u(1, i, 1)*vinf(1) + wcsrd_u(1, i
+     +      , 2)*vinf(2) + wcsrd_u(1, i, 3)*vinf(3)
+          vunit_diff(2) = vunit_diff(2) + vinf(1)*wcsrd_u_diff(2, i, 1) 
+     +      + wcsrd_u(2, i, 1)*vinf_diff(1) + vinf(2)*wcsrd_u_diff(2, i
+     +      , 2) + wcsrd_u(2, i, 2)*vinf_diff(2) + vinf(3)*wcsrd_u_diff(
+     +      2, i, 3) + wcsrd_u(2, i, 3)*vinf_diff(3)
+          vunit(2) = vunit(2) + wcsrd_u(2, i, 1)*vinf(1) + wcsrd_u(2, i
+     +      , 2)*vinf(2) + wcsrd_u(2, i, 3)*vinf(3)
+          vunit_diff(3) = vunit_diff(3) + vinf(1)*wcsrd_u_diff(3, i, 1) 
+     +      + wcsrd_u(3, i, 1)*vinf_diff(1) + vinf(2)*wcsrd_u_diff(3, i
+     +      , 2) + wcsrd_u(3, i, 2)*vinf_diff(2) + vinf(3)*wcsrd_u_diff(
+     +      3, i, 3) + wcsrd_u(3, i, 3)*vinf_diff(3)
+          vunit(3) = vunit(3) + wcsrd_u(3, i, 1)*vinf(1) + wcsrd_u(3, i
+     +      , 2)*vinf(2) + wcsrd_u(3, i, 3)*vinf(3)
           rrot_diff(1) = rc_diff(1, i) - xyzref_diff(1)
           rrot(1) = rc(1, i) - xyzref(1)
           rrot_diff(2) = rc_diff(2, i) - xyzref_diff(2)
@@ -406,6 +422,29 @@ C
           rrot(3) = rc(3, i) - xyzref(3)
           CALL CROSS_D(rrot, rrot_diff, wunit, wunit_diff, vunit_w_term
      +                 , vunit_w_term_diff)
+C
+          vunit_w_term_diff(1) = vunit_w_term_diff(1) + wrot(1)*
+     +      wcsrd_u_diff(1, i, 1) + wcsrd_u(1, i, 1)*wrot_diff(1) + wrot
+     +      (2)*wcsrd_u_diff(1, i, 2) + wcsrd_u(1, i, 2)*wrot_diff(2) + 
+     +      wrot(3)*wcsrd_u_diff(1, i, 3) + wcsrd_u(1, i, 3)*wrot_diff(3
+     +      )
+          vunit_w_term(1) = vunit_w_term(1) + wcsrd_u(1, i, 1)*wrot(1) +
+     +      wcsrd_u(1, i, 2)*wrot(2) + wcsrd_u(1, i, 3)*wrot(3)
+          vunit_w_term_diff(2) = vunit_w_term_diff(2) + wrot(1)*
+     +      wcsrd_u_diff(2, i, 1) + wcsrd_u(2, i, 1)*wrot_diff(1) + wrot
+     +      (2)*wcsrd_u_diff(2, i, 2) + wcsrd_u(2, i, 2)*wrot_diff(2) + 
+     +      wrot(3)*wcsrd_u_diff(2, i, 3) + wcsrd_u(2, i, 3)*wrot_diff(3
+     +      )
+          vunit_w_term(2) = vunit_w_term(2) + wcsrd_u(2, i, 1)*wrot(1) +
+     +      wcsrd_u(2, i, 2)*wrot(2) + wcsrd_u(2, i, 3)*wrot(3)
+          vunit_w_term_diff(3) = vunit_w_term_diff(3) + wrot(1)*
+     +      wcsrd_u_diff(3, i, 1) + wcsrd_u(3, i, 1)*wrot_diff(1) + wrot
+     +      (2)*wcsrd_u_diff(3, i, 2) + wcsrd_u(3, i, 2)*wrot_diff(2) + 
+     +      wrot(3)*wcsrd_u_diff(3, i, 3) + wcsrd_u(3, i, 3)*wrot_diff(3
+     +      )
+          vunit_w_term(3) = vunit_w_term(3) + wcsrd_u(3, i, 1)*wrot(1) +
+     +      wcsrd_u(3, i, 2)*wrot(2) + wcsrd_u(3, i, 3)*wrot(3)
+C
           vunit_diff = vunit_diff + vunit_w_term_diff
           vunit = vunit + vunit_w_term
 C Add contribution from control surfaces
@@ -430,7 +469,7 @@ C Add contribution from control surfaces
 C  Differentiation of set_vel_rhs_u in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rhs_u
 C   with respect to varying inputs: delcon xyzref rc enc enc_d
-C                rhs_u
+C                wcsrd_u rhs_u
 Cset_vel_rhs
 C
       SUBROUTINE SET_VEL_RHS_U_D(iu)
@@ -468,8 +507,11 @@ C
             END IF
           END IF
 C--------- always add on indirect freestream influence via BODY sources and doublets
+          vunit_diff(1) = vunit_diff(1) + wcsrd_u_diff(1, i, iu)
           vunit(1) = vunit(1) + wcsrd_u(1, i, iu)
+          vunit_diff(2) = vunit_diff(2) + wcsrd_u_diff(2, i, iu)
           vunit(2) = vunit(2) + wcsrd_u(2, i, iu)
+          vunit_diff(3) = vunit_diff(3) + wcsrd_u_diff(3, i, iu)
           vunit(3) = vunit(3) + wcsrd_u(3, i, iu)
 C
           rrot_diff(1) = rc_diff(1, i) - xyzref_diff(1)
@@ -504,8 +546,8 @@ C Add contribution from control surfaces
 
 C  Differentiation of set_gam_d_rhs in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rhs_vec
-C   with respect to varying inputs: vinf wrot xyzref rc rhs_vec
-C                enc_q
+C   with respect to varying inputs: vinf wrot xyzref rc wcsrd_u
+C                rhs_vec enc_q
 Cset_vel_rhs_u
       SUBROUTINE SET_GAM_D_RHS_D(iq, enc_q, enc_q_diff, rhs_vec, 
      +                           rhs_vec_diff)
@@ -557,10 +599,14 @@ C
             vq(3) = 0.
           END IF
           DO k=1,3
-            vq_diff(k) = vq_diff(k) + wcsrd_u(k, i, 1)*vinf_diff(1) + 
-     +        wcsrd_u(k, i, 2)*vinf_diff(2) + wcsrd_u(k, i, 3)*vinf_diff
-     +        (3) + wcsrd_u(k, i, 4)*wrot_diff(1) + wcsrd_u(k, i, 5)*
-     +        wrot_diff(2) + wcsrd_u(k, i, 6)*wrot_diff(3)
+            vq_diff(k) = vq_diff(k) + vinf(1)*wcsrd_u_diff(k, i, 1) + 
+     +        wcsrd_u(k, i, 1)*vinf_diff(1) + vinf(2)*wcsrd_u_diff(k, i
+     +        , 2) + wcsrd_u(k, i, 2)*vinf_diff(2) + vinf(3)*
+     +        wcsrd_u_diff(k, i, 3) + wcsrd_u(k, i, 3)*vinf_diff(3) + 
+     +        wrot(1)*wcsrd_u_diff(k, i, 4) + wcsrd_u(k, i, 4)*wrot_diff
+     +        (1) + wrot(2)*wcsrd_u_diff(k, i, 5) + wcsrd_u(k, i, 5)*
+     +        wrot_diff(2) + wrot(3)*wcsrd_u_diff(k, i, 6) + wcsrd_u(k, 
+     +        i, 6)*wrot_diff(3)
             vq(k) = vq(k) + wcsrd_u(k, i, 1)*vinf(1) + wcsrd_u(k, i, 2)*
      +        vinf(2) + wcsrd_u(k, i, 3)*vinf(3) + wcsrd_u(k, i, 4)*wrot
      +        (1) + wcsrd_u(k, i, 5)*wrot(2) + wcsrd_u(k, i, 6)*wrot(3)
