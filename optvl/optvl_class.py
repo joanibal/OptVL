@@ -640,22 +640,23 @@ class OVLSolver(object):
             if last_char == "C":
                 return str
             elif last_char == "R":
-                return (float, np.float64)
+                return (np.float64, float)
             elif last_char == "I":
-                return (int, np.int32)
+                return (np.int32, int)
             elif last_char == "L":
                 return (bool, int, np.int32)
             else:
                 raise ValueError(f"type not able to be infered from common block {common_blk}")
 
-        def check_type(key, avl_vars, given_val):
-            """Checks the type for a given AVL Fortran Common Block var against a given value
+        def check_type(key, avl_vars, given_val, cast_type=True):
+            """Checks the type for a given AVL Fortran Common Block var against a given value.
+            If the type can be cast into the correct type then it is and returned
 
             Args:
                 key: OptVL input variable dictionary key
                 avl_vars: AVL Common Block variable name array
                 given_val: Input value to check type against
-
+                cast_type: Flag to cast the type into the required type if possible 
             """
             # get the type that it should be
             expected_type = get_types_from_blk(avl_vars[0])
@@ -687,15 +688,24 @@ class OVLSolver(object):
 
                 # check that the type of the array matches the expectation
                 if not isinstance(given_val.flatten()[0], expected_type):
-                    raise TypeError(
-                        f"Variable {key} is an array of type {given_val.dtype} but expected {expected_type}"
-                    )
+                    if cast_type and np.can_cast(given_val.dtype, expected_type[0], casting='same_kind'):
+                        given_val = given_val.astype(np.dtype(expected_type[0]))
+                    else:
+                        raise TypeError(
+                            f"Variable {key} is an array of type {given_val.dtype} but expected {expected_type}"
+                        )
             else:
                 # check the type of the scaler
                 if not isinstance(given_val, expected_type):
-                    raise TypeError(
-                        f"Variable {key} is a scalar of type {type(given_val)} but expected {expected_type}"
-                    )
+                    if cast_type and np.can_cast(given_val.dtype, expected_type[0], casting='same_kind'):
+                        given_val = np.dtype(expected_type[0]).type(given_val)
+                    else:
+                        raise TypeError(
+                            f"Variable {key} is a scalar of type {type(given_val)} but expected {expected_type}"
+                        )
+                
+            
+            return given_val
 
         # Set AVL header variables
         # CDp is the only optional input for the AVL header
@@ -710,7 +720,7 @@ class OVLSolver(object):
             else:
                 val = input_dict[key]
 
-            check_type(key, avl_vars, val)
+            val = check_type(key, avl_vars, val)
 
             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val)
 
@@ -829,7 +839,7 @@ class OVLSolver(object):
                     else:
                         val = surf_dict[key]
 
-                    check_type(key, avl_vars, val)
+                    val = check_type(key, avl_vars, val)
 
                     self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
 
@@ -842,7 +852,7 @@ class OVLSolver(object):
                         f"OptVL can only have one method of specifing airfoil geometry per surface, found {airfoil_spec_keys} in surface {surf_name}"
                     )
 
-                xfminmax_arr = surf_dict.get("xfminmax", np.array([0.0, 1.0] * num_secs))
+                xfminmax_arr = surf_dict.get("xfminmax", np.tile([0.0, 1.0], (num_secs, 1)))
                 num_pts = min(50, self.IBX)
 
                 # setup for manually specifying coordinates
@@ -881,7 +891,7 @@ class OVLSolver(object):
 
                             val = surf_dict[key][j]
 
-                            check_type(key, avl_vars, val)
+                            val = check_type(key, avl_vars, val)
                             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
 
                     # 4 digit NACA airfoil specification
@@ -946,7 +956,7 @@ class OVLSolver(object):
                             else:
                                 val = surf_dict[key][j]
 
-                            check_type(key, avl_vars, val)
+                            val = check_type(key, avl_vars, val)
                             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
 
                 # --- setup design variables for each section ---
@@ -968,7 +978,7 @@ class OVLSolver(object):
                             else:
                                 val = surf_dict[key][j]
 
-                            check_type(key, avl_vars, val)
+                            val = check_type(key, avl_vars, val)
                             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
 
                 # Make the surface
@@ -1025,7 +1035,7 @@ class OVLSolver(object):
                     else:
                         val = body_dict[key]
 
-                    check_type(key, avl_vars, val)
+                    val = check_type(key, avl_vars, val)
 
                     self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
 

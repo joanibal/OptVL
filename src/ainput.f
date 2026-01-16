@@ -91,7 +91,6 @@ C---- initialize all entity counters
       NSEC_B = 0
 C
       NSURF = 0
-      NSURFDUPL = 0
       NVOR = 0
       NSTRIP = 0
 C
@@ -206,7 +205,6 @@ C
          IF(LDUPL(ISURF)) THEN
           CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
           NSURF = NSURF + 1
-          NSURFDUPL = NSURFDUPL + 1
          ENDIF
 C
          ISURF = 0
@@ -245,7 +243,6 @@ C
          IF(LDUPL(ISURF)) THEN
           CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
           NSURF = NSURF + 1
-          NSURFDUPL = NSURFDUPL + 1
          ENDIF
 C
          ISURF = 0
@@ -331,7 +328,6 @@ C
          IF(LDUPL(ISURF)) THEN
           CALL SDUPL(ISURF,YDUPL(ISURF),'YDUP')
           NSURF = NSURF + 1
-          NSURFDUPL = NSURFDUPL + 1
          ENDIF
 C
          ISURF = 0
