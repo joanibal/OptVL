@@ -687,6 +687,10 @@ class OVLSolver(object):
         # We will insert entries into it for duplicate surfaces later but right now it's only for unique surfaces
         self.mesh_idx_first = np.zeros(self.get_num_surfaces(),dtype=np.int32)
 
+        # Class variable to store the yoffset for duplicated meshes. This information is needed for correcting retreiving
+        # a duplicated mesh
+        self.y_offsets = np.zeros(self.get_num_surfaces(),dtype=np.float64)
+
         # Load surfaces
         if num_surfs > 0:
             surf_names = list(input_dict["surfaces"].keys())
@@ -955,6 +959,7 @@ class OVLSolver(object):
                     self.avl.sdupl(idx_surf + 1, surf_dict["yduplicate"], "YDUP")
                     # Insert duplicate into the mesh first index array
                     self.mesh_idx_first = np.insert(self.mesh_idx_first,idx_surf+1,self.mesh_idx_first[idx_surf])
+                    self.y_offsets[idx_surf] = surf_dict["yduplicate"]
                     self.avl.CASE_I.NSURF += 1
                     idx_surf += 1
 
@@ -1119,6 +1124,79 @@ class OVLSolver(object):
 
         # Flag surface as using mesh geometry
         self.avl.SURF_MESH_L.LSURFMSH[idx_surf] = True
+
+    def get_mesh(self, idx_surf: int, get_full_mesh: bool = False, get_iptloc: bool = False):
+        """
+
+        Args:
+            idx_surf (int): the surface to get the mesh for
+            get_full_mesh (bool): concatenates and returns the meshes for idx_surf and idx_surf + 1, for use with duplicated surfaces
+            get_iptloc (bool) : should the iptloc vector for the surface be returned
+        """
+
+        # Check if surface is using mesh geometry
+        if not self.avl.SURF_MESH_L.LSURFMSH[idx_surf]:
+            raise RuntimeError(f"Surface {idx_surf} does not have a mesh assigned!")
+
+        # Get the mesh size
+        nx = self.avl.SURF_GEOM_I.NVC[idx_surf] + 1
+        ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
+    
+
+        # Get the mesh
+        mesh = self.get_avl_fort_arr("SURF_MESH_R","MSHBLK",slicer=(slice(self.mesh_idx_first[idx_surf],self.mesh_idx_first[idx_surf]+nx*ny),slice(0,3)))
+        mesh = copy.deepcopy(mesh.reshape((ny,nx,3)).transpose((1,0,2)))
+        # mesh = mesh.transpose((1,0,2))
+
+        # Check if duplicated
+        imags = self.get_avl_fort_arr("SURF_I", "IMAGS")
+        if imags[idx_surf] < 0:
+            mesh[:,:,1] = -mesh[:,:,1] + self.y_offsets[idx_surf-1]
+
+        # Concatenate with duplicate
+        if get_full_mesh:
+            if imags[idx_surf] < 0:
+                raise RuntimeError(f"Concatenating a duplicated surface, {idx_surf}, with the next surface!")
+            elif imags[idx_surf+1] > 0:
+                raise RuntimeError(f"Concatenating with a non duplicated surface, {idx_surf+1}!")
+            # Get the next mesh
+            mesh_dup = self.get_avl_fort_arr("SURF_MESH_R","MSHBLK",slicer=(slice(self.mesh_idx_first[idx_surf+1],self.mesh_idx_first[idx_surf+1]+nx*ny),slice(0,3)))
+            mesh_dup = mesh_dup.reshape((ny,nx,3)).transpose((1,0,2))
+            mesh_dup[:,:,1] = -mesh_dup[:,:,1] + self.y_offsets[idx_surf-1]
+
+            # Concatenate them
+            mesh = np.hstack([mesh,mesh_dup])
+
+        # Get iptloc
+        iptloc = None
+        if get_iptloc:
+            iptloc = self.get_avl_fort_arr("SURF_MESH_I","IPTSEC",slicer=(idx_surf,slice(None,self.get_num_sections(self.get_surface_names()[idx_surf])))) - 1
+            return mesh, iptloc
+        else:
+            return mesh
+        
+
+        # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
+        # nspans by passing in all zeros
+        # if not (iptloc == 0).all():
+        #     iptloc += 1
+        # # set iptloc
+        # self.set_avl_fort_arr("SURF_MESH_I","IPTSEC",iptloc,slicer=(idx_surf,slice(None,len(iptloc))))
+
+        # Compute and set the mesh starting index
+        # if idx_surf != 0:
+        #    self.mesh_idx_first[idx_surf] = self.mesh_idx_first[idx_surf-1] + 3*(self.avl.SURF_GEOM_I.NVS[idx_surf-1]+1)*(self.avl.SURF_GEOM_I.NVC[idx_surf-1]+1)
+
+        # self.set_avl_fort_arr("SURF_MESH_I","MFRST",self.mesh_idx_first[idx_surf]+1,slicer=idx_surf)
+
+        # # Reshape the mesh
+        # # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0]*mesh.shape[1]), order="F")
+        # mesh = mesh.transpose((1,0,2)).reshape((mesh.shape[0]*mesh.shape[1],3))
+
+        # # Set the mesh
+        # self.set_avl_fort_arr("SURF_MESH_R","MSHBLK",mesh, slicer=(slice(self.mesh_idx_first[idx_surf],self.mesh_idx_first[idx_surf]+nx*ny),slice(0,3)))
+
+        
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
         """Sets the airfoil oml points for the specified surface and section. Computes camber lines, thickness, and oml shape from
@@ -3885,6 +3963,234 @@ class OVLSolver(object):
         self.add_mesh_plot(ax1, xaxis="y", yaxis="x")
 
         self.add_mesh_plot(ax2, xaxis="y", yaxis="z")
+
+        if axes == None:
+            # assume that if we don't provide axes that we want to see the plot
+            plt.axis("equal")
+            plt.show()
+
+    def add_mesh_plot_3d_avl(
+        self,
+        axis,
+        color: str = "black",
+        mesh_style="--",
+        mesh_linewidth=0.3,
+        show_mesh: bool = False,
+        show_control_points: bool = False
+    ):
+        """Adds a 3D plot of the aircraft mesh to a 3D axis
+        Always plots a flattened mesh from the AVL geometry definition or
+        a flattened version of any directly assigned meshes.
+
+        Args:
+            axis: axis to add the plot to
+            color: what color should the mesh be
+            mesh_style: line style of the interior mesh, e.g. '-' or '--'
+            mesh_linewidth: width of the interior mesh, 1.0 will match the surface outline
+            show_mesh: flag to show the interior mesh of the geometry
+        """
+        mesh_size = self.get_mesh_size()
+        num_control_surfs = self.get_num_control_surfs()
+        num_strips = self.get_num_strips()
+        num_surfs = self.get_num_surfaces()
+
+        # get the mesh points for ploting
+        mesh_slice = (slice(0, mesh_size),)
+        strip_slice = (slice(0, num_strips),)
+        surf_slice = (slice(0, num_surfs),)
+
+        rv1 = self.get_avl_fort_arr("VRTX_R", "RV1", slicer=mesh_slice)  # Vortex Left points
+        rv2 = self.get_avl_fort_arr("VRTX_R", "RV2", slicer=mesh_slice)  # Vortex Right points
+        rc = self.get_avl_fort_arr("VRTX_R", "RC", slicer=mesh_slice)  # Control Points
+        rle1 = self.get_avl_fort_arr("STRP_R", "RLE1", slicer=strip_slice)  # Strip left end LE point
+        rle2 = self.get_avl_fort_arr("STRP_R", "RLE2", slicer=strip_slice)  # Strip right end LE point
+        chord1 = self.get_avl_fort_arr("STRP_R", "CHORD1", slicer=strip_slice)  # Left strip chord
+        chord2 = self.get_avl_fort_arr("STRP_R", "CHORD2", slicer=strip_slice)  # Right strip chord
+        jfrst = self.get_avl_fort_arr("SURF_I", "JFRST", slicer=surf_slice)  # Index of first strip in surface
+
+        ijfrst = self.get_avl_fort_arr("STRP_I", "IJFRST", slicer=strip_slice)  # Index of first element in strip
+        nvstrp = self.get_avl_fort_arr("STRP_I", "NVSTRP", slicer=strip_slice)  # Number of elements in strip
+
+        nj = self.get_avl_fort_arr("SURF_I", "NJ", slicer=surf_slice)  # Number of elements along span in surface
+        imags = self.get_avl_fort_arr("SURF_I", "IMAGS")  # Is surface YDUPL one?
+
+        for idx_surf in range(num_surfs):
+            # get the range of the elements that belong to this surfaces
+            strip_st = jfrst[idx_surf] - 1
+            strip_end = strip_st + nj[idx_surf]
+
+            # inboard and outboard of outline
+            # get surfaces that have not been duplicated
+            if imags[idx_surf] > 0:
+                j1 = strip_st
+                jn = strip_end - 1
+                dj = 1
+            else:
+                # this surface is a duplicate
+                j1 = strip_end - 1
+                jn = strip_st
+                dj = -1
+
+            pts = {
+                "x": [rle1[j1, 0], rle1[j1, 0] + chord1[j1]],
+                "y": [rle1[j1, 1], rle1[j1, 1]],
+                "z": [rle1[j1, 2], rle1[j1, 2]],
+            }
+            # # chord-wise grid
+            axis.plot(pts['x'], pts['y'],pts['z'], color=color)
+
+            pts = {
+                "x": np.array([rle2[jn, 0], rle2[jn, 0] + chord2[jn]]),
+                "y": np.array([rle2[jn, 1], rle2[jn, 1]]),
+                "z": np.array([rle2[jn, 2], rle2[jn, 2]]),
+            }
+
+            # # chord-wise grid
+            axis.plot(pts['x'], pts['y'],pts['z'], color=color)
+
+            # # --- outline of surface ---
+            # front
+            pts = {
+                "x": np.append(rle1[j1:jn:dj, 0], rle2[jn, 0]),
+                "y": np.append(rle1[j1:jn:dj, 1], rle2[jn, 1]),
+                "z": np.append(rle1[j1:jn:dj, 2], rle2[jn, 2]),
+            }
+            axis.plot(pts['x'], pts['y'],pts['z'],"-", color=color)
+
+            # aft
+
+            pts = {
+                "x": np.append(rle1[j1:jn:dj, 0] + chord1[j1:jn:dj], rle2[jn, 0] + chord2[jn]),
+                "y": np.append(rle1[j1:jn:dj, 1], rle2[jn, 1]),
+                "z": np.append(rle1[j1:jn:dj, 2], rle2[jn, 2]),
+            }
+            axis.plot(pts['x'], pts['y'],pts['z'],"-", color=color)
+
+            if show_mesh:
+                for idx_strip in range(strip_st, strip_end):
+                    if ((imags[idx_surf] > 0) and (idx_strip != strip_st)) or (
+                        (imags[idx_surf] < 0) and (idx_strip != strip_end)
+                    ):
+                        pts = {
+                            "x": [rle1[idx_strip, 0], rle1[idx_strip, 0] + chord1[idx_strip]],
+                            "y": [rle1[idx_strip, 1], rle1[idx_strip, 1]],
+                            "z": [rle1[idx_strip, 2], rle1[idx_strip, 2]],
+                        }
+
+                        # # chord-wise grid
+                        axis.plot(pts['x'], pts['y'], pts['z'], mesh_style, color=color, alpha=1.0, linewidth=mesh_linewidth)
+
+                    vor_st = ijfrst[idx_strip] - 1
+                    vor_end = vor_st + nvstrp[idx_strip]
+
+                    # spanwise grid
+                    for idx_vor in range(vor_st, vor_end):
+                        pts = {
+                            "x": [rv1[idx_vor, 0], rv2[idx_vor, 0]],
+                            "y": [rv1[idx_vor, 1], rv2[idx_vor, 1]],
+                            "z": [rv1[idx_vor, 2], rv2[idx_vor, 2]],
+                        }
+                        axis.plot(pts['x'], pts['y'],pts['z'], mesh_style, color=color, alpha=1.0, linewidth=mesh_linewidth)
+            
+            if show_control_points:
+                for idx_strip in range(strip_st, strip_end):
+                    vor_st = ijfrst[idx_strip] - 1
+                    vor_end = vor_st + nvstrp[idx_strip]
+
+                    # spanwise grid
+                    for idx_vor in range(vor_st, vor_end):
+                        pts = {
+                            "x": [rc[idx_vor, 0]],
+                            "y": [rc[idx_vor, 1]],
+                            "z": [rc[idx_vor, 2]],
+                        }
+                        axis.scatter(pts['x'], pts['y'], pts['z'],color='r', alpha=1.0, linewidth=0.1)
+
+    def add_mesh_plot_3d_direct(
+        self,
+        axis,
+        color: str = "black",
+        mesh_style="--",
+        mesh_linewidth=0.3,
+        show_mesh: bool = False,
+        # show_avl_geom: bool = False,
+        # show_avl_mesh: bool = False,
+        # avl_mesh_color: str = "red",
+        # avl_mesh_style: str = "--",
+        # show_avl_control_points: bool = False
+    ):
+        """Plots the true mesh assigned to SURF_MESH AVL common block data on a 3D axis.
+        Can also plot the mesh stored in SURF on the same axis.
+
+        Args:
+            axis: axis to add the plot to
+            color: what color should the mesh be
+            mesh_style: line style of the interior mesh, e.g. '-' or '--'
+            mesh_linewidth: width of the interior mesh, 1.0 will match the surface outline
+            show_mesh: flag to show the interior mesh of the geometry
+        """
+        num_surfs = self.get_num_surfaces()
+
+        for idx_surf in range(num_surfs):
+            # get the mesh block data
+            mesh = self.get_mesh(idx_surf)
+            mesh_x = mesh[:, :, 0]
+            mesh_y = mesh[:, :, 1]
+            mesh_z = mesh[:, :, 2]
+
+            # Plot mesh outline
+            axis.plot(mesh_x[0, :], mesh_y[0, :], mesh_z[0, :], "-", color=color, lw=1)
+            axis.plot(mesh_x[-1, :], mesh_y[-1, :],mesh_z[-1, :], "-", color=color, lw=1)
+            axis.plot(mesh_x[:, 0], mesh_y[:, 0],mesh_z[:, 0], "-", color=color, lw=1)
+            axis.plot(mesh_x[:, -1], mesh_y[:, -1],mesh_z[:, -1], "-", color=color, lw=1)
+
+            if show_mesh:
+                for i in range(mesh_x.shape[0]):
+                    axis.plot(mesh_x[i, :], mesh_y[i, :], mesh_z[i, :], mesh_style, color=color, lw=mesh_linewidth, alpha=1.0)
+                for j in range(mesh_x.shape[1]):
+                    axis.plot(mesh_x[:, j], mesh_y[:, j],mesh_z[:, j], mesh_style, color=color, lw=mesh_linewidth, alpha=1.0)
+
+        # if show_avl_geom:
+        #     self.add_mesh_plot_3d_avl(
+        #         axis,
+        #         color = avl_mesh_color,
+        #         mesh_style=avl_mesh_style,
+        #         mesh_linewidth=mesh_linewidth,
+        #         show_mesh = show_avl_mesh,
+        #         show_control_points = show_avl_control_points)
+            
+    def plot_geom_3d(self, axes=None, plot_avl_mesh = True, plot_direct_mesh = False):
+        """Generate a matplotlib plot of geometry
+
+        Args:
+            axes: Matplotlib axis object to add the plots too. If none are given, the axes will be generated.
+        """
+
+        if axes == None:
+            import matplotlib.pyplot as plt
+
+            ax1 = plt.subplot(projection='3d')
+            ax1.set_ylabel("X", rotation=0)
+            ax1.set_aspect("equal")
+            ax1._axis3don = False
+            plt.subplots_adjust(left=0.025, right=0.925, top=0.925, bottom=0.025)
+        else:
+            ax1, ax2 = axes
+
+        if plot_avl_mesh:
+            self.add_mesh_plot_3d_avl(ax1,
+                color = "red",
+                mesh_style="--",
+                mesh_linewidth=1.0,
+                show_mesh= True,
+                show_control_points = False)
+            
+        if plot_direct_mesh:
+            self.add_mesh_plot_3d_direct(ax1,
+                color = "black",
+                mesh_style="--",
+                mesh_linewidth=0.3,
+                show_mesh= True)
 
         if axes == None:
             # assume that if we don't provide axes that we want to see the plot
