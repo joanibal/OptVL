@@ -2191,6 +2191,15 @@ C ============= Added to AVL ===============
       
       CALL VINFAB
       
+      DO L = 1, NLNODE
+        SRC(L) = SRC_U(L,1)*VINF(1)
+     &         + SRC_U(L,2)*VINF(2)
+     &         + SRC_U(L,3)*VINF(3)
+     &         + SRC_U(L,4)*WROT(1)
+     &         + SRC_U(L,5)*WROT(2)
+     &         + SRC_U(L,6)*WROT(3)
+      ENDDO
+      ! this is meant to replace GUCALC
       DO IU = 1,6
             call set_vel_rhs_u(IU)
             do i = 1,NVOR
@@ -2239,8 +2248,30 @@ C---
      &           NVOR,RV ,    LVCOMP,.TRUE.,
      &           WV_GAM,NVOR)
 
+      CALL SRDSET(BETM,XYZREF,IYSYM,
+     &              NBODY,LFRST,NLMAX,NUMAX,
+     &              NL,RL,RADL,
+     &              SRC_U,DBL_U)
+
+      
+        CALL VSRD(BETM,IYSYM,YSYM,IZSYM,ZSYM,SRCORE,
+     &            NBODY,LFRST,NLMAX,
+     &            NL,RL,RADL,
+     &            NUMAX,SRC_U,DBL_U,
+     &            NVOR,RC,
+     &            WCSRD_U,NVMAX)
+
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB
+      
+      DO L = 1, NLNODE
+           SRC(L) = SRC_U(L,1)*VINF(1)
+     &            + SRC_U(L,2)*VINF(2)
+     &            + SRC_U(L,3)*VINF(3)
+     &            + SRC_U(L,4)*WROT(1)
+     &            + SRC_U(L,5)*WROT(2)
+     &            + SRC_U(L,6)*WROT(3)
+      enddo 
       
       DO IU = 1,6
             

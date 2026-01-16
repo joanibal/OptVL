@@ -114,6 +114,19 @@ class OVLSolver(object):
         # spanwise efficiency
         "e": ["CASE_R", "SPANEF"],
     }
+    
+    body_forces_var_to_fort_var = {
+        'length':        ['BODY_R', 'ELBDY'],
+        'surface area':  ['BODY_R', 'SRFBDY'],
+        'volume':        ['BODY_R', 'VOLBDY'],
+        'CL':            ['BODY_R', 'CLBDY'],
+        'CD':            ['BODY_R', 'CDBDY'],
+        'Cm':            ['BODY_R', 'CMBDY', 1],
+        'CY':            ['BODY_R', 'CFBDY', 1],
+        'Cn':            ['BODY_R', 'CMBDYBAX', 2],
+        'Cl':            ['BODY_R', 'CMBDYBAX', 0]
+    }
+    
     ref_var_to_fort_var = {
         "Sref": ["CASE_R", "SREF"],
         "Cref": ["CASE_R", "CREF"],
@@ -159,14 +172,15 @@ class OVLSolver(object):
         "CZ": ["SURF_R", "CFSURF", 2],
          
         # non-dimensionalized moments (body frame)
-        "Cl": ["SURF_R", "CMSURF", 0],
-        "Cm": ["SURF_R", "CMSURF", 1],
-        "Cn": ["SURF_R", "CMSURF", 2],
+        "Cl": ["SURF_R", "CMSURFBAX", 0],
+        "Cm": ["SURF_R", "CMSURFBAX", 1],
+        "Cn": ["SURF_R", "CMSURFBAX", 2],
         
         # forces non-dimentionalized by surface quantities
         # uses surface area instead of sref and takes moments about leading edge
         "CL surf" : ["SURF_R", "CL_LSRF"],
         "CD surf" : ["SURF_R", "CD_LSRF"],
+        "CDv surf" : ["SURF_R", "CDVSURF"],
         "CMLE_LSTRP surf" : ["SURF_R", "CMLE_LSRF"],
         
         #TODO: add CF_LSRF(3,NFMAX), CM_LSRF(3,NFMAX)
@@ -790,8 +804,8 @@ class OVLSolver(object):
                     "albe":                   True,                   
                     "load":                   True,                   
                     "clcd":                   np.zeros(6, dtype=np.float64),
-                    "nspans":                 np.zeros(num_secs, dtype=int),
-                    "sspaces":                np.zeros(num_secs, dtype=int),
+                    "nspans":                 np.zeros(num_secs, dtype=np.int32),
+                    "sspaces":                np.zeros(num_secs, dtype=np.float64),
                     "clcdsec":                np.zeros((num_secs,6)),
                     "claf":                   np.ones(num_secs),
                 }
@@ -1513,6 +1527,29 @@ class OVLSolver(object):
 
         return total_data
 
+    def get_body_forces(self) -> Dict[str, float]:
+        """Get the aerodynamic data for the last run case and return it as a dictionary.
+
+        Returns:
+            Dict[str, float]: Dictionary of aerodynamic data. The keys the aerodyanmic coefficients.
+        """
+
+        body_data = {}
+        body_names = self.get_body_names()
+        
+        for body_name in body_names:
+            body_data[body_name] = {}
+        
+        for key, avl_key in self.body_forces_var_to_fort_var.items():
+            val = self.get_avl_fort_arr(avl_key[0], avl_key[1])
+            for idx_body, body_name in enumerate(body_names):
+                if (len(avl_key) > 2):
+                    body_data[body_name][key] = val[idx_body,avl_key[2]]
+                else:
+                    body_data[body_name][key] = val[idx_body]
+
+        return body_data
+
     def get_control_stab_derivs(self) -> Dict[str, float]:
         """Get the control surface derivative data, i.e. dCL/dElevator,
         for the current analysis run
@@ -1907,7 +1944,7 @@ class OVLSolver(object):
             strip_data[surf_key]["area"] = strip_data[surf_key]["width"] * strip_data[surf_key]["chord"]
 
             # formula is directly from AVL
-            xcp = 0.25 - strip_data[surf_key]["Cm c/4"] / strip_data[surf_key]["CL perp"]
+            xcp = 0.25 - strip_data[surf_key]["Cm c/4"] / strip_data[surf_key]["CL strip"]
             strip_data[surf_key]["CP x/c"] = xcp
 
         # get length of along the surface of each strip
@@ -4200,11 +4237,121 @@ class OVLSolver(object):
                         }
                         axis.plot(pts[xaxis], pts[yaxis], mesh_style, color=color, alpha=0.7, linewidth=mesh_linewidth)
 
-    def plot_geom(self, axes=None):
+    def add_body_plot(
+        self,
+        axis,
+        xaxis: str = "x",
+        yaxis: str = "y",
+        color: str = "magenta",
+    ):
+        """Adds a plot of the body geometry to the axis
+
+        Args:
+            axis: axis to add the plot to
+            xaxis: what variable should be plotted on the x axis. Options are ['x', 'y', 'z']
+            yaxis: what variable should be plotted on the y-axis. Options are ['x', 'y', 'z']
+            color: what color should the body be plotted in
+        """
+        import numpy as np
+
+        # Check if any bodies exist
+        num_bodies = self.get_avl_fort_arr("CASE_I", "NBODY")
+        if num_bodies == 0:
+            return
+
+        # Get body data
+        nl = self.get_avl_fort_arr("BODY_I", "NL", slicer=slice(0, num_bodies))
+        lfrst = self.get_avl_fort_arr("BODY_I", "LFRST", slicer=slice(0, num_bodies))
+        print(lfrst)
+
+        # Calculate total number of body nodes needed
+        # We need lfrst[i] + nl[i] to include all nodes we might access
+        max_node_idx = max(lfrst[i] + nl[i] for i in range(num_bodies))
+
+        # Get body line coordinates and radii
+        rl = self.get_avl_fort_arr("VRTX_R", "RL", slicer=(slice(None), slice(0, max_node_idx)))
+        radl = self.get_avl_fort_arr("VRTX_R", "RADL", slicer=slice(0, max_node_idx))
+
+        # Number of points around each cross-section circle
+        kk = 51
+
+        # Plot each body
+        for n in range(num_bodies):
+            # First and last node indices for this body (Fortran uses 1-based indexing)
+            l1 = lfrst[n] - 1  # Convert to 0-based
+            ln = l1 + nl[n]
+
+            # Plot centerline
+            centerline_pts = {
+                "x": rl[l1:ln, 0],
+                "y": rl[l1:ln, 1],
+                "z": rl[l1:ln, 2],
+            }
+            axis.plot(centerline_pts[xaxis], centerline_pts[yaxis], "-", color=color, linewidth=1.5)
+
+            # Plot cross-section circles at each node
+            for l in range(l1, ln):
+                # Calculate tangent vector from neighboring nodes
+                lm = max(l - 1, l1)
+                lp = min(l + 1, ln - 1)
+
+                dxl = rl[lp,0] - rl[lm, 0]
+                dyl = rl[lp,1] - rl[lm, 1]
+                dzl = rl[lp,2] - rl[lm, 2]
+                dsl = np.sqrt(dxl**2 + dyl**2 + dzl**2)
+
+                if dsl != 0.0:
+                    dxl /= dsl
+                    dyl /= dsl
+                    dzl /= dsl
+
+                # Calculate perpendicular unit vectors
+                # Horizontal vector (in x-y plane, perpendicular to tangent)
+                uhx = -dyl
+                uhy = dxl
+                uhz = 0.0
+
+                # Vertical vector (perpendicular to both tangent and horizontal)
+                uvx = dyl * uhz - dzl * uhy
+                uvy = dzl * uhx - dxl * uhz
+                uvz = dxl * uhy - dyl * uhx
+
+                # Generate circle points
+                circle_x = []
+                circle_y = []
+                circle_z = []
+
+                for k in range(kk + 1):  # +1 to close the circle
+                    theta = 2.0 * np.pi * k / kk
+
+                    # Components of the circle point
+                    hx = uhx * np.cos(theta)
+                    hy = uhy * np.cos(theta)
+                    hz = uhz * np.cos(theta)
+
+                    vx = uvx * np.sin(theta)
+                    vy = uvy * np.sin(theta)
+                    vz = uvz * np.sin(theta)
+
+                    # Circle point at radius RADL
+                    circle_x.append(rl[l, 0] + (hx + vx) * radl[l])
+                    circle_y.append(rl[l, 1] + (hy + vy) * radl[l])
+                    circle_z.append(rl[l, 2] + (hz + vz) * radl[l])
+
+                # Plot the circle
+                circle_pts = {
+                    "x": np.array(circle_x),
+                    "y": np.array(circle_y),
+                    "z": np.array(circle_z),
+                }
+                axis.plot(circle_pts[xaxis], circle_pts[yaxis], "-", color=color, linewidth=0.5)
+
+    def plot_geom(self, axes=None, body_color="magenta"):
         """Generate a matplotlib plot of geometry
 
         Args:
             axes: Matplotlib axis object to add the plots too. If none are given, the axes will be generated.
+            body_color: Color to use for plotting body geometry (default: 'magenta')
         """
 
         if axes == None:
@@ -4223,8 +4370,10 @@ class OVLSolver(object):
             ax1, ax2 = axes
 
         self.add_mesh_plot(ax1, xaxis="y", yaxis="x")
+        self.add_body_plot(ax1, xaxis="y", yaxis="x", color=body_color)
 
         self.add_mesh_plot(ax2, xaxis="y", yaxis="z")
+        self.add_body_plot(ax2, xaxis="y", yaxis="z", color=body_color)
 
         if axes == None:
             # assume that if we don't provide axes that we want to see the plot

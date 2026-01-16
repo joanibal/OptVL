@@ -210,6 +210,14 @@ def pre_check_input_dict(input_dict: dict):
                 # Verify at least two section
                 if input_dict["surfaces"][surface]["num_sections"] < 2:
                     raise RuntimeError("Must have at least two sections per surface!")
+
+                # if no controls are specified then fill it in with 0s
+                if "num_controls" not in input_dict["surfaces"][surface].keys():
+                    input_dict["surfaces"][surface]["num_controls"] = np.zeros(input_dict["surfaces"][surface]["num_sections"],dtype=np.int32)
+
+                 # if no dvs are specified then fill it in with 0s
+                if "num_design_vars" not in input_dict["surfaces"][surface].keys():
+                    input_dict["surfaces"][surface]["num_design_vars"] = np.zeros(input_dict["surfaces"][surface]["num_sections"],dtype=np.int32)
                 
                 #Checks to see that at most only one of the options in af_load_ops or one of the options in manual_af_override is selected
                 if len(airfoil_spec_keys & input_dict["surfaces"][surface].keys()) > 1:

@@ -654,18 +654,19 @@ C        WRITE(*,8401) XNP
 C  Differentiation of get_res in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: wv_gam alfa beta vinf vinf_a
 C                vinf_b wrot delcon xyzref mach cdref rv1 rv2 rv
-C                rc gam gam_u gam_d res res_u res_d
+C                rc gam gam_u gam_d src src_u res res_u res_d
 C   with respect to varying inputs: wv_gam ysym zsym alfa beta
 C                vinf vinf_a vinf_b wrot parval conval delcon xyzref
-C                mach cdref rv1 rv2 rv rc chordv enc enc_d gam
-C                gam_u gam_d res res_u res_d
+C                mach cdref rv1 rv2 rv rc rl chordv enc enc_d gam
+C                gam_u gam_d src src_u res res_u res_d
 C   RW status of diff variables: wv_gam:in-out ysym:out zsym:out
 C                alfa:in-out beta:in-out vinf:in-out vinf_a:in-out
 C                vinf_b:in-out wrot:in-out parval:out conval:out
 C                delcon:in-out xyzref:in-out mach:in-zero cdref:in-zero
-C                rv1:incr rv2:incr rv:incr rc:incr chordv:out enc:out
-C                enc_d:out gam:incr gam_u:incr gam_d:incr res:in-zero
-C                res_u:in-out res_d:in-out
+C                rv1:incr rv2:incr rv:incr rc:incr rl:out chordv:out
+C                enc:out enc_d:out gam:incr gam_u:incr gam_d:incr
+C                src:in-out src_u:in-out res:in-zero res_u:in-out
+C                res_d:in-out
 Csubroutine exec_rhs
 C
 C
@@ -682,6 +683,7 @@ C
       REAL betm
       REAL betm_diff
       INTRINSIC SQRT
+      INTEGER l
       INTEGER iu
       INTEGER ii1
       INTEGER ii2
@@ -697,6 +699,13 @@ c           CALL BUILD_AIC() no need to build the AIC again because we assume an
       amach = mach
       betm = SQRT(1.0 - amach**2)
 C
+      CALL SRDSET(betm, xyzref, iysym, nbody, lfrst, nlmax, numax, nl, 
+     +            rl, radl, src_u, dbl_u)
+C
+      CALL VSRD(betm, iysym, ysym, izsym, zsym, srcore, nbody, lfrst, 
+     +          nlmax, nl, rl, radl, numax, src_u, dbl_u, nvor, rc, 
+     +          wcsrd_u, nvmax)
+C
 C---- set VINF() vector from initial ALFA,BETA
       CALL VINFAB()
       DO ii1=1,nvor
@@ -708,6 +717,13 @@ C---- set VINF() vector from initial ALFA,BETA
         DO ii2=1,nvor
           DO ii3=1,3
             enc_d_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
+      DO ii1=1,numax
+        DO ii2=1,nvor
+          DO ii3=1,3
+            wcsrd_u_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
         ENDDO
       ENDDO
@@ -759,9 +775,30 @@ C$BWD-OF II-LOOP
           res_u_diff(ii1, iu) = 0.D0
         ENDDO
       ENDDO
+      DO l=nlnode,1,-1
+        src_u_diff(l, 1) = src_u_diff(l, 1) + vinf(1)*src_diff(l)
+        vinf_diff(1) = vinf_diff(1) + src_u(l, 1)*src_diff(l)
+        src_u_diff(l, 2) = src_u_diff(l, 2) + vinf(2)*src_diff(l)
+        vinf_diff(2) = vinf_diff(2) + src_u(l, 2)*src_diff(l)
+        src_u_diff(l, 3) = src_u_diff(l, 3) + vinf(3)*src_diff(l)
+        vinf_diff(3) = vinf_diff(3) + src_u(l, 3)*src_diff(l)
+        src_u_diff(l, 4) = src_u_diff(l, 4) + wrot(1)*src_diff(l)
+        wrot_diff(1) = wrot_diff(1) + src_u(l, 4)*src_diff(l)
+        src_u_diff(l, 5) = src_u_diff(l, 5) + wrot(2)*src_diff(l)
+        wrot_diff(2) = wrot_diff(2) + src_u(l, 5)*src_diff(l)
+        src_u_diff(l, 6) = src_u_diff(l, 6) + wrot(3)*src_diff(l)
+        wrot_diff(3) = wrot_diff(3) + src_u(l, 6)*src_diff(l)
+        src_diff(l) = 0.D0
+      ENDDO
       CALL VINFAB_B()
-      ysym_diff = 0.D0
-      zsym_diff = 0.D0
+      CALL VSRD_B(betm, betm_diff, iysym, ysym, ysym_diff, izsym, zsym, 
+     +            zsym_diff, srcore, nbody, lfrst, nlmax, nl, rl, 
+     +            rl_diff, radl, numax, src_u, src_u_diff, dbl_u, 
+     +            dbl_u_diff, nvor, rc, rc_diff, wcsrd_u, wcsrd_u_diff, 
+     +            nvmax)
+      CALL SRDSET_B(betm, betm_diff, xyzref, xyzref_diff, iysym, nbody, 
+     +              lfrst, nlmax, numax, nl, rl, rl_diff, radl, src_u, 
+     +              src_u_diff, dbl_u, dbl_u_diff)
       DO ii1=1,nvor
         chordv_diff(ii1) = 0.D0
       ENDDO
