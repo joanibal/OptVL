@@ -134,6 +134,14 @@ class OVLSolver(object):
         "XYZref": ["CASE_R", "XYZREF"],
     }
 
+    # this is a special list of variables that store the value in the 
+    # geometry file    
+    avl_params_to_defauls = {
+        "Mach" :  ["CASE_R", "MACH0"],
+        "CD0":    ["CASE_R", "CDREF0"],
+        "XYZref": ["CASE_R", "XYZREF0"],
+    }
+
     case_derivs_to_fort_var = {
         # derivative of coefficents wrt control surface deflections
         
@@ -1607,10 +1615,15 @@ class OVLSolver(object):
 
         return ref_data
 
-    def set_reference_data(self, ref_data: Dict[str, float]) -> None:
+    def set_reference_data(self, ref_data: Dict[str, float], set_default_value:bool = True) -> None:
         for key, val in ref_data.items():
             avl_key = self.ref_var_to_fort_var[key]
+            
             self.set_avl_fort_arr(*avl_key, val)
+            
+            if set_default_value:
+                if key in self.avl_params_to_defauls:
+                    self.set_avl_fort_arr(*self.avl_params_to_defauls[key], val)
 
         return ref_data
 
@@ -1765,7 +1778,7 @@ class OVLSolver(object):
 
         return con_val
 
-    def set_parameter(self, param_key: str, param_val: float) -> None:
+    def set_parameter(self, param_key: str, param_val: float, set_default_value:bool = True) -> None:
         """Modify a parameter of the run (analogous to M from the OPER menu in AVL).
 
         Args:
@@ -1787,6 +1800,10 @@ class OVLSolver(object):
         parvals[0][self.param_idx_dict[param_key]] = param_val
 
         self.set_avl_fort_arr("CASE_R", "PARVAL", parvals)
+
+        if set_default_value:
+            if param_key in self.avl_params_to_defauls:
+                self.set_avl_fort_arr(*self.avl_params_to_defauls[param_key], param_val)
 
         # (1) here because we want to set the first runcase with fortran indexing (the only one)
         self.avl.set_params(1)
