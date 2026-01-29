@@ -1,0 +1,2046 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../optimization_setup_om/">
+      
+      
+        <link rel="next" href="../viz_overview/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Planform optimization - OptVL Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-FRCNFMY9DQ"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-FRCNFMY9DQ",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-FRCNFMY9DQ",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#planform-optimization" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="OptVL Docs" class="md-header__button md-logo" aria-label="OptVL Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            OptVL Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Planform optimization
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/joanibal/OptVL" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    optvl
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="OptVL Docs" class="md-nav__button md-logo" aria-label="OptVL Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    OptVL Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/joanibal/OptVL" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    optvl
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analysis
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Analysis
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../making_a_script/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building a run script
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optvl_api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison of Interface with AVL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../v1_to_v2_changes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide: OptVL v1 to v2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optvl_changes_from_avl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changes in OptVL relative to AVL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../alpha_cl_sweep/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running alpha and CL sweeps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modal_analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modal Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parameter_sweeps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifying Geometry for Parameter Sweeps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Optimization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization_setup_scipy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimizing with SciPy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimization_setup_om/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimizing with OpenMDAO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planform optimization
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planform optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#custom-parameterization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom parameterization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mass-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mass properties
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-objective" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Objective
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Script
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualization
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Visualization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../viz_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sectional_data_viz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sectional Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../making_a_movie/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to make a movie
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../common_development_tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common Development Tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building_optvl_locally/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building OptVL Locally
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pyavl_changes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changes from pyAVL to OptVL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Code Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_1" id="__nav_8_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    utils
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    utils
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/utils/check_surface_dict/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    check_surface_dict
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/utils/airfoil_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    airfoil_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/optvl_class/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    optvl_class
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/om_wrapper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    om_wrapper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#custom-parameterization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom parameterization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mass-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mass properties
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-objective" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Objective
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Script
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Results
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="planform-optimization">Planform optimization<a class="headerlink" href="#planform-optimization" title="Permanent link">&para;</a></h1>
+<p>This is a considerably more advanced tutorial that aims to represent a more realistic optimization problem. 
+We are going to optimize the planform of a flying wing for maximum glide duration.
+In this example, we are going to walk through the planform optimization starting from a rectangular wing. 
+We are going to modify the sweep of the wing with a custom parameterization that takes in the sweep design variable and sets the y coordinates of the leading edge accordingly. 
+We add additional OpenMDAO components to add this additional functionality to our optimization. 
+This is the power of OpenMDAO!</p>
+<!-- Just add another component and OpenMDAO will figure out how to pass around the right derivative information. -->
+
+<h2 id="custom-parameterization">Custom parameterization<a class="headerlink" href="#custom-parameterization" title="Permanent link">&para;</a></h2>
+<p>AVL defines the geometry at each section; however, wing planforms are generally defined with parameters that affect all sections such as sweep and taper ratio. 
+To modify the geometry according to traditional planform variables we need to define a custom geometry component. 
+The OpenMDAO Component below takes in the root chord, quarter chord sweep angle, and taper ratio and produces the sectional geometry needed by OptVL:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">GeometryParametrizationComp</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">ExplicitComponent</span><span class="p">):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="c1"># Input variables</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;yles_in&quot;</span><span class="p">,</span> <span class="n">shape_by_conn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Baseline y leading edge coordinates&quot;</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;root_chord&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Baseline y leading edge coordinates&quot;</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;c/4_sweep&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;shear Sweep&quot;</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;taper_ratio&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;taper ratio of the wing&quot;</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;dihedral&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;dihedral of wing&quot;</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="c1"># Output variables</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;xles_out&quot;</span><span class="p">,</span> <span class="n">copy_shape</span><span class="o">=</span><span class="s2">&quot;yles_in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Transformed xyz leading edge coordinates&quot;</span><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;zles_out&quot;</span><span class="p">,</span> <span class="n">copy_shape</span><span class="o">=</span><span class="s2">&quot;yles_in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Transformed xyz leading edge coordinates&quot;</span><span class="p">)</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;chords_out&quot;</span><span class="p">,</span> <span class="n">copy_shape</span><span class="o">=</span><span class="s2">&quot;yles_in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Transformed chord array&quot;</span><span class="p">)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="c1"># Finite difference partials</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">declare_partials</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cs&quot;</span><span class="p">)</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="c1"># Extracting input values</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="n">yles</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;yles_in&quot;</span><span class="p">]</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="n">span</span> <span class="o">=</span> <span class="n">yles</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        <span class="n">relative_span</span> <span class="o">=</span> <span class="n">yles</span> <span class="o">/</span> <span class="n">span</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        <span class="n">chord_root</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;root_chord&quot;</span><span class="p">]</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        <span class="n">tr</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;taper_ratio&quot;</span><span class="p">]</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>        <span class="n">chords</span> <span class="o">=</span> <span class="p">((</span><span class="n">tr</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">relative_span</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">chord_root</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>        <span class="n">zles</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;dihedral&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">relative_span</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>        <span class="c1"># do some math to figure out the quarter chord sweeep</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;xles_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;c/4_sweep&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">relative_span</span> <span class="o">+</span> <span class="p">(</span><span class="n">chord_root</span> <span class="o">-</span> <span class="n">chords</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;zles_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zles</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;chords_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chords</span>
+</span></code></pre></div></p>
+<p>However, the component also needs the baseline section y coordinates.
+To supply this value we add a mesh component upstream of the geometry parameterization. 
+If the parameterization did not rely on these baseline values this would not be necessary.
+The N2 diagram below shows how by placing a mesh component upstream of the geometry component, we can use the baseline values in our parameterization. </p>
+<p><img alt="n2 planform" src="../figures/n2_planform.png" /></p>
+<h2 id="mass-properties">Mass properties<a class="headerlink" href="#mass-properties" title="Permanent link">&para;</a></h2>
+<p>When modifying the planform, it is important to consider how the center of gravity and overall weight will be affected by the modification. 
+To incorporate these effects into the model, a basic mass properties component recomputes these properties based on the planform. 
+This component assumes that the aircraft is cut from a material of uniform density (such as foam) to make the calculation easier. 
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MassProperties</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">ExplicitComponent</span><span class="p">):</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="c1"># compute the new estimated center of gravity</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="c1"># the weight of each section is proportional to the planform area</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;density&quot;</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;volume density of building material in kg/m**3&quot;</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="c1"># input variables</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;xles&quot;</span><span class="p">,</span> <span class="n">shape_by_conn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Baseline x leading edge coordinates&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;yles&quot;</span><span class="p">,</span> <span class="n">shape_by_conn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Baseline y leading edge coordinates&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;chords&quot;</span><span class="p">,</span> <span class="n">shape_by_conn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;chord distribution&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;x_cg&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;x postion of the CG in the same axis as the xles coordinate&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;estimated weight of the airplane&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;N&quot;</span><span class="p">)</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;planform area&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m**2&quot;</span><span class="p">)</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        <span class="c1"># Finite difference partials</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">declare_partials</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cs&quot;</span><span class="p">)</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>        <span class="n">xles</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;xles&quot;</span><span class="p">]</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>        <span class="n">yles</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;yles&quot;</span><span class="p">]</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>        <span class="n">chords</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;chords&quot;</span><span class="p">]</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>        <span class="n">density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;density&quot;</span><span class="p">]</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>        <span class="n">g</span> <span class="o">=</span> <span class="mf">9.81</span>  <span class="c1"># acceleration due to gravity</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>        <span class="n">k</span> <span class="o">=</span> <span class="mf">0.680883333333</span>  <span class="c1"># areea of a NACA 4 digit airfoil for unit chord divied by thickness from http://louisgagnon.com/scBlog/airfoilCenter.html</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>        <span class="n">t</span> <span class="o">=</span> <span class="mf">0.12</span>  <span class="c1"># thicknes of airfoil</span>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>        <span class="n">f</span> <span class="o">=</span> <span class="mf">0.4</span>  <span class="c1"># approximate centroid of an airfoil</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>        <span class="c1"># area is  t*c = 0.680883333333*(0.12*c)*c</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>        <span class="c1"># we are going to find the mass, and center of mass for each of the wing sections</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>        <span class="c1"># we assume that the wing is of uniform density</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>        <span class="n">x_cg</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>        <span class="n">mass</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>        <span class="n">xcg_numerator</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>        <span class="n">planform_area</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xles</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>            <span class="n">x1</span> <span class="o">=</span> <span class="n">xles</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>            <span class="n">y1</span> <span class="o">=</span> <span class="n">yles</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>            <span class="n">c1</span> <span class="o">=</span> <span class="n">chords</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+</span><span id="__span-1-44"><a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a>
+</span><span id="__span-1-45"><a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>            <span class="n">x2</span> <span class="o">=</span> <span class="n">xles</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-1-46"><a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>            <span class="n">y2</span> <span class="o">=</span> <span class="n">yles</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-1-47"><a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>            <span class="n">c2</span> <span class="o">=</span> <span class="n">chords</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-1-48"><a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a>            <span class="n">dy</span> <span class="o">=</span> <span class="n">y2</span> <span class="o">-</span> <span class="n">y1</span>
+</span><span id="__span-1-49"><a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a>
+</span><span id="__span-1-50"><a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>            <span class="n">planform_area</span> <span class="o">+=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">c1</span> <span class="o">+</span> <span class="n">c2</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>  <span class="c1"># area of trapizoid</span>
+</span><span id="__span-1-51"><a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>
+</span><span id="__span-1-52"><a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>            <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">c2</span> <span class="o">-</span> <span class="n">c1</span><span class="p">)</span> <span class="o">/</span> <span class="n">dy</span>  <span class="c1"># change in chord per span</span>
+</span><span id="__span-1-53"><a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a>
+</span><span id="__span-1-54"><a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a>            <span class="n">mass</span> <span class="o">+=</span> <span class="n">density</span> <span class="o">*</span> <span class="n">k</span> <span class="o">*</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">3</span> <span class="o">/</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">s</span> <span class="o">*</span> <span class="n">c1</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">c1</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="p">)</span>
+</span><span id="__span-1-55"><a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a>
+</span><span id="__span-1-56"><a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a>            <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span> <span class="o">/</span> <span class="n">dy</span>  <span class="c1"># change in xles per span</span>
+</span><span id="__span-1-57"><a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a>
+</span><span id="__span-1-58"><a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a>            <span class="n">A</span> <span class="o">=</span> <span class="n">m</span> <span class="o">+</span> <span class="n">f</span> <span class="o">*</span> <span class="n">s</span>
+</span><span id="__span-1-59"><a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a>            <span class="n">B</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">f</span> <span class="o">*</span> <span class="n">c1</span>
+</span><span id="__span-1-60"><a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a>
+</span><span id="__span-1-61"><a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a>            <span class="n">xcg_numerator</span> <span class="o">+=</span> <span class="p">(</span>
+</span><span id="__span-1-62"><a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a>                <span class="n">density</span>
+</span><span id="__span-1-63"><a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a>                <span class="o">*</span> <span class="n">t</span>
+</span><span id="__span-1-64"><a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a>                <span class="o">*</span> <span class="n">k</span>
+</span><span id="__span-1-65"><a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a>                <span class="o">*</span> <span class="p">(</span>
+</span><span id="__span-1-66"><a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a>                    <span class="n">A</span> <span class="o">/</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">4</span>
+</span><span id="__span-1-67"><a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a>                    <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">A</span> <span class="o">/</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">s</span> <span class="o">*</span> <span class="n">c1</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">3</span>
+</span><span id="__span-1-68"><a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a>                    <span class="o">+</span> <span class="n">A</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">c1</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span>
+</span><span id="__span-1-69"><a id="__codelineno-1-69" name="__codelineno-1-69" href="#__codelineno-1-69"></a>                    <span class="o">+</span> <span class="n">B</span> <span class="o">/</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">3</span>
+</span><span id="__span-1-70"><a id="__codelineno-1-70" name="__codelineno-1-70" href="#__codelineno-1-70"></a>                    <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">B</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">s</span> <span class="o">*</span> <span class="n">c1</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span>
+</span><span id="__span-1-71"><a id="__codelineno-1-71" name="__codelineno-1-71" href="#__codelineno-1-71"></a>                    <span class="o">+</span> <span class="n">B</span> <span class="o">*</span> <span class="n">c1</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span>
+</span><span id="__span-1-72"><a id="__codelineno-1-72" name="__codelineno-1-72" href="#__codelineno-1-72"></a>                <span class="p">)</span>
+</span><span id="__span-1-73"><a id="__codelineno-1-73" name="__codelineno-1-73" href="#__codelineno-1-73"></a>            <span class="p">)</span>
+</span><span id="__span-1-74"><a id="__codelineno-1-74" name="__codelineno-1-74" href="#__codelineno-1-74"></a>
+</span><span id="__span-1-75"><a id="__codelineno-1-75" name="__codelineno-1-75" href="#__codelineno-1-75"></a>        <span class="n">x_cg</span> <span class="o">=</span> <span class="n">xcg_numerator</span> <span class="o">/</span> <span class="n">mass</span>
+</span><span id="__span-1-76"><a id="__codelineno-1-76" name="__codelineno-1-76" href="#__codelineno-1-76"></a>
+</span><span id="__span-1-77"><a id="__codelineno-1-77" name="__codelineno-1-77" href="#__codelineno-1-77"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">under_approx</span><span class="p">:</span>
+</span><span id="__span-1-78"><a id="__codelineno-1-78" name="__codelineno-1-78" href="#__codelineno-1-78"></a>            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Weight &quot;</span><span class="p">,</span> <span class="n">mass</span> <span class="o">*</span> <span class="n">g</span><span class="p">,</span> <span class="s2">&quot;x_cg&quot;</span><span class="p">,</span> <span class="n">x_cg</span><span class="p">)</span>
+</span><span id="__span-1-79"><a id="__codelineno-1-79" name="__codelineno-1-79" href="#__codelineno-1-79"></a>
+</span><span id="__span-1-80"><a id="__codelineno-1-80" name="__codelineno-1-80" href="#__codelineno-1-80"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mass</span> <span class="o">*</span> <span class="n">g</span>
+</span><span id="__span-1-81"><a id="__codelineno-1-81" name="__codelineno-1-81" href="#__codelineno-1-81"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;x_cg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_cg</span>
+</span><span id="__span-1-82"><a id="__codelineno-1-82" name="__codelineno-1-82" href="#__codelineno-1-82"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">planform_area</span>
+</span></code></pre></div></p>
+<h2 id="custom-objective">Custom Objective<a class="headerlink" href="#custom-objective" title="Permanent link">&para;</a></h2>
+<p>Instead of minimizing drag like the prior optimization examples, here I use the outputs of OptVL to compute the glide duration.
+This is done with another OpenMDAO component that uses the mass properties and CL and CD of the candidate design. 
+The glide duration is calculated assuming a steady glide from a fixed height (100 meters).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">GlidingFlight</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">ExplicitComponent</span><span class="p">):</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;weight of the aircraft&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;N&quot;</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;CL&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;lift coefficent of the aicraft&quot;</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;CD&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;drag coefficent&quot;</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;Sref&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;planform area&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m**2&quot;</span><span class="p">)</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;height&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;height of the glider from the ground&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;density_air&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">1.225</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;density of air you are gliding in&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;kg/m**3&quot;</span><span class="p">)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;glide_angle&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;the glide angle of the descent&quot;</span><span class="p">)</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;duration&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;the glide angle of the descent&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">)</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">declare_partials</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cs&quot;</span><span class="p">)</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>        <span class="n">cl</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;CL&quot;</span><span class="p">]</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>        <span class="n">cd</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;CD&quot;</span><span class="p">]</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>        <span class="n">rho</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;density_air&quot;</span><span class="p">]</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>        <span class="n">weight</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>        <span class="n">Sref</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;Sref&quot;</span><span class="p">]</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>        <span class="c1"># determine the glide angle from the lift to drag</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">cd</span> <span class="o">/</span> <span class="n">cl</span><span class="p">)</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>        <span class="c1"># based on the weight deterimne the rate of descent such that lift = cos(theta)*weight - sind(theta)*cd</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>        <span class="n">a</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">Sref</span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>        <span class="n">coef</span> <span class="o">=</span> <span class="n">cl</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">+</span> <span class="n">cd</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>        <span class="n">v_mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">weight</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">coef</span><span class="p">)))</span>
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>        <span class="n">v_descent</span> <span class="o">=</span> <span class="n">v_mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>        <span class="c1"># the duration is the height divied by the descent velocity</span>
+</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>        <span class="n">duration</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">v_descent</span>
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;glide_angle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">under_approx</span><span class="p">:</span>
+</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;L/D&quot;</span><span class="p">,</span> <span class="n">cl</span> <span class="o">/</span> <span class="n">cd</span><span class="p">,</span> <span class="s2">&quot;glide_angle&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span> <span class="s2">&quot;duration&quot;</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="example-script">Example Script<a class="headerlink" href="#example-script" title="Permanent link">&para;</a></h2>
+<p>Combining all these components into the OpenMDAO model we get the following script. </p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="sd">&quot;&quot;&quot;A openmdao based optimization for an aicraft using optvl&quot;&quot;&quot;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># the x-start and x-end comments are for integration with the documentation</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># they are not necessary for normal scripts</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">openmdao.api</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">om</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">optvl</span><span class="w"> </span><span class="kn">import</span> <span class="n">OVLGroup</span><span class="p">,</span> <span class="n">Differencer</span><span class="p">,</span> <span class="n">OVLMeshReader</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># geom-start</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">GeometryParametrizationComp</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">ExplicitComponent</span><span class="p">):</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="c1"># Input variables</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;yles_in&quot;</span><span class="p">,</span> <span class="n">shape_by_conn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Baseline y leading edge coordinates&quot;</span><span class="p">)</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;root_chord&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Baseline y leading edge coordinates&quot;</span><span class="p">)</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;c/4_sweep&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;shear Sweep&quot;</span><span class="p">)</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;taper_ratio&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;taper ratio of the wing&quot;</span><span class="p">)</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;dihedral&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;dihedral of wing&quot;</span><span class="p">)</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>        <span class="c1"># Output variables</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;xles_out&quot;</span><span class="p">,</span> <span class="n">copy_shape</span><span class="o">=</span><span class="s2">&quot;yles_in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Transformed xyz leading edge coordinates&quot;</span><span class="p">)</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;zles_out&quot;</span><span class="p">,</span> <span class="n">copy_shape</span><span class="o">=</span><span class="s2">&quot;yles_in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Transformed xyz leading edge coordinates&quot;</span><span class="p">)</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;chords_out&quot;</span><span class="p">,</span> <span class="n">copy_shape</span><span class="o">=</span><span class="s2">&quot;yles_in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Transformed chord array&quot;</span><span class="p">)</span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>        <span class="c1"># Finite difference partials</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">declare_partials</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cs&quot;</span><span class="p">)</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>        <span class="c1"># Extracting input values</span>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>        <span class="n">yles</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;yles_in&quot;</span><span class="p">]</span>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>        <span class="n">span</span> <span class="o">=</span> <span class="n">yles</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>        <span class="n">relative_span</span> <span class="o">=</span> <span class="n">yles</span> <span class="o">/</span> <span class="n">span</span>
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>        <span class="n">chord_root</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;root_chord&quot;</span><span class="p">]</span>
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>        <span class="n">tr</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;taper_ratio&quot;</span><span class="p">]</span>
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>        <span class="n">chords</span> <span class="o">=</span> <span class="p">((</span><span class="n">tr</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">relative_span</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">chord_root</span>
+</span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>
+</span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>        <span class="n">zles</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;dihedral&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">relative_span</span>
+</span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>
+</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>        <span class="c1"># do some math to figure out the quarter chord sweeep</span>
+</span><span id="__span-3-41"><a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;xles_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;c/4_sweep&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">relative_span</span> <span class="o">+</span> <span class="p">(</span><span class="n">chord_root</span> <span class="o">-</span> <span class="n">chords</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span>
+</span><span id="__span-3-42"><a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;zles_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zles</span>
+</span><span id="__span-3-43"><a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;chords_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chords</span>
+</span><span id="__span-3-44"><a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a>
+</span><span id="__span-3-45"><a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a>
+</span><span id="__span-3-46"><a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a><span class="c1"># geom-end</span>
+</span><span id="__span-3-47"><a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a>
+</span><span id="__span-3-48"><a id="__codelineno-3-48" name="__codelineno-3-48" href="#__codelineno-3-48"></a>
+</span><span id="__span-3-49"><a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a><span class="c1"># mass-start</span>
+</span><span id="__span-3-50"><a id="__codelineno-3-50" name="__codelineno-3-50" href="#__codelineno-3-50"></a><span class="k">class</span><span class="w"> </span><span class="nc">MassProperties</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">ExplicitComponent</span><span class="p">):</span>
+</span><span id="__span-3-51"><a id="__codelineno-3-51" name="__codelineno-3-51" href="#__codelineno-3-51"></a>    <span class="c1"># compute the new estimated center of gravity</span>
+</span><span id="__span-3-52"><a id="__codelineno-3-52" name="__codelineno-3-52" href="#__codelineno-3-52"></a>    <span class="c1"># the weight of each section is proportional to the planform area</span>
+</span><span id="__span-3-53"><a id="__codelineno-3-53" name="__codelineno-3-53" href="#__codelineno-3-53"></a>
+</span><span id="__span-3-54"><a id="__codelineno-3-54" name="__codelineno-3-54" href="#__codelineno-3-54"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-55"><a id="__codelineno-3-55" name="__codelineno-3-55" href="#__codelineno-3-55"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;density&quot;</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;volume density of building material in kg/m**3&quot;</span><span class="p">)</span>
+</span><span id="__span-3-56"><a id="__codelineno-3-56" name="__codelineno-3-56" href="#__codelineno-3-56"></a>
+</span><span id="__span-3-57"><a id="__codelineno-3-57" name="__codelineno-3-57" href="#__codelineno-3-57"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-58"><a id="__codelineno-3-58" name="__codelineno-3-58" href="#__codelineno-3-58"></a>        <span class="c1"># input variables</span>
+</span><span id="__span-3-59"><a id="__codelineno-3-59" name="__codelineno-3-59" href="#__codelineno-3-59"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;xles&quot;</span><span class="p">,</span> <span class="n">shape_by_conn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Baseline x leading edge coordinates&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-3-60"><a id="__codelineno-3-60" name="__codelineno-3-60" href="#__codelineno-3-60"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;yles&quot;</span><span class="p">,</span> <span class="n">shape_by_conn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Baseline y leading edge coordinates&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-3-61"><a id="__codelineno-3-61" name="__codelineno-3-61" href="#__codelineno-3-61"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;chords&quot;</span><span class="p">,</span> <span class="n">shape_by_conn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;chord distribution&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-3-62"><a id="__codelineno-3-62" name="__codelineno-3-62" href="#__codelineno-3-62"></a>
+</span><span id="__span-3-63"><a id="__codelineno-3-63" name="__codelineno-3-63" href="#__codelineno-3-63"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;x_cg&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;x postion of the CG in the same axis as the xles coordinate&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-3-64"><a id="__codelineno-3-64" name="__codelineno-3-64" href="#__codelineno-3-64"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;estimated weight of the airplane&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;N&quot;</span><span class="p">)</span>
+</span><span id="__span-3-65"><a id="__codelineno-3-65" name="__codelineno-3-65" href="#__codelineno-3-65"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;planform area&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m**2&quot;</span><span class="p">)</span>
+</span><span id="__span-3-66"><a id="__codelineno-3-66" name="__codelineno-3-66" href="#__codelineno-3-66"></a>
+</span><span id="__span-3-67"><a id="__codelineno-3-67" name="__codelineno-3-67" href="#__codelineno-3-67"></a>        <span class="c1"># Finite difference partials</span>
+</span><span id="__span-3-68"><a id="__codelineno-3-68" name="__codelineno-3-68" href="#__codelineno-3-68"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">declare_partials</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cs&quot;</span><span class="p">)</span>
+</span><span id="__span-3-69"><a id="__codelineno-3-69" name="__codelineno-3-69" href="#__codelineno-3-69"></a>
+</span><span id="__span-3-70"><a id="__codelineno-3-70" name="__codelineno-3-70" href="#__codelineno-3-70"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+</span><span id="__span-3-71"><a id="__codelineno-3-71" name="__codelineno-3-71" href="#__codelineno-3-71"></a>        <span class="n">xles</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;xles&quot;</span><span class="p">]</span>
+</span><span id="__span-3-72"><a id="__codelineno-3-72" name="__codelineno-3-72" href="#__codelineno-3-72"></a>        <span class="n">yles</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;yles&quot;</span><span class="p">]</span>
+</span><span id="__span-3-73"><a id="__codelineno-3-73" name="__codelineno-3-73" href="#__codelineno-3-73"></a>        <span class="n">chords</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;chords&quot;</span><span class="p">]</span>
+</span><span id="__span-3-74"><a id="__codelineno-3-74" name="__codelineno-3-74" href="#__codelineno-3-74"></a>
+</span><span id="__span-3-75"><a id="__codelineno-3-75" name="__codelineno-3-75" href="#__codelineno-3-75"></a>        <span class="n">density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;density&quot;</span><span class="p">]</span>
+</span><span id="__span-3-76"><a id="__codelineno-3-76" name="__codelineno-3-76" href="#__codelineno-3-76"></a>        <span class="n">g</span> <span class="o">=</span> <span class="mf">9.81</span>  <span class="c1"># acceleration due to gravity</span>
+</span><span id="__span-3-77"><a id="__codelineno-3-77" name="__codelineno-3-77" href="#__codelineno-3-77"></a>
+</span><span id="__span-3-78"><a id="__codelineno-3-78" name="__codelineno-3-78" href="#__codelineno-3-78"></a>        <span class="n">k</span> <span class="o">=</span> <span class="mf">0.680883333333</span>  <span class="c1"># areea of a NACA 4 digit airfoil for unit chord divied by thickness from http://louisgagnon.com/scBlog/airfoilCenter.html</span>
+</span><span id="__span-3-79"><a id="__codelineno-3-79" name="__codelineno-3-79" href="#__codelineno-3-79"></a>        <span class="n">t</span> <span class="o">=</span> <span class="mf">0.12</span>  <span class="c1"># thicknes of airfoil</span>
+</span><span id="__span-3-80"><a id="__codelineno-3-80" name="__codelineno-3-80" href="#__codelineno-3-80"></a>        <span class="n">f</span> <span class="o">=</span> <span class="mf">0.4</span>  <span class="c1"># approximate centroid of an airfoil</span>
+</span><span id="__span-3-81"><a id="__codelineno-3-81" name="__codelineno-3-81" href="#__codelineno-3-81"></a>        <span class="c1"># area is  t*c = 0.680883333333*(0.12*c)*c</span>
+</span><span id="__span-3-82"><a id="__codelineno-3-82" name="__codelineno-3-82" href="#__codelineno-3-82"></a>
+</span><span id="__span-3-83"><a id="__codelineno-3-83" name="__codelineno-3-83" href="#__codelineno-3-83"></a>        <span class="c1"># we are going to find the mass, and center of mass for each of the wing sections</span>
+</span><span id="__span-3-84"><a id="__codelineno-3-84" name="__codelineno-3-84" href="#__codelineno-3-84"></a>        <span class="c1"># we assume that the wing is of uniform density</span>
+</span><span id="__span-3-85"><a id="__codelineno-3-85" name="__codelineno-3-85" href="#__codelineno-3-85"></a>        <span class="n">x_cg</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-3-86"><a id="__codelineno-3-86" name="__codelineno-3-86" href="#__codelineno-3-86"></a>        <span class="n">mass</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-3-87"><a id="__codelineno-3-87" name="__codelineno-3-87" href="#__codelineno-3-87"></a>        <span class="n">xcg_numerator</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-3-88"><a id="__codelineno-3-88" name="__codelineno-3-88" href="#__codelineno-3-88"></a>        <span class="n">planform_area</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-3-89"><a id="__codelineno-3-89" name="__codelineno-3-89" href="#__codelineno-3-89"></a>        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xles</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+</span><span id="__span-3-90"><a id="__codelineno-3-90" name="__codelineno-3-90" href="#__codelineno-3-90"></a>            <span class="n">x1</span> <span class="o">=</span> <span class="n">xles</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+</span><span id="__span-3-91"><a id="__codelineno-3-91" name="__codelineno-3-91" href="#__codelineno-3-91"></a>            <span class="n">y1</span> <span class="o">=</span> <span class="n">yles</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+</span><span id="__span-3-92"><a id="__codelineno-3-92" name="__codelineno-3-92" href="#__codelineno-3-92"></a>            <span class="n">c1</span> <span class="o">=</span> <span class="n">chords</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+</span><span id="__span-3-93"><a id="__codelineno-3-93" name="__codelineno-3-93" href="#__codelineno-3-93"></a>
+</span><span id="__span-3-94"><a id="__codelineno-3-94" name="__codelineno-3-94" href="#__codelineno-3-94"></a>            <span class="n">x2</span> <span class="o">=</span> <span class="n">xles</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-3-95"><a id="__codelineno-3-95" name="__codelineno-3-95" href="#__codelineno-3-95"></a>            <span class="n">y2</span> <span class="o">=</span> <span class="n">yles</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-3-96"><a id="__codelineno-3-96" name="__codelineno-3-96" href="#__codelineno-3-96"></a>            <span class="n">c2</span> <span class="o">=</span> <span class="n">chords</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-3-97"><a id="__codelineno-3-97" name="__codelineno-3-97" href="#__codelineno-3-97"></a>            <span class="n">dy</span> <span class="o">=</span> <span class="n">y2</span> <span class="o">-</span> <span class="n">y1</span>
+</span><span id="__span-3-98"><a id="__codelineno-3-98" name="__codelineno-3-98" href="#__codelineno-3-98"></a>
+</span><span id="__span-3-99"><a id="__codelineno-3-99" name="__codelineno-3-99" href="#__codelineno-3-99"></a>            <span class="n">planform_area</span> <span class="o">+=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">c1</span> <span class="o">+</span> <span class="n">c2</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy</span>  <span class="c1"># area of trapizoid</span>
+</span><span id="__span-3-100"><a id="__codelineno-3-100" name="__codelineno-3-100" href="#__codelineno-3-100"></a>
+</span><span id="__span-3-101"><a id="__codelineno-3-101" name="__codelineno-3-101" href="#__codelineno-3-101"></a>            <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">c2</span> <span class="o">-</span> <span class="n">c1</span><span class="p">)</span> <span class="o">/</span> <span class="n">dy</span>  <span class="c1"># change in chord per span</span>
+</span><span id="__span-3-102"><a id="__codelineno-3-102" name="__codelineno-3-102" href="#__codelineno-3-102"></a>
+</span><span id="__span-3-103"><a id="__codelineno-3-103" name="__codelineno-3-103" href="#__codelineno-3-103"></a>            <span class="n">mass</span> <span class="o">+=</span> <span class="n">density</span> <span class="o">*</span> <span class="n">k</span> <span class="o">*</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">3</span> <span class="o">/</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">s</span> <span class="o">*</span> <span class="n">c1</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">c1</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="p">)</span>
+</span><span id="__span-3-104"><a id="__codelineno-3-104" name="__codelineno-3-104" href="#__codelineno-3-104"></a>
+</span><span id="__span-3-105"><a id="__codelineno-3-105" name="__codelineno-3-105" href="#__codelineno-3-105"></a>            <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span> <span class="o">/</span> <span class="n">dy</span>  <span class="c1"># change in xles per span</span>
+</span><span id="__span-3-106"><a id="__codelineno-3-106" name="__codelineno-3-106" href="#__codelineno-3-106"></a>
+</span><span id="__span-3-107"><a id="__codelineno-3-107" name="__codelineno-3-107" href="#__codelineno-3-107"></a>            <span class="n">A</span> <span class="o">=</span> <span class="n">m</span> <span class="o">+</span> <span class="n">f</span> <span class="o">*</span> <span class="n">s</span>
+</span><span id="__span-3-108"><a id="__codelineno-3-108" name="__codelineno-3-108" href="#__codelineno-3-108"></a>            <span class="n">B</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">f</span> <span class="o">*</span> <span class="n">c1</span>
+</span><span id="__span-3-109"><a id="__codelineno-3-109" name="__codelineno-3-109" href="#__codelineno-3-109"></a>
+</span><span id="__span-3-110"><a id="__codelineno-3-110" name="__codelineno-3-110" href="#__codelineno-3-110"></a>            <span class="n">xcg_numerator</span> <span class="o">+=</span> <span class="p">(</span>
+</span><span id="__span-3-111"><a id="__codelineno-3-111" name="__codelineno-3-111" href="#__codelineno-3-111"></a>                <span class="n">density</span>
+</span><span id="__span-3-112"><a id="__codelineno-3-112" name="__codelineno-3-112" href="#__codelineno-3-112"></a>                <span class="o">*</span> <span class="n">t</span>
+</span><span id="__span-3-113"><a id="__codelineno-3-113" name="__codelineno-3-113" href="#__codelineno-3-113"></a>                <span class="o">*</span> <span class="n">k</span>
+</span><span id="__span-3-114"><a id="__codelineno-3-114" name="__codelineno-3-114" href="#__codelineno-3-114"></a>                <span class="o">*</span> <span class="p">(</span>
+</span><span id="__span-3-115"><a id="__codelineno-3-115" name="__codelineno-3-115" href="#__codelineno-3-115"></a>                    <span class="n">A</span> <span class="o">/</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">4</span>
+</span><span id="__span-3-116"><a id="__codelineno-3-116" name="__codelineno-3-116" href="#__codelineno-3-116"></a>                    <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">A</span> <span class="o">/</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">s</span> <span class="o">*</span> <span class="n">c1</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">3</span>
+</span><span id="__span-3-117"><a id="__codelineno-3-117" name="__codelineno-3-117" href="#__codelineno-3-117"></a>                    <span class="o">+</span> <span class="n">A</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">c1</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span>
+</span><span id="__span-3-118"><a id="__codelineno-3-118" name="__codelineno-3-118" href="#__codelineno-3-118"></a>                    <span class="o">+</span> <span class="n">B</span> <span class="o">/</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">3</span>
+</span><span id="__span-3-119"><a id="__codelineno-3-119" name="__codelineno-3-119" href="#__codelineno-3-119"></a>                    <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">B</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">s</span> <span class="o">*</span> <span class="n">c1</span> <span class="o">*</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span>
+</span><span id="__span-3-120"><a id="__codelineno-3-120" name="__codelineno-3-120" href="#__codelineno-3-120"></a>                    <span class="o">+</span> <span class="n">B</span> <span class="o">*</span> <span class="n">c1</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">dy</span>
+</span><span id="__span-3-121"><a id="__codelineno-3-121" name="__codelineno-3-121" href="#__codelineno-3-121"></a>                <span class="p">)</span>
+</span><span id="__span-3-122"><a id="__codelineno-3-122" name="__codelineno-3-122" href="#__codelineno-3-122"></a>            <span class="p">)</span>
+</span><span id="__span-3-123"><a id="__codelineno-3-123" name="__codelineno-3-123" href="#__codelineno-3-123"></a>
+</span><span id="__span-3-124"><a id="__codelineno-3-124" name="__codelineno-3-124" href="#__codelineno-3-124"></a>        <span class="n">x_cg</span> <span class="o">=</span> <span class="n">xcg_numerator</span> <span class="o">/</span> <span class="n">mass</span>
+</span><span id="__span-3-125"><a id="__codelineno-3-125" name="__codelineno-3-125" href="#__codelineno-3-125"></a>
+</span><span id="__span-3-126"><a id="__codelineno-3-126" name="__codelineno-3-126" href="#__codelineno-3-126"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">under_approx</span><span class="p">:</span>
+</span><span id="__span-3-127"><a id="__codelineno-3-127" name="__codelineno-3-127" href="#__codelineno-3-127"></a>            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Weight &quot;</span><span class="p">,</span> <span class="n">mass</span> <span class="o">*</span> <span class="n">g</span><span class="p">,</span> <span class="s2">&quot;x_cg&quot;</span><span class="p">,</span> <span class="n">x_cg</span><span class="p">)</span>
+</span><span id="__span-3-128"><a id="__codelineno-3-128" name="__codelineno-3-128" href="#__codelineno-3-128"></a>
+</span><span id="__span-3-129"><a id="__codelineno-3-129" name="__codelineno-3-129" href="#__codelineno-3-129"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mass</span> <span class="o">*</span> <span class="n">g</span>
+</span><span id="__span-3-130"><a id="__codelineno-3-130" name="__codelineno-3-130" href="#__codelineno-3-130"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;x_cg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_cg</span>
+</span><span id="__span-3-131"><a id="__codelineno-3-131" name="__codelineno-3-131" href="#__codelineno-3-131"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">planform_area</span>
+</span><span id="__span-3-132"><a id="__codelineno-3-132" name="__codelineno-3-132" href="#__codelineno-3-132"></a>
+</span><span id="__span-3-133"><a id="__codelineno-3-133" name="__codelineno-3-133" href="#__codelineno-3-133"></a>
+</span><span id="__span-3-134"><a id="__codelineno-3-134" name="__codelineno-3-134" href="#__codelineno-3-134"></a><span class="c1"># mass-end</span>
+</span><span id="__span-3-135"><a id="__codelineno-3-135" name="__codelineno-3-135" href="#__codelineno-3-135"></a><span class="c1"># glide-start</span>
+</span><span id="__span-3-136"><a id="__codelineno-3-136" name="__codelineno-3-136" href="#__codelineno-3-136"></a><span class="k">class</span><span class="w"> </span><span class="nc">GlidingFlight</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">ExplicitComponent</span><span class="p">):</span>
+</span><span id="__span-3-137"><a id="__codelineno-3-137" name="__codelineno-3-137" href="#__codelineno-3-137"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-138"><a id="__codelineno-3-138" name="__codelineno-3-138" href="#__codelineno-3-138"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;weight of the aircraft&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;N&quot;</span><span class="p">)</span>
+</span><span id="__span-3-139"><a id="__codelineno-3-139" name="__codelineno-3-139" href="#__codelineno-3-139"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;CL&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;lift coefficent of the aicraft&quot;</span><span class="p">)</span>
+</span><span id="__span-3-140"><a id="__codelineno-3-140" name="__codelineno-3-140" href="#__codelineno-3-140"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;CD&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;drag coefficent&quot;</span><span class="p">)</span>
+</span><span id="__span-3-141"><a id="__codelineno-3-141" name="__codelineno-3-141" href="#__codelineno-3-141"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;Sref&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;planform area&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m**2&quot;</span><span class="p">)</span>
+</span><span id="__span-3-142"><a id="__codelineno-3-142" name="__codelineno-3-142" href="#__codelineno-3-142"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;height&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;height of the glider from the ground&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">)</span>
+</span><span id="__span-3-143"><a id="__codelineno-3-143" name="__codelineno-3-143" href="#__codelineno-3-143"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_input</span><span class="p">(</span><span class="s2">&quot;density_air&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mf">1.225</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;density of air you are gliding in&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;kg/m**3&quot;</span><span class="p">)</span>
+</span><span id="__span-3-144"><a id="__codelineno-3-144" name="__codelineno-3-144" href="#__codelineno-3-144"></a>
+</span><span id="__span-3-145"><a id="__codelineno-3-145" name="__codelineno-3-145" href="#__codelineno-3-145"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;glide_angle&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;the glide angle of the descent&quot;</span><span class="p">)</span>
+</span><span id="__span-3-146"><a id="__codelineno-3-146" name="__codelineno-3-146" href="#__codelineno-3-146"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;duration&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;the glide angle of the descent&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">)</span>
+</span><span id="__span-3-147"><a id="__codelineno-3-147" name="__codelineno-3-147" href="#__codelineno-3-147"></a>
+</span><span id="__span-3-148"><a id="__codelineno-3-148" name="__codelineno-3-148" href="#__codelineno-3-148"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">declare_partials</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cs&quot;</span><span class="p">)</span>
+</span><span id="__span-3-149"><a id="__codelineno-3-149" name="__codelineno-3-149" href="#__codelineno-3-149"></a>
+</span><span id="__span-3-150"><a id="__codelineno-3-150" name="__codelineno-3-150" href="#__codelineno-3-150"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+</span><span id="__span-3-151"><a id="__codelineno-3-151" name="__codelineno-3-151" href="#__codelineno-3-151"></a>        <span class="n">cl</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;CL&quot;</span><span class="p">]</span>
+</span><span id="__span-3-152"><a id="__codelineno-3-152" name="__codelineno-3-152" href="#__codelineno-3-152"></a>        <span class="n">cd</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;CD&quot;</span><span class="p">]</span>
+</span><span id="__span-3-153"><a id="__codelineno-3-153" name="__codelineno-3-153" href="#__codelineno-3-153"></a>        <span class="n">rho</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;density_air&quot;</span><span class="p">]</span>
+</span><span id="__span-3-154"><a id="__codelineno-3-154" name="__codelineno-3-154" href="#__codelineno-3-154"></a>        <span class="n">weight</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span>
+</span><span id="__span-3-155"><a id="__codelineno-3-155" name="__codelineno-3-155" href="#__codelineno-3-155"></a>        <span class="n">Sref</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;Sref&quot;</span><span class="p">]</span>
+</span><span id="__span-3-156"><a id="__codelineno-3-156" name="__codelineno-3-156" href="#__codelineno-3-156"></a>
+</span><span id="__span-3-157"><a id="__codelineno-3-157" name="__codelineno-3-157" href="#__codelineno-3-157"></a>        <span class="c1"># determine the glide angle from the lift to drag</span>
+</span><span id="__span-3-158"><a id="__codelineno-3-158" name="__codelineno-3-158" href="#__codelineno-3-158"></a>        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">cd</span> <span class="o">/</span> <span class="n">cl</span><span class="p">)</span>
+</span><span id="__span-3-159"><a id="__codelineno-3-159" name="__codelineno-3-159" href="#__codelineno-3-159"></a>
+</span><span id="__span-3-160"><a id="__codelineno-3-160" name="__codelineno-3-160" href="#__codelineno-3-160"></a>        <span class="c1"># based on the weight deterimne the rate of descent such that lift = cos(theta)*weight - sind(theta)*cd</span>
+</span><span id="__span-3-161"><a id="__codelineno-3-161" name="__codelineno-3-161" href="#__codelineno-3-161"></a>        <span class="n">a</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">Sref</span>
+</span><span id="__span-3-162"><a id="__codelineno-3-162" name="__codelineno-3-162" href="#__codelineno-3-162"></a>        <span class="n">coef</span> <span class="o">=</span> <span class="n">cl</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">+</span> <span class="n">cd</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+</span><span id="__span-3-163"><a id="__codelineno-3-163" name="__codelineno-3-163" href="#__codelineno-3-163"></a>
+</span><span id="__span-3-164"><a id="__codelineno-3-164" name="__codelineno-3-164" href="#__codelineno-3-164"></a>        <span class="n">v_mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">weight</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">coef</span><span class="p">)))</span>
+</span><span id="__span-3-165"><a id="__codelineno-3-165" name="__codelineno-3-165" href="#__codelineno-3-165"></a>        <span class="n">v_descent</span> <span class="o">=</span> <span class="n">v_mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+</span><span id="__span-3-166"><a id="__codelineno-3-166" name="__codelineno-3-166" href="#__codelineno-3-166"></a>
+</span><span id="__span-3-167"><a id="__codelineno-3-167" name="__codelineno-3-167" href="#__codelineno-3-167"></a>        <span class="c1"># the duration is the height divied by the descent velocity</span>
+</span><span id="__span-3-168"><a id="__codelineno-3-168" name="__codelineno-3-168" href="#__codelineno-3-168"></a>        <span class="n">duration</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">v_descent</span>
+</span><span id="__span-3-169"><a id="__codelineno-3-169" name="__codelineno-3-169" href="#__codelineno-3-169"></a>
+</span><span id="__span-3-170"><a id="__codelineno-3-170" name="__codelineno-3-170" href="#__codelineno-3-170"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;glide_angle&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+</span><span id="__span-3-171"><a id="__codelineno-3-171" name="__codelineno-3-171" href="#__codelineno-3-171"></a>        <span class="n">outputs</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
+</span><span id="__span-3-172"><a id="__codelineno-3-172" name="__codelineno-3-172" href="#__codelineno-3-172"></a>
+</span><span id="__span-3-173"><a id="__codelineno-3-173" name="__codelineno-3-173" href="#__codelineno-3-173"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">under_approx</span><span class="p">:</span>
+</span><span id="__span-3-174"><a id="__codelineno-3-174" name="__codelineno-3-174" href="#__codelineno-3-174"></a>            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;L/D&quot;</span><span class="p">,</span> <span class="n">cl</span> <span class="o">/</span> <span class="n">cd</span><span class="p">,</span> <span class="s2">&quot;glide_angle&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span> <span class="s2">&quot;duration&quot;</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
+</span><span id="__span-3-175"><a id="__codelineno-3-175" name="__codelineno-3-175" href="#__codelineno-3-175"></a>
+</span><span id="__span-3-176"><a id="__codelineno-3-176" name="__codelineno-3-176" href="#__codelineno-3-176"></a>
+</span><span id="__span-3-177"><a id="__codelineno-3-177" name="__codelineno-3-177" href="#__codelineno-3-177"></a><span class="c1"># glide-end</span>
+</span><span id="__span-3-178"><a id="__codelineno-3-178" name="__codelineno-3-178" href="#__codelineno-3-178"></a>
+</span><span id="__span-3-179"><a id="__codelineno-3-179" name="__codelineno-3-179" href="#__codelineno-3-179"></a>
+</span><span id="__span-3-180"><a id="__codelineno-3-180" name="__codelineno-3-180" href="#__codelineno-3-180"></a><span class="n">model</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">Group</span><span class="p">()</span>
+</span><span id="__span-3-181"><a id="__codelineno-3-181" name="__codelineno-3-181" href="#__codelineno-3-181"></a><span class="n">geom_dvs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">add_subsystem</span><span class="p">(</span><span class="s2">&quot;geom_dvs&quot;</span><span class="p">,</span> <span class="n">om</span><span class="o">.</span><span class="n">IndepVarComp</span><span class="p">())</span>
+</span><span id="__span-3-182"><a id="__codelineno-3-182" name="__codelineno-3-182" href="#__codelineno-3-182"></a>
+</span><span id="__span-3-183"><a id="__codelineno-3-183" name="__codelineno-3-183" href="#__codelineno-3-183"></a><span class="n">geom_dvs</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s2">&quot;aincs&quot;</span><span class="p">,</span> <span class="n">shape_by_conn</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-3-184"><a id="__codelineno-3-184" name="__codelineno-3-184" href="#__codelineno-3-184"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;geom_dvs.aincs&quot;</span><span class="p">,</span> <span class="s2">&quot;ovlsolver.Wing:aincs&quot;</span><span class="p">)</span>
+</span><span id="__span-3-185"><a id="__codelineno-3-185" name="__codelineno-3-185" href="#__codelineno-3-185"></a>
+</span><span id="__span-3-186"><a id="__codelineno-3-186" name="__codelineno-3-186" href="#__codelineno-3-186"></a><span class="n">model</span><span class="o">.</span><span class="n">add_subsystem</span><span class="p">(</span><span class="s2">&quot;mesh&quot;</span><span class="p">,</span> <span class="n">OVLMeshReader</span><span class="p">(</span><span class="n">geom_file</span><span class="o">=</span><span class="s2">&quot;../geom_files/rectangle.avl&quot;</span><span class="p">))</span>
+</span><span id="__span-3-187"><a id="__codelineno-3-187" name="__codelineno-3-187" href="#__codelineno-3-187"></a><span class="n">model</span><span class="o">.</span><span class="n">add_subsystem</span><span class="p">(</span><span class="s2">&quot;geom_param&quot;</span><span class="p">,</span> <span class="n">GeometryParametrizationComp</span><span class="p">())</span>
+</span><span id="__span-3-188"><a id="__codelineno-3-188" name="__codelineno-3-188" href="#__codelineno-3-188"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;mesh.Wing:yles&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;geom_param.yles_in&quot;</span><span class="p">])</span>
+</span><span id="__span-3-189"><a id="__codelineno-3-189" name="__codelineno-3-189" href="#__codelineno-3-189"></a>
+</span><span id="__span-3-190"><a id="__codelineno-3-190" name="__codelineno-3-190" href="#__codelineno-3-190"></a><span class="c1"># assuming we made everything out of pink insulation foam (20.8 kg/m**3)</span>
+</span><span id="__span-3-191"><a id="__codelineno-3-191" name="__codelineno-3-191" href="#__codelineno-3-191"></a><span class="c1"># https://dcpd6wotaa0mb.cloudfront.net/mdms/dms/EIS/10015703/10015703-FOAMULAR-SI-and-I-P-Units-for-Selected-Properties-Tech.-Bulletin.pdf</span>
+</span><span id="__span-3-192"><a id="__codelineno-3-192" name="__codelineno-3-192" href="#__codelineno-3-192"></a><span class="n">model</span><span class="o">.</span><span class="n">add_subsystem</span><span class="p">(</span><span class="s2">&quot;mass_props&quot;</span><span class="p">,</span> <span class="n">MassProperties</span><span class="p">(</span><span class="n">density</span><span class="o">=</span><span class="mf">20.8</span><span class="p">))</span>
+</span><span id="__span-3-193"><a id="__codelineno-3-193" name="__codelineno-3-193" href="#__codelineno-3-193"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;geom_param.xles_out&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mass_props.xles&quot;</span><span class="p">])</span>
+</span><span id="__span-3-194"><a id="__codelineno-3-194" name="__codelineno-3-194" href="#__codelineno-3-194"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;mesh.Wing:yles&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mass_props.yles&quot;</span><span class="p">])</span>
+</span><span id="__span-3-195"><a id="__codelineno-3-195" name="__codelineno-3-195" href="#__codelineno-3-195"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;geom_param.chords_out&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mass_props.chords&quot;</span><span class="p">])</span>
+</span><span id="__span-3-196"><a id="__codelineno-3-196" name="__codelineno-3-196" href="#__codelineno-3-196"></a>
+</span><span id="__span-3-197"><a id="__codelineno-3-197" name="__codelineno-3-197" href="#__codelineno-3-197"></a>
+</span><span id="__span-3-198"><a id="__codelineno-3-198" name="__codelineno-3-198" href="#__codelineno-3-198"></a><span class="n">model</span><span class="o">.</span><span class="n">add_subsystem</span><span class="p">(</span>
+</span><span id="__span-3-199"><a id="__codelineno-3-199" name="__codelineno-3-199" href="#__codelineno-3-199"></a>    <span class="s2">&quot;ovlsolver&quot;</span><span class="p">,</span>
+</span><span id="__span-3-200"><a id="__codelineno-3-200" name="__codelineno-3-200" href="#__codelineno-3-200"></a>    <span class="n">OVLGroup</span><span class="p">(</span>
+</span><span id="__span-3-201"><a id="__codelineno-3-201" name="__codelineno-3-201" href="#__codelineno-3-201"></a>        <span class="n">geom_file</span><span class="o">=</span><span class="s2">&quot;../geom_files/rectangle.avl&quot;</span><span class="p">,</span>
+</span><span id="__span-3-202"><a id="__codelineno-3-202" name="__codelineno-3-202" href="#__codelineno-3-202"></a>        <span class="n">output_stability_derivs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-3-203"><a id="__codelineno-3-203" name="__codelineno-3-203" href="#__codelineno-3-203"></a>        <span class="n">write_grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-3-204"><a id="__codelineno-3-204" name="__codelineno-3-204" href="#__codelineno-3-204"></a>        <span class="n">input_param_vals</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-3-205"><a id="__codelineno-3-205" name="__codelineno-3-205" href="#__codelineno-3-205"></a>        <span class="n">input_ref_vals</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-3-206"><a id="__codelineno-3-206" name="__codelineno-3-206" href="#__codelineno-3-206"></a>        <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;opt_output_sweep&quot;</span><span class="p">,</span>
+</span><span id="__span-3-207"><a id="__codelineno-3-207" name="__codelineno-3-207" href="#__codelineno-3-207"></a>    <span class="p">),</span>
+</span><span id="__span-3-208"><a id="__codelineno-3-208" name="__codelineno-3-208" href="#__codelineno-3-208"></a><span class="p">)</span>
+</span><span id="__span-3-209"><a id="__codelineno-3-209" name="__codelineno-3-209" href="#__codelineno-3-209"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;geom_param.xles_out&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;ovlsolver.Wing:xles&quot;</span><span class="p">])</span>
+</span><span id="__span-3-210"><a id="__codelineno-3-210" name="__codelineno-3-210" href="#__codelineno-3-210"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;geom_param.zles_out&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;ovlsolver.Wing:zles&quot;</span><span class="p">])</span>
+</span><span id="__span-3-211"><a id="__codelineno-3-211" name="__codelineno-3-211" href="#__codelineno-3-211"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;geom_param.chords_out&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;ovlsolver.Wing:chords&quot;</span><span class="p">])</span>
+</span><span id="__span-3-212"><a id="__codelineno-3-212" name="__codelineno-3-212" href="#__codelineno-3-212"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;mass_props.x_cg&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;ovlsolver.X cg&quot;</span><span class="p">])</span>
+</span><span id="__span-3-213"><a id="__codelineno-3-213" name="__codelineno-3-213" href="#__codelineno-3-213"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;mass_props.area&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;ovlsolver.Sref&quot;</span><span class="p">])</span>
+</span><span id="__span-3-214"><a id="__codelineno-3-214" name="__codelineno-3-214" href="#__codelineno-3-214"></a>
+</span><span id="__span-3-215"><a id="__codelineno-3-215" name="__codelineno-3-215" href="#__codelineno-3-215"></a><span class="n">model</span><span class="o">.</span><span class="n">add_subsystem</span><span class="p">(</span><span class="s2">&quot;glide&quot;</span><span class="p">,</span> <span class="n">GlidingFlight</span><span class="p">())</span>
+</span><span id="__span-3-216"><a id="__codelineno-3-216" name="__codelineno-3-216" href="#__codelineno-3-216"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;mass_props.weight&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;glide.weight&quot;</span><span class="p">])</span>
+</span><span id="__span-3-217"><a id="__codelineno-3-217" name="__codelineno-3-217" href="#__codelineno-3-217"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;mass_props.area&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;glide.Sref&quot;</span><span class="p">])</span>
+</span><span id="__span-3-218"><a id="__codelineno-3-218" name="__codelineno-3-218" href="#__codelineno-3-218"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;ovlsolver.CL&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;glide.CL&quot;</span><span class="p">])</span>
+</span><span id="__span-3-219"><a id="__codelineno-3-219" name="__codelineno-3-219" href="#__codelineno-3-219"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;ovlsolver.CD&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;glide.CD&quot;</span><span class="p">])</span>
+</span><span id="__span-3-220"><a id="__codelineno-3-220" name="__codelineno-3-220" href="#__codelineno-3-220"></a>
+</span><span id="__span-3-221"><a id="__codelineno-3-221" name="__codelineno-3-221" href="#__codelineno-3-221"></a><span class="n">model</span><span class="o">.</span><span class="n">add_subsystem</span><span class="p">(</span><span class="s2">&quot;differ_aincs&quot;</span><span class="p">,</span> <span class="n">Differencer</span><span class="p">())</span>
+</span><span id="__span-3-222"><a id="__codelineno-3-222" name="__codelineno-3-222" href="#__codelineno-3-222"></a><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;geom_dvs.aincs&quot;</span><span class="p">,</span> <span class="s2">&quot;differ_aincs.input_vec&quot;</span><span class="p">)</span>
+</span><span id="__span-3-223"><a id="__codelineno-3-223" name="__codelineno-3-223" href="#__codelineno-3-223"></a>
+</span><span id="__span-3-224"><a id="__codelineno-3-224" name="__codelineno-3-224" href="#__codelineno-3-224"></a><span class="c1"># design variables modify the planform and twist distribution</span>
+</span><span id="__span-3-225"><a id="__codelineno-3-225" name="__codelineno-3-225" href="#__codelineno-3-225"></a><span class="n">model</span><span class="o">.</span><span class="n">add_design_var</span><span class="p">(</span><span class="s2">&quot;geom_param.c/4_sweep&quot;</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span>
+</span><span id="__span-3-226"><a id="__codelineno-3-226" name="__codelineno-3-226" href="#__codelineno-3-226"></a><span class="n">model</span><span class="o">.</span><span class="n">add_design_var</span><span class="p">(</span><span class="s2">&quot;geom_param.taper_ratio&quot;</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</span><span id="__span-3-227"><a id="__codelineno-3-227" name="__codelineno-3-227" href="#__codelineno-3-227"></a><span class="n">model</span><span class="o">.</span><span class="n">add_design_var</span><span class="p">(</span><span class="s2">&quot;geom_param.root_chord&quot;</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">4.0</span><span class="p">)</span>
+</span><span id="__span-3-228"><a id="__codelineno-3-228" name="__codelineno-3-228" href="#__codelineno-3-228"></a><span class="n">model</span><span class="o">.</span><span class="n">add_design_var</span><span class="p">(</span><span class="s2">&quot;ovlsolver.Wing:aincs&quot;</span><span class="p">,</span> <span class="n">lower</span><span class="o">=-</span><span class="mi">15</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+</span><span id="__span-3-229"><a id="__codelineno-3-229" name="__codelineno-3-229" href="#__codelineno-3-229"></a>
+</span><span id="__span-3-230"><a id="__codelineno-3-230" name="__codelineno-3-230" href="#__codelineno-3-230"></a><span class="n">model</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="s2">&quot;ovlsolver.Cm&quot;</span><span class="p">,</span> <span class="n">equals</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scaler</span><span class="o">=</span><span class="mf">1e2</span><span class="p">)</span>
+</span><span id="__span-3-231"><a id="__codelineno-3-231" name="__codelineno-3-231" href="#__codelineno-3-231"></a><span class="n">model</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="s2">&quot;ovlsolver.static margin&quot;</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">scaler</span><span class="o">=</span><span class="mf">1e1</span><span class="p">)</span>
+</span><span id="__span-3-232"><a id="__codelineno-3-232" name="__codelineno-3-232" href="#__codelineno-3-232"></a>
+</span><span id="__span-3-233"><a id="__codelineno-3-233" name="__codelineno-3-233" href="#__codelineno-3-233"></a><span class="c1"># this spiral parameter makes the problem harder to solve but more realistic</span>
+</span><span id="__span-3-234"><a id="__codelineno-3-234" name="__codelineno-3-234" href="#__codelineno-3-234"></a><span class="c1"># model.add_constraint(&quot;ovlsolver.spiral parameter&quot;, lower=1.0, scaler=1e0)</span>
+</span><span id="__span-3-235"><a id="__codelineno-3-235" name="__codelineno-3-235" href="#__codelineno-3-235"></a>
+</span><span id="__span-3-236"><a id="__codelineno-3-236" name="__codelineno-3-236" href="#__codelineno-3-236"></a><span class="c1"># you can optionally add dihedral as a design variable too</span>
+</span><span id="__span-3-237"><a id="__codelineno-3-237" name="__codelineno-3-237" href="#__codelineno-3-237"></a><span class="c1"># model.add_design_var(&quot;geom_param.dihedral&quot;, lower=0.0, upper=0.5)</span>
+</span><span id="__span-3-238"><a id="__codelineno-3-238" name="__codelineno-3-238" href="#__codelineno-3-238"></a>
+</span><span id="__span-3-239"><a id="__codelineno-3-239" name="__codelineno-3-239" href="#__codelineno-3-239"></a>
+</span><span id="__span-3-240"><a id="__codelineno-3-240" name="__codelineno-3-240" href="#__codelineno-3-240"></a><span class="c1"># make sure CL stays slightly positive to avoid</span>
+</span><span id="__span-3-241"><a id="__codelineno-3-241" name="__codelineno-3-241" href="#__codelineno-3-241"></a><span class="n">model</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="s2">&quot;ovlsolver.CL&quot;</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">scaler</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-3-242"><a id="__codelineno-3-242" name="__codelineno-3-242" href="#__codelineno-3-242"></a>
+</span><span id="__span-3-243"><a id="__codelineno-3-243" name="__codelineno-3-243" href="#__codelineno-3-243"></a>
+</span><span id="__span-3-244"><a id="__codelineno-3-244" name="__codelineno-3-244" href="#__codelineno-3-244"></a><span class="c1"># Some variables (like chord, dihedral, x and z leading edge position) can lead to local minimum.</span>
+</span><span id="__span-3-245"><a id="__codelineno-3-245" name="__codelineno-3-245" href="#__codelineno-3-245"></a><span class="c1"># To help fix this add a contraint that keeps the variable monotonic</span>
+</span><span id="__span-3-246"><a id="__codelineno-3-246" name="__codelineno-3-246" href="#__codelineno-3-246"></a><span class="n">model</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="s2">&quot;differ_aincs.diff_vec&quot;</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">linear</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># twist can only decrease</span>
+</span><span id="__span-3-247"><a id="__codelineno-3-247" name="__codelineno-3-247" href="#__codelineno-3-247"></a>
+</span><span id="__span-3-248"><a id="__codelineno-3-248" name="__codelineno-3-248" href="#__codelineno-3-248"></a><span class="c1"># scale down the duration to be about order 1</span>
+</span><span id="__span-3-249"><a id="__codelineno-3-249" name="__codelineno-3-249" href="#__codelineno-3-249"></a><span class="c1"># negative scaler because the optimizer only minimizes</span>
+</span><span id="__span-3-250"><a id="__codelineno-3-250" name="__codelineno-3-250" href="#__codelineno-3-250"></a><span class="n">model</span><span class="o">.</span><span class="n">add_objective</span><span class="p">(</span><span class="s2">&quot;glide.duration&quot;</span><span class="p">,</span> <span class="n">scaler</span><span class="o">=-</span><span class="mf">1e-3</span><span class="p">)</span>
+</span><span id="__span-3-251"><a id="__codelineno-3-251" name="__codelineno-3-251" href="#__codelineno-3-251"></a>
+</span><span id="__span-3-252"><a id="__codelineno-3-252" name="__codelineno-3-252" href="#__codelineno-3-252"></a><span class="n">prob</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">Problem</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</span><span id="__span-3-253"><a id="__codelineno-3-253" name="__codelineno-3-253" href="#__codelineno-3-253"></a>
+</span><span id="__span-3-254"><a id="__codelineno-3-254" name="__codelineno-3-254" href="#__codelineno-3-254"></a>
+</span><span id="__span-3-255"><a id="__codelineno-3-255" name="__codelineno-3-255" href="#__codelineno-3-255"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">ScipyOptimizeDriver</span><span class="p">()</span>
+</span><span id="__span-3-256"><a id="__codelineno-3-256" name="__codelineno-3-256" href="#__codelineno-3-256"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;optimizer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;SLSQP&quot;</span>
+</span><span id="__span-3-257"><a id="__codelineno-3-257" name="__codelineno-3-257" href="#__codelineno-3-257"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;debug_print&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;desvars&quot;</span><span class="p">,</span> <span class="s2">&quot;ln_cons&quot;</span><span class="p">,</span> <span class="s2">&quot;nl_cons&quot;</span><span class="p">,</span> <span class="s2">&quot;objs&quot;</span><span class="p">]</span>
+</span><span id="__span-3-258"><a id="__codelineno-3-258" name="__codelineno-3-258" href="#__codelineno-3-258"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;tol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e-6</span>
+</span><span id="__span-3-259"><a id="__codelineno-3-259" name="__codelineno-3-259" href="#__codelineno-3-259"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;disp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-3-260"><a id="__codelineno-3-260" name="__codelineno-3-260" href="#__codelineno-3-260"></a>
+</span><span id="__span-3-261"><a id="__codelineno-3-261" name="__codelineno-3-261" href="#__codelineno-3-261"></a>
+</span><span id="__span-3-262"><a id="__codelineno-3-262" name="__codelineno-3-262" href="#__codelineno-3-262"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_recorder</span><span class="p">(</span><span class="n">om</span><span class="o">.</span><span class="n">SqliteRecorder</span><span class="p">(</span><span class="s2">&quot;opt_history.sql&quot;</span><span class="p">))</span>
+</span><span id="__span-3-263"><a id="__codelineno-3-263" name="__codelineno-3-263" href="#__codelineno-3-263"></a>
+</span><span id="__span-3-264"><a id="__codelineno-3-264" name="__codelineno-3-264" href="#__codelineno-3-264"></a>
+</span><span id="__span-3-265"><a id="__codelineno-3-265" name="__codelineno-3-265" href="#__codelineno-3-265"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">recording_options</span><span class="p">[</span><span class="s2">&quot;includes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">]</span>
+</span><span id="__span-3-266"><a id="__codelineno-3-266" name="__codelineno-3-266" href="#__codelineno-3-266"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">recording_options</span><span class="p">[</span><span class="s2">&quot;record_objectives&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-3-267"><a id="__codelineno-3-267" name="__codelineno-3-267" href="#__codelineno-3-267"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">recording_options</span><span class="p">[</span><span class="s2">&quot;record_constraints&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-3-268"><a id="__codelineno-3-268" name="__codelineno-3-268" href="#__codelineno-3-268"></a><span class="n">prob</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">recording_options</span><span class="p">[</span><span class="s2">&quot;record_desvars&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-3-269"><a id="__codelineno-3-269" name="__codelineno-3-269" href="#__codelineno-3-269"></a>
+</span><span id="__span-3-270"><a id="__codelineno-3-270" name="__codelineno-3-270" href="#__codelineno-3-270"></a>
+</span><span id="__span-3-271"><a id="__codelineno-3-271" name="__codelineno-3-271" href="#__codelineno-3-271"></a><span class="n">prob</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rev&quot;</span><span class="p">)</span>
+</span><span id="__span-3-272"><a id="__codelineno-3-272" name="__codelineno-3-272" href="#__codelineno-3-272"></a><span class="n">prob</span><span class="o">.</span><span class="n">run_driver</span><span class="p">()</span>
+</span><span id="__span-3-273"><a id="__codelineno-3-273" name="__codelineno-3-273" href="#__codelineno-3-273"></a><span class="n">om</span><span class="o">.</span><span class="n">n2</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="n">show_browser</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="s2">&quot;vlm_opt.html&quot;</span><span class="p">)</span>
+</span><span id="__span-3-274"><a id="__codelineno-3-274" name="__codelineno-3-274" href="#__codelineno-3-274"></a>
+</span><span id="__span-3-275"><a id="__codelineno-3-275" name="__codelineno-3-275" href="#__codelineno-3-275"></a><span class="c1"># prob.run_model()</span>
+</span><span id="__span-3-276"><a id="__codelineno-3-276" name="__codelineno-3-276" href="#__codelineno-3-276"></a><span class="c1"># prob.check_totals()</span>
+</span></code></pre></div>
+<h2 id="results">Results<a class="headerlink" href="#results" title="Permanent link">&para;</a></h2>
+<p>The optimized design has a glide duration of over 1400 seconds.
+We can plot the objective function over the iterations using OpenMDAO's <code>CaseReader</code> class, using the recorder we made. 
+Additionally, we can load in the last <code>.avl</code> file written during the optimization to view the geometry of the optimized design. 
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">openmdao.api</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">om</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">optvl</span><span class="w"> </span><span class="kn">import</span> <span class="n">OVLSolver</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">cr</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="n">CaseReader</span><span class="p">(</span><span class="s2">&quot;./run_opt_om_planform_out/opt_history.sql&quot;</span><span class="p">)</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">driver_cases</span> <span class="o">=</span> <span class="n">cr</span><span class="o">.</span><span class="n">list_cases</span><span class="p">(</span><span class="s2">&quot;driver&quot;</span><span class="p">,</span> <span class="n">out_stream</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">obj_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">driver_cases</span><span class="p">))</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="k">for</span> <span class="n">idx_case</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">driver_cases</span><span class="p">)):</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="n">obj_arr</span><span class="p">[</span><span class="n">idx_case</span><span class="p">]</span> <span class="o">=</span> <span class="n">cr</span><span class="o">.</span><span class="n">get_case</span><span class="p">(</span><span class="n">driver_cases</span><span class="p">[</span><span class="n">idx_case</span><span class="p">])[</span><span class="s2">&quot;glide.duration&quot;</span><span class="p">]</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">obj_arr</span><span class="p">)</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;iteration&quot;</span><span class="p">)</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;duration [s]&quot;</span><span class="p">)</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="c1"># search the output directory for the latest file with a .dat extension</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="c1"># Use glob to find all .dat files in the given directory</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="n">output_dir</span> <span class="o">=</span> <span class="s2">&quot;opt_output_sweep&quot;</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="n">files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;*.avl&quot;</span><span class="p">))</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="c1"># Find the .dat file with the latest modification time</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="n">latest_file</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">)</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="n">ovl</span> <span class="o">=</span> <span class="n">OVLSolver</span><span class="p">(</span><span class="n">geo_file</span><span class="o">=</span><span class="n">latest_file</span><span class="p">)</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="n">ovl</span><span class="o">.</span><span class="n">plot_geom</span><span class="p">()</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="n">ovl</span><span class="o">.</span><span class="n">execute_run</span><span class="p">()</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a>
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="n">strip_data</span> <span class="o">=</span> <span class="n">ovl</span><span class="o">.</span><span class="n">get_strip_forces</span><span class="p">()</span>
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a>
+</span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a>
+</span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a><span class="c1"># Create a figure and two subplots that share the x-axis</span>
+</span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+</span><span id="__span-4-40"><a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a>
+</span><span id="__span-4-41"><a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a>
+</span><span id="__span-4-42"><a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a><span class="k">for</span> <span class="n">surf_key</span> <span class="ow">in</span> <span class="n">strip_data</span><span class="p">:</span>
+</span><span id="__span-4-43"><a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a>    <span class="n">span_distance</span> <span class="o">=</span> <span class="n">strip_data</span><span class="p">[</span><span class="n">surf_key</span><span class="p">][</span><span class="s2">&quot;Y LE&quot;</span><span class="p">]</span>
+</span><span id="__span-4-44"><a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a>    <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">span_distance</span><span class="p">,</span> <span class="n">strip_data</span><span class="p">[</span><span class="n">surf_key</span><span class="p">][</span><span class="s2">&quot;chord&quot;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;chord&quot;</span><span class="p">)</span>
+</span><span id="__span-4-45"><a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a>    <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">span_distance</span><span class="p">,</span> <span class="n">strip_data</span><span class="p">[</span><span class="n">surf_key</span><span class="p">][</span><span class="s2">&quot;twist&quot;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;twist&quot;</span><span class="p">)</span>
+</span><span id="__span-4-46"><a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a>    <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">span_distance</span><span class="p">,</span> <span class="n">strip_data</span><span class="p">[</span><span class="n">surf_key</span><span class="p">][</span><span class="s2">&quot;lift dist&quot;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C0&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;list dist&quot;</span><span class="p">)</span>
+</span><span id="__span-4-47"><a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a>
+</span><span id="__span-4-48"><a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a><span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s2">&quot;chord&quot;</span><span class="p">,</span> <span class="s2">&quot;twist&quot;</span><span class="p">])</span>
+</span><span id="__span-4-49"><a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a><span class="n">ax2</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s2">&quot;lift dist&quot;</span><span class="p">])</span>
+</span><span id="__span-4-50"><a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a><span class="n">ax2</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;span location&quot;</span><span class="p">)</span>
+</span><span id="__span-4-51"><a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></code></pre></div></p>
+<p>The objective function quickly rises to about 1400 seconds and then levels off. </p>
+<p><img alt="" src="../figures/obj_hist_planform.png" /></p>
+<p>However, if we zoom in we can see that some slight improvements are still being made to the design over the final iterations</p>
+<p><img alt="" src="../figures/obj_hist_planform_zoomed.png" /></p>
+<p>From the geometry we can see that the aspect ratio of the wing has increased dramatically and now has a sweep.</p>
+<p><img alt="" src="../figures/planform_geom_opt.png" /></p>
+<p>Looking at the twist and chord distribution, we can see a linear chord distribution because of the taper ratio and the wash-out in the sweep. 
+The lift distribution does not look elliptical, which makes sense, as maximizing glide duration is not equivalent to minimizing drag. </p>
+<p><img alt="" src="../figures/planform_opt_dists.png" /></p>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
