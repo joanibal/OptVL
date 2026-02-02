@@ -954,29 +954,34 @@ c--------------------------------------------------------------
        STOP
       ENDIF
 
+      ! New Loop over all strip in surface
+      do ispan = 1,ny-1
+
 
       ! Loop over sections
-      do idx_sec = 1, NSEC(isurf)-1
+      ! do idx_sec = 1, NSEC(isurf)-1
 
       ! Set reference information for the section
-      iptl = IPTSEC(idx_sec,isurf)
-      iptr = IPTSEC(idx_sec+1,isurf)
-      nspan = iptr - iptl       
-      NJ(isurf) = NJ(isurf) +  nspan
+      ! iptl = IPTSEC(idx_sec,isurf)
+      ! iptr = IPTSEC(idx_sec+1,isurf)
+      iptl = idx_strip
+      iptr = idx_strip + 1
+      ! nspan = iptr - iptl       
+      NJ(isurf) = NJ(isurf) + 1 ! nspan
 
 
       ! We need to compute the chord and claf values at the left and right edge of the section
       ! These will be needed by AVL for control surface setup and control point placement 
-      idx_node = flatidx(1,iptl,isurf)
-      idx_node_nx = flatidx(nx,iptl,isurf)
-      CHORDL = sqrt((mesh_surf(1,idx_node_nx)-mesh_surf(1,idx_node))**2 
-     & + (mesh_surf(3,idx_node_nx)-mesh_surf(3,idx_node))**2)
-      idx_node = flatidx(1,iptr,isurf)
-      idx_node_nx = flatidx(nx,iptr,isurf)
-      CHORDR = sqrt((mesh_surf(1,idx_node_nx)-mesh_surf(1,idx_node))**2
-     & + (mesh_surf(3,idx_node_nx)-mesh_surf(3,idx_node))**2)
-      CLAFL = CLAF(idx_sec,  isurf)
-      CLAFR = CLAF(idx_sec+1,isurf)
+!       idx_node = flatidx(1,iptl,isurf)
+!       idx_node_nx = flatidx(nx,iptl,isurf)
+!       CHORDL = sqrt((mesh_surf(1,idx_node_nx)-mesh_surf(1,idx_node))**2 
+!      & + (mesh_surf(3,idx_node_nx)-mesh_surf(3,idx_node))**2)
+!       idx_node = flatidx(1,iptr,isurf)
+!       idx_node_nx = flatidx(nx,iptr,isurf)
+!       CHORDR = sqrt((mesh_surf(1,idx_node_nx)-mesh_surf(1,idx_node))**2
+!      & + (mesh_surf(3,idx_node_nx)-mesh_surf(3,idx_node))**2)
+!       CLAFL = CLAF(idx_sec,  isurf)
+!       CLAFR = CLAF(idx_sec+1,isurf)
 
       ! Compute the incidence angle at the section end points
       ! We will need this later to iterpolate chord projections
@@ -992,23 +997,23 @@ c--------------------------------------------------------------
       ! AINCS. However, when we twist we make sure to keep the leading and trailing edges
       ! linear (straight line along the LE and TE). The angles at each strip required to 
       ! do are what gets applied to the normal vector at each strip.
-      AINCL = AINCS(idx_sec,isurf)*DTR + ADDINC(isurf)*DTR
-      AINCR = AINCS(idx_sec+1,isurf)*DTR + ADDINC(isurf)*DTR
-      CHSINL = CHORDL*SIN(AINCL)
-      CHSINR = CHORDR*SIN(AINCR)
-      CHCOSL = CHORDL*COS(AINCL)
-      CHCOSR = CHORDR*COS(AINCR)
+      ! AINCL = AINCS(idx_sec,isurf)*DTR + ADDINC(isurf)*DTR
+      ! AINCR = AINCS(idx_sec+1,isurf)*DTR + ADDINC(isurf)*DTR
+      ! CHSINL = CHORDL*SIN(AINCL)
+      ! CHSINR = CHORDR*SIN(AINCR)
+      ! CHCOSL = CHORDL*COS(AINCL)
+      ! CHCOSR = CHORDR*COS(AINCR)
 
       ! We need to determine which controls belong to this section 
       ! Bring over the routine for this from makesurf
       DO N = 1, NCONTROL
       ISCONL(N) = 0
       ISCONR(N) = 0
-      DO ISCON = 1, NSCON(idx_sec,isurf)
-      IF(ICONTD(ISCON,idx_sec,isurf)  .EQ.N) ISCONL(N) = ISCON
+      DO ISCON = 1, NSCON(idx_strip,isurf)
+      IF(ICONTD(ISCON,idx_strip,isurf)  .EQ.N) ISCONL(N) = ISCON
       ENDDO
-      DO ISCON = 1, NSCON(idx_sec+1,isurf)
-      IF(ICONTD(ISCON,idx_sec+1,isurf).EQ.N) ISCONR(N) = ISCON
+      DO ISCON = 1, NSCON(idx_strip+1,isurf)
+      IF(ICONTD(ISCON,idx_strip+1,isurf).EQ.N) ISCONR(N) = ISCON
       ENDDO
       ENDDO
 
@@ -1021,17 +1026,17 @@ c--------------------------------------------------------------
       CHCOSL_G(N) = 0.
       CHCOSR_G(N) = 0.
 
-      DO ISDES = 1, NSDES(idx_sec,isurf)
-      IF(IDESTD(ISDES,idx_sec,isurf).EQ.N) THEN
-            CHSINL_G(N) =  CHCOSL * GAING(ISDES,idx_sec,isurf)*DTR
-            CHCOSL_G(N) = -CHSINL * GAING(ISDES,idx_sec,isurf)*DTR
+      DO ISDES = 1, NSDES(idx_strip,isurf)
+      IF(IDESTD(ISDES,idx_strip,isurf).EQ.N) THEN
+            CHSINL_G(N) =  CHCOSL * GAING(ISDES,idx_strip,isurf)*DTR
+            CHCOSL_G(N) = -CHSINL * GAING(ISDES,idx_strip,isurf)*DTR
       ENDIF
       ENDDO
 
-      DO ISDES = 1, NSDES(idx_sec+1,isurf)
-      IF(IDESTD(ISDES,idx_sec+1,isurf).EQ.N) THEN
-            CHSINR_G(N) =  CHCOSR * GAING(ISDES,idx_sec+1,isurf)*DTR
-            CHCOSR_G(N) = -CHSINR * GAING(ISDES,idx_sec+1,isurf)*DTR
+      DO ISDES = 1, NSDES(idx_strip+1,isurf)
+      IF(IDESTD(ISDES,idx_strip+1,isurf).EQ.N) THEN
+            CHSINR_G(N) =  CHCOSR * GAING(ISDES,idx_strip+1,isurf)*DTR
+            CHCOSR_G(N) = -CHSINR * GAING(ISDES,idx_strip+1,isurf)*DTR
       ENDIF
       ENDDO
       ENDDO
@@ -1043,7 +1048,7 @@ c--------------------------------------------------------------
       ! to use the leading edge positions and chords from the original input mesh
 
       ! Loop over strips in section
-      do ispan = 1,nspan
+      ! do ispan = 1,nspan
       idx_y = idx_strip - JFRST(isurf) + 1
 
       ! Strip left side
@@ -1558,7 +1563,7 @@ c--------------------------------------------------------------
       idx_strip = idx_strip + 1
       end do ! End strip loop
 
-      end do ! End section loop
+      ! end do ! End section loop
 
       ! Compute the wetted area and cave from the true mesh
       sum = 0.0
