@@ -920,7 +920,7 @@ c--------------------------------------------------------------
       ! Store the spanwise index of each section in each surface
       DO ISEC = 1, NSEC(ISURF)
         II = ICNTFRST(ISURF) + (ISEC-1)
-        ICNTSEC(II) = IPTSEC(ISEC,isurf)
+        ICNTSEC(II) = idx_strip !IPTSEC(ISEC,isurf)
       ENDDO
 
 
@@ -1474,12 +1474,13 @@ c--------------------------------------------------------------
       ! of the element on the control surface
       do N = 1, NCONTROL
       !scale control gain by factor 0..1, (fraction of element on control surface)
-       FRACLE = (XLED(N)/CHORD(idx_strip)-((mesh_surf(1,idx_node_yp1)
-     & -mesh_surf(1,idx_node))/2.)/CHORD(idx_strip)) / 
+       xpt = ((mesh_surf(1,idx_node)+mesh_surf(1,idx_node_yp1))
+     &         /2 - RLE(1,idx_strip))/CHORD(idx_strip)
+
+       FRACLE = (XLED(N)/CHORD(idx_strip)-xpt) / 
      & (DXV(idx_vor)/CHORD(idx_strip))
 
-       FRACTE = (XTED(N)/CHORD(idx_strip)-((mesh_surf(1,idx_node_yp1)
-     & -mesh_surf(1,idx_node))/2.)/CHORD(idx_strip)) / 
+       FRACTE = (XTED(N)/CHORD(idx_strip)-xpt) / 
      & (DXV(idx_vor)/CHORD(idx_strip))
 
        FRACLE = MIN( 1.0 , MAX( 0.0 , FRACLE ) )
