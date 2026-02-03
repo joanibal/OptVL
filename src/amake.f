@@ -1064,7 +1064,7 @@ c--------------------------------------------------------------
       NVSTRP(idx_strip) = NVC(isurf)
 
       ! Associate the strip with the surface
-      NSURFS(idx_strip) = isurf
+      LSSURF(idx_strip) = isurf
 
       ! Prepare for cross section interpolation
       NSL = NASEC(idx_strip  , isurf)
@@ -1278,7 +1278,7 @@ c--------------------------------------------------------------
 
       ! Associate the panel with strip chord and component
       CHORDV(idx_vor) = CHORD(idx_strip)
-      NSURFV(idx_vor) = LSCOMP(isurf)
+      LVCOMP(idx_vor) = LNCOMP(isurf)
       
       ! Enforce no penetration at the control point
       LVNC(idx_vor) = .true.
@@ -2008,7 +2008,7 @@ C
       DO 10 J = 1, NSTRIP
 
         ! Since we cannot seperate the encalc routine for direct mesh assignment we have to make it a branch here
-        if (lsurfmsh(nsurfs(J))) then
+        if (lsurfmsh(lssurf(J))) then
 
         ! Calculate normal vector for the strip (normal to X axis)
         ! we can't just interpolate this anymore given that 
@@ -2112,7 +2112,7 @@ C
             ENC_G(3,I,N) = 0.
           ENDDO
 
-          if (lsurfmsh(nsurfs(J))) then
+          if (lsurfmsh(lssurf(J))) then
           ! Define unit vector along bound leg
           DXB = RV2MSH(1,I)-RV1MSH(1,I) ! right h.v. pt - left h.v. pt 
           DYB = RV2MSH(2,I)-RV1MSH(2,I)
@@ -2148,7 +2148,7 @@ C
           SINC = SIN(ANG)
           COSC = COS(ANG)
 
-          if (lsurfmsh(nsurfs(J))) then
+          if (lsurfmsh(lssurf(J))) then
           ! direct mesh assignemnt branch
           ! now we compute the chordwise panel vector
           ! note that panel's chordwise vector has contributions
@@ -2198,7 +2198,7 @@ C
             ! The derivative here also changes if we use a custom mesh
             ! Note the derivative is only wrt to AVL incidence vars
             ! as those are the vars AVL DVs can support
-            if (lsurfmsh(nsurfs(J))) then
+            if (lsurfmsh(lssurf(J))) then
             EC(1) =  -SINC*ec_msh(1) + ES(2)*COSC*ec_msh(2) 
      &     + ES(3)*COSC*ec_msh(3)
           EC(2) = -ES(2)*COSC + ((ES(3)**2)*(1+SINC)-SINC)*ec_msh(2)
@@ -2255,7 +2255,7 @@ cc          ENDIF
 C
           SINC = SIN(ANG)
           COSC = COS(ANG)
-          if (lsurfmsh(nsurfs(J))) then
+          if (lsurfmsh(lssurf(J))) then
           ! direct mesh assignment branch
           ! see explanation in section above for control point normals
           ! ec_msh was already computed in that section
@@ -2274,7 +2274,7 @@ C
           end if
 
           DO N = 1, NDESIGN
-            if (lsurfmsh(nsurfs(J))) then
+            if (lsurfmsh(lssurf(J))) then
             ! Direct mesh assignment branch
             EC(1) =  -SINC*ec_msh(1) + ES(2)*COSC*ec_msh(2) 
      &     + ES(3)*COSC*ec_msh(3)
