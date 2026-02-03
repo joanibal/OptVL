@@ -17,15 +17,16 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
-geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
+geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
+geom_file = os.path.join(geom_dir, "rect_with_body.avl")
 
 class TestNewSubroutines(unittest.TestCase):
     def setUp(self):
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl", debug=False)
-        self.ovl_solver.set_constraint("alpha", 25.0)
+        self.ovl_solver = OVLSolver(geo_file=geom_file, debug=False)
+        self.ovl_solver.set_variable("alpha", 25.0)
 
     def test_residual(self):
         self.ovl_solver.avl.get_res()
@@ -70,10 +71,10 @@ class TestNewSubroutines(unittest.TestCase):
         )
 
     def test_new_solve(self):
-        self.ovl_solver.set_constraint("Elevator", 10.00)
-        self.ovl_solver.set_constraint("alpha", 10.00)
-        self.ovl_solver.set_constraint("beta", 10.00)
-
+        self.ovl_solver.set_control_deflection("Elevator", 10.00)
+        self.ovl_solver.set_variable("alpha", 10.00)
+        self.ovl_solver.set_variable("beta", 10.00)
+        
         self.ovl_solver.avl.exec_rhs()
 
         self.ovl_solver.avl.velsum()
@@ -81,36 +82,52 @@ class TestNewSubroutines(unittest.TestCase):
         wv_new = copy.deepcopy(self.ovl_solver.avl.SOLV_R.WV)
         gam_new = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM)
         gam_u_new = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM_U)
-        coef_data_new = self.ovl_solver.get_total_forces()
+        force_coef_new = self.ovl_solver.get_total_forces()
+        body_force_coef_new = self.ovl_solver.get_body_forces()
 
         coef_derivs_new = self.ovl_solver.get_control_stab_derivs()
 
+        self.ovl_solver.set_avl_fort_arr('CASE_L', 'LAIC', False)
         self.ovl_solver.execute_run()
         gam = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM)
         wv = copy.deepcopy(self.ovl_solver.avl.SOLV_R.WV)
         gam_u = copy.deepcopy(self.ovl_solver.avl.VRTX_R.GAM_U)
-        coef_data = self.ovl_solver.get_total_forces()
+        force_coef = self.ovl_solver.get_total_forces()
+        body_force_coef = self.ovl_solver.get_body_forces()
         coef_derivs = self.ovl_solver.get_control_stab_derivs()
 
-        np.testing.assert_allclose(
-            wv,
-            wv_new,
-            atol=1e-15,
-        )
         np.testing.assert_allclose(
             gam,
             gam_new,
             atol=1e-15,
+            err_msg='gam'
         )
         np.testing.assert_allclose(
             gam_u,
             gam_u_new,
             atol=1e-15,
+            err_msg='gam_u'
         )
-        for func_key in coef_data:
+        np.testing.assert_allclose(
+            wv,
+            wv_new,
+            atol=1e-15,
+            err_msg='wv'
+        )
+        
+        for surf in body_force_coef:
+            for func_key in  body_force_coef[surf]:
+                np.testing.assert_allclose(
+                    body_force_coef[surf][func_key],
+                    body_force_coef_new[surf][func_key],
+                    atol=1e-14,
+                    err_msg=f"func_key {func_key}",
+                )
+            
+        for func_key in force_coef:
             np.testing.assert_allclose(
-                coef_data[func_key],
-                coef_data_new[func_key],
+                force_coef[func_key],
+                force_coef_new[func_key],
                 atol=1e-14,
                 err_msg=f"func_key {func_key}",
             )

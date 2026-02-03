@@ -19,9 +19,10 @@ C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
 
 
-      SUBROUTINE VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,VRCORE,
-     &     NV,RV1,RV2,NSURFV,CHORDV,
-     &     NC,RC ,    NSURFC,LVTEST,
+      SUBROUTINE VVOR(BETM,IYSYM,YSYM,IZSYM,ZSYM,
+     &     VRCOREC,VRCOREW,
+     &     NV,RV1,RV2,NCOMPV,CHORDV,
+     &     NC,RC ,    NCOMPC,LVTEST,
      &     WC_GAM,NCDIM)
 C--------------------------------------------------------------------
 C     Calculates the velocity influence matrix for a collection 
@@ -41,17 +42,18 @@ C                = 1 regular symmetry
 C                =-1 free-surface symmetry
 C     ZSYM      Z coordinate of symmetry plane
 C
-C     VRCORE    vortex-line core radius / max(semichord,vortex width)
+C     VRCOREC   vortex-line core radius fraction of strip chord
+C     VRCOREW   vortex-line core radius fraction of strip width
 C
 C     NV        number of vortices
 C     RV1(3,v)  coordinates of endpoint #1 of the vortices
 C     RV2(3,v)  coordinates of endpoint #2 of the vortices
-C     NSURFV(v) index of surface containing h.v.
+C     NCOMPV(v) index of component containing h.v.
 C     CHORDV(v) chord of strip containing h.v.
 C
 C     NC        number of control points
 C     RC(3,c)   coordinates of the control points
-C     NSURFC(c) index of surface containing c.p.
+C     NCOMPC(c) index of component containing c.p.
 C     LVTEST    T if core-radius test is to be applied
 C
 C     NCDIM     declared size of WC_GAM matrix
@@ -68,7 +70,7 @@ C--------------------------------------------------------------------
      &     CHORDV(NV)
       REAL(kind=avl_real) RC(3,NC),
      &     WC_GAM(3,NCDIM,NCDIM)
-      INTEGER NSURFV(NV), NSURFC(NC)
+      INTEGER NCOMPV(NV), NCOMPC(NC)
       LOGICAL LVTEST
 C     
       LOGICAL LBOUND
@@ -96,11 +98,14 @@ C$AD II-LOOP
 C--------- set vortex core
             DSYZ = SQRT(  (RV2(2,J)-RV1(2,J))**2
      &                  + (RV2(3,J)-RV1(3,J))**2 )
-            IF(NSURFC(I) .EQ. NSURFV(J)) THEN
-             RCORE = 0.0001*DSYZ
-            ELSE
-             RCORE = MAX( VRCORE*CHORDV(J) , 2.0*VRCORE*DSYZ )
+C---- default (non-zero) core size based on spanwise lattice spacing
+            RCORE = 0.0001*DSYZ
+C---- if field point is not on same component use larger core size
+            IF(NC .EQ. NV) THEN
+              IF(NCOMPC(I) .NE. NCOMPV(J)) THEN
+               RCORE = MAX( VRCOREC*CHORDV(J) , VRCOREW*DSYZ )
 cc             RCORE = VRCORE*DSYZ
+              ENDIF
             ENDIF
 C     
             UI = 0.0
@@ -243,10 +248,10 @@ C       WC_U(3,c,u)  velocity per unit freestream
 C
 C--------------------------------------------------------------------
       INTEGER LFRST(*),NL(*)
-      REAL RL(3,*), RADL(*)
-      REAL SRC_U(NLDIM,*), DBL_U(3,NLDIM,*),
+      REAL RL(3,NLDIM), RADL(NLDIM)
+      REAL SRC_U(NLDIM,NU), DBL_U(3,NLDIM,NU),
      &     RC(3,NCDIM),
-     &     WC_U(3,NCDIM,*)
+     &     WC_U(3,NCDIM,NU)
 C
 C
       REAL VSRC(3), VDBL(3,3)
@@ -275,8 +280,16 @@ C
 C
           L = L1
 C
-          RAVG = SQRT(0.5*(RADL(L2)**2 + RADL(L1)**2))
-          RCORE = SRCORE*RAVG
+          RAVG  = SQRT(0.5*(RADL(L2)**2 + RADL(L1)**2))
+          RLAVG = SQRT( (RL(1,L2)-RL(1,L1))**2 +
+     &                  (RL(2,L2)-RL(2,L1))**2 +
+     &                  (RL(3,L2)-RL(3,L1))**2 )
+ccc          print *,'L RAVG, RLAVG ',L,RAVG, RLAVG
+          IF(SRCORE.GT.0) THEN
+            RCORE = SRCORE*RAVG
+          ELSE
+            RCORE = SRCORE*RLAVG
+          ENDIF
 C
           DO I = 1, NC
 C------------------------------------------------------------
@@ -307,10 +320,10 @@ C----------- influence of y-image
              DO IU = 1, NU
                DO K = 1, 3
                  WC_U(K,I,IU) = WC_U(K,I,IU)
-     &                + VSRC(K)*SRC_U(L,IU)
+     &               + (VSRC(K)*SRC_U(L,IU)
      &                + VDBL(K,1)*DBL_U(1,L,IU)
      &                - VDBL(K,2)*DBL_U(2,L,IU)
-     &                + VDBL(K,3)*DBL_U(3,L,IU)
+     &                + VDBL(K,3)*DBL_U(3,L,IU))*FYSYM
                ENDDO
              ENDDO
             ENDIF
@@ -326,10 +339,10 @@ C----------- influence of z-image
              DO IU = 1, NU
                DO K = 1, 3
                  WC_U(K,I,IU) = WC_U(K,I,IU)
-     &                + VSRC(K)*SRC_U(L,IU)
+     &               + (VSRC(K)*SRC_U(L,IU)
      &                + VDBL(K,1)*DBL_U(1,L,IU)
      &                + VDBL(K,2)*DBL_U(2,L,IU)
-     &                - VDBL(K,3)*DBL_U(3,L,IU)
+     &                - VDBL(K,3)*DBL_U(3,L,IU))*FZSYM
                ENDDO
              ENDDO
 
@@ -344,10 +357,10 @@ C------------ influence of z-image
               DO IU = 1, NU
                 DO K = 1, 3
                   WC_U(K,I,IU) = WC_U(K,I,IU)
-     &                 + VSRC(K)*SRC_U(L,IU)
+     &                + (VSRC(K)*SRC_U(L,IU)
      &                 + VDBL(K,1)*DBL_U(1,L,IU)
      &                 - VDBL(K,2)*DBL_U(2,L,IU)
-     &                 - VDBL(K,3)*DBL_U(3,L,IU)
+     &                 - VDBL(K,3)*DBL_U(3,L,IU))*FYSYM*FZSYM
                 ENDDO
               ENDDO
              ENDIF
@@ -363,8 +376,8 @@ C
 
 
 
-      SUBROUTINE SRDSET(BETM,XYZREF,
-     &                  NBODY,LFRST,NLDIM,
+      SUBROUTINE SRDSET(BETM,XYZREF,IYSYM,
+     &                  NBODY,LFRST,NLDIM, NUMAX,
      &                  NL,RL,RADL,
      &                  SRC_U,DBL_U )
 C----------------------------------------------------------
@@ -379,6 +392,7 @@ C
 C       NBODY      number of bodies
 C       LFRST(b)   index of first node in body b
 C       NLDIM      size of SRC_U, DBL_U matrices
+C       NUMAX      outer size of SRC_U, DBL_U matrices
 C       NL(b)      number of source-line nodes in each body
 C       RL(3,b)    source-line node
 C       RADL(b)    body radius at node
@@ -390,9 +404,9 @@ C       DBL_U(3,u) doublet strength per unit freestream component
 C
 C----------------------------------------------------------
       REAL XYZREF(3)
-      REAL RL(3,*), RADL(*)
-      INTEGER LFRST(*),NL(*)
-      REAL SRC_U(NLDIM,*), DBL_U(3,NLDIM,*)
+      REAL RL(3,NLDIM), RADL(NLDIM)
+      INTEGER LFRST(*), NL(*), IYSYM
+      REAL SRC_U(NLDIM,NUMAX), DBL_U(3,NLDIM,NUMAX)
 C
 C
       REAL DRL(3), VSRC(3), VDBL(3,3)
@@ -402,6 +416,20 @@ C
       DATA PI / 3.14159265 /
 C
       DO 10 IBODY = 1, NBODY
+C
+C-------check for body on symmetry plane with Y symmetry
+        L1 = LFRST(IBODY)
+        L2 = L1 + NL(IBODY)
+        BLEN = ABS(RL(1,L2)-RL(1,L1))
+        IF(IYSYM .EQ. 1 .AND. RL(2,L1) .LE. 0.001*BLEN) THEN
+c------- body y-image will be added on, so use only half the area
+         SDFAC = 0.5
+        ELSE
+c------- no y-image, so use entire area
+         SDFAC = 1.0
+        ENDIF
+ccc        print *,'IYSYM,SDFAC ',IYSYM,SDFAC
+C            
         DO 105 ILSEG = 1, NL(IBODY)-1
           L1 = LFRST(IBODY) + ILSEG - 1
           L2 = LFRST(IBODY) + ILSEG
@@ -423,8 +451,8 @@ C-------- unit vector along line segment
           ESL(2) = DRL(2) * DRLMI
           ESL(3) = DRL(3) * DRLMI
 C
-          ADEL = PI *     (RADL(L2)**2 - RADL(L1)**2)
-          AAVG = PI * 0.5*(RADL(L2)**2 + RADL(L1)**2)
+          ADEL = PI *     (RADL(L2)**2 - RADL(L1)**2) * SDFAC
+          AAVG = PI * 0.5*(RADL(L2)**2 + RADL(L1)**2) * SDFAC
 C
           RLREF(1) = 0.5*(RL(1,L2)+RL(1,L1)) - XYZREF(1)
           RLREF(2) = 0.5*(RL(2,L2)+RL(2,L1)) - XYZREF(2)
@@ -448,7 +476,7 @@ C
             UREL(1) = UREL(1)/BETM
 C
 C---------- U.es
-            US = UREL(1)*ESL(1) + UREL(2)*ESL(2) + UREL(3)*ESL(3)
+            US = DOT(UREL,ESL)
 C
 C---------- velocity projected on normal plane = U - (U.es) es
             UN(1) = UREL(1) - US*ESL(1)
@@ -461,13 +489,14 @@ C---------- total source and doublet strength of segment
             DBL_U(2,L,IU) = AAVG*UN(2)*DRLMAG*2.0
             DBL_U(3,L,IU) = AAVG*UN(3)*DRLMAG*2.0
           ENDDO
+ccc          write(44,999) L,(RL(K,L),K=1,3),RADL(L),ADEL,US,
+ccc     &                (SRC_U(L,J),J=1,6)
+ccc 999      format(I4,12F9.6)
  105    CONTINUE
  10   CONTINUE
 C
       RETURN
       END ! SRDSET
-
-
 
  
       SUBROUTINE CROSS (U,V,W)
@@ -486,97 +515,15 @@ C
       END
 
 
-
-
-
-      SUBROUTINE VORVEL(X,Y,Z,LBOUND,X1,Y1,Z1,X2,Y2,Z2,BETA,
-     &                   U,V,W )
-C----------------------------------------------------------
-C     Same as VORVEL1, with somewhat different formulation
-C----------------------------------------------------------
-      LOGICAL LBOUND
-C
-      REAL A(3), B(3), AXB(3)
-C
-      DATA PI4INV  / 0.079577472 /
-C
-      A(1) = (X1 - X)/BETA
-      A(2) =  Y1 - Y
-      A(3) =  Z1 - Z
-C
-      B(1) = (X2 - X)/BETA
-      B(2) =  Y2 - Y
-      B(3) =  Z2 - Z
-C
-      ASQ = A(1)**2 + A(2)**2 + A(3)**2
-      BSQ = B(1)**2 + B(2)**2 + B(3)**2
-C
-      AMAG = SQRT(ASQ)
-      BMAG = SQRT(BSQ)
-C
-      U = 0.
-      V = 0.
-      W = 0.
-C
-C---- contribution from the transverse bound leg
-      IF (LBOUND .AND.  AMAG*BMAG .NE. 0.0) THEN
-        AXB(1) = A(2)*B(3) - A(3)*B(2)
-        AXB(2) = A(3)*B(1) - A(1)*B(3)
-        AXB(3) = A(1)*B(2) - A(2)*B(1)
-C
-        ADB = A(1)*B(1) + A(2)*B(2) + A(3)*B(3)
-C
-        DEN = AMAG*BMAG + ADB
-C
-        T = (1.0/AMAG + 1.0/BMAG) / DEN
-C
-        U = AXB(1)*T
-        V = AXB(2)*T
-        W = AXB(3)*T
-      ENDIF
-C
-C---- trailing leg attached to A
-      IF (AMAG .NE. 0.0) THEN
-        AXISQ = A(3)**2 + A(2)**2
-C
-        ADI = A(1)
-        RSQ = AXISQ
-C
-        T = - (1.0 - ADI/AMAG) / RSQ
-C
-        V = V + A(3)*T
-        W = W - A(2)*T
-      ENDIF
-C
-C---- trailing leg attached to B
-      IF (BMAG .NE. 0.0) THEN
-        BXISQ = B(3)**2 + B(2)**2
-C
-        BDI = B(1)
-        RSQ = BXISQ
-C
-        T =   (1.0 - BDI/BMAG) / RSQ
-C
-        V = V + B(3)*T
-        W = W - B(2)*T
-      ENDIF
-C
-      U = U*PI4INV / BETA
-      V = V*PI4INV 
-      W = W*PI4INV 
-C
-      RETURN
-      END ! VORVEL
-
-
-
-
       SUBROUTINE VORVELC(X,Y,Z,LBOUND,X1,Y1,Z1,X2,Y2,Z2,BETA,
      &                   U,V,W, RCORE)
 C----------------------------------------------------------
 C     Same as VORVEL, with finite core radius
-C     Uses Scully (also Burnham-Hallock) core model 
+C     Original Scully (AKA Burnham-Hallock) core model 
 C       Vtan = Gam/2*pi . r/(r^2 +rcore^2)
+C      
+C     Uses Leishman's R^4 variant of Scully (AKA Burnham-Hallock) core model 
+C       Vtan = Gam/2*pi . r/sqrt(r^4 +rcore^4)
 C----------------------------------------------------------
       LOGICAL LBOUND
 C
@@ -585,6 +532,7 @@ C
 C
       DATA PI4INV  / 0.079577472 /
 C
+C---- Prandtl-Glauert coordinates 
       A(1) = (X1 - X)/BETA
       A(2) =  Y1 - Y
       A(3) =  Z1 - Z
@@ -598,6 +546,9 @@ C
 C
       AMAG = SQRT(ASQ)
       BMAG = SQRT(BSQ)
+C
+      RCORE2 = RCORE**2
+      RCORE4 = RCORE2**2
 C
       U = 0.
       V = 0.
@@ -610,29 +561,37 @@ C---- contribution from the transverse bound leg
         AXB(3) = A(1)*B(2) - A(2)*B(1)
         AXBSQ = AXB(1)**2 + AXB(2)**2 + AXB(3)**2
 C
-        ADB = A(1)*B(1) + A(2)*B(2) + A(3)*B(3)
-        ALSQ = ASQ + BSQ - 2.0*ADB
+        IF(AXBSQ .NE. 0.0) THEN 
+         ADB = A(1)*B(1) + A(2)*B(2) + A(3)*B(3)
+         ALSQ = ASQ + BSQ - 2.0*ADB
+cc c     RSQ = AXBSQ / ALSQ
+C     
+         ABMAG = AMAG*BMAG
+C---- Scully core model      
+cccc        T = (AMAG+BMAG)*(1.0 - ADB/ABMAG) / (AXBSQ + ALSQ*RCORE2)
+cc        T = (  (BSQ-ADB)/SQRT(BSQ+RCORE2)
+cc     &       + (ASQ-ADB)/SQRT(ASQ+RCORE2) ) / (AXBSQ + ALSQ*RCORE2)
+C---- Leishman core model
+         T = (  (BSQ-ADB)/SQRT(SQRT(BSQ**2+RCORE4))
+     &        + (ASQ-ADB)/SQRT(SQRT(ASQ**2+RCORE4)) )
+     &        / SQRT(AXBSQ**2 + ALSQ**2*RCORE4)
 C
-ccc     RSQ = AXBSQ / ALSQ
-C
-        AB = AMAG*BMAG
-c        T = (AMAG+BMAG)*(1.0 - ADB/AB) / (AXBSQ + ALSQ*RCORE**2)
-        T = (  (BSQ-ADB)/SQRT(BSQ+RCORE**2)
-     &       + (ASQ-ADB)/SQRT(ASQ+RCORE**2) ) / (AXBSQ + ALSQ*RCORE**2)
-C
-        U = AXB(1)*T
-        V = AXB(2)*T
-        W = AXB(3)*T
+         U = AXB(1)*T
+         V = AXB(2)*T
+         W = AXB(3)*T
+        ENDIF
       ENDIF
 C
 C---- trailing leg attached to A
       IF (AMAG .NE. 0.0) THEN
         AXISQ = A(3)**2 + A(2)**2
-C
-        ADI = A(1)
+        ADX = A(1)
         RSQ = AXISQ
 C
-        T = - (1.0 - ADI/AMAG) / (RSQ + RCORE**2)
+C---- Scully core model      
+cc        T = - (1.0 - ADX/AMAG) / (RSQ + RCORE2)
+C---- Leishman core model
+        T = - (1.0 - ADX/AMAG) / SQRT(RSQ**2 + RCORE4)
 C
         V = V + A(3)*T
         W = W - A(2)*T
@@ -641,11 +600,13 @@ C
 C---- trailing leg attached to B
       IF (BMAG .NE. 0.0) THEN
         BXISQ = B(3)**2 + B(2)**2
-C
-        BDI = B(1)
+        BDX = B(1)
         RSQ = BXISQ
 C
-        T =   (1.0 - BDI/BMAG) / (RSQ + RCORE**2)
+C---- Scully core model      
+cc        T =   (1.0 - BDX/BMAG) / (RSQ + RCORE2)
+C---- Leishman core modeld
+        T =   (1.0 - BDX/BMAG) / SQRT(RSQ**2 + RCORE4)
 C
         V = V + B(3)*T
         W = W - B(2)*T
@@ -659,8 +620,6 @@ C
       END ! VORVELC
 
 
-
-      !$PRAGMA FORCEINLINE
       SUBROUTINE SRDVELC(X,Y,Z, X1,Y1,Z1, X2,Y2,Z2,
      &                   BETA,RCORE,
      &                   UVWS,UVWD  )

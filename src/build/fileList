@@ -1,4 +1,8 @@
-fortranFiles =
+f90Files =\
+		avl_heap.f90\
+		avl_heap_diff.f90\
+		avl_heap_inc.f90\
+		avl_heap_diff_inc.f90\
 
 f77Files =\
 	    aero.f\
@@ -62,7 +66,7 @@ f77Files =\
 		lapack/idamax.f\
 		lapack/dgetrs.f\
 #       ad_src/ADFirstAidKit/debugAD.f\
-		
+
 
 cFiles = \
 		ad_src/ADFirstAidKit/adStack.c\

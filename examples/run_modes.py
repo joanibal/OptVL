@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def syssho(asys):
+def syssho(asys,bsys):
     """
     Prints out state-system matrix A in an organized manner.
 
@@ -13,28 +13,32 @@ def syssho(asys):
         State matrix A.
     """
     nsys = asys.shape[0]
+    
+    consurf_names = ovl.get_control_names()
+    num_consurf = len(consurf_names)
 
     # Header
     state_labels = ["u", "w", "q", "the", "v", "p", "r", "phi", "x", "y", "z", "psi"]
     header = " ".join(f"{lab:>10}" for lab in state_labels) + "   |"
+    header += " ".join(f"{lab:>10}" for lab in consurf_names)
     print(header)
+    
 
     # Rows
     for i in range(nsys):
         row_str = "".join(f"{val:11.4f}" for val in asys[i, :12])
+        row_str += "".join(f"{val:11.4f}" for val in bsys[i, :num_consurf])
         print(row_str)
 
 
-ovl = OVLSolver(geo_file="aircraft.avl", mass_file="aircraft.mass", debug=False)
-
-vel = 10.0
+ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", mass_file="../geom_files/aircraft.mass", debug=True)
 
 ovl.set_trim_condition("velocity", 10.0)
-ovl.set_constraint("Elevator", 0.00, con_var="Cm pitch moment")
+ovl.set_constraint("Elevator", "Cm", 0.00)
 
 ovl.execute_eigen_mode_calc()
-Amat = ovl.get_system_matrix(in_body_axis=True)
-syssho(Amat)
+Amat, Bmat, _ = ovl.get_system_matrices(in_body_axis=True)
+syssho(Amat,Bmat)
 
 
 vals_ovl = ovl.get_eigenvalues()

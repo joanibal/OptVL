@@ -8,6 +8,7 @@ C RUNLST
 C
 C
       SUBROUTINE SET_PARAMS_B(ir)
+C
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       INTEGER ir
@@ -28,6 +29,10 @@ C
       REAL dcl_u
       REAL dcm_a
       REAL dcm_u
+      REAL rixy
+      REAL riyz
+      REAL rizx
+C
       parval_diff(ipmach, ir) = parval_diff(ipmach, ir) + mach_diff
       END
 

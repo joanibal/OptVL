@@ -416,7 +416,6 @@ input_dict = {
     "bodies": {},
 }
 
-
 class TestGeom(unittest.TestCase):
     def setUp(self):
         # Setup all 5 cases for testing
@@ -471,6 +470,7 @@ class TestGeom(unittest.TestCase):
         input_dict5["surfaces"] = surf5
         input_dict5["bodies"] = body2
 
+        import time
         # Solvers loaded with inputs dicts
         self.ovl_solver_1 = OVLSolver(input_dict=input_dict1)
         self.ovl_solver_2 = OVLSolver(input_dict=input_dict2)
@@ -511,8 +511,8 @@ class TestGeom(unittest.TestCase):
         coefs_f = []
 
         for solver in self.solvers + self.solvers_f:
-            solver.set_constraint("alpha", 6.00)
-            solver.set_constraint("beta", 2.00)
+            solver.set_variable("alpha", 6.00)
+            solver.set_variable("beta", 2.00)
             solver.execute_run()
 
         for i in range(len(self.solvers)):
@@ -523,13 +523,13 @@ class TestGeom(unittest.TestCase):
                 assert self.solvers[i].get_mesh_size() == self.solvers_f[i].get_mesh_size()
 
                 np.testing.assert_allclose(
-                    self.solvers[i].get_constraint("alpha"),
-                    self.solvers_f[i].get_constraint("alpha"),
+                    self.solvers[i].get_variable("alpha"),
+                    self.solvers_f[i].get_variable("alpha"),
                     rtol=1e-8,
                 )
                 np.testing.assert_allclose(
-                    self.solvers[i].get_constraint("beta"),
-                    self.solvers_f[i].get_constraint("beta"),
+                    self.solvers[i].get_variable("beta"),
+                    self.solvers_f[i].get_variable("beta"),
                     rtol=1e-8,
                 )
 
@@ -552,13 +552,13 @@ class TestGeom(unittest.TestCase):
                 assert self.solvers[i].get_mesh_size() == self.solvers_f[i - 1].get_mesh_size()
 
                 np.testing.assert_allclose(
-                    self.solvers[i].get_constraint("alpha"),
-                    self.solvers_f[i - 1].get_constraint("alpha"),
+                    self.solvers[i].get_variable("alpha"),
+                    self.solvers_f[i - 1].get_variable("alpha"),
                     rtol=1e-8,
                 )
                 np.testing.assert_allclose(
-                    self.solvers[i].get_constraint("beta"),
-                    self.solvers_f[i - 1].get_constraint("beta"),
+                    self.solvers[i].get_variable("beta"),
+                    self.solvers_f[i - 1].get_variable("beta"),
                     rtol=1e-8,
                 )
 

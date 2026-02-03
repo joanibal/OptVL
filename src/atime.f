@@ -234,7 +234,7 @@ C------- set initial state
          TPARS(KPCLIF,IT) = CLTOT
          TPARS(KPCDRG,IT) = CDTOT
          TPARS(KPCDIN,IT) = CDITOT
-         TPARS(KPCMOM,IT) = CMTOT
+         TPARS(KPCMOM,IT) = CMTOT(2)
          TPARS(KPLIFT,IT) = CLTOT*QS
          TPARS(KPDRAG,IT) = CDTOT*QS
          TPARS(KPMACH,IT) = 0.0
@@ -252,12 +252,12 @@ C
          TPARV(1,KPPOS,IT) = 0.0
          TPARV(2,KPPOS,IT) = 0.0
          TPARV(3,KPPOS,IT) = 0.0
-         TPARV(1,KPFOR,IT) = CXTOT
-         TPARV(2,KPFOR,IT) = CYTOT
-         TPARV(3,KPFOR,IT) = CZTOT
-         TPARV(1,KPMOM,IT) = CRTOT
-         TPARV(2,KPMOM,IT) = CMTOT
-         TPARV(3,KPMOM,IT) = CNTOT
+         TPARV(1,KPFOR,IT) = CFTOT(1)
+         TPARV(2,KPFOR,IT) = CFTOT(2)
+         TPARV(3,KPFOR,IT) = CFTOT(3)
+         TPARV(1,KPMOM,IT) = CMTOT(1)
+         TPARV(2,KPMOM,IT) = CMTOT(2)
+         TPARV(3,KPMOM,IT) = CMTOT(3)
 C 
          DO N = 1, NCONTROL
            TPARD(N,IT) = DELCON(N)

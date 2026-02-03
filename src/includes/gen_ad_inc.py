@@ -115,4 +115,4 @@ def process_fortran_include_file(input_filename, output_filename, ad_ext="_DIFF"
 
 
 if __name__ == "__main__":
-    process_fortran_include_file("AVL.INC.in", "AVL_ad_seeds.inc")
+    process_fortran_include_file("AVL.INC", "AVL_ad_seeds.inc")

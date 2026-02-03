@@ -12,14 +12,13 @@ Supra 3.4m F3J
 BODY
 Fuse pod
 28   2.0
-SCALE
-1 1 1 
 #
 TRANSLATE
-0.0  0.0  -1.75
+# 0.0  0.0  -1.75
+0.0  0.0  0.0
 #
 BFIL
-fuseSupra.dat
+../geom_files/fuseSupra.dat
 
 #==============================================================
 SURFACE
@@ -45,6 +44,8 @@ TRANSLATE
 SECTION
  0.0      0.0       0.0        9.75    0.0      1 0
 
+AFIL 0.0 1.0
+../geom_files/airfoils/ag40d.dat
 
 CONTROL
 flap      1.0  0.75    0. 0. 0.    1.
@@ -55,13 +56,9 @@ aileron  -1.00  0.75    0. 0. 0.   -1.
 #---------------------
 SECTION
  0.25     31.5     31.5        8.75    0.0      1 0
- 
-CLAF
-1.3 
 
-CDCL
-#CL1  CD1  CL2  CD2  CL3  CD3
-0 0.01 0.5 0.02 1.0 0.5
+AFIL 0.0 1.0
+../geom_files/airfoils/ag41d.dat
 
 CONTROL
 flap      1.0  0.75    0. 0. 0.    1.
@@ -93,6 +90,8 @@ TRANSLATE
 SECTION
  0.0          0.0         0.0          8.75       0.0       1 0
 
+AFIL 0.0 1.0
+../geom_files/airfoils/ag41d.dat
 
 CONTROL
 flap      1.0  0.75   0. 0. 0.    1.
@@ -104,6 +103,8 @@ aileron  -1.0  0.75   0. 0. 0.   -1.
 SECTION
  1.0          23.5        23.5         6.25       -0.5       1 0
 
+AFIL 0.0 1.0
+../geom_files/airfoils/ag42d.dat
 
 CONTROL
 flap      1.0  0.75    0. 0. 0.    1.
@@ -117,6 +118,8 @@ twist  1.0
 SECTION
  1.72         29.5        29.5         5.00       -0.5       1 0
 
+AFIL 0.0 1.0
+../geom_files/airfoils/ag42d.dat
 
 CONTROL
 flap      1.0  0.75    0. 0. 0.    1.
@@ -131,6 +134,8 @@ twist  1.0
 SECTION
  2.75         34.0        34.0         3.40       -0.5       1 0
 
+AFIL 0.0 1.0
+../geom_files/airfoils/ag43d.dat
 
 CONTROL
 flap      1.0  0.75    0. 0. 0.    1.
@@ -145,6 +150,8 @@ twist  1.0
 SECTION
  3.50         35.50       35.50        2.3        -0.5       1 0
 
+AFIL 0.0 1.0
+../geom_files/airfoils/ag43d.dat
 
 CONTROL
 flap      1.0  0.75    0. 0. 0.    1.

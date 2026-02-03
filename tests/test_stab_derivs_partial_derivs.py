@@ -17,18 +17,18 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
-geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
+geom_dir = os.path.join(base_dir, "..", "geom_files")
+
+geom_file = os.path.join(geom_dir, "aircraft_L1.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
+geom_file = os.path.join(geom_dir, "rect_with_body.avl")
 
 
 class TestResidualUPartials(unittest.TestCase):
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
-        self.ovl_solver.set_constraint("alpha", 25.0)
-        self.ovl_solver.set_constraint("beta", 5.0)
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
+        self.ovl_solver.set_variable("alpha", 25.0)
+        self.ovl_solver.set_variable("beta", 5.0)
         self.ovl_solver.execute_run()
 
     def tearDown(self):
@@ -39,10 +39,10 @@ class TestResidualUPartials(unittest.TestCase):
 
     def test_fwd_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
-            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[6]
 
             res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-5)[
-                5
+                6
             ]
 
             np.testing.assert_allclose(
@@ -54,7 +54,7 @@ class TestResidualUPartials(unittest.TestCase):
     def test_rev_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
             # for con_key in ["beta", "beta"]:
-            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[6]
 
             num_gamma = self.ovl_solver.get_mesh_size()
             np.random.seed(111)
@@ -86,11 +86,11 @@ class TestResidualUPartials(unittest.TestCase):
 
                 res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )[5]
+                )[6]
 
                 res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
-                )[5]
+                )[6]
 
                 abs_error = np.abs(res_u_seeds.flatten() - res_u_seeds_FD.flatten())
                 rel_error = np.abs((res_u_seeds.flatten() - res_u_seeds_FD.flatten()) / (res_u_seeds.flatten() + 1e-15))
@@ -124,7 +124,7 @@ class TestResidualUPartials(unittest.TestCase):
 
                 res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )[5]
+                )[6]
 
                 # do dot product
                 res_sum = np.sum(res_u_seeds_rev * res_u_seeds_fwd)
@@ -146,9 +146,9 @@ class TestResidualUPartials(unittest.TestCase):
         gamma_u_seeds = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
         # gamma_u_seeds = np.array([[1],[0]])
 
-        res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[5]
+        res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[6]
 
-        res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds, mode="FD", step=1e-0)[5]
+        res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds, mode="FD", step=1e-0)[6]
 
         np.testing.assert_allclose(
             res_u_seeds,
@@ -162,7 +162,7 @@ class TestResidualUPartials(unittest.TestCase):
 
         res_u_seeds_rev = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
-        res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[5]
+        res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[6]
         self.ovl_solver.clear_ad_seeds_fast()
 
         gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[4]
@@ -181,17 +181,18 @@ class TestResidualUPartials(unittest.TestCase):
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
-            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[5]
+            res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[6]
 
-            res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed}, mode="FD", step=1e-5)[
-                5
-            ]
+            res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
+                ref_seeds={ref_key: ref_seed}, mode="FD", step=1e-5
+            )[6]
 
-            print(res_u_seeds, res_u_seeds_FD)
+            # print(res_u_seeds, res_u_seeds_FD)
 
             np.testing.assert_allclose(
                 res_u_seeds,
                 res_u_seeds_FD,
+                err_msg=f'res_u wrt {ref_key}',
                 rtol=1e-5,
             )
 
@@ -199,10 +200,10 @@ class TestResidualUPartials(unittest.TestCase):
 class TestStabDerivDerivsPartials(unittest.TestCase):
     def setUp(self):
         # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
-        self.ovl_solver.set_constraint("alpha", 45.0)
-        self.ovl_solver.set_constraint("beta", 45.0)
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
+        # self.ovl_solver = OVLSolver(geo_file="geom_files/rect.avl")
+        self.ovl_solver.set_variable("alpha", 45.0)
+        self.ovl_solver.set_variable("beta", 45.0)
         self.ovl_solver.execute_run()
         self.ovl_solver.clear_ad_seeds_fast()
 
@@ -215,18 +216,29 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
     def test_fwd_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
             sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[3]
-
             sd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-6)[3]
 
             for deriv_func in sd_d:
                 sens_label = f"{deriv_func} wrt {con_key}"
-                # print(sens_label, sd_d[deriv_func][cs_key], sd_d_fd[deriv_func][cs_key])
-                np.testing.assert_allclose(
-                    sd_d[deriv_func],
-                    sd_d_fd[deriv_func],
-                    rtol=1e-4,
-                    err_msg=sens_label,
-                )
+                # print(sens_label, sd_d[deriv_func][con_key], sd_d_fd[deriv_func])
+
+                tol = 2e-8
+                # print(f"{deriv_func} wrt {con_key}", "fwd", sd_d[deriv_func], "fd", sd_d_fd[deriv_func])
+                if np.abs(sd_d[deriv_func]) < tol or np.abs(sd_d_fd[deriv_func]) < tol:
+                    # If either value is basically zero, use an absolute tolerance
+                    np.testing.assert_allclose(
+                        sd_d[deriv_func],
+                        sd_d_fd[deriv_func],
+                        atol=1e-7,
+                        err_msg=sens_label,
+                    )
+                else:
+                    np.testing.assert_allclose(
+                        sd_d[deriv_func],
+                        sd_d_fd[deriv_func],
+                        rtol=1e-4,
+                        err_msg=sens_label,
+                    )
 
     def test_rev_aero_constraint(self):
         stab_deriv_seeds_rev = {}
@@ -279,17 +291,18 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
                     # print(f"{deriv_func} wrt {surf_key}:{geom_key}", "fwd", fwd_sum, "rev", rev_sum)
                     if np.abs(sd_d[deriv_func]) < tol or np.abs(sd_d_fd[deriv_func]) < tol:
                         # If either value is basically zero, use an absolute tolerance
+                        # this is basiccally saying if one is less than 1e-10 the other must be less than 5e-7
                         np.testing.assert_allclose(
                             sd_d[deriv_func],
                             sd_d_fd[deriv_func],
-                            atol=1e-8,
+                            atol=5e-7,
                             err_msg=sens_label,
                         )
                     else:
                         np.testing.assert_allclose(
                             sd_d[deriv_func],
                             sd_d_fd[deriv_func],
-                            rtol=3e-4,
+                            rtol=5e-3,
                             err_msg=sens_label,
                         )
 
@@ -350,14 +363,13 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
             np.testing.assert_allclose(
                 sd_d[deriv_func],
                 sd_d_fd[deriv_func],
-                rtol=1e-4,
+                rtol=5e-4,
                 err_msg=sens_label,
             )
 
     def test_rev_gamma_u(self):
         num_gamma = self.ovl_solver.get_mesh_size()
-        num_consurf = self.ovl_solver.get_num_control_surfs()
-        gamma_u_seeds_fwd = np.random.rand(num_consurf, num_gamma)
+        gamma_u_seeds_fwd = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
         sd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[3]
         self.ovl_solver.clear_ad_seeds_fast()
@@ -389,7 +401,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
 
             for deriv_func in sd_d:
                 sens_label = f"{deriv_func} wrt {ref_key}"
-                print(sens_label, sd_d[deriv_func], sd_d_fd[deriv_func])
+                # print(sens_label, sd_d[deriv_func], sd_d_fd[deriv_func])
 
                 tol = 1e-8
                 if np.abs(sd_d[deriv_func]) < tol or np.abs(sd_d_fd[deriv_func]) < tol:

@@ -3,6 +3,7 @@ This file was pulled from ADflow on March 11, 2022.
 """
 
 import tempfile
+import importlib
 from importlib.util import find_spec
 from pathlib import Path
 import os
@@ -17,15 +18,13 @@ def _tmp_pkg(tempDir):
 
     Returns (name, path)
     """
-    while True:
-        path = tempfile.mkdtemp(dir=tempDir)
-        name = os.path.basename(path)
-        spec = find_spec(name)
-        # None means the name was not found
-        if spec is None:
-            break
-        # if name is found, delete and try again
-        os.rmdir(path)
+    path = tempfile.mkdtemp(dir=tempDir)
+    name = os.path.basename(path)
+    spec = find_spec(name)
+    if spec is not None:
+        print(name)
+        raise ValueError('tmp directory collision')
+        
     # this creates an init file so that python recognizes this as a package
     Path(os.path.join(path, "__init__.py")).touch()
     return name, path
@@ -73,12 +72,16 @@ class MExt(object):
             print(tmpdir)
             srcpath = os.path.join(spec.submodule_search_locations[0], "libavl.cp39-win_amd64.dll.a")
             pass
+        
         # add the directory containing the new package to the search path
-        sys.path.append(tmpdir)
+        sys.path.insert(0, tmpdir)
+        
         # import the module
         # __import__ returns the package, not the sub-module
 
+        importlib.invalidate_caches()
         self._pkg = __import__(self._pkgname, globals(), locals(), [self.name])
+    
         # remove the bogus directory from sys.path
         sys.path.remove(tmpdir)
         # return the module object
@@ -95,7 +98,7 @@ class MExt(object):
                 del sys.modules[self._pkg.__name__]
 
             # now try to delete the files and directory
-            # shutil.rmtree(self._pkgdir)
+            shutil.rmtree(self._pkgdir)
             # make sure the original module is loaded -
             # otherwise python crashes on exit
             # if MExt objects have not been explicitly 'del'd,

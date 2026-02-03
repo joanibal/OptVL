@@ -27,10 +27,10 @@ C***********************************************************************
 C
 C
       SUBROUTINE VVOR_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, 
-     +                  zsym, zsym_diff, vrcore, nv, rv1, rv1_diff, rv2
-     +                  , rv2_diff, nsurfv, chordv, chordv_diff, nc, rc
-     +                  , rc_diff, nsurfc, lvtest, wc_gam, wc_gam_diff, 
-     +                  ncdim)
+     +                  zsym, zsym_diff, vrcorec, vrcorew, nv, rv1, 
+     +                  rv1_diff, rv2, rv2_diff, ncompv, chordv, 
+     +                  chordv_diff, nc, rc, rc_diff, ncompc, lvtest, 
+     +                  wc_gam, wc_gam_diff, ncdim)
       INCLUDE 'AVL_kinds.INC'
       INTEGER nv
 C
@@ -41,7 +41,7 @@ C
       INTEGER ncdim
       REAL(kind=avl_real) rc(3, nc), wc_gam(3, ncdim, ncdim)
       REAL(kind=avl_real) rc_diff(3, nc), wc_gam_diff(3, ncdim, ncdim)
-      INTEGER nsurfv(nv), nsurfc(nc)
+      INTEGER ncompv(nv), ncompc(nc)
       LOGICAL lvtest
 C     
       LOGICAL lbound
@@ -99,7 +99,8 @@ C
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
-      REAL vrcore
+      REAL vrcorec
+      REAL vrcorew
       REAL zsym
       REAL zsym_diff
       INTEGER izsym
@@ -112,8 +113,8 @@ C
 C     
       fysym = FLOAT(iysym)
       fzsym = FLOAT(izsym)
-      DO ii1=1,ncdim
-        DO ii2=1,ncdim
+      DO ii1=1,nc
+        DO ii2=1,nc
           DO ii3=1,3
             wc_gam_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
@@ -149,15 +150,20 @@ C--------- set vortex core
             dsyz_diff = arg1_diff/(2.0*temp)
           END IF
           dsyz = temp
-          IF (nsurfc(i) .EQ. nsurfv(j)) THEN
-            rcore_diff = 0.0001*dsyz_diff
-            rcore = 0.0001*dsyz
-          ELSE IF (vrcore*chordv(j) .LT. 2.0*vrcore*dsyz) THEN
-            rcore_diff = vrcore*2.0*dsyz_diff
-            rcore = 2.0*vrcore*dsyz
-          ELSE
-            rcore_diff = vrcore*chordv_diff(j)
-            rcore = vrcore*chordv(j)
+C---- default (non-zero) core size based on spanwise lattice spacing
+          rcore_diff = 0.0001*dsyz_diff
+          rcore = 0.0001*dsyz
+C---- if field point is not on same component use larger core size
+          IF (nc .EQ. nv) THEN
+            IF (ncompc(i) .NE. ncompv(j)) THEN
+              IF (vrcorec*chordv(j) .LT. vrcorew*dsyz) THEN
+                rcore_diff = vrcorew*dsyz_diff
+                rcore = vrcorew*dsyz
+              ELSE
+                rcore_diff = vrcorec*chordv_diff(j)
+                rcore = vrcorec*chordv(j)
+              END IF
+            END IF
           END IF
 C     
           ui = 0.0
@@ -281,12 +287,539 @@ C
       RETURN
       END
 
+C  Differentiation of vsrd in forward (tangent) mode (with options i4 dr8 r8):
+C   variations   of useful results: wc_u
+C   with respect to varying inputs: rc rl dbl_u zsym betm ysym
+C                src_u
+C
+C
+C
+      SUBROUTINE VSRD_D(betm, betm_diff, iysym, ysym, ysym_diff, izsym, 
+     +                  zsym, zsym_diff, srcore, nbody, lfrst, nldim, nl
+     +                  , rl, rl_diff, radl, nu, src_u, src_u_diff, 
+     +                  dbl_u, dbl_u_diff, nc, rc, rc_diff, wc_u, 
+     +                  wc_u_diff, ncdim)
+C--------------------------------------------------------------------
+C     Calculates the velocity influence matrix for a collection 
+C     of source+doublet lines
+C     
+C Input
+C -----
+C       BETM     SQRT(1-MACH*MACH)
+C       IYSYM    Plane of symmetry XZ 
+C                 = 0 no symmetry
+C                 = 1 regular symmetry
+C                 =-1 free-surface symmetry
+C       YSYM     Y coordinate of symmetry plane
+C       IZSYM    Second plane of symmetry XY 
+C                 = 0 no second plane
+C                 = 1 regular symmetry
+C                 =-1 free-surface symmetry
+C       ZSYM     Z coordinate of symmetry plane
+C
+C       SRCORE   source-line core radius / body radius
+C
+C       NBODY      number of bodies
+C       LFRST(b)   index of first node in body b
+C       NLDIM      size of SRC_U, DBL_U matrices
+C       NL(b)      number of source-line nodes in each body
+C       RL(3,b)    source-line node
+C       RADL(b)    body radius at node
+C
+C       NU         number of apparent-freestream components
+C       SRC_U(u)   source  strength per unit freestream component
+C       DBL_U(3,u) doublet strength per unit freestream component
+C
+C       NC        number of control points
+C       RC(3,c)   control point node where velocity is evaluated
+C
+C       NCDIM      size of WC matrix
+C          
+C Output
+C ------
+C       WC_U(3,c,u)  velocity per unit freestream
+C
+C--------------------------------------------------------------------
+      INTEGER lfrst(*), nl(*)
+      INTEGER nldim
+      REAL rl(3, nldim), radl(nldim)
+      REAL rl_diff(3, nldim)
+      INTEGER nu
+      INTEGER ncdim
+      REAL src_u(nldim, nu), dbl_u(3, nldim, nu), rc(3, ncdim), wc_u(3, 
+     +     ncdim, nu)
+      REAL src_u_diff(nldim, nu), dbl_u_diff(3, nldim, nu), rc_diff(3, 
+     +     ncdim), wc_u_diff(3, ncdim, nu)
+C
+C
+      REAL vsrc(3), vdbl(3, 3)
+      REAL vsrc_diff(3), vdbl_diff(3, 3)
+      REAL fysym
+      INTRINSIC FLOAT
+      REAL fzsym
+      REAL yoff
+      REAL yoff_diff
+      REAL zoff
+      REAL zoff_diff
+      INTEGER i
+      INTEGER iu
+      INTEGER ibody
+      INTEGER ilseg
+      INTEGER l1
+      INTEGER l2
+      INTEGER l
+      REAL ravg
+      INTRINSIC SQRT
+      REAL rlavg
+      REAL rlavg_diff
+      REAL rcore
+      REAL rcore_diff
+      INTEGER k
+      REAL arg1
+      REAL arg1_diff
+      REAL temp
+      INTEGER ii1
+      INTEGER ii2
+      INTEGER ii3
+      INTEGER nc
+      INTEGER nbody
+      REAL pi
+      REAL zsym
+      REAL zsym_diff
+      REAL srcore
+      INTEGER izsym
+      REAL betm
+      REAL betm_diff
+      REAL ysym
+      REAL ysym_diff
+      INTEGER iysym
+      DATA pi /3.14159265/
+C
+      fysym = FLOAT(iysym)
+      fzsym = FLOAT(izsym)
+C
+      yoff_diff = 2.0*ysym_diff
+      yoff = 2.0*ysym
+      zoff_diff = 2.0*zsym_diff
+      zoff = 2.0*zsym
+CCC   ZOFF = 2.0*(ZSYM + ALFA*0.5*(RV1(1,J)+RV2(1,J)) )
+C
+      DO i=1,nc
+        DO iu=1,nu
+          wc_u(1, i, iu) = 0.
+          wc_u(2, i, iu) = 0.
+          wc_u(3, i, iu) = 0.
+        ENDDO
+      ENDDO
+      DO ii1=1,nu
+        DO ii2=1,nc
+          DO ii3=1,3
+            wc_u_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
+      DO ii1=1,3
+        DO ii2=1,3
+          vdbl_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,3
+        vsrc_diff(ii1) = 0.D0
+      ENDDO
+C
+C
+      DO ibody=1,nbody
+        DO ilseg=1,nl(ibody)-1
+          l1 = lfrst(ibody) + ilseg - 1
+          l2 = lfrst(ibody) + ilseg
+C
+          l = l1
+C
+          arg1 = 0.5*(radl(l2)**2+radl(l1)**2)
+          ravg = SQRT(arg1)
+          arg1_diff = 2*(rl(1, l2)-rl(1, l1))*(rl_diff(1, l2)-rl_diff(1
+     +      , l1)) + 2*(rl(2, l2)-rl(2, l1))*(rl_diff(2, l2)-rl_diff(2, 
+     +      l1)) + 2*(rl(3, l2)-rl(3, l1))*(rl_diff(3, l2)-rl_diff(3, l1
+     +      ))
+          arg1 = (rl(1, l2)-rl(1, l1))**2 + (rl(2, l2)-rl(2, l1))**2 + (
+     +      rl(3, l2)-rl(3, l1))**2
+          temp = SQRT(arg1)
+          IF (arg1 .EQ. 0.D0) THEN
+            rlavg_diff = 0.D0
+          ELSE
+            rlavg_diff = arg1_diff/(2.0*temp)
+          END IF
+          rlavg = temp
+Ccc          print *,'L RAVG, RLAVG ',L,RAVG, RLAVG
+          IF (srcore .GT. 0) THEN
+            rcore = srcore*ravg
+            rcore_diff = 0.D0
+          ELSE
+            rcore_diff = srcore*rlavg_diff
+            rcore = srcore*rlavg
+          END IF
+C
+          DO i=1,nc
+C------------------------------------------------------------
+C---------- influence of real segment
+            CALL SRDVELC_D(rc(1, i), rc_diff(1, i), rc(2, i), rc_diff(2
+     +                     , i), rc(3, i), rc_diff(3, i), rl(1, l1), 
+     +                     rl_diff(1, l1), rl(2, l1), rl_diff(2, l1), rl
+     +                     (3, l1), rl_diff(3, l1), rl(1, l2), rl_diff(1
+     +                     , l2), rl(2, l2), rl_diff(2, l2), rl(3, l2), 
+     +                     rl_diff(3, l2), betm, betm_diff, rcore, 
+     +                     rcore_diff, vsrc, vsrc_diff, vdbl, vdbl_diff)
+            DO iu=1,nu
+              DO k=1,3
+                wc_u_diff(k, i, iu) = wc_u_diff(k, i, iu) + src_u(l, iu)
+     +            *vsrc_diff(k) + vsrc(k)*src_u_diff(l, iu) + dbl_u(1, l
+     +            , iu)*vdbl_diff(k, 1) + vdbl(k, 1)*dbl_u_diff(1, l, iu
+     +            ) + dbl_u(2, l, iu)*vdbl_diff(k, 2) + vdbl(k, 2)*
+     +            dbl_u_diff(2, l, iu) + dbl_u(3, l, iu)*vdbl_diff(k, 3)
+     +            + vdbl(k, 3)*dbl_u_diff(3, l, iu)
+                wc_u(k, i, iu) = wc_u(k, i, iu) + vsrc(k)*src_u(l, iu) +
+     +            vdbl(k, 1)*dbl_u(1, l, iu) + vdbl(k, 2)*dbl_u(2, l, iu
+     +            ) + vdbl(k, 3)*dbl_u(3, l, iu)
+              ENDDO
+            ENDDO
+C
+C------------------------------------------------------------
+            IF (iysym .NE. 0) THEN
+C----------- influence of y-image
+              CALL SRDVELC_D(rc(1, i), rc_diff(1, i), rc(2, i), rc_diff(
+     +                       2, i), rc(3, i), rc_diff(3, i), rl(1, l1), 
+     +                       rl_diff(1, l1), yoff - rl(2, l1), yoff_diff
+     +                       - rl_diff(2, l1), rl(3, l1), rl_diff(3, l1)
+     +                       , rl(1, l2), rl_diff(1, l2), yoff - rl(2, 
+     +                       l2), yoff_diff - rl_diff(2, l2), rl(3, l2)
+     +                       , rl_diff(3, l2), betm, betm_diff, rcore, 
+     +                       rcore_diff, vsrc, vsrc_diff, vdbl, 
+     +                       vdbl_diff)
+              DO iu=1,nu
+                DO k=1,3
+                  wc_u_diff(k, i, iu) = wc_u_diff(k, i, iu) + fysym*(
+     +              src_u(l, iu)*vsrc_diff(k)+vsrc(k)*src_u_diff(l, iu)+
+     +              dbl_u(1, l, iu)*vdbl_diff(k, 1)+vdbl(k, 1)*
+     +              dbl_u_diff(1, l, iu)+dbl_u(3, l, iu)*vdbl_diff(k, 3)
+     +              +vdbl(k, 3)*dbl_u_diff(3, l, iu)-dbl_u(2, l, iu)*
+     +              vdbl_diff(k, 2)-vdbl(k, 2)*dbl_u_diff(2, l, iu))
+                  wc_u(k, i, iu) = wc_u(k, i, iu) + (vsrc(k)*src_u(l, iu
+     +              )+vdbl(k, 1)*dbl_u(1, l, iu)-vdbl(k, 2)*dbl_u(2, l, 
+     +              iu)+vdbl(k, 3)*dbl_u(3, l, iu))*fysym
+                ENDDO
+              ENDDO
+            END IF
+C
+C------------------------------------------------------------
+            IF (izsym .NE. 0) THEN
+C----------- influence of z-image
+              CALL SRDVELC_D(rc(1, i), rc_diff(1, i), rc(2, i), rc_diff(
+     +                       2, i), rc(3, i), rc_diff(3, i), rl(1, l1), 
+     +                       rl_diff(1, l1), rl(2, l1), rl_diff(2, l1), 
+     +                       zoff - rl(3, l1), zoff_diff - rl_diff(3, l1
+     +                       ), rl(1, l2), rl_diff(1, l2), rl(2, l2), 
+     +                       rl_diff(2, l2), zoff - rl(3, l2), zoff_diff
+     +                       - rl_diff(3, l2), betm, betm_diff, rcore, 
+     +                       rcore_diff, vsrc, vsrc_diff, vdbl, 
+     +                       vdbl_diff)
+              DO iu=1,nu
+                DO k=1,3
+                  wc_u_diff(k, i, iu) = wc_u_diff(k, i, iu) + fzsym*(
+     +              src_u(l, iu)*vsrc_diff(k)+vsrc(k)*src_u_diff(l, iu)+
+     +              dbl_u(1, l, iu)*vdbl_diff(k, 1)+vdbl(k, 1)*
+     +              dbl_u_diff(1, l, iu)+dbl_u(2, l, iu)*vdbl_diff(k, 2)
+     +              +vdbl(k, 2)*dbl_u_diff(2, l, iu)-dbl_u(3, l, iu)*
+     +              vdbl_diff(k, 3)-vdbl(k, 3)*dbl_u_diff(3, l, iu))
+                  wc_u(k, i, iu) = wc_u(k, i, iu) + (vsrc(k)*src_u(l, iu
+     +              )+vdbl(k, 1)*dbl_u(1, l, iu)+vdbl(k, 2)*dbl_u(2, l, 
+     +              iu)-vdbl(k, 3)*dbl_u(3, l, iu))*fzsym
+                ENDDO
+              ENDDO
+C
+C------------------------------------------------------------
+              IF (iysym .NE. 0) THEN
+C------------ influence of z-image
+                CALL SRDVELC_D(rc(1, i), rc_diff(1, i), rc(2, i), 
+     +                         rc_diff(2, i), rc(3, i), rc_diff(3, i), 
+     +                         rl(1, l1), rl_diff(1, l1), yoff - rl(2, 
+     +                         l1), yoff_diff - rl_diff(2, l1), zoff - 
+     +                         rl(3, l1), zoff_diff - rl_diff(3, l1), rl
+     +                         (1, l2), rl_diff(1, l2), yoff - rl(2, l2)
+     +                         , yoff_diff - rl_diff(2, l2), zoff - rl(3
+     +                         , l2), zoff_diff - rl_diff(3, l2), betm, 
+     +                         betm_diff, rcore, rcore_diff, vsrc, 
+     +                         vsrc_diff, vdbl, vdbl_diff)
+                DO iu=1,nu
+                  DO k=1,3
+                    wc_u_diff(k, i, iu) = wc_u_diff(k, i, iu) + fysym*
+     +                fzsym*(src_u(l, iu)*vsrc_diff(k)+vsrc(k)*
+     +                src_u_diff(l, iu)+dbl_u(1, l, iu)*vdbl_diff(k, 1)+
+     +                vdbl(k, 1)*dbl_u_diff(1, l, iu)-dbl_u(2, l, iu)*
+     +                vdbl_diff(k, 2)-vdbl(k, 2)*dbl_u_diff(2, l, iu)-
+     +                dbl_u(3, l, iu)*vdbl_diff(k, 3)-vdbl(k, 3)*
+     +                dbl_u_diff(3, l, iu))
+                    wc_u(k, i, iu) = wc_u(k, i, iu) + (vsrc(k)*src_u(l, 
+     +                iu)+vdbl(k, 1)*dbl_u(1, l, iu)-vdbl(k, 2)*dbl_u(2
+     +                , l, iu)-vdbl(k, 3)*dbl_u(3, l, iu))*fysym*fzsym
+                  ENDDO
+                ENDDO
+              END IF
+            END IF
+          ENDDO
+        ENDDO
+      ENDDO
+C
+C
+C
+      RETURN
+      END
+
+C  Differentiation of srdset in forward (tangent) mode (with options i4 dr8 r8):
+C   variations   of useful results: dbl_u src_u
+C   with respect to varying inputs: rl xyzref betm
+C VSRD
+C
+C
+C
+      SUBROUTINE SRDSET_D(betm, betm_diff, xyzref, xyzref_diff, iysym, 
+     +                    nbody, lfrst, nldim, numax, nl, rl, rl_diff, 
+     +                    radl, src_u, src_u_diff, dbl_u, dbl_u_diff)
+C----------------------------------------------------------
+C     Sets strengths of source+doublet line segments
+C     for 6 "unit" flow components consisting of:
+C     3 unit (X,Y,Z) freestream and 3 unit (X,Y,Z) rotations
+C
+C Input
+C -----
+C       BETM     SQRT(1-MACH*MACH)
+C
+C       NBODY      number of bodies
+C       LFRST(b)   index of first node in body b
+C       NLDIM      size of SRC_U, DBL_U matrices
+C       NUMAX      outer size of SRC_U, DBL_U matrices
+C       NL(b)      number of source-line nodes in each body
+C       RL(3,b)    source-line node
+C       RADL(b)    body radius at node
+C
+C Output
+C ------
+C       SRC_U(u)   source  strength per unit freestream component
+C       DBL_U(3,u) doublet strength per unit freestream component
+C
+C----------------------------------------------------------
+      REAL xyzref(3)
+      REAL xyzref_diff(3)
+      INTEGER nldim
+      REAL rl(3, nldim), radl(nldim)
+      REAL rl_diff(3, nldim)
+      INTEGER lfrst(*), nl(*), iysym
+      INTEGER numax
+      REAL src_u(nldim, numax), dbl_u(3, nldim, numax)
+      REAL src_u_diff(nldim, numax), dbl_u_diff(3, nldim, numax)
+C
+C
+      REAL drl(3), vsrc(3), vdbl(3, 3)
+      REAL drl_diff(3)
+      REAL esl(3), un(3)
+      REAL esl_diff(3), un_diff(3)
+      REAL wrot(3), urel(3), rlref(3)
+      REAL wrot_diff(3), urel_diff(3), rlref_diff(3)
+      INTEGER ibody
+      INTEGER l1
+      INTEGER l2
+      REAL blen
+      INTRINSIC ABS
+      REAL sdfac
+      INTEGER ilseg
+      INTEGER l
+      REAL drlmag
+      REAL drlmag_diff
+      INTRINSIC SQRT
+      REAL drlmi
+      REAL drlmi_diff
+      REAL adel
+      REAL aavg
+      INTEGER iu
+      REAL us
+      REAL us_diff
+      REAL DOT
+      REAL DOT_D
+      REAL arg1
+      REAL arg1_diff
+      REAL temp
+      INTEGER ii1
+      INTEGER ii2
+      INTEGER ii3
+      INTEGER nbody
+      REAL pi
+      REAL betm
+      REAL betm_diff
+C
+      DATA pi /3.14159265/
+      DO ii1=1,numax
+        DO ii2=1,nldim
+          DO ii3=1,3
+            dbl_u_diff(ii3, ii2, ii1) = 0.D0
+          ENDDO
+        ENDDO
+      ENDDO
+      DO ii1=1,numax
+        DO ii2=1,nldim
+          src_u_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,3
+        rlref_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        esl_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        un_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        urel_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        drl_diff(ii1) = 0.D0
+      ENDDO
+C
+      DO ibody=1,nbody
+C
+C-------check for body on symmetry plane with Y symmetry
+        l1 = lfrst(ibody)
+        l2 = l1 + nl(ibody)
+        IF (rl(1, l2) - rl(1, l1) .GE. 0.) THEN
+          blen = rl(1, l2) - rl(1, l1)
+        ELSE
+          blen = -(rl(1, l2)-rl(1, l1))
+        END IF
+        IF (iysym .EQ. 1 .AND. rl(2, l1) .LE. 0.001*blen) THEN
+C------- body y-image will be added on, so use only half the area
+          sdfac = 0.5
+        ELSE
+C------- no y-image, so use entire area
+          sdfac = 1.0
+        END IF
+Ccc        print *,'IYSYM,SDFAC ',IYSYM,SDFAC
+C            
+        DO ilseg=1,nl(ibody)-1
+          l1 = lfrst(ibody) + ilseg - 1
+          l2 = lfrst(ibody) + ilseg
+C
+          l = l1
+C
+          temp = (rl(1, l2)-rl(1, l1))/betm
+          drl_diff(1) = (rl_diff(1, l2)-rl_diff(1, l1)-temp*betm_diff)/
+     +      betm
+          drl(1) = temp
+          drl_diff(2) = rl_diff(2, l2) - rl_diff(2, l1)
+          drl(2) = rl(2, l2) - rl(2, l1)
+          drl_diff(3) = rl_diff(3, l2) - rl_diff(3, l1)
+          drl(3) = rl(3, l2) - rl(3, l1)
+          arg1_diff = 2*drl(1)*drl_diff(1) + 2*drl(2)*drl_diff(2) + 2*
+     +      drl(3)*drl_diff(3)
+          arg1 = drl(1)**2 + drl(2)**2 + drl(3)**2
+          temp = SQRT(arg1)
+          IF (arg1 .EQ. 0.D0) THEN
+            drlmag_diff = 0.D0
+          ELSE
+            drlmag_diff = arg1_diff/(2.0*temp)
+          END IF
+          drlmag = temp
+          IF (drlmag .EQ. 0.0) THEN
+            drlmi = 0.0
+            drlmi_diff = 0.D0
+          ELSE
+            drlmi_diff = -(drlmag_diff/drlmag**2)
+            drlmi = 1.0/drlmag
+          END IF
+C
+C-------- unit vector along line segment
+          esl_diff(1) = drlmi*drl_diff(1) + drl(1)*drlmi_diff
+          esl(1) = drl(1)*drlmi
+          esl_diff(2) = drlmi*drl_diff(2) + drl(2)*drlmi_diff
+          esl(2) = drl(2)*drlmi
+          esl_diff(3) = drlmi*drl_diff(3) + drl(3)*drlmi_diff
+          esl(3) = drl(3)*drlmi
+C
+          adel = pi*(radl(l2)**2-radl(l1)**2)*sdfac
+          aavg = pi*0.5*(radl(l2)**2+radl(l1)**2)*sdfac
+C
+          rlref_diff(1) = 0.5*(rl_diff(1, l2)+rl_diff(1, l1)) - 
+     +      xyzref_diff(1)
+          rlref(1) = 0.5*(rl(1, l2)+rl(1, l1)) - xyzref(1)
+          rlref_diff(2) = 0.5*(rl_diff(2, l2)+rl_diff(2, l1)) - 
+     +      xyzref_diff(2)
+          rlref(2) = 0.5*(rl(2, l2)+rl(2, l1)) - xyzref(2)
+          rlref_diff(3) = 0.5*(rl_diff(3, l2)+rl_diff(3, l1)) - 
+     +      xyzref_diff(3)
+          rlref(3) = 0.5*(rl(3, l2)+rl(3, l1)) - xyzref(3)
+C
+C-------- go over freestream velocity and rotation components
+          DO iu=1,6
+            urel_diff(1) = 0.D0
+            urel(1) = 0.
+            urel_diff(2) = 0.D0
+            urel(2) = 0.
+            urel_diff(3) = 0.D0
+            urel(3) = 0.
+            wrot(1) = 0.
+            wrot(2) = 0.
+            wrot(3) = 0.
+C
+            IF (iu .LE. 3) THEN
+              urel_diff(iu) = 0.D0
+              urel(iu) = 1.0
+            ELSE
+              wrot(iu-3) = 1.0
+              DO ii1=1,3
+                wrot_diff(ii1) = 0.D0
+              ENDDO
+              CALL CROSS_D(rlref, rlref_diff, wrot, wrot_diff, urel, 
+     +                     urel_diff)
+            END IF
+            temp = urel(1)/betm
+            urel_diff(1) = (urel_diff(1)-temp*betm_diff)/betm
+            urel(1) = temp
+C
+C---------- U.es
+            us_diff = DOT_D(urel, urel_diff, esl, esl_diff, us)
+C
+C---------- velocity projected on normal plane = U - (U.es) es
+            un_diff(1) = urel_diff(1) - esl(1)*us_diff - us*esl_diff(1)
+            un(1) = urel(1) - us*esl(1)
+            un_diff(2) = urel_diff(2) - esl(2)*us_diff - us*esl_diff(2)
+            un(2) = urel(2) - us*esl(2)
+            un_diff(3) = urel_diff(3) - esl(3)*us_diff - us*esl_diff(3)
+            un(3) = urel(3) - us*esl(3)
+C
+C---------- total source and doublet strength of segment
+            src_u_diff(l, iu) = adel*us_diff
+            src_u(l, iu) = adel*us
+            dbl_u_diff(1, l, iu) = aavg*2.0*(drlmag*un_diff(1)+un(1)*
+     +        drlmag_diff)
+            dbl_u(1, l, iu) = aavg*un(1)*drlmag*2.0
+            dbl_u_diff(2, l, iu) = aavg*2.0*(drlmag*un_diff(2)+un(2)*
+     +        drlmag_diff)
+            dbl_u(2, l, iu) = aavg*un(2)*drlmag*2.0
+            dbl_u_diff(3, l, iu) = aavg*2.0*(drlmag*un_diff(3)+un(3)*
+     +        drlmag_diff)
+            dbl_u(3, l, iu) = aavg*un(3)*drlmag*2.0
+          ENDDO
+        ENDDO
+      ENDDO
+Ccc          write(44,999) L,(RL(K,L),K=1,3),RADL(L),ADEL,US,
+Ccc     &                (SRC_U(L,J),J=1,6)
+Ccc 999      format(I4,12F9.6)
+C
+      RETURN
+      END
+
 C  Differentiation of cross in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: w
 C   with respect to varying inputs: u v w
 C SRDSET
-C
-C
 C
       SUBROUTINE CROSS_D(u, u_diff, v, v_diff, w, w_diff)
       REAL u(3), v(3), w(3)
@@ -323,9 +856,6 @@ C  Differentiation of vorvelc in forward (tangent) mode (with options i4 dr8 r8)
 C   variations   of useful results: u v w
 C   with respect to varying inputs: y1 y2 rcore x y z z1 z2 x1
 C                x2 beta
-C VORVEL
-C
-C
 C
 C
       SUBROUTINE VORVELC_D(x, x_diff, y, y_diff, z, z_diff, lbound, x1, 
@@ -335,8 +865,11 @@ C
      +                     rcore, rcore_diff)
 C----------------------------------------------------------
 C     Same as VORVEL, with finite core radius
-C     Uses Scully (also Burnham-Hallock) core model 
+C     Original Scully (AKA Burnham-Hallock) core model 
 C       Vtan = Gam/2*pi . r/(r^2 +rcore^2)
+C      
+C     Uses Leishman's R^4 variant of Scully (AKA Burnham-Hallock) core model 
+C       Vtan = Gam/2*pi . r/sqrt(r^4 +rcore^4)
 C----------------------------------------------------------
       LOGICAL lbound
 C
@@ -352,38 +885,49 @@ C
       INTRINSIC SQRT
       REAL bmag
       REAL bmag_diff
+      REAL rcore2
+      REAL rcore2_diff
+      REAL rcore4
+      REAL rcore4_diff
       REAL axbsq
       REAL axbsq_diff
       REAL adb
       REAL adb_diff
       REAL alsq
       REAL alsq_diff
-      REAL ab
+      REAL abmag
       REAL t
       REAL t_diff
       REAL axisq
       REAL axisq_diff
-      REAL adi
-      REAL adi_diff
+      REAL adx
+      REAL adx_diff
       REAL rsq
       REAL rsq_diff
       REAL bxisq
       REAL bxisq_diff
-      REAL bdi
-      REAL bdi_diff
+      REAL bdx
+      REAL bdx_diff
       REAL arg1
       REAL arg1_diff
       REAL result1
       REAL result1_diff
-      REAL arg2
-      REAL arg2_diff
       REAL result2
       REAL result2_diff
+      REAL arg2
+      REAL arg2_diff
+      REAL result3
+      REAL result3_diff
+      REAL result4
+      REAL result4_diff
+      REAL arg3
+      REAL arg3_diff
+      REAL result5
+      REAL result5_diff
       INTEGER ii1
       REAL temp
       REAL temp0
       REAL temp1
-      REAL temp2
       REAL y1
       REAL y1_diff
       REAL y2
@@ -416,6 +960,7 @@ C
 C
       DATA pi4inv /0.079577472/
 C
+C---- Prandtl-Glauert coordinates 
       DO ii1=1,3
         a_diff(ii1) = 0.D0
       ENDDO
@@ -458,6 +1003,11 @@ C
       END IF
       bmag = temp
 C
+      rcore2_diff = 2*rcore*rcore_diff
+      rcore2 = rcore**2
+      rcore4_diff = 2*rcore2*rcore2_diff
+      rcore4 = rcore2**2
+C
       u = 0.
       v = 0.
       w = 0.
@@ -480,49 +1030,81 @@ C---- contribution from the transverse bound leg
      +    (3)*axb_diff(3)
         axbsq = axb(1)**2 + axb(2)**2 + axb(3)**2
 C
-        adb_diff = b(1)*a_diff(1) + a(1)*b_diff(1) + b(2)*a_diff(2) + a(
-     +    2)*b_diff(2) + b(3)*a_diff(3) + a(3)*b_diff(3)
-        adb = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
-        alsq_diff = asq_diff + bsq_diff - 2.0*adb_diff
-        alsq = asq + bsq - 2.0*adb
+        IF (axbsq .NE. 0.0) THEN
+          adb_diff = b(1)*a_diff(1) + a(1)*b_diff(1) + b(2)*a_diff(2) + 
+     +      a(2)*b_diff(2) + b(3)*a_diff(3) + a(3)*b_diff(3)
+          adb = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+          alsq_diff = asq_diff + bsq_diff - 2.0*adb_diff
+          alsq = asq + bsq - 2.0*adb
+Cc c     RSQ = AXBSQ / ALSQ
+C     
+          abmag = amag*bmag
+C---- Scully core model      
+Cccc        T = (AMAG+BMAG)*(1.0 - ADB/ABMAG) / (AXBSQ + ALSQ*RCORE2)
+Cc        T = (  (BSQ-ADB)/SQRT(BSQ+RCORE2)
+Cc     &       + (ASQ-ADB)/SQRT(ASQ+RCORE2) ) / (AXBSQ + ALSQ*RCORE2)
+C---- Leishman core model
+          arg1_diff = 2*bsq*bsq_diff + rcore4_diff
+          arg1 = bsq**2 + rcore4
+          temp = SQRT(arg1)
+          IF (arg1 .EQ. 0.D0) THEN
+            result1_diff = 0.D0
+          ELSE
+            result1_diff = arg1_diff/(2.0*temp)
+          END IF
+          result1 = temp
+          temp = SQRT(result1)
+          IF (result1 .EQ. 0.D0) THEN
+            result2_diff = 0.D0
+          ELSE
+            result2_diff = result1_diff/(2.0*temp)
+          END IF
+          result2 = temp
+          arg2_diff = 2*asq*asq_diff + rcore4_diff
+          arg2 = asq**2 + rcore4
+          temp = SQRT(arg2)
+          IF (arg2 .EQ. 0.D0) THEN
+            result3_diff = 0.D0
+          ELSE
+            result3_diff = arg2_diff/(2.0*temp)
+          END IF
+          result3 = temp
+          temp = SQRT(result3)
+          IF (result3 .EQ. 0.D0) THEN
+            result4_diff = 0.D0
+          ELSE
+            result4_diff = result3_diff/(2.0*temp)
+          END IF
+          result4 = temp
+          arg3_diff = 2*axbsq*axbsq_diff + rcore4*2*alsq*alsq_diff + 
+     +      alsq**2*rcore4_diff
+          arg3 = axbsq**2 + alsq**2*rcore4
+          temp = SQRT(arg3)
+          IF (arg3 .EQ. 0.D0) THEN
+            result5_diff = 0.D0
+          ELSE
+            result5_diff = arg3_diff/(2.0*temp)
+          END IF
+          result5 = temp
+          temp = (bsq-adb)/result2
+          temp0 = (asq-adb)/result4
+          temp1 = (temp+temp0)/result5
+          t_diff = ((bsq_diff-adb_diff-temp*result2_diff)/result2+(
+     +      asq_diff-adb_diff-temp0*result4_diff)/result4-temp1*
+     +      result5_diff)/result5
+          t = temp1
 C
-Ccc     RSQ = AXBSQ / ALSQ
-C
-        ab = amag*bmag
-C        T = (AMAG+BMAG)*(1.0 - ADB/AB) / (AXBSQ + ALSQ*RCORE**2)
-        arg1_diff = bsq_diff + 2*rcore*rcore_diff
-        arg1 = bsq + rcore**2
-        temp = SQRT(arg1)
-        IF (arg1 .EQ. 0.D0) THEN
-          result1_diff = 0.D0
+          u_diff = t*axb_diff(1) + axb(1)*t_diff
+          u = axb(1)*t
+          v_diff = t*axb_diff(2) + axb(2)*t_diff
+          v = axb(2)*t
+          w_diff = t*axb_diff(3) + axb(3)*t_diff
+          w = axb(3)*t
         ELSE
-          result1_diff = arg1_diff/(2.0*temp)
+          u_diff = 0.D0
+          v_diff = 0.D0
+          w_diff = 0.D0
         END IF
-        result1 = temp
-        arg2_diff = asq_diff + 2*rcore*rcore_diff
-        arg2 = asq + rcore**2
-        temp = SQRT(arg2)
-        IF (arg2 .EQ. 0.D0) THEN
-          result2_diff = 0.D0
-        ELSE
-          result2_diff = arg2_diff/(2.0*temp)
-        END IF
-        result2 = temp
-        temp = axbsq + alsq*(rcore*rcore)
-        temp0 = (bsq-adb)/result1
-        temp1 = (asq-adb)/result2
-        temp2 = (temp0+temp1)/temp
-        t_diff = ((bsq_diff-adb_diff-temp0*result1_diff)/result1+(
-     +    asq_diff-adb_diff-temp1*result2_diff)/result2-temp2*(
-     +    axbsq_diff+rcore**2*alsq_diff+alsq*2*rcore*rcore_diff))/temp
-        t = temp2
-C
-        u_diff = t*axb_diff(1) + axb(1)*t_diff
-        u = axb(1)*t
-        v_diff = t*axb_diff(2) + axb(2)*t_diff
-        v = axb(2)*t
-        w_diff = t*axb_diff(3) + axb(3)*t_diff
-        w = axb(3)*t
       ELSE
         u_diff = 0.D0
         v_diff = 0.D0
@@ -533,16 +1115,27 @@ C---- trailing leg attached to A
       IF (amag .NE. 0.0) THEN
         axisq_diff = 2*a(3)*a_diff(3) + 2*a(2)*a_diff(2)
         axisq = a(3)**2 + a(2)**2
-C
-        adi_diff = a_diff(1)
-        adi = a(1)
+        adx_diff = a_diff(1)
+        adx = a(1)
         rsq_diff = axisq_diff
         rsq = axisq
 C
-        temp2 = (-(adi/amag)+1.0)/(rsq+rcore*rcore)
-        t_diff = -((-((adi_diff-adi*amag_diff/amag)/amag)-temp2*(
-     +    rsq_diff+2*rcore*rcore_diff))/(rsq+rcore**2))
-        t = -temp2
+C---- Scully core model      
+Cc        T = - (1.0 - ADX/AMAG) / (RSQ + RCORE2)
+C---- Leishman core model
+        arg1_diff = 2*rsq*rsq_diff + rcore4_diff
+        arg1 = rsq**2 + rcore4
+        temp1 = SQRT(arg1)
+        IF (arg1 .EQ. 0.D0) THEN
+          result1_diff = 0.D0
+        ELSE
+          result1_diff = arg1_diff/(2.0*temp1)
+        END IF
+        result1 = temp1
+        temp1 = (-(adx/amag)+1.0)/result1
+        t_diff = -((-((adx_diff-adx*amag_diff/amag)/amag)-temp1*
+     +    result1_diff)/result1)
+        t = -temp1
 C
         v_diff = v_diff + t*a_diff(3) + a(3)*t_diff
         v = v + a(3)*t
@@ -554,16 +1147,27 @@ C---- trailing leg attached to B
       IF (bmag .NE. 0.0) THEN
         bxisq_diff = 2*b(3)*b_diff(3) + 2*b(2)*b_diff(2)
         bxisq = b(3)**2 + b(2)**2
-C
-        bdi_diff = b_diff(1)
-        bdi = b(1)
+        bdx_diff = b_diff(1)
+        bdx = b(1)
         rsq_diff = bxisq_diff
         rsq = bxisq
 C
-        temp2 = (-(bdi/bmag)+1.0)/(rsq+rcore*rcore)
-        t_diff = (-((bdi_diff-bdi*bmag_diff/bmag)/bmag)-temp2*(rsq_diff+
-     +    2*rcore*rcore_diff))/(rsq+rcore**2)
-        t = temp2
+C---- Scully core model      
+Cc        T =   (1.0 - BDX/BMAG) / (RSQ + RCORE2)
+C---- Leishman core modeld
+        arg1_diff = 2*rsq*rsq_diff + rcore4_diff
+        arg1 = rsq**2 + rcore4
+        temp1 = SQRT(arg1)
+        IF (arg1 .EQ. 0.D0) THEN
+          result1_diff = 0.D0
+        ELSE
+          result1_diff = arg1_diff/(2.0*temp1)
+        END IF
+        result1 = temp1
+        temp1 = (-(bdx/bmag)+1.0)/result1
+        t_diff = (-((bdx_diff-bdx*bmag_diff/bmag)/bmag)-temp1*
+     +    result1_diff)/result1
+        t = temp1
 C
         v_diff = v_diff + t*b_diff(3) + b(3)*t_diff
         v = v + b(3)*t
@@ -580,4 +1184,260 @@ C
 C
       RETURN
       END
+
+C  Differentiation of srdvelc in forward (tangent) mode (with options i4 dr8 r8):
+C   variations   of useful results: uvwd uvws
+C   with respect to varying inputs: y1 y2 rcore x y z z1 z2 uvwd
+C                uvws x1 x2 beta
+C VORVELC
+C
+C
+      SUBROUTINE SRDVELC_D(x, x_diff, y, y_diff, z, z_diff, x1, x1_diff
+     +                     , y1, y1_diff, z1, z1_diff, x2, x2_diff, y2, 
+     +                     y2_diff, z2, z2_diff, beta, beta_diff, rcore
+     +                     , rcore_diff, uvws, uvws_diff, uvwd, 
+     +                     uvwd_diff)
+C-------------------------------------------------------------------
+C     Same as SRDVEL, but with finite core radius
+C-------------------------------------------------------------------
+      REAL uvws(3), uvwd(3, 3)
+      REAL uvws_diff(3), uvwd_diff(3, 3)
+C
+      REAL r1(3), r2(3)
+      REAL r1_diff(3), r2_diff(3)
+      REAL rxr(3)
+      REAL rxr_diff(3)
+      REAL rcsq
+      REAL rcsq_diff
+      REAL r1sq
+      REAL r1sq_diff
+      REAL r2sq
+      REAL r2sq_diff
+      REAL r1sqeps
+      REAL r1sqeps_diff
+      REAL r2sqeps
+      REAL r2sqeps_diff
+      REAL r1eps
+      REAL r1eps_diff
+      INTRINSIC SQRT
+      REAL r2eps
+      REAL r2eps_diff
+      REAL rdr
+      REAL rdr_diff
+      REAL xdx
+      REAL xdx_diff
+      REAL all
+      REAL all_diff
+      REAL den
+      REAL den_diff
+      REAL ai1
+      REAL ai1_diff
+      REAL ai2
+      REAL ai2_diff
+      INTEGER k
+      REAL rr1
+      REAL rr1_diff
+      REAL rr2
+      REAL rr2_diff
+      REAL rrt
+      REAL rrt_diff
+      REAL aj1
+      REAL aj1_diff
+      REAL aj2
+      REAL aj2_diff
+      INTEGER j
+      INTEGER l
+      INTEGER ii1
+      REAL temp
+      REAL temp0
+      REAL temp1
+      REAL temp2
+      REAL y1
+      REAL y1_diff
+      REAL y2
+      REAL y2_diff
+      REAL rcore
+      REAL rcore_diff
+      REAL x
+      REAL x_diff
+      REAL y
+      REAL y_diff
+      REAL z
+      REAL z_diff
+      REAL z1
+      REAL z1_diff
+      REAL z2
+      REAL z2_diff
+      REAL x1
+      REAL x1_diff
+      REAL x2
+      REAL x2_diff
+      REAL beta
+      REAL beta_diff
+      REAL pi4inv
+C
+      DATA pi4inv /0.079577472/
+C
+      DO ii1=1,3
+        r1_diff(ii1) = 0.D0
+      ENDDO
+      temp = (x1-x)/beta
+      r1_diff(1) = (x1_diff-x_diff-temp*beta_diff)/beta
+      r1(1) = temp
+      r1_diff(2) = y1_diff - y_diff
+      r1(2) = y1 - y
+      r1_diff(3) = z1_diff - z_diff
+      r1(3) = z1 - z
+C
+      DO ii1=1,3
+        r2_diff(ii1) = 0.D0
+      ENDDO
+      temp = (x2-x)/beta
+      r2_diff(1) = (x2_diff-x_diff-temp*beta_diff)/beta
+      r2(1) = temp
+      r2_diff(2) = y2_diff - y_diff
+      r2(2) = y2 - y
+      r2_diff(3) = z2_diff - z_diff
+      r2(3) = z2 - z
+C
+      rcsq_diff = 2*rcore*rcore_diff
+      rcsq = rcore**2
+C
+      r1sq_diff = 2*r1(1)*r1_diff(1) + 2*r1(2)*r1_diff(2) + 2*r1(3)*
+     +  r1_diff(3)
+      r1sq = r1(1)**2 + r1(2)**2 + r1(3)**2
+      r2sq_diff = 2*r2(1)*r2_diff(1) + 2*r2(2)*r2_diff(2) + 2*r2(3)*
+     +  r2_diff(3)
+      r2sq = r2(1)**2 + r2(2)**2 + r2(3)**2
+C
+      r1sqeps_diff = r1sq_diff + rcsq_diff
+      r1sqeps = r1sq + rcsq
+      r2sqeps_diff = r2sq_diff + rcsq_diff
+      r2sqeps = r2sq + rcsq
+C
+      temp = SQRT(r1sqeps)
+      IF (r1sqeps .EQ. 0.D0) THEN
+        r1eps_diff = 0.D0
+      ELSE
+        r1eps_diff = r1sqeps_diff/(2.0*temp)
+      END IF
+      r1eps = temp
+      temp = SQRT(r2sqeps)
+      IF (r2sqeps .EQ. 0.D0) THEN
+        r2eps_diff = 0.D0
+      ELSE
+        r2eps_diff = r2sqeps_diff/(2.0*temp)
+      END IF
+      r2eps = temp
+C
+      rdr_diff = r2(1)*r1_diff(1) + r1(1)*r2_diff(1) + r2(2)*r1_diff(2) 
+     +  + r1(2)*r2_diff(2) + r2(3)*r1_diff(3) + r1(3)*r2_diff(3)
+      rdr = r1(1)*r2(1) + r1(2)*r2(2) + r1(3)*r2(3)
+      DO ii1=1,3
+        rxr_diff(ii1) = 0.D0
+      ENDDO
+      rxr_diff(1) = r2(3)*r1_diff(2) + r1(2)*r2_diff(3) - r2(2)*r1_diff(
+     +  3) - r1(3)*r2_diff(2)
+      rxr(1) = r1(2)*r2(3) - r1(3)*r2(2)
+      rxr_diff(2) = r2(1)*r1_diff(3) + r1(3)*r2_diff(1) - r2(3)*r1_diff(
+     +  1) - r1(1)*r2_diff(3)
+      rxr(2) = r1(3)*r2(1) - r1(1)*r2(3)
+      rxr_diff(3) = r2(2)*r1_diff(1) + r1(1)*r2_diff(2) - r2(1)*r1_diff(
+     +  2) - r1(2)*r2_diff(1)
+      rxr(3) = r1(1)*r2(2) - r1(2)*r2(1)
+C
+      xdx_diff = 2*rxr(1)*rxr_diff(1) + 2*rxr(2)*rxr_diff(2) + 2*rxr(3)*
+     +  rxr_diff(3)
+      xdx = rxr(1)**2 + rxr(2)**2 + rxr(3)**2
+C
+      all_diff = r1sq_diff + r2sq_diff - 2.0*rdr_diff
+      all = r1sq + r2sq - 2.0*rdr
+C
+      den_diff = all*rcsq_diff + rcsq*all_diff + xdx_diff
+      den = rcsq*all + xdx
+C
+      temp = (rdr+rcsq)/r1eps
+      temp0 = (temp-r2eps)/den
+      ai1_diff = ((rdr_diff+rcsq_diff-temp*r1eps_diff)/r1eps-r2eps_diff-
+     +  temp0*den_diff)/den
+      ai1 = temp0
+      temp0 = (rdr+rcsq)/r2eps
+      temp = (temp0-r1eps)/den
+      ai2_diff = ((rdr_diff+rcsq_diff-temp0*r2eps_diff)/r2eps-r1eps_diff
+     +  -temp*den_diff)/den
+      ai2 = temp
+C
+C---- set velocity components for unit source and doublet
+      DO k=1,3
+        uvws_diff(k) = ai1*r1_diff(k) + r1(k)*ai1_diff + ai2*r2_diff(k) 
+     +    + r2(k)*ai2_diff
+        uvws(k) = r1(k)*ai1 + r2(k)*ai2
+C
+        temp0 = (r1(k)+r2(k))/r1eps
+        temp = r1eps*r1eps*r1eps
+        temp1 = r1(k)*(rdr+rcsq)/temp
+        temp2 = r2(k)/r2eps
+        rr1_diff = (r1_diff(k)+r2_diff(k)-temp0*r1eps_diff)/r1eps - ((
+     +    rdr+rcsq)*r1_diff(k)+r1(k)*(rdr_diff+rcsq_diff)-temp1*3*r1eps
+     +    **2*r1eps_diff)/temp - (r2_diff(k)-temp2*r2eps_diff)/r2eps
+        rr1 = temp0 - temp1 - temp2
+C
+        temp2 = (r1(k)+r2(k))/r2eps
+        temp1 = r2eps*r2eps*r2eps
+        temp0 = r2(k)*(rdr+rcsq)/temp1
+        temp = r1(k)/r1eps
+        rr2_diff = (r1_diff(k)+r2_diff(k)-temp2*r2eps_diff)/r2eps - ((
+     +    rdr+rcsq)*r2_diff(k)+r2(k)*(rdr_diff+rcsq_diff)-temp0*3*r2eps
+     +    **2*r2eps_diff)/temp1 - (r1_diff(k)-temp*r1eps_diff)/r1eps
+        rr2 = temp2 - temp0 - temp
+C
+        rrt_diff = 2.0*((r2sq-rdr)*r1_diff(k)+r1(k)*(r2sq_diff-rdr_diff)
+     +    ) + 2.0*((r1sq-rdr)*r2_diff(k)+r2(k)*(r1sq_diff-rdr_diff))
+        rrt = 2.0*r1(k)*(r2sq-rdr) + 2.0*r2(k)*(r1sq-rdr)
+C
+        temp2 = (rr1-ai1*rrt)/den
+        aj1_diff = (rr1_diff-rrt*ai1_diff-ai1*rrt_diff-temp2*den_diff)/
+     +    den
+        aj1 = temp2
+C
+        temp2 = (rr2-ai2*rrt)/den
+        aj2_diff = (rr2_diff-rrt*ai2_diff-ai2*rrt_diff-temp2*den_diff)/
+     +    den
+        aj2 = temp2
+C
+        DO j=1,3
+          uvwd_diff(k, j) = -(r1(j)*aj1_diff) - aj1*r1_diff(j) - r2(j)*
+     +      aj2_diff - aj2*r2_diff(j)
+          uvwd(k, j) = -(aj1*r1(j)) - aj2*r2(j)
+        ENDDO
+C
+        uvwd_diff(k, k) = uvwd_diff(k, k) - ai1_diff - ai2_diff
+        uvwd(k, k) = uvwd(k, k) - ai1 - ai2
+      ENDDO
+C
+      temp2 = uvws(1)/beta
+      uvws_diff(1) = pi4inv*(uvws_diff(1)-temp2*beta_diff)/beta
+      uvws(1) = pi4inv*temp2
+      uvws_diff(2) = pi4inv*uvws_diff(2)
+      uvws(2) = uvws(2)*pi4inv
+      uvws_diff(3) = pi4inv*uvws_diff(3)
+      uvws(3) = uvws(3)*pi4inv
+      DO l=1,3
+        temp2 = uvwd(1, l)/beta
+        uvwd_diff(1, l) = pi4inv*(uvwd_diff(1, l)-temp2*beta_diff)/beta
+        uvwd(1, l) = pi4inv*temp2
+        uvwd_diff(2, l) = pi4inv*uvwd_diff(2, l)
+        uvwd(2, l) = uvwd(2, l)*pi4inv
+        uvwd_diff(3, l) = pi4inv*uvwd_diff(3, l)
+        uvwd(3, l) = uvwd(3, l)*pi4inv
+      ENDDO
+C
+      RETURN
+      END
+C SRDVELC
+C
+C
+C
+C
+C
 

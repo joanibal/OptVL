@@ -934,12 +934,12 @@ C
 C          =    -   =    -   =     - -    =     - -
 C---- set  m^-1 F,  I^-1 M,  m^-1 (WxP),  I^-1 (WxH)
       DO K = 1, 3
-        MIF(K) = MAINV(K,1)*CXTOT*QS
-     &         + MAINV(K,2)*CYTOT*QS
-     &         + MAINV(K,3)*CZTOT*QS
-        RIM(K) = RIINV(K,1)*CRTOT*QS*BREFD
-     &         + RIINV(K,2)*CMTOT*QS*CREFD
-     &         + RIINV(K,3)*CNTOT*QS*BREFD
+        MIF(K) = MAINV(K,1)*CFTOT(1)*QS
+     &         + MAINV(K,2)*CFTOT(2)*QS
+     &         + MAINV(K,3)*CFTOT(3)*QS
+        RIM(K) = RIINV(K,1)*CMTOT(1)*QS*BREFD
+     &         + RIINV(K,2)*CMTOT(2)*QS*CREFD
+     &         + RIINV(K,3)*CMTOT(3)*QS*BREFD
         PRF(K) = MAINV(K,1)*WXP(1)
      &         + MAINV(K,2)*WXP(2)
      &         + MAINV(K,3)*WXP(3)
@@ -948,13 +948,13 @@ C---- set  m^-1 F,  I^-1 M,  m^-1 (WxP),  I^-1 (WxH)
      &         + RIINV(K,3)*WXH(3)
         DO IU = 1, 6
           MIF_U(K,IU) = 
-     &           MAINV(K,1)*CXTOT_U(IU)*QS
-     &         + MAINV(K,2)*CYTOT_U(IU)*QS
-     &         + MAINV(K,3)*CZTOT_U(IU)*QS
+     &           MAINV(K,1)*CFTOT_U(1,IU)*QS
+     &         + MAINV(K,2)*CFTOT_U(2,IU)*QS
+     &         + MAINV(K,3)*CFTOT_U(3,IU)*QS
           RIM_U(K,IU) = 
-     &           RIINV(K,1)*CRTOT_U(IU)*QS*BREFD
-     &         + RIINV(K,2)*CMTOT_U(IU)*QS*CREFD
-     &         + RIINV(K,3)*CNTOT_U(IU)*QS*BREFD
+     &           RIINV(K,1)*CMTOT_U(1,IU)*QS*BREFD
+     &         + RIINV(K,2)*CMTOT_U(2,IU)*QS*CREFD
+     &         + RIINV(K,3)*CMTOT_U(3,IU)*QS*BREFD
           PRF_U(K,IU) =
      &           MAINV(K,1)*WXP_U(1,IU)
      &         + MAINV(K,2)*WXP_U(2,IU)
@@ -967,13 +967,13 @@ C---- set  m^-1 F,  I^-1 M,  m^-1 (WxP),  I^-1 (WxH)
 
         DO N = 1, NCONTROL
           MIF_D(K,N) = 
-     &           MAINV(K,1)*CXTOT_D(N)*QS
-     &         + MAINV(K,2)*CYTOT_D(N)*QS
-     &         + MAINV(K,3)*CZTOT_D(N)*QS
+     &           MAINV(K,1)*CFTOT_D(1,N)*QS
+     &         + MAINV(K,2)*CFTOT_D(2,N)*QS
+     &         + MAINV(K,3)*CFTOT_D(3,N)*QS
           RIM_D(K,N) = 
-     &           RIINV(K,1)*CRTOT_D(N)*QS*BREFD
-     &         + RIINV(K,2)*CMTOT_D(N)*QS*CREFD
-     &         + RIINV(K,3)*CNTOT_D(N)*QS*BREFD
+     &           RIINV(K,1)*CMTOT_D(1,N)*QS*BREFD
+     &         + RIINV(K,2)*CMTOT_D(2,N)*QS*CREFD
+     &         + RIINV(K,3)*CMTOT_D(3,N)*QS*BREFD
         ENDDO
 C
 C------ add additional derivatives, from viscous or Mach effects, or whatever
@@ -1349,30 +1349,30 @@ C
 C
 C---- x-acceleration
       IEQ = JEU
-      ASYS(IEQ,JEU) = -CXTOT_U(1)*QS /RMASS / VEE
-      ASYS(IEQ,JEW) = -CXTOT_U(3)*QS /RMASS / VEE
-      ASYS(IEQ,JEQ) =  CXTOT_U(5)*QS /RMASS / ROT  +  VINF(3)*VEE
+      ASYS(IEQ,JEU) = -CFTOT_U(1,1)*QS /RMASS / VEE
+      ASYS(IEQ,JEW) = -CFTOT_U(1,3)*QS /RMASS / VEE
+      ASYS(IEQ,JEQ) =  CFTOT_U(1,5)*QS /RMASS / ROT  +  VINF(3)*VEE
       ASYS(IEQ,JETH)=  GEE
       DO N = 1, NCONTROL
-        BSYS(IEQ,N) =  CXTOT_D(N)*QS /RMASS
+        BSYS(IEQ,N) =  CFTOT_D(1,N)*QS /RMASS
       ENDDO
 C
 C---- z-acceleration
       IEQ = JEW
-      ASYS(IEQ,JEU) = -CZTOT_U(1)*QS /RMASS / VEE
-      ASYS(IEQ,JEW) = -CZTOT_U(3)*QS /RMASS / VEE
-      ASYS(IEQ,JEQ) =  CZTOT_U(5)*QS /RMASS / ROT  -  VINF(1)*VEE
+      ASYS(IEQ,JEU) = -CFTOT_U(3,1)*QS /RMASS / VEE
+      ASYS(IEQ,JEW) = -CFTOT_U(3,3)*QS /RMASS / VEE
+      ASYS(IEQ,JEQ) =  CFTOT_U(3,5)*QS /RMASS / ROT  -  VINF(1)*VEE
       DO N = 1, NCONTROL
-        BSYS(IEQ,N) =  CZTOT_D(N)*QS /RMASS
+        BSYS(IEQ,N) =  CFTOT_D(3,N)*QS /RMASS
       ENDDO
 C
 C---- y-ang.accel.
       IEQ = JEQ
-      ASYS(IEQ,JEU) = -CMTOT_U(1)*QSC/RINYY / VEE
-      ASYS(IEQ,JEW) = -CMTOT_U(3)*QSC/RINYY / VEE
-      ASYS(IEQ,JEQ) =  CMTOT_U(5)*QSC/RINYY / ROT
+      ASYS(IEQ,JEU) = -CMTOT_U(2,1)*QSC/RINYY / VEE
+      ASYS(IEQ,JEW) = -CMTOT_U(2,3)*QSC/RINYY / VEE
+      ASYS(IEQ,JEQ) =  CMTOT_U(2,5)*QSC/RINYY / ROT
       DO N = 1, NCONTROL
-        BSYS(IEQ,N) =  CMTOT_D(N)*QSC/RINYY
+        BSYS(IEQ,N) =  CMTOT_D(2,N)*QSC/RINYY
       ENDDO
 C
 C---- theta rate
@@ -1383,30 +1383,30 @@ C
 C
 C---- y-acceleration
       IEQ = JEV
-      ASYS(IEQ,JEV) = -CYTOT_U(2)*QS /RMASS / VEE
-      ASYS(IEQ,JEP) =  CYTOT_U(4)*QS /RMASS / ROT  -  VINF(3)*VEE
-      ASYS(IEQ,JER) =  CYTOT_U(6)*QS /RMASS / ROT  +  VINF(1)*VEE
+      ASYS(IEQ,JEV) = -CFTOT_U(2,2)*QS /RMASS / VEE
+      ASYS(IEQ,JEP) =  CFTOT_U(2,4)*QS /RMASS / ROT  -  VINF(3)*VEE
+      ASYS(IEQ,JER) =  CFTOT_U(2,6)*QS /RMASS / ROT  +  VINF(1)*VEE
       ASYS(IEQ,JEPH)=  GEE
       DO N = 1, NCONTROL
-        BSYS(IEQ,N) =  CYTOT_D(N)*QS /RMASS
+        BSYS(IEQ,N) =  CFTOT_D(2,N)*QS /RMASS
       ENDDO
 C
 C---- x-ang.accel.
       IEQ = JEP
-      ASYS(IEQ,JEV) = -CRTOT_U(2)*QSB/RINXX / VEE
-      ASYS(IEQ,JEP) =  CRTOT_U(4)*QSB/RINXX / ROT
-      ASYS(IEQ,JER) =  CRTOT_U(6)*QSB/RINXX / ROT
+      ASYS(IEQ,JEV) = -CMTOT_U(1,2)*QSB/RINXX / VEE
+      ASYS(IEQ,JEP) =  CMTOT_U(1,4)*QSB/RINXX / ROT
+      ASYS(IEQ,JER) =  CMTOT_U(1,6)*QSB/RINXX / ROT
       DO N = 1, NCONTROL
-        BSYS(IEQ,N) =  CRTOT_D(N)*QSB/RINXX
+        BSYS(IEQ,N) =  CMTOT_D(1,N)*QSB/RINXX
       ENDDO
 C
 C---- z-ang.accel.
       IEQ = JER
-      ASYS(IEQ,JEV) = -CNTOT_U(2)*QSB/RINZZ / VEE
-      ASYS(IEQ,JEP) =  CNTOT_U(4)*QSB/RINZZ / ROT
-      ASYS(IEQ,JER) =  CNTOT_U(6)*QSB/RINZZ / ROT
+      ASYS(IEQ,JEV) = -CMTOT_U(3,2)*QSB/RINZZ / VEE
+      ASYS(IEQ,JEP) =  CMTOT_U(3,4)*QSB/RINZZ / ROT
+      ASYS(IEQ,JER) =  CMTOT_U(3,6)*QSB/RINZZ / ROT
       DO N = 1, NCONTROL
-        BSYS(IEQ,N) =  CNTOT_D(N)*QSB/RINZZ
+        BSYS(IEQ,N) =  CMTOT_D(3,N)*QSB/RINZZ
       ENDDO
 C
 C---- phi rate
@@ -1529,8 +1529,7 @@ C
      &     (ASYS(I,J)*USGN(I)*USGN(J), J=1, NSYS),
      &     (BSYS(I,N)*USGN(I)        , N=1, NCONTROL)
 c     &   ,   RSYS(I)*USGN(I)
- 1200   FORMAT(1X,12e24.16,3X,12G12.4)
-!  1200   FORMAT(1X,12F10.4,3X,12G12.4)
+ 1200   FORMAT(1X,12G12.4,3X,12G12.4)
       ENDDO
 C
       RETURN
@@ -1707,6 +1706,11 @@ C
             DCL_U = PARVAL(IPCLU ,IR)
             DCM_A = PARVAL(IPCMA ,IR)
             DCM_U = PARVAL(IPCMU ,IR)
+C
+            RIXY  = PARVAL(IPIXY ,IR)
+            RIYZ  = PARVAL(IPIYZ ,IR)
+            RIZX  = PARVAL(IPIZX ,IR)
+C
       end subroutine set_params
             
 
@@ -1752,9 +1756,12 @@ C
        WRITE(*,2105) 'D  air dens. = ', RHO  , UNCHD(1:NUD)
        WRITE(*,2105) 'G  grav.acc. = ', GEE  , UNCHA(1:NUA)
        WRITE(*,2105) 'M  mass      = ', RMASS, UNCHM(1:NUM)
-       WRITE(*,2105) 'IX Ixx       = ', RIXX , UNCHI(1:NUI)
-       WRITE(*,2105) 'IY Iyy       = ', RIYY , UNCHI(1:NUI)
-       WRITE(*,2105) 'IZ Izz       = ', RIZZ , UNCHI(1:NUI)
+       WRITE(*,2105) 'IXX Ixx      = ', RIXX , UNCHI(1:NUI)
+       WRITE(*,2105) 'IYY Iyy      = ', RIYY , UNCHI(1:NUI)
+       WRITE(*,2105) 'IZZ Izz      = ', RIZZ , UNCHI(1:NUI)
+       WRITE(*,2105) 'IXY Ixy      = ', RIXY , UNCHI(1:NUI)
+       WRITE(*,2105) 'IYZ Iyz      = ', RIYZ , UNCHI(1:NUI)
+       WRITE(*,2105) 'IZX Izx      = ', RIZX , UNCHI(1:NUI)
        WRITE(*,2105) 'X  X_cg      = ', XCG  , 'Lunit'
        WRITE(*,2105) 'Y  Y_cg      = ', YCG  , 'Lunit'
        WRITE(*,2105) 'Z  Z_cg      = ', ZCG  , 'Lunit'
@@ -1951,7 +1958,7 @@ C
         ENDDO
 C
 C-------------------------------------
-      ELSEIF(COM(1:2) .EQ. 'IX') THEN
+      ELSEIF(COM(1:3) .EQ. 'IXX') THEN
  42     CONTINUE
         IF(NINP.GE.1) THEN
          RIXX = RINP(1)
@@ -1970,7 +1977,7 @@ C
         ENDDO
 C
 C-------------------------------------
-      ELSEIF(COM(1:2) .EQ. 'IY') THEN
+      ELSEIF(COM(1:3) .EQ. 'IYY') THEN
  43     CONTINUE
         IF(NINP.GE.1) THEN
          RIYY = RINP(1)
@@ -1989,7 +1996,7 @@ C
         ENDDO
 C
 C-------------------------------------
-      ELSEIF(COM(1:2) .EQ. 'IZ') THEN
+      ELSEIF(COM(1:3) .EQ. 'IZZ') THEN
  44     CONTINUE
         IF(NINP.GE.1) THEN
          RIZZ = RINP(1)
@@ -2005,6 +2012,42 @@ C
 C
         DO JR = IR1, IR2
           PARVAL(IPIZZ,JR) = RIZZ
+        ENDDO
+C
+C-------------------------------------
+      ELSEIF(COM(1:3) .EQ. 'IXY') THEN
+        IF(NINP.GE.1) THEN
+         RIXY = RINP(1)
+        ELSE
+         CALL ASKR('      Enter Ixy^',RIXY)
+        ENDIF
+C
+        DO JR = IR1, IR2
+          PARVAL(IPIXY,JR) = RIXY
+        ENDDO
+C
+C-------------------------------------
+      ELSEIF(COM(1:3) .EQ. 'IYZ') THEN
+        IF(NINP.GE.1) THEN
+         RIYZ = RINP(1)
+        ELSE
+         CALL ASKR('      Enter Iyz^',RIYZ)
+        ENDIF
+C
+        DO JR = IR1, IR2
+          PARVAL(IPIYZ,JR) = RIYZ
+        ENDDO
+C
+C-------------------------------------
+      ELSEIF(COM(1:3) .EQ. 'IZX') THEN
+        IF(NINP.GE.1) THEN
+         RIZX = RINP(1)
+        ELSE
+         CALL ASKR('      Enter Izx^',RIZX)
+        ENDIF
+C
+        DO JR = IR1, IR2
+          PARVAL(IPIZX,JR) = RIZX
         ENDDO
 C
 C-------------------------------------
@@ -2250,21 +2293,22 @@ C
             
       end subroutine execute_eigenmode_calc
       
-      subroutine get_system_matrix(ir, ASYS)
+      subroutine get_system_matrices(ir, ASYS, BSYS, RSYS)
             INCLUDE 'AVL.INC'
       
             ! input/output
             REAL*8 :: ASYS(JEMAX,JEMAX)
+            REAL*8 :: BSYS(JEMAX,NDMAX)
+            REAL*8 :: RSYS(JEMAX)
             
             ! working
-            REAL*8 :: BSYS(JEMAX,NDMAX),RSYS(JEMAX)
             REAL*8 :: ETOL
             integer :: NSYS, i
             
             CALL SYSMAT(IR,ASYS,BSYS,RSYS,NSYS)
             
             
-      end subroutine
+      end subroutine get_system_matrices
 C
 
             

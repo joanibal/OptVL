@@ -493,7 +493,7 @@ C
 !           write(*,*) 'IJFRST(idx_strip)', IJFRST(idx_strip),
 !      &               'NVSTRP(idx_strip)', IJFRST(idx_strip - 1) + NVC(ISURF)
 C
-          NSURFS(idx_strip) = ISURF
+          LSSURF(idx_strip) = ISURF
 C
           NSL = NASEC(ISEC  , ISURF)
           NSR = NASEC(ISEC+1, ISURF)
@@ -552,7 +552,7 @@ C
             DXOC = XPT(IVC+1) - XPT(IVC)
             DXV(idx_vor) = DXOC*CHORDC
             CHORDV(idx_vor) = CHORDC
-            NSURFV(idx_vor) = LSCOMP(ISURF)
+            LVCOMP(idx_vor) = LNCOMP(ISURF)
 
             LVNC(idx_vor) = .TRUE.
 C
@@ -1405,48 +1405,55 @@ c     from the updated geometry. Recomputes panels normals and
 c     tells AVL to rebuild the AIC and other aero related data 
 c     arrays on the next execution. 
 c--------------------------------------------------------------
-      
+      use avl_heap_inc
       include 'AVL.INC'
-      integer ISURF
+      integer ii
       
       NSTRIP = 0
       NVOR = 0
       
-      do ISURF=1,NSURF
-            if (lverbose) then 
-                  write(*,*) ISURF, 'Update surf:'//trim(STITLE(ISURF))
-            end if
-            if (ISURF.ne.1) then
-                  if(ldupl(isurf-1)) then 
-                        ! this surface has already been created
-                        ! it was probably duplicated from the previous one
-                        cycle
-                  end if
-                  if (lsurfmsh(isurf)) then
-                        call makesurf_mesh(ISURF)
-                  else 
-                        call makesurf(ISURF)
-                  end if
+      ISURF = 1
+      
+      NSURFDUPL = 0
+      do ii=1,(NSURF)
+            if (ldupl(ii)) NSURFDUPL = NSURFDUPL + 1
+      enddo 
+      
+c     the iterations of this loop are not independent because we count
+c     up the size information as we make each surface
+      do ii=1,(NSURF-NSURFDUPL)
+            if (lverbose) write(*,*) 'Updating surface ',ISURF
+            if (lsurfmsh(isurf)) then
+                  call makesurf_mesh(ISURF) 
             else
-                  if (lsurfmsh(isurf)) then
-                        call makesurf_mesh(ISURF)
-                  else 
-                        call makesurf(ISURF)
-                  end if
-            endif
+                  call makesurf(ISURF)
+            end if
             
             if(ldupl(isurf)) then
+                  if (lverbose) write(*,*) ' reduplicating ',ISURF
                   call sdupl(isurf,ydupl(isurf),'ydup')
+                  ISURF = ISURF + 1
             endif
+            
+            ISURF = ISURF + 1
+            
       end do 
       
       CALL ENCALC
       
-      LAIC = .FALSE. ! Tell AVL that the AIC is no longer valid and to regenerate it
-      LSRD = .FALSE. ! Tell AVL that unit source+doublet strengths are no longer valid and to regenerate them
-      LVEL = .FALSE. ! Tell AVL that the induced velocity matrix is no longer valid and to regenerate it
-      LSOL = .FALSE. ! Tell AVL that a valid solution no longer exists
-      LSEN = .FALSE. ! Tell AVL that valid sensitives no longer exist
+c     reset all the flags related to the analysis pipline      
+      LAIC = .FALSE.
+      LSRD = .FALSE.
+      LVEL = .FALSE.
+      LSOL = .FALSE.
+      LSEN = .FALSE.
+
+      if (NAIC /= NVOR) then 
+            call avlheap_clean()
+            call avlheap_diff_clean()
+            call avlheap_init(NVOR)
+            call avlheap_diff_init(NVOR)
+      endif 
       
       end subroutine update_surfaces
             
@@ -1490,7 +1497,7 @@ C
 C
 C-----------------------------------------------------------------
 C---- set lengthwise spacing fraction arrays
-      NSPACE = NVB(IBODY) + 1
+      NSPACE = NVB(IBODY)
       IF(NSPACE.GT.KLMAX) THEN
        WRITE(*,*) '*** MAKEBODY: Array overflow. Increase KLMAX to', 
      &             NSPACE
@@ -1502,12 +1509,12 @@ C
         XPT(IVB) = FSPACE(IVB)
       ENDDO
       XPT(1) = 0.0
-      XPT(NVB(IBODY)+1) = 1.0
+      XPT(NVB(IBODY)) = 1.0
 C
 C---- set body nodes and radii
       VOLB = 0.0
       SRFB = 0.0
-      DO IVB = 1, NVB(IBODY)+1
+      DO IVB = 1, NVB(IBODY)
         NLNODE = NLNODE + 1
 C
         XVB = XBOD(1, IBODY) + (XBOD(NBOD(IBODY), IBODY)-XBOD(1,IBODY))
@@ -1520,13 +1527,15 @@ C
         CALL AKIMA(XBOD(1,IBODY),TBOD(1,IBODY),NBOD(IBODY),XVB,TVB,DRDX)
         RADL(NLNODE) = SQRT(XYZSCAL_B(2,IBODY)*XYZSCAL_B(3,IBODY)) 
      & * 0.5*TVB
+ccc        write(43,*) 'NLNODE,RL,RADL ',NLNODE,(RL(K,NLNODE),K=1,3),
+ccc     &               RADL(NLNODE)
       ENDDO
 C---- get surface length, area and volume
       VOLB = 0.0
       SRFB = 0.0
       XBMN = RL(1,LFRST(IBODY))
       XBMX = XBMN
-      DO IVB = 1, NVB(IBODY)
+      DO IVB = 1, NVB(IBODY)-1
         NL0 = LFRST(IBODY) + IVB-1
         NL1 = NL0 + 1
         X0 = RL(1,NL0)
@@ -1704,7 +1713,7 @@ C
       endif
 C
 C---- duplicate surface is assumed to be the same logical component surface
-      LSCOMP(NNI) = LSCOMP(NN)
+      LNCOMP(NNI) = LNCOMP(NN)
 C
 C---- same various logical flags
       LFWAKE(NNI) = LFWAKE(NN)
@@ -1783,7 +1792,7 @@ cc#ifdef USE_CPOML
         AINC2(JJI) = AINC1(JJ)
 C
 cc#endif
-        NSURFS(idx_strip) = NNI
+        LSSURF(idx_strip) = NNI
 C
         DO N = 1, NDESIGN
           AINC_G(JJI,N) = AINC_G(JJ,N)
@@ -1841,7 +1850,7 @@ C
           DXV(III)     = DXV(II)
           DXSTRPV(III) = DXSTRPV(II)
           CHORDV(III) = CHORDV(II)
-          NSURFV(III) = LSCOMP(NNI)
+          LVCOMP(III) = LNCOMP(NNI)
           LVALBE(III) = LVALBE(II)
           LVNC(III) = LVNC(II)
           ! Duplicate mesh data if we are using a mesh

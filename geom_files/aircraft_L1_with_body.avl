@@ -7,7 +7,7 @@ MACH MDAO AVL
 # SI Used: m, kg, etc
 
 #Mach
-0.8
+0.0
 #IYsym   IZsym   Zsym
  0       0       0
 #Sref    Cref    b_wing
@@ -67,6 +67,17 @@ CONTROL
 #surface gain xhinge hvec SgnDup
 Elevator -1.00 0.0 0 1 0 1.00
 
+
+BODY
+Fuse pod
+4   2.0
+#
+TRANSLATE
+# 0.0  0.0  -1.75
+0.0  0.0  0.0
+#
+BFIL
+../geom_files/fuseSimple.dat
 
 
 # -- END OF FILE --

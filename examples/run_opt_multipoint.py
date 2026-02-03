@@ -21,9 +21,17 @@ class Top(om.Group):
         self.add_subsystem("perturbed_flt_cond", om.ExecComp(["ptb_alpha=alpha+0.1"], units="deg"))
 
         self.add_subsystem(
-            "cruise_avl", OVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass", output_stability_derivs=True)
+            "cruise_avl",
+            OVLGroup(
+                geom_file="../geom_files/aircraft.avl",
+                mass_file="../geom_files/aircraft.mass",
+                output_stability_derivs=True,
+            ),
         )
-        self.add_subsystem("perturbed_cruise_avl", OVLGroup(geom_file="aircraft.avl", mass_file="aircraft.mass"))
+        self.add_subsystem(
+            "perturbed_cruise_avl",
+            OVLGroup(geom_file="../geom_files/aircraft.avl", mass_file="../geom_files/aircraft.mass"),
+        )
 
     def configure(self):
         # add the flight flt_condition inputs as possible design variables
@@ -80,10 +88,10 @@ model.add_design_var("con_surf_dvs.Elevator", lower=-10, upper=10)
 
 # the outputs of AVL can be used as contraints
 model.add_constraint("cruise_avl.CL", equals=1.5)
-model.add_constraint("cruise_avl.CM", equals=0.0)
+model.add_constraint("cruise_avl.Cm", equals=0.0)
 
 model.add_constraint(
-    "perturbed_cruise_avl.CM", upper=-1e-3
+    "perturbed_cruise_avl.Cm", upper=-1e-3
 )  # make sure that dCM_dAlpha is less than 0 for static stability
 
 model.add_objective("cruise_avl.CD", ref=1e-2)

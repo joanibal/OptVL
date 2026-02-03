@@ -183,7 +183,7 @@ geom_dvs = model.add_subsystem("geom_dvs", om.IndepVarComp())
 geom_dvs.add_output("aincs", shape_by_conn=True)
 model.connect("geom_dvs.aincs", "ovlsolver.Wing:aincs")
 
-model.add_subsystem("mesh", OVLMeshReader(geom_file="rectangle.avl"))
+model.add_subsystem("mesh", OVLMeshReader(geom_file="../geom_files/rectangle.avl"))
 model.add_subsystem("geom_param", GeometryParametrizationComp())
 model.connect("mesh.Wing:yles", ["geom_param.yles_in"])
 
@@ -198,7 +198,7 @@ model.connect("geom_param.chords_out", ["mass_props.chords"])
 model.add_subsystem(
     "ovlsolver",
     OVLGroup(
-        geom_file="rectangle.avl",
+        geom_file="../geom_files/rectangle.avl",
         output_stability_derivs=True,
         write_grid=True,
         input_param_vals=True,
@@ -227,7 +227,7 @@ model.add_design_var("geom_param.taper_ratio", lower=0.1, upper=1.0)
 model.add_design_var("geom_param.root_chord", lower=0.5, upper=4.0)
 model.add_design_var("ovlsolver.Wing:aincs", lower=-15, upper=15)
 
-model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e2)
+model.add_constraint("ovlsolver.Cm", equals=0.0, scaler=1e2)
 model.add_constraint("ovlsolver.static margin", upper=0.3, lower=0.1, scaler=1e1)
 
 # this spiral parameter makes the problem harder to solve but more realistic

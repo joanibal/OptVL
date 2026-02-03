@@ -1,0 +1,190 @@
+load ../geom_files/aircraft.avl
+mass ../geom_files/aircraft.mass
+mset 0
+oper
+MRF
+a a 0
+b b 0
+r r 0
+p p 0
+y y 0
+D1 D1 0
+D2 D2 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+FS
+
+a a 45
+b b 0
+r r 0
+p p 0
+y y 0
+D1 D1 0
+D2 D2 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+FS
+
+a a 0
+b b 45
+r r 0
+p p 0
+y y 0
+D1 D1 0
+D2 D2 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+FS
+
+a a 0
+b b 0
+r r 0.1
+p p 0
+y y 0
+D1 D1 0
+D2 D2 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+FS
+
+a a 0
+b b 0
+r r 0
+p p 0.1
+y y 0
+D1 D1 0
+D2 D2 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+FS
+
+a a 0
+b b 0
+r r 0
+p p 0
+y y 0.1
+D1 D1 0
+D2 D2 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+FS
+
+a a 0
+b b 0
+r r 0
+p p 0
+y y 0
+D1 D1 10
+D2 D2 0
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+FS
+
+a a 0
+b b 0
+r r 0
+p p 0
+y y 0
+D1 D1 0
+D2 D2 10
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+FS
+
+a a -45
+b b -45
+r r 0.1
+p p -0.1
+y y 0.1
+D1 D1 10
+D2 D2 10
+x
+FT
+
+FB
+
+FN
+
+ST
+
+SB
+
+FS
+
+
+
+
+q
+q

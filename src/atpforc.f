@@ -97,7 +97,7 @@ C
           GAMS_G(JC,N) = 0.
         ENDDO
 C
-ccc        ISURF = NSURFS(JC)
+ccc        ISURF = LSSURF(JC)
 ccc        IF(LFLOAD(ISURF)) THEN   !Bug 6/13/14 HHY 
 C------- add circulation of this strip only if it contributes to total load
          I1  = IJFRST(JC)
@@ -158,21 +158,21 @@ C...Sum velocity contributions from wake vortices
         DO 30 JV = 1, NSTRIP
           DSYZ = SQRT(  (RT2(2,JV)-RT1(2,JV))**2
      &                + (RT2(3,JV)-RT1(3,JV))**2 )
-          IF(LSCOMP(NSURFS(JC)) .EQ. LSCOMP(NSURFS(JV))) THEN
+          IF(LNCOMP(LSSURF(JC)) .EQ. LNCOMP(LSSURF(JV))) THEN
 ccc        RCORE = 0.0001*DSYZ
            RCORE = 0.
           ELSE
-           RCORE = MAX( VRCORE*CHORD(JV) , 2.0*VRCORE*DSYZ )
+           RCORE = MAX( VRCOREC*CHORD(JV) , VRCOREW*DSYZ )
           ENDIF
-C
-          RCORE = 0.
 C
           DY1 = YCNTR - RT1(2,JV)
           DY2 = YCNTR - RT2(2,JV)
           DZ1 = ZCNTR - RT1(3,JV)
           DZ2 = ZCNTR - RT2(3,JV)
-          RSQ1 = DY1*DY1 + DZ1*DZ1 + RCORE**2
-          RSQ2 = DY2*DY2 + DZ2*DZ2 + RCORE**2
+          RSQ1 = SQRT((DY1**2 + DZ1**2)**2 + RCORE**4)
+          RSQ2 = SQRT((DY2**2 + DZ2**2)**2 + RCORE**4)
+cc          RSQ1 = DY1*DY1 + DZ1*DZ1 + RCORE**2
+cc          RSQ2 = DY2*DY2 + DZ2*DZ2 + RCORE**2
           VY = VY + HPI*GAMS(JV)*( DZ1/RSQ1 - DZ2/RSQ2)
           VZ = VZ + HPI*GAMS(JV)*(-DY1/RSQ1 + DY2/RSQ2)
           DO N = 1, NUMAX
@@ -285,7 +285,7 @@ C
 C
 C...Trefftz-plane drag is kinetic energy in crossflow
 C
-        ISURF = NSURFS(JC)
+        ISURF = LSSURF(JC)
         IF(LFLOAD(ISURF)) THEN   
 C-------add load from this strip only if it contributes to total load
          CLFF = CLFF + 2.0*GAMS(JC)*          DYT    /SREF
@@ -315,7 +315,11 @@ C-------add load from this strip only if it contributes to total load
         ENDIF
    40 CONTINUE
 C
-C---- Double the X,Z forces, zero Y force for a Y symmetric case
+C
+C---------------------------------------------------------
+C--- If case is XZ symmetric (IYSYM=1), add contributions from images,
+C    zero out the asymmetric forces and double the symmetric ones
+C
       IF(IYSYM.EQ.1) THEN
        CLFF = 2.0 * CLFF
        CYFF = 0.0
@@ -336,6 +340,7 @@ C---- Double the X,Z forces, zero Y force for a Y symmetric case
          CDFF_G(N) = 2.0 * CDFF_G(N)
        ENDDO
       ENDIF
+C---------------------------------------------------------
 C
 C---- aspect ratio
       AR = BREF**2 / SREF

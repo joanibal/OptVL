@@ -55,8 +55,8 @@ python module libavl ! in
         end subroutine trmset
         
 
-        subroutine calcst ! in :libavl:aoper.f
-        end subroutine calcst
+        subroutine calc_stab_derivs ! in :libavl:aoper.f
+        end subroutine calc_stab_derivs
 
         subroutine makesurf(isurf) ! in :libavl:amake.f
             integer :: isurf
@@ -129,11 +129,13 @@ python module libavl ! in
         subroutine execute_eigenmode_calc
         end subroutine execute_eigenmode_calc
         
-        subroutine get_system_matrix(ir, asys)
+        subroutine get_system_matrices(ir, asys, bsys, rsys)
             include '../includes/AVL.INC'
             integer :: ir
             real*8, intent(inout) :: asys(jemax,jemax)
-        end subroutine get_system_matrix
+            real*8, intent(inout) :: bsys(jemax,ndmax)
+            real*8, intent(inout) :: rsys(jemax)
+        end subroutine get_system_matrices
 
         subroutine makesurf_mesh(isurf) ! in :libavl:amake.f
             integer :: isurf

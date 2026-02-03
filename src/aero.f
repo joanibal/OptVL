@@ -19,18 +19,22 @@ C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
 
       SUBROUTINE AERO
+C---- Calculate forces - inviscid forces from horseshoe vortices,
+C     inviscid forces from bodies, viscous forces from drag and 
+C     far-field forces in the Trefftz plane
+C
       INCLUDE 'AVL.INC'
       CHARACTER*50 SATYPE
 C
       CDTOT = 0.
-      CLTOT = 0.
-      CXTOT = 0.
       CYTOT = 0.
-      CZTOT = 0.
-      CRTOT = 0.
-      CMTOT = 0.
-      CNTOT = 0.
+      CLTOT = 0.
+      DO L = 1, 3
+        CFTOT(L) = 0.
+        CMTOT(L) = 0.
+      ENDDO
       CDVTOT = 0.
+      CDITOT = 0.
 C
       CDTOT_A = 0.
       CLTOT_A = 0.
@@ -41,13 +45,12 @@ C
 C
       DO N=1, NUMAX
         CDTOT_U(N) = 0.
-        CLTOT_U(N) = 0.
-        CXTOT_U(N) = 0.
         CYTOT_U(N) = 0.
-        CZTOT_U(N) = 0.
-        CRTOT_U(N) = 0.
-        CMTOT_U(N) = 0.
-        CNTOT_U(N) = 0.
+        CLTOT_U(N) = 0.
+        DO L = 1, 3
+          CFTOT_U(L,N) = 0.
+          CMTOT_U(L,N) = 0.
+        ENDDO
         DO L = 1, NCONTROL
           CHINGE_U(L,N) = 0.
         ENDDO
@@ -55,13 +58,12 @@ C
 C
       DO N=1, NCONTROL
         CDTOT_D(N) = 0.
-        CLTOT_D(N) = 0.
-        CXTOT_D(N) = 0.
         CYTOT_D(N) = 0.
-        CZTOT_D(N) = 0.
-        CRTOT_D(N) = 0.
-        CMTOT_D(N) = 0.
-        CNTOT_D(N) = 0.
+        CLTOT_D(N) = 0.
+        DO L = 1, 3
+          CFTOT_D(L,N) = 0.
+          CMTOT_D(L,N) = 0.
+        ENDDO
         DO L = 1, NCONTROL
           CHINGE_D(L,N) = 0.
         ENDDO
@@ -69,62 +71,139 @@ C
 C
       DO N=1, NDESIGN
         CDTOT_G(N) = 0.
-        CLTOT_G(N) = 0.
-        CXTOT_G(N) = 0.
         CYTOT_G(N) = 0.
-        CZTOT_G(N) = 0.
-        CRTOT_G(N) = 0.
-        CMTOT_G(N) = 0.
-        CNTOT_G(N) = 0.
+        CLTOT_G(N) = 0.
+        DO L = 1, 3
+          CFTOT_G(L,N) = 0.
+          CMTOT_G(L,N) = 0.
+        ENDDO
         DO L = 1, NCONTROL
           CHINGE_G(L,N) = 0.
         ENDDO
       ENDDO
-
 C
+C
+C---------------------------------------------------------
+C--- Evaluate forces on surface, bodies and Trefftz plane  
       CALL SFFORC
       CALL BDFORC
       CALL TPFORC
 C
-      SINA = SIN(ALFA)
-      COSA = COS(ALFA)
-C     calculate stability axis based values
-      CALL GETSA(LNASA_SA,SATYPE,DIR)
-      CRSAX = DIR*(CRTOT*COSA + CNTOT*SINA)
-      CNSAX = DIR*(CNTOT*COSA - CRTOT*SINA)
-      
-      DO K = 1, NCONTROL
-        ! do the sign change here so that it included in the derivative
-        ! routines         
-        CRTOT_D(K) = DIR*CRTOT_D(K)
-        CNTOT_D(K) = DIR*CNTOT_D(K)
-      ENDDO
-      
 C---------------------------------------------------------
-C---- add baseline reference CD
+C--- If case is XZ symmetric (IYSYM=1), add contributions from images,
+C    zero out the asymmetric forces and double the symmetric ones
+C
+      IF(IYSYM.EQ.1) THEN
+C
+        CDTOT   = 2.0 * CDTOT
+        CYTOT   = 0.
+        CLTOT   = 2.0 * CLTOT
+        CFTOT(1)   = 2.0 * CFTOT(1)
+        CFTOT(2)   = 0.0
+        CFTOT(3)   = 2.0 * CFTOT(3)
+        CMTOT(1)   = 0.
+        CMTOT(2)   = 2.0 * CMTOT(2)
+        CMTOT(3)   = 0.
+        CDVTOT  = 2.0 * CDVTOT
+C
+        CDTOT_A = 2.0 * CDTOT_A
+        CLTOT_A = 2.0 * CLTOT_A
+C
+        DO N=1, NUMAX
+          CDTOT_U(N) = 2.0 * CDTOT_U(N)
+          CYTOT_U(N) = 0.
+          CLTOT_U(N) = 2.0 * CLTOT_U(N)
+          CFTOT_U(1,N) = 2.0 * CFTOT_U(1,N)
+          CFTOT_U(2,N) = 0.0
+          CFTOT_U(3,N) = 2.0 * CFTOT_U(3,N)
+          CMTOT_U(1,N) = 0.
+          CMTOT_U(2,N) = 2.0 * CMTOT_U(2,N)
+          CMTOT_U(3,N) = 0.
+        ENDDO
+C
+        DO N=1, NCONTROL
+          CDTOT_D(N) = 2.0 * CDTOT_D(N)
+          CYTOT_D(N) = 0.
+          CLTOT_D(N) = 2.0 * CLTOT_D(N)
+          CFTOT_D(1,N) = 2.0 * CFTOT_D(1,N)
+          CFTOT_D(2,N) = 0.
+          CFTOT_D(3,N) = 2.0 * CFTOT_D(3,N)
+          CMTOT_D(1,N) = 0.
+          CMTOT_D(2,N) = 2.0 * CMTOT_D(2,N)
+          CMTOT_D(3,N) = 0.
+        ENDDO
+C
+        DO N=1, NDESIGN
+          CDTOT_G(N) = 2.0 * CDTOT_G(N)
+          CYTOT_G(N) = 0.
+          CLTOT_G(N) = 2.0 * CLTOT_G(N)
+          CFTOT_G(1,N) = 2.0 * CFTOT_G(1,N)
+          CFTOT_G(2,N) = 0.
+          CFTOT_G(3,N) = 2.0 * CFTOT_G(3,N)
+          CMTOT_G(1,N) = 0.
+          CMTOT_G(2,N) = 2.0 * CMTOT_G(2,N)
+          CMTOT_G(3,N) = 0.
+       ENDDO
+C
+      ENDIF
+C
+C---------------------------------------------------------
+C---- add baseline reference CD to totals
+C     force in direction of freestream
 C
       VSQ = VINF(1)**2 + VINF(2)**2 + VINF(3)**2
       VMAG = SQRT(VSQ)
 C
+ccc   print *,"VINF,VSQ,VMAG ",VINF,VSQ,VMAG
+ccc   print *,"CDTOT,CDVTOT,CDREF ",CDTOT,CDVTOT,CDREF
       CDVTOT = CDVTOT + CDREF*VSQ
-C
       CDTOT = CDTOT + CDREF*VSQ
-      CXTOT = CXTOT + CDREF*VINF(1)*VMAG
       CYTOT = CYTOT + CDREF*VINF(2)*VMAG
-      CZTOT = CZTOT + CDREF*VINF(3)*VMAG
-C
-      CXTOT_U(1) = CXTOT_U(1) + CDREF*VMAG
-      CYTOT_U(2) = CYTOT_U(2) + CDREF*VMAG
-      CZTOT_U(3) = CZTOT_U(3) + CDREF*VMAG
-      DO IU = 1, 3
-        CDTOT_U(IU) = CDTOT_U(IU) + CDREF*    2.0*VINF(IU)
-        CXTOT_U(IU) = CXTOT_U(IU) + CDREF*VINF(1)*VINF(IU)/VMAG
-        CYTOT_U(IU) = CYTOT_U(IU) + CDREF*VINF(2)*VINF(IU)/VMAG
-        CZTOT_U(IU) = CZTOT_U(IU) + CDREF*VINF(3)*VINF(IU)/VMAG
+      DO L = 1, 3
+        CFTOT(L) = CFTOT(L) + CDREF*VINF(L)*VMAG
+        CFTOT_U(L,L) = CFTOT_U(L,L) + CDREF*VMAG
       ENDDO
+C 
+      DO IU = 1, 3
+        CDTOT_U(IU) = CDTOT_U(IU) + CDREF*2.0*VINF(IU)
+        DO L = 1, 3
+          CFTOT_U(L,IU) = CFTOT_U(L,IU) + CDREF*VINF(L)*VINF(IU)/VMAG
+        ENDDO
+      ENDDO
+C --------- added to aoper for OptVL ----------
+
+      CDITOT = CDTOT - CDVTOT
+      
+      ! do the sign change here so that it is 
+      ! included in the derivative routines         
+      SINA = SIN(ALFA)
+      COSA = COS(ALFA)
+C     calculate stability axis based values
+      CALL GETSA(LNASA_SA,SATYPE,DIR)
+      
+      CRSAX = DIR*(CMTOT(1)*COSA + CMTOT(3)*SINA)
+      CMSAX = CMTOT(2)
+      CNSAX = DIR*(CMTOT(3)*COSA - CMTOT(1)*SINA)
+      
+      ! apply sign to body-axis variables
+      CXBAX = DIR*CFTOT(1)
+      CYBAX =     CFTOT(2)
+      CZBAX = DIR*CFTOT(3)
+      
+      CRBAX = DIR*CMTOT(1)  
+      CMBAX =     CMTOT(2)
+      CNBAX = DIR*CMTOT(3)
+      
+      do IS = 1,NSURF
+        CMSURFBAX(1,IS) = DIR*CMSURF(1,IS) 
+        CMSURFBAX(2,IS) =     CMSURF(2,IS)
+        CMSURFBAX(3,IS) = DIR*CMSURF(3,IS)
+      enddo
+
 C
       ! compute the stability derivatives every time (it's quite cheap)
-      call calcST
+      call calc_stab_derivs
+      
       RETURN
       END ! AERO
 
@@ -158,15 +237,21 @@ C...COMMENTS
 C
       INCLUDE 'AVL.INC'
 C
-      REAL RROT(3)
-      REAL VEFF(3)    , VROT(3)  ,
-     &     VEFF_U(3,6), VROT_U(3), WROT_U(3)
+      REAL RC4(3),  RROT(3)
+      REAL VEFF(3), VEFF_U(3,6), VEFFMAG_U(NUMAX)
+      REAL VEFF_D(3,NDMAX), VEFF_G(3,NGMAX)
+      REAL VROT(3), VROT_U(3), WROT_U(3)
       REAL VPERP(3)
       REAL G(3), R(3), RH(3), MH(3)
-      REAL F(3), F_U(3,6)
+      REAL F(3), F_U(3,6), F_D(3,NDMAX), F_G(3,NGMAX)
       REAL FGAM(3), FGAM_U(3,6), FGAM_D(3,NDMAX), FGAM_G(3,NGMAX)
-      REAL ENAVE(3), SPN(3), UDRAG(3), ULIFT(3)
+      REAL ENAVE(3), SPN(3)
+      REAL ULIFT(3), ULIFT_U(3,NUMAX)
+      REAL ULIFT_D(3,NDMAX), ULIFT_G(3,NGMAX)
+      REAL UDRAG(3), UDRAG_U(3,NUMAX)
+      REAL ULMAG_U(NUMAX)
 C
+      REAL CFX, CFY, CFZ, CMX, CMY, CMZ
       REAL CFX_U(NUMAX), CFY_U(NUMAX), CFZ_U(NUMAX),
      &     CMX_U(NUMAX), CMY_U(NUMAX), CMZ_U(NUMAX), 
      &     CFX_D(NDMAX), CFY_D(NDMAX), CFZ_D(NDMAX),
@@ -176,6 +261,11 @@ C
      &     CLV_U(NUMAX),
      &     CLV_D(NDMAX),
      &     CLV_G(NGMAX)
+c---- indices for forming cross-products
+      INTEGER ICRS(3), JCRS(3)
+      DATA ICRS / 2, 3, 1 / , JCRS / 3, 1, 2 /
+      
+      REAL SINA, COSA, SINAINC, SR, ULMAG, UNITA
 C
 C
       SINA = SIN(ALFA)
@@ -198,31 +288,74 @@ C
 C
         XTE1 = RLE1(1,J) + CHORD1(J)
         XTE2 = RLE2(1,J) + CHORD2(J)
-C
+C     
 C--- Define local strip lift and drag directions
 C--- The "spanwise" vector is cross product of strip normal with X chordline 
         SPN(1) =  0.0
         SPN(2) =  ENSZ(J)
         SPN(3) = -ENSY(J)
-C--- Stability axes stream vector defines drag direction
-        UDRAG(1) = COSA
-        UDRAG(2) = 0.0
-        UDRAG(3) = SINA
+C---  Wind axes stream vector defines drag direction
+C     HHY 02272024 Changed, used to be stability axis
+        DO K = 1, 3
+          UDRAG(K) = VINF(K)
+          DO N = 1, NUMAX
+            UDRAG_U(K,N) = 0.
+          ENDDO
+          UDRAG_U(K,K) = 1.0
+        ENDDO          
 C--- Lift direction is vector product of "stream" and spanwise vector
         CALL CROSS(UDRAG,SPN,ULIFT)
         ULMAG = SQRT(DOT(ULIFT,ULIFT))
+cc        write(6,*) 'ULIFT0 ',ULIFT,' ULMAG0 ',ULMAG
         IF(ULMAG.EQ.0.) THEN
-          ULIFT(3) = 1.0
+
+           ULIFT(1) = 0.0
+           ULIFT(2) = 0.0
+           ULIFT(3) = 1.0
+           DO N = 1, NUMAX
+             ULIFT_U(1,N) = 0.
+             ULIFT_U(2,N) = 0.
+             ULIFT_U(3,N) = 0.
+          ENDDO
+          
          ELSE
-          ULIFT(1) = ULIFT(1)/ULMAG
-          ULIFT(2) = ULIFT(2)/ULMAG
-          ULIFT(3) = ULIFT(3)/ULMAG
+
+          DO K = 1, 3
+           IC = ICRS(K)
+           JC = JCRS(K)
+           ULIFT(K) = UDRAG(IC)*SPN(JC) - UDRAG(JC)*SPN(IC)
+           DO N = 1, NUMAX
+            ULIFT_U(K,N) = UDRAG_U(IC,N)*SPN(JC) - UDRAG_U(JC,N)*SPN(IC)
+           ENDDO
+          ENDDO
+          ULMAG = SQRT(DOT(ULIFT,ULIFT))
+
+          DO N = 1, NUMAX
+             ULMAG_U(N) = ( ULIFT(1)*ULIFT_U(1,N)
+     &                  +   ULIFT(2)*ULIFT_U(2,N)
+     &                  +   ULIFT(3)*ULIFT_U(3,N) ) / ULMAG
+          ENDDO
+
+          DO K = 1, 3
+            ULIFT(K) = ULIFT(K)/ULMAG
+            DO N = 1, NUMAX
+               ULIFT_U(K,N) = (ULIFT_U(K,N)
+     &                      - ULIFT(K)*ULMAG_U(N)) / ULMAG
+            ENDDO
+c            write(6,*) 'Strip J ',J
+c            write(6,*) 'UDRAG ',UDRAG
+c            write(6,*) 'ULIFT ',ULIFT,' ULMAG ',ULMAG
+c            write(6,3) 'ULIFT(1)_U ',(ULIFT_U(1,L),L=1,NUMAX)
+c            write(6,3) 'ULIFT(2)_U ',(ULIFT_U(2,L),L=1,NUMAX)
+c            write(6,3) 'ULIFT(3)_U ',(ULIFT_U(3,L),L=1,NUMAX)
+          ENDDO
+ 3        FORMAT(A,6(2X,F8.5))
         ENDIF
 C
 C...Use the strip 1/4 chord location for strip moments
-        XR  = RLE(1,J) + 0.25*CR
-        YR  = RLE(2,J)
-        ZR  = RLE(3,J)
+        RC4(1)  = RLE(1,J) + 0.25*CR
+        RC4(2)  = RLE(2,J)
+        RC4(3)  = RLE(3,J)
 C
         CFX = 0.
         CFY = 0.
@@ -269,37 +402,36 @@ C$AD II-LOOP
           I = I1 + (II-1)
 C
 C------- local moment reference vector from vortex midpoint to strip c/4 pt.
-c          R(1) = 0.5*(RV1(1,I) + RV2(1,I)) - XR
-c          R(2) = 0.5*(RV1(2,I) + RV2(2,I)) - YR
-c          R(3) = 0.5*(RV1(3,I) + RV2(3,I)) - ZR
-          R(1) = RV(1,I) - XR
-          R(2) = RV(2,I) - YR
-          R(3) = RV(3,I) - ZR
+          R(1) = RV(1,I) - RC4(1)
+          R(2) = RV(2,I) - RC4(2)
+          R(3) = RV(3,I) - RC4(3)
 C
 C------- vector from rotation axes
-c          RROT(1) = 0.5*(RV1(1,I) + RV2(1,I)) - XYZREF(1)
-c          RROT(2) = 0.5*(RV1(2,I) + RV2(2,I)) - XYZREF(2)
-c          RROT(3) = 0.5*(RV1(3,I) + RV2(3,I)) - XYZREF(3)
           RROT(1) = RV(1,I) - XYZREF(1)
           RROT(2) = RV(2,I) - XYZREF(2)
           RROT(3) = RV(3,I) - XYZREF(3)
 C
-C-------- set total effective velocity = freestream + rotation + induced
           CALL CROSS(RROT,WROT,VROT)
-          VEFF(1) = VINF(1) + VROT(1) + WV(1,I)
-          VEFF(2) = VINF(2) + VROT(2) + WV(2,I)
-          VEFF(3) = VINF(3) + VROT(3) + WV(3,I)
 C
-C-------- set VEFF sensitivities to freestream,rotation components
+          IF(LNFLD_WV) THEN
+C======================================================================
+C   Here the forces on h.v.'s are calculated using total induced velocity
+C   WV, including velocities from h.v.'s and body source+doublets  
+C   Set total effective velocity = freestream + rotation + h.v.+body induced
+           VEFF(1) = VINF(1) + VROT(1) + WV(1,I)
+           VEFF(2) = VINF(2) + VROT(2) + WV(2,I)
+           VEFF(3) = VINF(3) + VROT(3) + WV(3,I)
+C
+C-------- set VEFF sensitivities to freestream,rotation,induced,controls,design
 C$AD II-LOOP
-          DO K = 1, 3
+           DO K = 1, 3
             VEFF_U(1,K) = WV_U(1,I,K)
             VEFF_U(2,K) = WV_U(2,I,K)
             VEFF_U(3,K) = WV_U(3,I,K)
             VEFF_U(K,K) = 1.0  +  VEFF_U(K,K)
-          ENDDO
+           ENDDO
 C$AD II-LOOP
-          DO K = 4, 6
+           DO K = 4, 6
             WROT_U(1) = 0.
             WROT_U(2) = 0.
             WROT_U(3) = 0.
@@ -308,7 +440,56 @@ C$AD II-LOOP
             VEFF_U(1,K) = VROT_U(1) + WV_U(1,I,K)
             VEFF_U(2,K) = VROT_U(2) + WV_U(2,I,K)
             VEFF_U(3,K) = VROT_U(3) + WV_U(3,I,K)
-          ENDDO
+           ENDDO
+           DO N = 1, NCONTROL
+            VEFF_D(1,N) = WV_D(1,I,N)
+            VEFF_D(2,N) = WV_D(2,I,N)
+            VEFF_D(3,N) = WV_D(3,I,N)
+           END DO
+           DO N = 1, NDESIGN
+            VEFF_G(1,N) = WV_G(1,I,N)
+            VEFF_G(2,N) = WV_G(2,I,N)
+            VEFF_G(3,N) = WV_G(3,I,N)
+           END DO
+C
+          ELSE
+C======================================================================
+C   Here the forces on h.v.'s are calculated only with h.v. vortex induced
+C   velocities VV, excluding velocities from body source+doublets  
+C   Set total effective velocity = freestream + rotation + h.v. induced
+           VEFF(1) = VINF(1) + VROT(1) + VV(1,I)
+           VEFF(2) = VINF(2) + VROT(2) + VV(2,I)
+           VEFF(3) = VINF(3) + VROT(3) + VV(3,I)
+C
+C-------- set VEFF sensitivities to freestream,rotation,.h.v. induced
+           DO K = 1, 3
+            VEFF_U(1,K) = VV_U(1,I,K)
+            VEFF_U(2,K) = VV_U(2,I,K)
+            VEFF_U(3,K) = VV_U(3,I,K)
+            VEFF_U(K,K) = 1.0  +  VEFF_U(K,K)
+           ENDDO
+           DO K = 4, 6
+            WROT_U(1) = 0.
+            WROT_U(2) = 0.
+            WROT_U(3) = 0.
+            WROT_U(K-3) = 1.0
+            CALL CROSS(RROT,WROT_U,VROT_U)
+            VEFF_U(1,K) = VROT_U(1) + VV_U(1,I,K)
+            VEFF_U(2,K) = VROT_U(2) + VV_U(2,I,K)
+            VEFF_U(3,K) = VROT_U(3) + VV_U(3,I,K)
+           ENDDO
+           DO N = 1, NCONTROL
+            VEFF_D(1,N) = VV_D(1,I,N)
+            VEFF_D(2,N) = VV_D(2,I,N)
+            VEFF_D(3,N) = VV_D(3,I,N)
+           END DO
+           DO N = 1, NDESIGN
+            VEFF_G(1,N) = VV_G(1,I,N)
+            VEFF_G(2,N) = VV_G(2,I,N)
+            VEFF_G(3,N) = VV_G(3,I,N)
+           END DO
+C         
+          ENDIF
 C
 C-------- Force coefficient on vortex segment is 2(Veff x Gamma)
           G(1) = RV2(1,I)-RV1(1,I)
@@ -317,6 +498,12 @@ C-------- Force coefficient on vortex segment is 2(Veff x Gamma)
           CALL CROSS(VEFF, G, F)
           DO N = 1, NUMAX
             CALL CROSS(VEFF_U(:,N), G, F_U(:,N))
+          ENDDO
+          DO N = 1, NCONTROL
+            CALL CROSS(VEFF_D(:,N), G, F_D(:,N))
+          ENDDO
+          DO N = 1, NDESIGN
+            CALL CROSS(VEFF_G(:,N), G, F_G(:,N))
           ENDDO
 C
           FGAM(1) = 2.0*GAM(I)*F(1)
@@ -330,15 +517,15 @@ C$AD II-LOOP
           ENDDO
 C$AD II-LOOP
           DO N = 1, NCONTROL
-            FGAM_D(1,N) = 2.0*GAM_D(I,N)*F(1)
-            FGAM_D(2,N) = 2.0*GAM_D(I,N)*F(2)
-            FGAM_D(3,N) = 2.0*GAM_D(I,N)*F(3)
+            FGAM_D(1,N) = 2.0*GAM_D(I,N)*F(1) + 2.0*GAM(I)*F_D(1,N)
+            FGAM_D(2,N) = 2.0*GAM_D(I,N)*F(2) + 2.0*GAM(I)*F_D(2,N)
+            FGAM_D(3,N) = 2.0*GAM_D(I,N)*F(3) + 2.0*GAM(I)*F_D(3,N)
           ENDDO
 C$AD II-LOOP
           DO N = 1, NDESIGN
-            FGAM_G(1,N) = 2.0*GAM_G(I,N)*F(1)
-            FGAM_G(2,N) = 2.0*GAM_G(I,N)*F(2)
-            FGAM_G(3,N) = 2.0*GAM_G(I,N)*F(3)
+            FGAM_G(1,N) = 2.0*GAM_G(I,N)*F(1) + 2.0*GAM(I)*F_G(1,N)
+            FGAM_G(2,N) = 2.0*GAM_G(I,N)*F(2) + 2.0*GAM(I)*F_G(2,N)
+            FGAM_G(3,N) = 2.0*GAM_G(I,N)*F(3) + 2.0*GAM(I)*F_G(3,N)
           ENDDO
 C
 C
@@ -465,20 +652,21 @@ C
    40   CONTINUE
 C
 C
+C...Add h.v. forces from the parts of trailing legs which lie on the surface
         IF(.NOT.LTRFORCE) GO TO 80
 C
-C...Sum forces in the strip as generated by velocity (freestream + rotation)
-C     the parts of trailing legs which lie on the surface
+C----- Sum forces on trailing legs using velocity = (freestream + rotation)
 C$AD II-LOOP
         DO 72 II = 1, NVC_strp
           I = I1 + (II-1)
 C
+ccc          ddcmx = 0.0
           DO 71 ILEG = 1, 2
             IF(ILEG.EQ.1) THEN
 C----------- local moment reference vector from vortex midpoint to strip c/4 pt
-             R(1) = 0.5*(RV1(1,I) + XTE1) - XR
-             R(2) =      RV1(2,I)         - YR
-             R(3) =      RV1(3,I)         - ZR
+             R(1) = 0.5*(RV1(1,I) + XTE1) - RC4(1)
+             R(2) =      RV1(2,I)         - RC4(2)
+             R(3) =      RV1(3,I)         - RC4(3)
 C 
 C----------- vector from rotation axes
              RROT(1) = 0.5*(RV1(1,I) + XTE1) - XYZREF(1)
@@ -492,9 +680,9 @@ C----------- part of trailing leg lying on surface
 C
             ELSE
 C----------- local moment reference vector from vortex midpoint to strip c/4 pt
-             R(1) = 0.5*(RV2(1,I) + XTE2) - XR
-             R(2) =      RV2(2,I)         - YR
-             R(3) =      RV2(3,I)         - ZR
+             R(1) = 0.5*(RV2(1,I) + XTE2) - RC4(1)
+             R(2) =      RV2(2,I)         - RC4(2)
+             R(3) =      RV2(3,I)         - RC4(3)
 C
 C----------- vector from rotation axes
              RROT(1) = 0.5*(RV2(1,I) + XTE2) - XYZREF(1)
@@ -508,6 +696,8 @@ C----------- part of trailing leg lying on surface
             ENDIF
 C
 C---------- set total effective velocity = freestream + rotation
+C           this ignores the h.v. induced contribution as this changes
+C           along the trailing leg portion on the wing       
             CALL CROSS(RROT,WROT,VROT)
             VEFF(1) = VINF(1) + VROT(1)
             VEFF(2) = VINF(2) + VROT(2)
@@ -596,6 +786,9 @@ C---------- moments referred to strip c/4 pt., normalized by strip chord and are
             CMX = CMX + (DCFZ*R(2) - DCFY*R(3))/CR
             CMY = CMY + (DCFX*R(3) - DCFZ*R(1))/CR
             CMZ = CMZ + (DCFY*R(1) - DCFX*R(2))/CR
+ccc            ddcmx = ddcmx + (DCFZ*R(2) - DCFY*R(3))/CR
+ccc            write(22,*) I,ILEG,DCFY,DCFZ,(DCFZ*R(2) - DCFY*R(3))/CR
+ccc            write(23,*) I,ddcmx
 C
 C---------- accumulate strip spanloading = c*CN
             CNC(J) = CNC(J) + CR*(ENSY(J)*DCFY + ENSZ(J)*DCFZ)
@@ -682,7 +875,8 @@ C
    72   CONTINUE
  80     CONTINUE
 C
-C
+ccc        write(26,*) J, cmx,cmy,cmz
+C     
 C*******************************************************************
 C--- Drag terms due to viscous effects
 C    Drag forces are assumed to be characterized by velocity at the c/4 
@@ -694,13 +888,13 @@ C
 C
         IF(LVISC.AND.LVISCSTRP(J)) THEN
 C--- local moment reference vector from ref point to c/4 point
-c         R(1) = XR - XR
-c         R(2) = YR - YR
-c         R(3) = ZR - ZR
+c         R(1) = RC4(1) - RC4(1)
+c         R(2) = RC4(2) - RC4(2)
+c         R(3) = RC4(3) - RC4(3)
 C--- Get rotational velocity at strip 1/4 chord reference point 
-         RROT(1) = XR - XYZREF(1)
-         RROT(2) = YR - XYZREF(2)
-         RROT(3) = ZR - XYZREF(3)
+         RROT(1) = RC4(1) - XYZREF(1)
+         RROT(2) = RC4(2) - XYZREF(2)
+         RROT(3) = RC4(3) - XYZREF(3)
 C--- Onset velocity at strip c/4 = freestream + rotation
          CALL CROSS(RROT,WROT,VROT)
          VEFF(1) = VINF(1) + VROT(1)
@@ -727,33 +921,45 @@ C------- set sensitivities to freestream,rotation components
            VEFF_U(2,K) = VROT_U(2)
            VEFF_U(3,K) = VROT_U(3)
          ENDDO
+         DO N = 1, NUMAX
+           VEFFMAG_U(N) = ( VEFF(1)*VEFF_U(1,N)
+     &                  +   VEFF(2)*VEFF_U(2,N)
+     &                  +   VEFF(3)*VEFF_U(3,N) ) / VEFFMAG
+         enddo
 C
 C--- Generate CD from stored function using strip CL as parameter
          CLV = ULIFT(1)*CFX + ULIFT(2)*CFY + ULIFT(3)*CFZ
+cc         write(6,*) '***** CLV CFX CFY CFZ ', CLV, CFX,CFY,CFZ
 C$AD II-LOOP
          DO N = 1, NUMAX
-           CLV_U(N) = ENSY(J)* CFY_U(N)
-     &              + ENSZ(J)*(CFZ_U(N)*COSA - CFX_U(N)*SINA)  
-         END DO
+           CLV_U(N) = ULIFT(1)*CFX_U(N) + ULIFT_U(1,N)*CFX
+     &              + ULIFT(2)*CFY_U(N) + ULIFT_U(2,N)*CFY
+     &              + ULIFT(3)*CFZ_U(N) + ULIFT_U(3,N)*CFZ
+        END DO
 C
 C$AD II-LOOP
          DO N = 1, NCONTROL
-           CLV_D(N) = ENSY(J)* CFY_D(N)
-     &              + ENSZ(J)*(CFZ_D(N)*COSA - CFX_D(N)*SINA)  
+           CLV_D(N) = ULIFT(1)*CFX_D(N) + ULIFT_D(1,N)*CFX
+     &              + ULIFT(2)*CFY_D(N) + ULIFT_D(2,N)*CFY
+     &              + ULIFT(3)*CFZ_D(N) + ULIFT_D(3,N)*CFZ
          END DO
 C
 C$AD II-LOOP
          DO N = 1, NDESIGN
-           CLV_G(N) = ENSY(J)* CFY_G(N)
-     &              + ENSZ(J)*(CFZ_G(N)*COSA - CFX_G(N)*SINA)  
+           CLV_G(N) = ULIFT(1)*CFX_G(N) + ULIFT_G(1,N)*CFX
+     &              + ULIFT(2)*CFY_G(N) + ULIFT_G(2,N)*CFY
+     &              + ULIFT(3)*CFZ_G(N) + ULIFT_G(3,N)*CFZ
          END DO
 C
-         CALL CDCL(J,CLV,CDV,CDV_CLV)
+C--- Get CD from CLCD function using strip CL as parameter
+         CALL CDCL(CLCD(1,J),CLV,CDV,CDV_CLV)
 C
 C--- Strip viscous force contribution (per unit strip area)
          DCVFX = VEFF(1)*VEFFMAG * CDV
          DCVFY = VEFF(2)*VEFFMAG * CDV
          DCVFZ = VEFF(3)*VEFFMAG * CDV
+c         write(6,*) 'Jstrip CLV,CDV ',J,CLV,CDV
+c         write(6,*) 'DCVFXYZ ',DCVFX,DCVFY,DCVFZ
 C
 C--- Add viscous terms to strip forces and moments
          CFX = CFX +  DCVFX
@@ -768,14 +974,16 @@ C
 C
 C--- Add the sensitivity of viscous forces to the flow conditions
 C$AD II-LOOP
-         DO N=1, NUMAX
-           DCVFX_U = (VEFF_U(1,N)*(VEFFMAG + VEFF(1)**2/VEFFMAG))*CDV
-     &             +  VEFF(1)    * VEFFMAG * CDV_CLV*CLV_U(N)
-           DCVFY_U = (VEFF_U(2,N)*(VEFFMAG + VEFF(2)**2/VEFFMAG))*CDV
-     &             +  VEFF(2)    * VEFFMAG * CDV_CLV*CLV_U(N)
-           DCVFZ_U = (VEFF_U(3,N)*(VEFFMAG + VEFF(3)**2/VEFFMAG))*CDV
-     &             +  VEFF(3)    * VEFFMAG * CDV_CLV*CLV_U(N)
-C
+
+
+      DO N=1, NUMAX
+           DCVFX_U = (VEFF_U(1,N)*VEFFMAG + VEFF(1)*VEFFMAG_U(N))*CDV
+     &             +  VEFF(1)*VEFFMAG * CDV_CLV*CLV_U(N)
+           DCVFY_U = (VEFF_U(2,N)*VEFFMAG + VEFF(2)*VEFFMAG_U(N))*CDV
+     &             +  VEFF(2)*VEFFMAG * CDV_CLV*CLV_U(N)
+           DCVFZ_U = (VEFF_U(3,N)*VEFFMAG + VEFF(3)*VEFFMAG_U(N))*CDV
+     &             +  VEFF(3)*VEFFMAG * CDV_CLV*CLV_U(N)
+C           
            CFX_U(N) = CFX_U(N) +  DCVFX_U
            CFY_U(N) = CFY_U(N) +  DCVFY_U
            CFZ_U(N) = CFZ_U(N) +  DCVFZ_U
@@ -828,97 +1036,118 @@ C
 C
 C*******************************************************************
 C
-C...Store strip X,Y,Z body axes forces 
-C   (these are normalized by strip area and moments are referred to
-C    c/4 point and are normalized by strip chord and area)
-        CF_STRP(1,J) = CFX
-        CF_STRP(2,J) = CFY
-        CF_STRP(3,J) = CFZ
-        CM_STRP(1,J) = CMX
-        CM_STRP(2,J) = CMY
-        CM_STRP(3,J) = CMZ
+C---  At this point the forces are accumulated for the strip in body axes,
+C     referenced to strip 1/4 chord and normalized by strip area and chord
+C     CFX, CFY, CFZ   ! body axes forces 
+C     CMX, CMY, CMZ   ! body axes moments about c/4 point 
+C     CNC             ! strip spanloading CN*chord
+C     CDV_LSTRP       ! strip viscous drag in wind axes
 C
-C...Transform strip body axes forces into stability axes
+C...Store strip X,Y,Z body axes forces and moments 
+C   referred to c/4 and strip area and chord
+        CF_LSTRP(1,J) = CFX
+        CF_LSTRP(2,J) = CFY
+        CF_LSTRP(3,J) = CFZ
+        CM_LSTRP(1,J) = CMX
+        CM_LSTRP(2,J) = CMY
+        CM_LSTRP(3,J) = CMZ
+ccc        write(24,*) J,cmx
+C
+C...Strip body axes forces, referred to strip area and chord
+        CFSTRP(1,J) =  CFX
+        CFSTRP(2,J) =  CFY
+        CFSTRP(3,J) =  CFZ
+C...Transform strip body axes forces into stability axes,
+C   referred to strip area and chord
         CDSTRP(J) =  CFX*COSA + CFZ*SINA
-        CLSTRP(J) = -CFX*SINA + CFZ*COSA 
-        CXSTRP(J) =  CFX
         CYSTRP(J) =  CFY
-        CZSTRP(J) =  CFZ
+        CLSTRP(J) = -CFX*SINA + CFZ*COSA 
 C
         CDST_A(J) = -CFX*SINA + CFZ*COSA
+        CYST_A(J) =  0.0
         CLST_A(J) = -CFX*COSA - CFZ*SINA 
 C
 C$AD II-LOOP
         DO N=1, NUMAX
           CDST_U(J,N) =  CFX_U(N)*COSA + CFZ_U(N)*SINA
-          CLST_U(J,N) = -CFX_U(N)*SINA + CFZ_U(N)*COSA 
-          CXST_U(J,N) =  CFX_U(N)
           CYST_U(J,N) =  CFY_U(N)
-          CZST_U(J,N) =  CFZ_U(N)
+          CLST_U(J,N) = -CFX_U(N)*SINA + CFZ_U(N)*COSA 
+          CFST_U(1,J,N) =  CFX_U(N)
+          CFST_U(2,J,N) =  CFY_U(N)
+          CFST_U(3,J,N) =  CFZ_U(N)
         END DO
 C
 C$AD II-LOOP
         DO N=1, NCONTROL
           CDST_D(J,N) =  CFX_D(N)*COSA + CFZ_D(N)*SINA
-          CLST_D(J,N) = -CFX_D(N)*SINA + CFZ_D(N)*COSA 
-          CXST_D(J,N) =  CFX_D(N)
           CYST_D(J,N) =  CFY_D(N)
-          CZST_D(J,N) =  CFZ_D(N)
+          CLST_D(J,N) = -CFX_D(N)*SINA + CFZ_D(N)*COSA 
+          CFST_D(1,J,N) =  CFX_D(N)
+          CFST_D(2,J,N) =  CFY_D(N)
+          CFST_D(3,J,N) =  CFZ_D(N)
         END DO
 C
 C$AD II-LOOP
         DO N=1, NDESIGN
           CDST_G(J,N) =  CFX_G(N)*COSA + CFZ_G(N)*SINA
-          CLST_G(J,N) = -CFX_G(N)*SINA + CFZ_G(N)*COSA 
-          CXST_G(J,N) =  CFX_G(N)
           CYST_G(J,N) =  CFY_G(N)
-          CZST_G(J,N) =  CFZ_G(N)
+          CLST_G(J,N) = -CFX_G(N)*SINA + CFZ_G(N)*COSA 
+          CFST_G(1,J,N) =  CFX_G(N)
+          CFST_G(2,J,N) =  CFY_G(N)
+          CFST_G(3,J,N) =  CFZ_G(N)
         END DO
 C
-C... Set strip moments about the overall moment reference point XYZREF 
-C     (still normalized by strip area and chord)
-        R(1) = XR - XYZREF(1)
-        R(2) = YR - XYZREF(2)
-        R(3) = ZR - XYZREF(3)
-
-        CRSTRP(J) = CMX + (CFZ*R(2) - CFY*R(3))/CR
-        CMSTRP(J) = CMY + (CFX*R(3) - CFZ*R(1))/CR
-        CNSTRP(J) = CMZ + (CFY*R(1) - CFX*R(2))/CR
+C------ vector from chord c/4 reference point to case reference point XYZREF 
+        R(1) = RC4(1) - XYZREF(1)
+        R(2) = RC4(2) - XYZREF(2)
+        R(3) = RC4(3) - XYZREF(3)
+C... Strip moments in body axes about the case moment reference point XYZREF 
+C    normalized by strip area and chord
+        CMSTRP(1,J) = CMX + (CFZ*R(2) - CFY*R(3))/CR
+        CMSTRP(2,J) = CMY + (CFX*R(3) - CFZ*R(1))/CR
+        CMSTRP(3,J) = CMZ + (CFY*R(1) - CFX*R(2))/CR
 C
 C$AD II-LOOP
         DO N=1, NUMAX
-          CRST_U(J,N) = CMX_U(N) + (CFZ_U(N)*R(2) - CFY_U(N)*R(3))/CR
-          CMST_U(J,N) = CMY_U(N) + (CFX_U(N)*R(3) - CFZ_U(N)*R(1))/CR
-          CNST_U(J,N) = CMZ_U(N) + (CFY_U(N)*R(1) - CFX_U(N)*R(2))/CR
+          CMST_U(1,J,N) = CMX_U(N) + (CFZ_U(N)*R(2) - CFY_U(N)*R(3))/CR
+          CMST_U(2,J,N) = CMY_U(N) + (CFX_U(N)*R(3) - CFZ_U(N)*R(1))/CR
+          CMST_U(3,J,N) = CMZ_U(N) + (CFY_U(N)*R(1) - CFX_U(N)*R(2))/CR
         ENDDO
 C
 C$AD II-LOOP
         DO N=1, NCONTROL
-          CRST_D(J,N) = CMX_D(N) + (CFZ_D(N)*R(2) - CFY_D(N)*R(3))/CR
-          CMST_D(J,N) = CMY_D(N) + (CFX_D(N)*R(3) - CFZ_D(N)*R(1))/CR
-          CNST_D(J,N) = CMZ_D(N) + (CFY_D(N)*R(1) - CFX_D(N)*R(2))/CR
+          CMST_D(1,J,N) = CMX_D(N) + (CFZ_D(N)*R(2) - CFY_D(N)*R(3))/CR
+          CMST_D(2,J,N) = CMY_D(N) + (CFX_D(N)*R(3) - CFZ_D(N)*R(1))/CR
+          CMST_D(3,J,N) = CMZ_D(N) + (CFY_D(N)*R(1) - CFX_D(N)*R(2))/CR
         ENDDO
 C
 C$AD II-LOOP
         DO N=1, NDESIGN
-          CRST_G(J,N) = CMX_G(N) + (CFZ_G(N)*R(2) - CFY_G(N)*R(3))/CR
-          CMST_G(J,N) = CMY_G(N) + (CFX_G(N)*R(3) - CFZ_G(N)*R(1))/CR
-          CNST_G(J,N) = CMZ_G(N) + (CFY_G(N)*R(1) - CFX_G(N)*R(2))/CR
+          CMST_G(1,J,N) = CMX_G(N) + (CFZ_G(N)*R(2) - CFY_G(N)*R(3))/CR
+          CMST_G(2,J,N) = CMY_G(N) + (CFX_G(N)*R(3) - CFZ_G(N)*R(1))/CR
+          CMST_G(3,J,N) = CMZ_G(N) + (CFY_G(N)*R(1) - CFX_G(N)*R(2))/CR
         ENDDO
 C
-C...Take components of X,Y,Z forces in local strip axes 
-C   (axial/normal and lift/drag)
-C    in plane normal to (possibly dihedralled) strip
+C...Components of X,Y,Z forces in local strip axes 
         CL_LSTRP(J) = ULIFT(1)*CFX + ULIFT(2)*CFY + ULIFT(3)*CFZ
         CD_LSTRP(J) = UDRAG(1)*CFX + UDRAG(2)*CFY + UDRAG(3)*CFZ
-        CAXLSTRP(J) = CFX
-        CNRMSTRP(J) = ENSY(J)*CFY + ENSZ(J)*CFZ
-        CMC4(J)     = ENSZ(J)*CMY - ENSY(J)*CMZ
+        CMC4_LSTRP(J) = ENSZ(J)*CMY - ENSY(J)*CMZ
+
+C...Axial/normal forces and lift/drag in plane normal to dihedral of strip
+        CAXL0 = CFX
+        CNRM0 = ENSY(J)*CFY + ENSZ(J)*CFZ
+C...CN,CA forces are rotated to be in and normal to strip incidence
+C   HHY bugfix 01102024 added rotation by AINC
+        SINAINC = SIN(AINC(J))
+        COSAINC = COS(AINC(J))
+        CA_LSTRP(J) = CAXL0*COSAINC - CNRM0*SINAINC
+        CN_LSTRP(J) = CNRM0*COSAINC + CAXL0*SINAINC
 C
 C------ vector at chord reference point from rotation axes
         RROT(1) = XSREF(J) - XYZREF(1)
         RROT(2) = YSREF(J) - XYZREF(2)
         RROT(3) = ZSREF(J) - XYZREF(3)
+c        print *,"WROT ",WROT
 C
 C------ set total effective velocity = freestream + rotation
         CALL CROSS(RROT,WROT,VROT)
@@ -945,29 +1174,29 @@ C
         ELSE
          VPSQI = 1.0 / VPSQ
         ENDIF
-ccc     CLTSTRP(J) = CNRMSTRP(J) * VPSQI
-        CLTSTRP(J) = CL_LSTRP(J) * VPSQI
-        CLASTRP(J) = CL_LSTRP(J) * VSQI
+ccc     CLT_LSTRP(J) = CN_LSTRP(J) * VPSQI
+        CLT_LSTRP(J) = CL_LSTRP(J) * VPSQI
+        CLA_LSTRP(J) = CL_LSTRP(J) * VSQI
 C
 C--- Moment about strip LE midpoint in direction of LE segment
-        R(1) = XR - RLE(1,J)
-        R(2) = YR - RLE(2,J)
-        R(3) = ZR - RLE(3,J)
+        R(1) = RC4(1) - RLE(1,J)
+        R(2) = RC4(2) - RLE(2,J)
+        R(3) = RC4(3) - RLE(3,J)
         DELX = RLE2(1,J) - RLE1(1,J)
         DELY = RLE2(2,J) - RLE1(2,J)
         DELZ = RLE2(3,J) - RLE1(3,J)
 C
-        IF(IMAGS(NSURFS(J)).LT.0) THEN 
+        IF(IMAGS(LSSURF(J)).LT.0) THEN 
          DELX = -DELX
          DELY = -DELY
          DELZ = -DELZ
         ENDIF
         DMAG = SQRT(DELX**2+DELY**2+DELZ**2)
-        CMLE(J) = 0.0
+        CMLE_LSTRP(J) = 0.0
         IF(DMAG.NE.0.0) THEN
-         CMLE(J) = DELX/DMAG*(CMX + (CFZ*R(2) - CFY*R(3))/CR)
-     &           + DELY/DMAG*(CMY + (CFX*R(3) - CFZ*R(1))/CR)
-     &           + DELZ/DMAG*(CMZ + (CFY*R(1) - CFX*R(2))/CR)
+         CMLE_LSTRP(J) = DELX/DMAG*(CMX + (CFZ*R(2) - CFY*R(3))/CR)
+     &                 + DELY/DMAG*(CMY + (CFX*R(3) - CFZ*R(1))/CR)
+     &                 + DELZ/DMAG*(CMZ + (CFY*R(1) - CFX*R(2))/CR)
         ENDIF
 C
   100 CONTINUE
@@ -975,154 +1204,165 @@ C
 C
 C
 C...Surface forces and moments summed from strip forces...
-C   XXSURF values normalized to configuration reference quantities
-C   XX_SRF values normalized to each surface reference quantities
-C$AD II-LOOP
+C   XXSURF values normalized to configuration reference quantities SREF,CREF,BREF about XYZref
+C   XX_LSRF values normalized to each surface's reference quantities (area and average chord)
       DO 150 IS = 1, NSURF
         CDSURF(IS) = 0.
-        CLSURF(IS) = 0.
-        CXSURF(IS) = 0.
         CYSURF(IS) = 0.
-        CZSURF(IS) = 0.
-        CRSURF(IS) = 0.
-        CMSURF(IS) = 0.
-        CNSURF(IS) = 0.
+        CLSURF(IS) = 0.
+        DO L=1,3
+          CFSURF(L,IS) = 0.
+          CMSURF(L,IS) = 0.
+        ENDDO
         CDVSURF(IS) = 0.
 C
         CDS_A(IS) = 0.
+        CYS_A(IS) = 0.
         CLS_A(IS) = 0.
         DO N=1, NUMAX
           CDS_U(IS,N) = 0.
-          CLS_U(IS,N) = 0.
-          CXS_U(IS,N) = 0.
           CYS_U(IS,N) = 0.
-          CZS_U(IS,N) = 0.
-          CRS_U(IS,N) = 0.
-          CMS_U(IS,N) = 0.
-          CNS_U(IS,N) = 0.
-        ENDDO
+          CLS_U(IS,N) = 0.
+          DO L=1,3
+            CFS_U(L,IS,N) = 0.
+            CMS_U(L,IS,N) = 0.
+          ENDDO
+       ENDDO
         DO N=1, NCONTROL
           CDS_D(IS,N) = 0.
-          CLS_D(IS,N) = 0.
-          CXS_D(IS,N) = 0.
           CYS_D(IS,N) = 0.
-          CZS_D(IS,N) = 0.
-          CRS_D(IS,N) = 0.
-          CMS_D(IS,N) = 0.
-          CNS_D(IS,N) = 0.
+          CLS_D(IS,N) = 0.
+          DO L=1,3
+            CFS_D(L,IS,N) = 0.
+            CMS_D(L,IS,N) = 0.
+          ENDDO
         ENDDO
         DO N=1, NDESIGN
           CDS_G(IS,N) = 0.
-          CLS_G(IS,N) = 0.
-          CXS_G(IS,N) = 0.
           CYS_G(IS,N) = 0.
-          CZS_G(IS,N) = 0.
-          CRS_G(IS,N) = 0.
-          CMS_G(IS,N) = 0.
-          CNS_G(IS,N) = 0.
+          CLS_G(IS,N) = 0.
+          DO L=1,3
+            CFS_G(L,IS,N) = 0.
+            CMS_G(L,IS,N) = 0.
+          ENDDO
         ENDDO
 C
 C--- Surface body axes forces and moments
         DO L = 1, 3
-          CF_SRF(L,IS) = 0.0
-          CM_SRF(L,IS) = 0.0
+          CF_LSRF(L,IS) = 0.0
+          CM_LSRF(L,IS) = 0.0
           ENAVE(L)    = 0.0
         END DO
 C
-        NSTRPS = NJ(IS)
+        ! NSTRPS = NJ(IS)
 C$AD II-LOOP
-        DO 120 JJ = 1, NSTRPS
+        DO 120 JJ = 1, NJ(IS)
           J = JFRST(IS) + JJ-1
           SR = CHORD(J)*WSTRIP(J)
           CR = CHORD(J)
-          XR = RLE(1,J) + 0.25*CHORD(J)
-          YR = RLE(2,J)
-          ZR = RLE(3,J)
+          RC4(1) = RLE(1,J) + 0.25*CHORD(J)
+          RC4(2) = RLE(2,J)
+          RC4(3) = RLE(3,J)
 C
+ccc          write(25,*) IS,J,JJ,CM_LSTRP(1,J),CM_LSTRP(2,J),CM_LSTRP(3,J)
+
           ENAVE(1) = 0.0
           ENAVE(2) = ENAVE(2) + SR*ENSY(J)
           ENAVE(3) = ENAVE(3) + SR*ENSZ(J)
 C
+C--- Surface lift and drag referenced to case SREF, CREF, BREF 
           CDSURF(IS) = CDSURF(IS) + CDSTRP(J)*SR/SREF
-          CLSURF(IS) = CLSURF(IS) + CLSTRP(J)*SR/SREF
-C
-          CXSURF(IS) = CXSURF(IS) + CXSTRP(J)*SR/SREF
           CYSURF(IS) = CYSURF(IS) + CYSTRP(J)*SR/SREF
-          CZSURF(IS) = CZSURF(IS) + CZSTRP(J)*SR/SREF
-C
-          CRSURF(IS) = CRSURF(IS) + CRSTRP(J)*(SR/SREF)*(CR/BREF)
-          CMSURF(IS) = CMSURF(IS) + CMSTRP(J)*(SR/SREF)*(CR/CREF)
-          CNSURF(IS) = CNSURF(IS) + CNSTRP(J)*(SR/SREF)*(CR/BREF)
+          CLSURF(IS) = CLSURF(IS) + CLSTRP(J)*SR/SREF
+C--- Surface body axes forces referenced to case SREF, CREF, BREF
+          CFSURF(1,IS) = CFSURF(1,IS) + CFSTRP(1,J)*SR/SREF
+          CFSURF(2,IS) = CFSURF(2,IS) + CFSTRP(2,J)*SR/SREF
+          CFSURF(3,IS) = CFSURF(3,IS) + CFSTRP(3,J)*SR/SREF
+C--- Surface body axes moments referenced to case SREF, CREF, BREF about XYZREF
+          CMSURF(1,IS) = CMSURF(1,IS) + CMSTRP(1,J)*(SR/SREF)*(CR/BREF)
+          CMSURF(2,IS) = CMSURF(2,IS) + CMSTRP(2,J)*(SR/SREF)*(CR/CREF)
+          CMSURF(3,IS) = CMSURF(3,IS) + CMSTRP(3,J)*(SR/SREF)*(CR/BREF)
 C
 C--- Bug fix, HHY/S.Allmaras 
+C--- Surface viscous drag referenced to case SREF, CREF, BREF
           CDVSURF(IS)  = CDVSURF(IS) + CDV_LSTRP(J)*(SR/SREF)
 C
           CDS_A(IS) = CDS_A(IS) + CDST_A(J)*SR/SREF
+          CYS_A(IS) = CYS_A(IS) + CYST_A(J)*SR/SREF
           CLS_A(IS) = CLS_A(IS) + CLST_A(J)*SR/SREF
 C
           DO N=1, NUMAX
             CDS_U(IS,N) = CDS_U(IS,N) + CDST_U(J,N)*SR/SREF
+            CYS_U(IS,N) = CYS_U(IS,N) + CYST_U(J,N)*SR/SREF
             CLS_U(IS,N) = CLS_U(IS,N) + CLST_U(J,N)*SR/SREF
 C
-            CXS_U(IS,N) = CXS_U(IS,N) + CXST_U(J,N)*SR/SREF
-            CYS_U(IS,N) = CYS_U(IS,N) + CYST_U(J,N)*SR/SREF
-            CZS_U(IS,N) = CZS_U(IS,N) + CZST_U(J,N)*SR/SREF
-C
-            CRS_U(IS,N) = CRS_U(IS,N) + CRST_U(J,N)*(SR/SREF)*(CR/BREF)
-            CMS_U(IS,N) = CMS_U(IS,N) + CMST_U(J,N)*(SR/SREF)*(CR/CREF)
-            CNS_U(IS,N) = CNS_U(IS,N) + CNST_U(J,N)*(SR/SREF)*(CR/BREF)
+            DO L = 1, 3
+              CFS_U(L,IS,N) = CFS_U(L,IS,N) + CFST_U(L,J,N)*SR/SREF
+            ENDDO
+            CMS_U(1,IS,N) = CMS_U(1,IS,N)
+     &                    + CMST_U(1,J,N)*(SR/SREF)*(CR/BREF)
+            CMS_U(2,IS,N) = CMS_U(2,IS,N)
+     &                    + CMST_U(2,J,N)*(SR/SREF)*(CR/CREF)
+            CMS_U(3,IS,N) = CMS_U(3,IS,N)
+     &                    + CMST_U(3,J,N)*(SR/SREF)*(CR/BREF)
           ENDDO
 C
           DO N=1, NCONTROL
             CDS_D(IS,N) = CDS_D(IS,N) + CDST_D(J,N)*SR/SREF
+            CYS_D(IS,N) = CYS_D(IS,N) + CYST_D(J,N)*SR/SREF
             CLS_D(IS,N) = CLS_D(IS,N) + CLST_D(J,N)*SR/SREF
 C
-            CXS_D(IS,N) = CXS_D(IS,N) + CXST_D(J,N)*SR/SREF
-            CYS_D(IS,N) = CYS_D(IS,N) + CYST_D(J,N)*SR/SREF
-            CZS_D(IS,N) = CZS_D(IS,N) + CZST_D(J,N)*SR/SREF
-C
-            CRS_D(IS,N) = CRS_D(IS,N) + CRST_D(J,N)*(SR/SREF)*(CR/BREF)
-            CMS_D(IS,N) = CMS_D(IS,N) + CMST_D(J,N)*(SR/SREF)*(CR/CREF)
-            CNS_D(IS,N) = CNS_D(IS,N) + CNST_D(J,N)*(SR/SREF)*(CR/BREF)
+            DO L = 1, 3
+              CFS_D(L,IS,N) = CFS_D(L,IS,N) + CFST_D(L,J,N)*SR/SREF
+            ENDDO
+            CMS_D(1,IS,N) = CMS_D(1,IS,N)
+     &                    + CMST_D(1,J,N)*(SR/SREF)*(CR/BREF)
+            CMS_D(2,IS,N) = CMS_D(2,IS,N)
+     &                    + CMST_D(2,J,N)*(SR/SREF)*(CR/CREF)
+            CMS_D(3,IS,N) = CMS_D(3,IS,N)
+     &                    + CMST_D(3,J,N)*(SR/SREF)*(CR/BREF)
           ENDDO
 C
           DO N=1, NDESIGN
             CDS_G(IS,N) = CDS_G(IS,N) + CDST_G(J,N)*SR/SREF
+            CYS_G(IS,N) = CYS_G(IS,N) + CYST_G(J,N)*SR/SREF
             CLS_G(IS,N) = CLS_G(IS,N) + CLST_G(J,N)*SR/SREF
 C
-            CXS_G(IS,N) = CXS_G(IS,N) + CXST_G(J,N)*SR/SREF
-            CYS_G(IS,N) = CYS_G(IS,N) + CYST_G(J,N)*SR/SREF
-            CZS_G(IS,N) = CZS_G(IS,N) + CZST_G(J,N)*SR/SREF
-C
-            CRS_G(IS,N) = CRS_G(IS,N) + CRST_G(J,N)*(SR/SREF)*(CR/BREF)
-            CMS_G(IS,N) = CMS_G(IS,N) + CMST_G(J,N)*(SR/SREF)*(CR/CREF)
-            CNS_G(IS,N) = CNS_G(IS,N) + CNST_G(J,N)*(SR/SREF)*(CR/BREF)
+            DO L = 1, 3
+              CFS_G(L,IS,N) = CFS_G(L,IS,N) + CFST_G(L,J,N)*SR/SREF
+            ENDDO
+            CMS_G(1,IS,N) = CMS_G(1,IS,N)
+     &                    + CMST_G(1,J,N)*(SR/SREF)*(CR/BREF)
+            CMS_G(2,IS,N) = CMS_G(2,IS,N)
+     &                    + CMST_G(2,J,N)*(SR/SREF)*(CR/CREF)
+            CMS_G(3,IS,N) = CMS_G(3,IS,N)
+     &                    + CMST_G(3,J,N)*(SR/SREF)*(CR/BREF)
           ENDDO
 C
-C--- reference point for surface LE (hinge) moments
-C    defined by surface hinge vector direction thru first strip LE point
+C --- reference point for surface LE (hinge) moments
+C    defined by surface hinge vector direction thru first strip LE point 
           IF(IMAGS(IS).GE.0) THEN
-            R(1) = XR - RLE1(1,JFRST(IS))
-            R(2) = YR - RLE1(2,JFRST(IS))
-            R(3) = ZR - RLE1(3,JFRST(IS))
+            R(1) = RC4(1) - RLE1(1,JFRST(IS))
+            R(2) = RC4(2) - RLE1(2,JFRST(IS))
+            R(3) = RC4(3) - RLE1(3,JFRST(IS))
            ELSE
-            R(1) = XR - RLE2(1,JFRST(IS))
-            R(2) = YR - RLE2(2,JFRST(IS))
-            R(3) = ZR - RLE2(3,JFRST(IS))
+            R(1) = RC4(1) - RLE2(1,JFRST(IS))
+            R(2) = RC4(2) - RLE2(2,JFRST(IS))
+            R(3) = RC4(3) - RLE2(3,JFRST(IS))
           ENDIF
-C--- Surface forces and moments (about LE ref point, normalized locally) 
-          DO L = 1, 3
-            L1 = MOD(L, 3) + 1
-            L2 = MOD(L1,3) + 1
+C---  Surface forces and moments (about root strip LE point, normalized
+C     locally by surface area and average chord)
+          DO K = 1, 3
+            IC = ICRS(K)
+            JC = JCRS(K)
 C
-            CF_SRF(L,IS) = CF_SRF(L,IS) + CF_STRP(L,J)*SR/SSURF(IS)
+            CF_LSRF(K,IS) = CF_LSRF(K,IS) + CF_LSTRP(K,J)*SR/SSURF(IS)
 C
             DCM = SR/SSURF(IS) * CR/CAVESURF(IS) *
-     &          ( CM_STRP(L,J) 
-     &          + CF_STRP(L2,J)*R(L1)/CR 
-     &          - CF_STRP(L1,J)*R(L2)/CR )
+     &          ( CM_LSTRP(K,J) 
+     &          + CF_LSTRP(JC,J)*R(IC) - CF_LSTRP(IC,J)*R(JC) ) / CR
 C
-            CM_SRF(L,IS) = CM_SRF(L,IS) + DCM 
+            CM_LSRF(K,IS) = CM_LSRF(K,IS) + DCM 
           END DO
 C
   120   CONTINUE
@@ -1145,10 +1385,10 @@ C    with chordline (x direction)
         SPN(1) =  0.0
         SPN(2) =  ENAVE(3)
         SPN(3) = -ENAVE(2)
-C--- Stability axes stream vector defines drag direction
-        UDRAG(1) = COSA
-        UDRAG(2) = 0.0
-        UDRAG(3) = SINA
+C--- Wind axes stream vector defines drag direction
+        UDRAG(1) = VINF(1)
+        UDRAG(2) = VINF(2)
+        UDRAG(3) = VINF(3)
 C--- Lift direction is vector product of "stream" and spanwise vector
         CALL CROSS(UDRAG,SPN,ULIFT)
         ULMAG = SQRT(DOT(ULIFT,ULIFT))
@@ -1159,122 +1399,71 @@ C--- Lift direction is vector product of "stream" and spanwise vector
           ULIFT(2) = ULIFT(2)/ULMAG
           ULIFT(3) = ULIFT(3)/ULMAG
         ENDIF
-        CL_SRF(IS) = DOT(ULIFT,CF_SRF(1,IS))
-        CD_SRF(IS) = DOT(UDRAG,CF_SRF(1,IS))
-C--- Surface hinge moments defined by surface LE moment about hinge vector 
-ccc        CMLE_SRF(IS) = DOT(CM_SRF(1,IS),VHINGE(1,IS))
+        CL_LSRF(IS) = DOT(ULIFT,CF_LSRF(1,IS))
+        CD_LSRF(IS) = DOT(UDRAG,CF_LSRF(1,IS))
+        CDISURF(IS) = CDSURF(IS) - CDVSURF(IS)
+C
+C---  Surface hinge moments defined by surface LE moment about hinge vector 
+ccc        CMLE_LSRF(IS) = DOT(CM_LSRF(1,IS),VHINGE(1,IS))
 C
 C
 C-------------------------------------------------
         IF(LFLOAD(IS)) THEN
-C------- Total forces summed from surface forces...
-C-         normalized to configuration reference quantities
+C--- Total forces summed from surface forces
+C    normalized to case reference quantities SREF, CREF, BREF
+         CFTOT(1) = CFTOT(1) + CFSURF(1,IS)
+         CFTOT(2) = CFTOT(2) + CFSURF(2,IS)
+         CFTOT(3) = CFTOT(3) + CFSURF(3,IS)
          CDTOT = CDTOT + CDSURF(IS)
-         CLTOT = CLTOT + CLSURF(IS)
-         CXTOT = CXTOT + CXSURF(IS)
          CYTOT = CYTOT + CYSURF(IS)
-         CZTOT = CZTOT + CZSURF(IS)
-         CRTOT = CRTOT + CRSURF(IS)
-         CMTOT = CMTOT + CMSURF(IS)
-         CNTOT = CNTOT + CNSURF(IS)
+         CLTOT = CLTOT + CLSURF(IS)
          CDVTOT = CDVTOT + CDVSURF(IS)
+C--- Total body axes moments about XYZREF summed from surface moments
+C    normalized to case reference quantities SREF, CREF, BREF
+         CMTOT(1) = CMTOT(1) + CMSURF(1,IS)
+         CMTOT(2) = CMTOT(2) + CMSURF(2,IS)
+         CMTOT(3) = CMTOT(3) + CMSURF(3,IS)
 C
          CDTOT_A = CDTOT_A + CDS_A(IS)
+         CYTOT_A = CYTOT_A + CYS_A(IS)
          CLTOT_A = CLTOT_A + CLS_A(IS)
-C
+
 C$AD II-LOOP
          DO N=1, NUMAX
            CDTOT_U(N) = CDTOT_U(N) + CDS_U(IS,N)
-           CLTOT_U(N) = CLTOT_U(N) + CLS_U(IS,N)
-           CXTOT_U(N) = CXTOT_U(N) + CXS_U(IS,N)
            CYTOT_U(N) = CYTOT_U(N) + CYS_U(IS,N)
-           CZTOT_U(N) = CZTOT_U(N) + CZS_U(IS,N)
-           CRTOT_U(N) = CRTOT_U(N) + CRS_U(IS,N)
-           CMTOT_U(N) = CMTOT_U(N) + CMS_U(IS,N)
-           CNTOT_U(N) = CNTOT_U(N) + CNS_U(IS,N)
-         ENDDO
-
+           CLTOT_U(N) = CLTOT_U(N) + CLS_U(IS,N)
+           DO L = 1, 3
+             CFTOT_U(L,N) = CFTOT_U(L,N) + CFS_U(L,IS,N)
+             CMTOT_U(L,N) = CMTOT_U(L,N) + CMS_U(L,IS,N)
+           ENDDO
+         ENDDO  
 C
 C$AD II-LOOP
          DO N=1, NCONTROL
            CDTOT_D(N) = CDTOT_D(N) + CDS_D(IS,N)
-           CLTOT_D(N) = CLTOT_D(N) + CLS_D(IS,N)
-           CXTOT_D(N) = CXTOT_D(N) + CXS_D(IS,N)
            CYTOT_D(N) = CYTOT_D(N) + CYS_D(IS,N)
-           CZTOT_D(N) = CZTOT_D(N) + CZS_D(IS,N)
-           CRTOT_D(N) = CRTOT_D(N) + CRS_D(IS,N)
-           CMTOT_D(N) = CMTOT_D(N) + CMS_D(IS,N)
-           CNTOT_D(N) = CNTOT_D(N) + CNS_D(IS,N)
+           CLTOT_D(N) = CLTOT_D(N) + CLS_D(IS,N)
+           DO L = 1, 3
+             CFTOT_D(L,N) = CFTOT_D(L,N) + CFS_D(L,IS,N)
+             CMTOT_D(L,N) = CMTOT_D(L,N) + CMS_D(L,IS,N)
+           ENDDO
          ENDDO
 C
 C$AD II-LOOP
          DO N=1, NDESIGN
            CDTOT_G(N) = CDTOT_G(N) + CDS_G(IS,N)
-           CLTOT_G(N) = CLTOT_G(N) + CLS_G(IS,N)
-           CXTOT_G(N) = CXTOT_G(N) + CXS_G(IS,N)
            CYTOT_G(N) = CYTOT_G(N) + CYS_G(IS,N)
-           CZTOT_G(N) = CZTOT_G(N) + CZS_G(IS,N)
-           CRTOT_G(N) = CRTOT_G(N) + CRS_G(IS,N)
-           CMTOT_G(N) = CMTOT_G(N) + CMS_G(IS,N)
-           CNTOT_G(N) = CNTOT_G(N) + CNS_G(IS,N)
+           CLTOT_G(N) = CLTOT_G(N) + CLS_G(IS,N)
+           DO L = 1, 3
+             CFTOT_G(L,N) = CFTOT_G(L,N) + CFS_G(L,IS,N)
+             CMTOT_G(L,N) = CMTOT_G(L,N) + CMS_G(L,IS,N)
+           ENDDO
          ENDDO
         ENDIF
 C-------------------------------------------------
 C
   150 CONTINUE
-C
-C--- If case is XZ symmetric (IYSYM=1), add contributions from images,
-C    zero out the asymmetric forces and double the symmetric ones
-      IF(IYSYM.EQ.1) THEN
-        CDTOT   = 2.0 * CDTOT
-        CLTOT   = 2.0 * CLTOT
-        CXTOT   = 2.0 * CXTOT
-        CYTOT   = 0.
-        CZTOT   = 2.0 * CZTOT
-        CRTOT   = 0.
-        CMTOT   = 2.0 * CMTOT
-        CNTOT   = 0.
-        CDVTOT  = 2.0 * CDVTOT
-C
-        CDTOT_A = 2.0 * CDTOT_A
-        CLTOT_A = 2.0 * CLTOT_A
-C
-C$AD II-LOOP
-        DO N=1, NUMAX
-          CDTOT_U(N) = 2.0 * CDTOT_U(N)
-          CLTOT_U(N) = 2.0 * CLTOT_U(N)
-          CXTOT_U(N) = 2.0 * CXTOT_U(N)
-          CYTOT_U(N) = 0.
-          CZTOT_U(N) = 2.0 * CZTOT_U(N)
-          CRTOT_U(N) = 0.
-          CMTOT_U(N) = 2.0 * CMTOT_U(N)
-          CNTOT_U(N) = 0.
-        ENDDO
-C
-C$AD II-LOOP
-        DO N=1, NCONTROL
-          CDTOT_D(N) = 2.0 * CDTOT_D(N)
-          CLTOT_D(N) = 2.0 * CLTOT_D(N)
-          CXTOT_D(N) = 2.0 * CXTOT_D(N)
-          CYTOT_D(N) = 0.
-          CZTOT_D(N) = 2.0 * CZTOT_D(N)
-          CRTOT_D(N) = 0.
-          CMTOT_D(N) = 2.0 * CMTOT_D(N)
-          CNTOT_D(N) = 0.
-        ENDDO
-C
-C$AD II-LOOP
-        DO N=1, NDESIGN
-          CDTOT_G(N) = 2.0 * CDTOT_G(N)
-          CLTOT_G(N) = 2.0 * CLTOT_G(N)
-          CXTOT_G(N) = 2.0 * CXTOT_G(N)
-          CYTOT_G(N) = 0.
-          CZTOT_G(N) = 2.0 * CZTOT_G(N)
-          CRTOT_G(N) = 0.
-          CMTOT_G(N) = 2.0 * CMTOT_G(N)
-          CNTOT_G(N) = 0.
-        ENDDO
-      ENDIF
 C
       RETURN
       END ! SFFORC
@@ -1290,9 +1479,11 @@ C
       REAL DRL(3), ESL(3), 
      &     FB(3), FB_U(3,NUMAX),
      &     MB(3), MB_U(3,NUMAX)
-      REAL CDBDY_U(NUMAX), CLBDY_U(NUMAX), 
-     &     CXBDY_U(NUMAX), CYBDY_U(NUMAX),  CZBDY_U(NUMAX), 
-     &     CRBDY_U(NUMAX), CMBDY_U(NUMAX),  CNBDY_U(NUMAX)
+      REAL CDBDY_U(NUMAX), CYBDY_U(NUMAX), CLBDY_U(NUMAX), 
+     &     CFBDY_U(3,NUMAX), 
+     &     CMBDY_U(3,NUMAX)
+      CHARACTER*50 SATYPE
+
 C
 C
       BETM = SQRT(1.0 - MACH**2)
@@ -1305,23 +1496,21 @@ C---- add on body force contributions
 C$AD II-LOOP
       DO 200 IB = 1, NBODY
         CDBDY(IB) = 0.0
-        CLBDY(IB) = 0.0
-        CXBDY(IB) = 0.0
         CYBDY(IB) = 0.0
-        CZBDY(IB) = 0.0
-        CRBDY(IB) = 0.0
-        CMBDY(IB) = 0.0
-        CNBDY(IB) = 0.0
-C
+        CLBDY(IB) = 0.0
+        DO L = 1, 3
+          CFBDY(L,IB) = 0.0
+          CMBDY(L,IB) = 0.0
+        ENDDO
+C     
         DO IU = 1, 6
           CDBDY_U(IU) = 0.0
-          CLBDY_U(IU) = 0.0
-          CXBDY_U(IU) = 0.0
           CYBDY_U(IU) = 0.0
-          CZBDY_U(IU) = 0.0
-          CRBDY_U(IU) = 0.0
-          CMBDY_U(IU) = 0.0
-          CNBDY_U(IU) = 0.0
+          CLBDY_U(IU) = 0.0
+          DO L = 1, 3
+            CFBDY_U(L,IU) = 0.0
+            CMBDY_U(L,IU) = 0.0
+          ENDDO
         ENDDO
 C
         DO 205 ILSEG = 1, NL(IB)-1
@@ -1409,60 +1598,64 @@ C
           ENDDO
 C
           CDBDY(IB) = CDBDY(IB) + ( FB(1)*COSA + FB(3)*SINA) * 2.0/SREF
-          CLBDY(IB) = CLBDY(IB) + (-FB(1)*SINA + FB(3)*COSA) * 2.0/SREF
-
-          CXBDY(IB) = CXBDY(IB) +   FB(1) * 2.0/SREF
           CYBDY(IB) = CYBDY(IB) +   FB(2) * 2.0/SREF
-          CZBDY(IB) = CZBDY(IB) +   FB(3) * 2.0/SREF
-C
-          CRBDY(IB) = CRBDY(IB) +   MB(1) * 2.0/SREF / BREF
-          CMBDY(IB) = CMBDY(IB) +   MB(2) * 2.0/SREF / CREF
-          CNBDY(IB) = CNBDY(IB) +   MB(3) * 2.0/SREF / BREF
+          CLBDY(IB) = CLBDY(IB) + (-FB(1)*SINA + FB(3)*COSA) * 2.0/SREF
+          DO L = 1, 3
+            CFBDY(L,IB) = CFBDY(L,IB) +   FB(L) * 2.0/SREF
+          ENDDO
+          CMBDY(1,IB) = CMBDY(1,IB) +   MB(1) * 2.0/SREF / BREF
+          CMBDY(2,IB) = CMBDY(2,IB) +   MB(2) * 2.0/SREF / CREF
+          CMBDY(3,IB) = CMBDY(3,IB) +   MB(3) * 2.0/SREF / BREF
 C
           DO IU = 1, 6
             CDBDY_U(IU) = CDBDY_U(IU) + ( FB_U(1,IU)*COSA
      &                                  + FB_U(3,IU)*SINA) * 2.0/SREF
-            CLBDY_U(IU) = CLBDY_U(IU) + (-FB_U(1,IU)*SINA
-     &                                  + FB_U(3,IU)*COSA) * 2.0/SREF
-c
-            CXBDY_U(IU) = CXBDY_U(IU) +   FB_U(1,IU) * 2.0/SREF
             CYBDY_U(IU) = CYBDY_U(IU) +   FB_U(2,IU) * 2.0/SREF
-            CZBDY_U(IU) = CZBDY_U(IU) +   FB_U(3,IU) * 2.0/SREF
+            CLBDY_U(IU) = CLBDY_U(IU) + (-FB_U(1,IU)*SINA
+     &           + FB_U(3,IU)*COSA) * 2.0/SREF
+C            
+            DO L = 1, 3
+              CFBDY_U(L,IU) = CFBDY_U(L,IU) +   FB_U(L,IU) * 2.0/SREF
+            ENDDO
 C
-            CRBDY_U(IU) = CRBDY_U(IU) +   MB_U(1,IU) * 2.0/SREF / BREF
-            CMBDY_U(IU) = CMBDY_U(IU) +   MB_U(2,IU) * 2.0/SREF / CREF
-            CNBDY_U(IU) = CNBDY_U(IU) +   MB_U(3,IU) * 2.0/SREF / BREF
+            CMBDY_U(1,IU) = CMBDY_U(1,IU)
+     &                  +   MB_U(1,IU) * 2.0/SREF / BREF
+            CMBDY_U(2,IU) = CMBDY_U(2,IU)
+     &                  +   MB_U(2,IU) * 2.0/SREF / CREF
+            CMBDY_U(3,IU) = CMBDY_U(3,IU)
+     &                  +   MB_U(3,IU) * 2.0/SREF / BREF
           ENDDO
  205    CONTINUE
 C
 C---- add body forces and sensitivities to totals
         CDTOT = CDTOT + CDBDY(IB)
+        CYTOT = CYTOT + CYBDY(IB)
         CLTOT = CLTOT + CLBDY(IB)
 C
-        CXTOT = CXTOT + CXBDY(IB)
-        CYTOT = CYTOT + CYBDY(IB)
-        CZTOT = CZTOT + CZBDY(IB)
-C
-        CRTOT = CRTOT + CRBDY(IB)
-        CMTOT = CMTOT + CMBDY(IB)
-        CNTOT = CNTOT + CNBDY(IB)
+        DO L = 1, 3
+          CFTOT(L) = CFTOT(L) + CFBDY(L,IB)
+          CMTOT(L) = CMTOT(L) + CMBDY(L,IB)
+        ENDDO
 C
         DO IU = 1, 6
           CDTOT_U(IU) = CDTOT_U(IU) + CDBDY_U(IU)
+          CYTOT_U(IU) = CYTOT_U(IU) + CYBDY_U(IU)
           CLTOT_U(IU) = CLTOT_U(IU) + CLBDY_U(IU)
 C
-          CXTOT_U(IU) = CXTOT_U(IU) + CXBDY_U(IU)
-cccc      CXTOT_U(IU) = CYTOT_U(IU) + CYBDY_U(IU)   <<< BUG  5 Dec 10  MD
-          CYTOT_U(IU) = CYTOT_U(IU) + CYBDY_U(IU)
-          CZTOT_U(IU) = CZTOT_U(IU) + CZBDY_U(IU)
-C
-          CRTOT_U(IU) = CRTOT_U(IU) + CRBDY_U(IU)
-          CMTOT_U(IU) = CMTOT_U(IU) + CMBDY_U(IU)
-          CNTOT_U(IU) = CNTOT_U(IU) + CNBDY_U(IU)
+          DO L = 1, 3
+            CFTOT_U(L,IU) = CFTOT_U(L,IU) + CFBDY_U(L,IU)
+            CMTOT_U(L,IU) = CMTOT_U(L,IU) + CMBDY_U(L,IU)
+          ENDDO
         ENDDO
-
  200  CONTINUE
 C
+      ! compute the forces on the body in the body axis
+      CALL GETSA(LNASA_SA,SATYPE,DIR)
+
+      do IB = 1,NBODY
+            CMBDYBAX(3,IB) = DIR*CMBDY(3,IB)
+            CMBDYBAX(1,IB) = DIR*CMBDY(1,IB)
+      enddo
       RETURN
       END ! BDFORC
 

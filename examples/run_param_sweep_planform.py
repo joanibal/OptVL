@@ -4,10 +4,10 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 
 
-ovl_solver = OVLSolver(geo_file="rectangle.avl", debug=False, timing=False)
+ovl_solver = OVLSolver(geo_file="../geom_files/rectangle.avl", debug=False, timing=False)
 
 # set the angle of attack
-# ovl_solver.set_constraint("alpha", 5.00)
+# ovl_solver.set_variable("alpha", 5.00)
 yles = ovl_solver.get_surface_param("Wing", "yles")
 xles = ovl_solver.get_surface_param("Wing", "xles")
 zles = ovl_solver.get_surface_param("Wing", "zles")

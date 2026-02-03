@@ -132,6 +132,8 @@ C
 C---------------------------------------------------
       CALL RDLINE(LUN,LINE,NLINE,ILINE)
       READ (LINE,*,ERR=990) MACH0
+      MACH = MACH0
+      AMACH = 999.
 C
 C---------------------------------------------------
       CALL RDLINE(LUN,LINE,NLINE,ILINE)
@@ -181,7 +183,19 @@ C
       CALL TOUPER(KEYWD)
 C
 C===========================================================================
-      IF    (KEYWD.EQ.'EOF ') THEN
+C---- read optional vortex and source/doublet core radius
+      IF (KEYWD.EQ.'CORE') THEN
+       CALL RDLINE(LUN,LINE,NLINE,ILINE)
+       NINPUT = 3
+       CALL GETFLT(LINE,RINPUT,NINPUT,ERROR)
+       IF(ERROR .OR. NINPUT.LT.3) GO TO 990
+
+       VRCOREC = RINPUT(1)
+       VRCOREW = RINPUT(2)
+       SRCORE  = RINPUT(3)
+       
+C===========================================================================
+      ELSEIF (KEYWD.EQ.'EOF ') THEN
 C------ end of file... clean up loose ends
 C
         IF(ISURF.NE.0) THEN
@@ -197,6 +211,13 @@ C
         ENDIF
 C
         IF(IBODY.NE.0) THEN
+C
+C------check for body duplicated on symmetry plane
+         if(LDUPL_B(IBODY) .AND.
+     &      YDUPL_B(IBODY).EQ.0.0 .AND. XYZTRAN_B(2,IBODY).EQ.0.0) THEN
+          WRITE(*,*)    '** Cannot duplicate body on symmetry plane'
+          GO TO 990
+         ENDIF
 C------- "old" body is still active, so build it before finishing
          CALL MAKEBODY(IBODY)
 C     &       XBOD(1,IBODY),YBOD(1,IBODY),TBOD(1,IBODY),NBOD(IBODY))
@@ -244,7 +265,7 @@ C------ new surface  (ISURF.ne.0 denotes surface accumulation is active)
         ISURF = MIN( NSURF , NSMAX )
 C
 C------ default surface component index is just the surface number
-        LSCOMP(ISURF) = ISURF
+        LNCOMP(ISURF) = ISURF
 C
 C------ clear indices for accumulation
         NSEC(ISURF) = 0
@@ -314,6 +335,14 @@ C
 C
         IF(IBODY.NE.0) THEN
 C------- "old" body is still active, so build it before finishing
+C
+C------check for body duplicated on symmetry plane
+         if(LDUPL_B(IBODY) .AND.
+     &      YDUPL_B(IBODY).EQ.0.0 .AND. XYZTRAN_B(2,IBODY).EQ.0.0) THEN
+          WRITE(*,*)    '** Cannot duplicate body on symmetry plane'
+          GO TO 990
+         ENDIF
+C
          CALL MAKEBODY(IBODY)
 C     &       XBOD(1,IBODY),YBOD(1,IBODY),TBOD(1,IBODY),NBOD(IBODY))
 C
@@ -402,7 +431,7 @@ C------ set component index for surface (may be lumped together)
         ENDIF
 C
         CALL RDLINE(LUN,LINE,NLINE,ILINE)
-        READ (LINE,*,ERR=990) LSCOMP(ISURF)
+        READ (LINE,*,ERR=990) LNCOMP(ISURF)
 C
 C===========================================================================
       ELSEIF (KEYWD.EQ.'SCAL') THEN
@@ -626,6 +655,8 @@ C------- read optional airfoil x/c limits
           XFMAX = MIN( 1.0 , RINPUT(2) )
          ENDIF
         ENDIF
+        XFMIN_R(isec,isurf) = XFMIN
+        XFMAX_R(isec,isurf) = XFMAX
 C
         IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
           LRANGE(ISURF) = .FALSE.
@@ -683,6 +714,25 @@ c...      lower/upper coordinates (for oml)
           CASEC(I,ISEC,ISURF) = ZF
 cc#endif
         ENDDO
+        
+        ! save the airfoil coordinates for optvl level
+        ! by convention we go from upper TE to LE to lower TE
+        DO I = 1, NASEC(ISEC,ISURF)
+                
+          idx_upper = NASEC(ISEC,ISURF) - I +1
+          idx_lower = I 
+          
+          XSEC(I                  ,isec, isurf) = 
+     &                                   XUASEC(idx_upper, ISEC, ISURF)
+          XSEC(I+NASEC(ISEC,ISURF),isec, isurf) = 
+     &                                   XLASEC(idx_lower, ISEC, ISURF)
+
+          YSEC(I                  ,isec, isurf) = 
+     &                                   ZUASEC(idx_upper, ISEC, ISURF)
+          YSEC(I+NASEC(ISEC,ISURF),isec, isurf) = 
+     &                                   ZLASEC(idx_lower, ISEC, ISURF)
+
+        enddo 
 
         CALL NRMLIZ(NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))
 C
@@ -715,6 +765,8 @@ C------- read optional airfoil x/c limits
           XFMAX = MIN( 1.0 , RINPUT(2) )
          ENDIF
         ENDIF
+        XFMIN_R(isec,isurf) = XFMIN
+        XFMAX_R(isec,isurf) = XFMAX
 C
         IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
           write(*,*) 'aifoil Lrange false', ISURF, isec
@@ -747,6 +799,12 @@ C
      &    '*** AINPUT: Airfoil array overflow.  Increase IBX to', I
          STOP
         ENDIF
+        ! save the airfoil data for optvl io
+        do i = 1,NB
+                XSEC(i,isec, isurf) = XB(i)
+                YSEC(i,isec, isurf) = YB(i)
+        enddo
+                
 C
 C------ set camber and thickness, normalized to unit chord
         NIN = MIN( 50 , IBX )
@@ -806,6 +864,8 @@ C------- read optional airfoil x/c limits
           XFMAX = MIN( 1.0 , RINPUT(2) )
          ENDIF
         ENDIF
+        XFMIN_R(isec,isurf) = XFMIN
+        XFMAX_R(isec,isurf) = XFMAX
 C
         IF((XFMIN .GT. 0.01) .OR. (XFMAX .LT. 0.99)) THEN
           LRANGE(ISURF) = .FALSE.
@@ -864,6 +924,10 @@ cc#endif
          ENDDO
 C
         ELSE
+        do i = 1,NB
+                XSEC(i,isec, isurf) = XB(i)
+                YSEC(i,isec, isurf) = YB(i)
+        end do
 C------- camber and thickness
          NIN = MIN( 50 , IBX )
          CALL GETCAM(XB,YB,NB,XIN,YIN,TIN,NIN,.TRUE.)
@@ -1219,7 +1283,7 @@ C
 C*********************************************************************
 C
       if (lverbose) then
-      WRITE (*,2018) MACH0,NBODY,NSURF,NSTRIP,NVOR
+      WRITE (*,2018) MACH,NBODY,NSURF,NSTRIP,NVOR
       WRITE (*,2019) NCONTROL,NDESIGN
       end if 
 C
@@ -1228,7 +1292,7 @@ C
       IF(IZSYM.GT.0) WRITE (*,2026) ZSYM
       IF(IZSYM.LT.0) WRITE (*,2027) ZSYM
 C
- 2018 FORMAT (/' Mach =',F10.4,'  (default)'
+ 2018 FORMAT (/' Mach =',F10.4,
      &       //1X,I4,' Bodies'
      &        /1X,I4,' Solid surfaces'
      &        /1X,I4,' Strips'

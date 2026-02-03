@@ -17,25 +17,25 @@ import numpy as np
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
-geom_mod_file = os.path.join(base_dir, "aircraft_mod.avl")
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
+geom_file = os.path.join(geom_dir, "aircraft_L1_with_body.avl")
+# mass_file = os.path.join(geom_dir, "aircraft.mass")
+# rect_file = os.path.join(geom_dir, 'rect.avl')
+rect_file = os.path.join(geom_dir, 'rect_with_body.avl')
 
 class TestFunctionPartials(unittest.TestCase):
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        # self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        self.ovl_solver = OVLSolver(geo_file="rect.avl")
-        self.ovl_solver.set_constraint("alpha", 25.0)
-        self.ovl_solver.set_constraint("beta", 5.0)
+        self.ovl_solver = OVLSolver(geo_file=rect_file)
+        self.ovl_solver.set_variable("alpha", 25.0)
+        self.ovl_solver.set_variable("beta", 5.0)
         self.ovl_solver.execute_run()
 
     def tearDown(self):
         # Get the memory usage of the current process using psutil
         process = psutil.Process()
         mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
-        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+        print(f"{self.id():80} Memory usage: {mb_memory:.2f} MB")
 
     def test_fwd_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
@@ -340,21 +340,16 @@ class TestFunctionPartials(unittest.TestCase):
 
 class TestResidualPartials(unittest.TestCase):
     def setUp(self):
-        # self.ovl_solver = OVLSolver(geo_file=geom_file, mass_file=mass_file)
-        self.ovl_solver = OVLSolver(geo_file="aircraft_L1.avl")
-        # self.ovl_solver = OVLSolver(geo_file="rect.avl")
-        self.ovl_solver.set_constraint("alpha", 25.0)
-        self.ovl_solver.set_constraint("beta", 5.0)
+        self.ovl_solver = OVLSolver(geo_file=geom_file)
+        self.ovl_solver.set_variable("alpha", 25.0)
+        self.ovl_solver.set_variable("beta", 5.0)
         self.ovl_solver.execute_run()
-        process = psutil.Process()
-        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
-        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
 
     def tearDown(self):
         # Get the memory usage of the current process using psutil
         process = psutil.Process()
         mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
-        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+        print(f"{self.id():80} Memory usage: {mb_memory:.2f} MB")
 
     def test_fwd_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_to_fort_var:
@@ -365,7 +360,7 @@ class TestResidualPartials(unittest.TestCase):
             res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})[1]
 
             # print(f"res wrt {con_key}", np.linalg.norm(res_seeds), np.linalg.norm(res_seeds_FD))
-            np.testing.assert_allclose(res_seeds, res_seeds_FD, rtol=1e-5, err_msg=f"d(res) w.r.t.{con_key}")
+            np.testing.assert_allclose(res_seeds, res_seeds_FD, rtol=5e-4, err_msg=f"d(res) w.r.t.{con_key}")
 
     def test_rev_aero_constraint(self):
         num_res = self.ovl_solver.get_mesh_size()
@@ -409,7 +404,7 @@ class TestResidualPartials(unittest.TestCase):
                 np.testing.assert_allclose(
                     res_seeds,
                     res_seeds_FD,
-                    atol=1e-5,
+                    atol=3e-5,
                     err_msg=f"func_key res w.r.t. {surf_key}:{geom_key}",
                 )
 

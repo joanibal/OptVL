@@ -4,7 +4,7 @@ import openmdao.api as om
 from optvl import OVLGroup
 
 model = om.Group()
-model.add_subsystem("ovlsolver", OVLGroup(geom_file="aircraft.avl"))
+model.add_subsystem("ovlsolver", OVLGroup(geom_file="../geom_files/aircraft.avl"))
 
 # look at vlm_opt.html to see all the design variables and add them here
 model.add_design_var("ovlsolver.Wing:aincs", lower=-15, upper=15)
@@ -12,7 +12,7 @@ model.add_design_var("ovlsolver.Elevator", lower=-10, upper=10)
 
 # the outputs of OptVL can be used as contraints
 model.add_constraint("ovlsolver.CL", equals=1.5)
-model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
+model.add_constraint("ovlsolver.Cm", equals=0.0, scaler=1e3)
 
 # the scaler values bring the objective functinon to ~ order 1 for the optimizer
 model.add_objective("ovlsolver.CD", scaler=1e3)

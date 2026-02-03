@@ -16,119 +16,132 @@ C                rv2:out rv:out rc:out rs:out dxv:out chordv:out
 C                enc:out env:out enc_d:out
 C MAKESURF
       SUBROUTINE UPDATE_SURFACES_D()
+      use avl_heap_inc
+      use avl_heap_diff_inc
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      INTEGER ii
       INTEGER isurf
+      EXTERNAL AVLHEAP_CLEAN
+      EXTERNAL AVLHEAP_DIFF_CLEAN
+      EXTERNAL AVLHEAP_INIT
+      EXTERNAL AVLHEAP_DIFF_INIT
       INTEGER ii3
       INTEGER ii2
       INTEGER ii1
       nstrip = 0
       nvor = 0
-      DO ii1=1,nsmax
+      isurf = 1
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           rle_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         chord_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           rle1_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         chord1_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           rle2_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         chord2_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         wstrip_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         ainc_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,ngmax
-        DO ii2=1,nsmax
+        DO ii2=1,NSTRIP
           ainc_g_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           rv1_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           rv2_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           rv_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           rc_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           rs_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         dxv_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         chordv_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         slopev_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         slopec_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,ndmax
-        DO ii2=1,nvmax
+        DO ii2=1,nvor
           dcontrol_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
       DO ii1=1,ndmax
-        DO ii2=1,nsmax
+        DO ii2=1,NSTRIP
           DO ii3=1,3
             vhinge_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
         ENDDO
       ENDDO
-      DO 100 isurf=1,nsurf
+C     the iterations of this loop are not independent because we count
+C     up the size information as we make each surface
+      DO ii=1,nsurf-nsurfdupl
         IF (lverbose) WRITE(*, *) 'Updating surface ', isurf
-        IF (isurf .NE. 1) THEN
-          IF (ldupl(isurf-1)) THEN
-            GOTO 100
-          ELSE
-C this surface has already been created
-C it was probably duplicated from the previous one
-            CALL MAKESURF_D(isurf)
-          END IF
-        ELSE
-          CALL MAKESURF_D(isurf)
+        CALL MAKESURF_D(isurf)
+        IF (ldupl(isurf)) THEN
+          IF (lverbose) WRITE(*, *) ' reduplicating ', isurf
+          CALL SDUPL_D(isurf, ydupl(isurf), 'ydup')
+          isurf = isurf + 1
         END IF
-        IF (ldupl(isurf)) CALL SDUPL_D(isurf, ydupl(isurf), 'ydup')
- 100  CONTINUE
+        isurf = isurf + 1
+      ENDDO
       CALL ENCALC_D()
+C     reset all the flags related to the analysis pipline      
       laic = .false.
       lsrd = .false.
       lvel = .false.
       lsol = .false.
       lsen = .false.
+C
+      IF (naic .NE. nvor) THEN
+        CALL AVLHEAP_CLEAN()
+        CALL AVLHEAP_DIFF_CLEAN()
+        CALL AVLHEAP_INIT(nvor)
+        CALL AVLHEAP_DIFF_INIT(nvor)
+      END IF
       END
 
 C  Differentiation of makesurf in forward (tangent) mode (with options i4 dr8 r8):
@@ -1046,7 +1059,7 @@ C
 C           write(*,*) 'IJFRST(idx_strip)', IJFRST(idx_strip),
 C      &               'NVSTRP(idx_strip)', IJFRST(idx_strip - 1) + NVC(ISURF)
 C
-              nsurfs(idx_strip) = isurf
+              lssurf(idx_strip) = isurf
 C
               nsl = nasec(isec, isurf)
               nsr = nasec(isec+1, isurf)
@@ -1158,7 +1171,7 @@ C
                 dxv(idx_vor) = dxoc*chordc
                 chordv_diff(idx_vor) = chordc_diff
                 chordv(idx_vor) = chordc
-                nsurfv(idx_vor) = lscomp(isurf)
+                lvcomp(idx_vor) = lncomp(isurf)
 C
                 lvnc(idx_vor) = .true.
 C
@@ -1293,10 +1306,6 @@ C                slopev slopec dcontrol vhinge
 C   with respect to varying inputs: rle chord rle1 chord1 rle2
 C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc dxv chordv
 C                slopev slopec dcontrol vhinge
-C MAKEBODY
-C
-C
-C
 C
       SUBROUTINE SDUPL_D(nn, ypt, msg)
       INCLUDE 'AVL.INC'
@@ -1344,7 +1353,7 @@ C
         END IF
 C
 C---- duplicate surface is assumed to be the same logical component surface
-        lscomp(nni) = lscomp(nn)
+        lncomp(nni) = lncomp(nn)
 C
 C---- same various logical flags
         lfwake(nni) = lfwake(nn)
@@ -1432,7 +1441,7 @@ Cc#ifdef USE_CPOML
             ainc2(jji) = ainc1(jj)
 C
 Cc#endif
-            nsurfs(idx_strip) = nni
+            lssurf(idx_strip) = nni
 C
             DO n=1,ndesign
               ainc_g_diff(jji, n) = ainc_g_diff(jj, n)
@@ -1507,7 +1516,7 @@ C
                 dxv(iii) = dxv(ii)
                 chordv_diff(iii) = chordv_diff(ii)
                 chordv(iii) = chordv(ii)
-                nsurfv(iii) = lscomp(nni)
+                lvcomp(iii) = lncomp(nni)
                 lvalbe(iii) = lvalbe(ii)
                 lvnc(iii) = lvnc(ii)
 C
@@ -1641,38 +1650,38 @@ C
       INTEGER ii1
       INTEGER ii3
       INTEGER ii2
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           ess_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         ensy_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         ensz_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         xsref_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         ysref_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nsmax
+      DO ii1=1,NSTRIP
         zsref_diff(ii1) = 0.D0
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           enc_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
-      DO ii1=1,nvmax
+      DO ii1=1,nvor
         DO ii2=1,3
           env_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
       DO ii1=1,ndmax
-        DO ii2=1,nvmax
+        DO ii2=1,nvor
           DO ii3=1,3
             enc_d_diff(ii3, ii2, ii1) = 0.D0
           ENDDO

@@ -23,8 +23,10 @@ warnings.simplefilter("error", DeprecationWarning)
 np.seterr(all="raise")
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_file = os.path.join(base_dir, "aircraft.avl")
-mass_file = os.path.join(base_dir, "aircraft.mass")
+geom_dir = os.path.join(base_dir, "..", "geom_files")
+
+geom_file = os.path.join(geom_dir, "aircraft.avl")
+mass_file = os.path.join(geom_dir, "aircraft.mass")
 
 
 class TestOMWrapper(unittest.TestCase):
@@ -38,6 +40,7 @@ class TestOMWrapper(unittest.TestCase):
                 geom_file=geom_file,
                 mass_file=mass_file,
                 output_stability_derivs=True,
+                output_body_axis_derivs=True,
                 input_param_vals=True,
                 input_ref_vals=True,
                 input_airfoil_geom=True,
@@ -88,6 +91,11 @@ class TestOMWrapper(unittest.TestCase):
                     om_val = prob.get_val(f"ovlsolver.{func}")
                     assert om_val == stab_derivs[func]
 
+                body_axis_derivs = self.ovl_solver.get_body_axis_derivs()
+                for func in body_axis_derivs:
+                    om_val = prob.get_val(f"ovlsolver.{func}")
+                    assert om_val == body_axis_derivs[func]
+
     def test_param_setting(self):
         prob = self.prob
         prob.setup(mode="rev")
@@ -116,6 +124,11 @@ class TestOMWrapper(unittest.TestCase):
                 print(func, om_val, stab_derivs[func])
                 assert om_val == stab_derivs[func]
 
+            body_axis_derivs = self.ovl_solver.get_body_axis_derivs()
+            for func in body_axis_derivs:
+                om_val = prob.get_val(f"ovlsolver.{func}")
+                assert om_val == body_axis_derivs[func]
+
     def test_CL_solve(self):
         prob = self.prob
         cl_star = 1.5
@@ -134,7 +147,6 @@ class TestOMWrapper(unittest.TestCase):
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 
         om_val = prob.get_val("ovlsolver.alpha")
-
         self.ovl_solver.set_trim_condition("CL", cl_star)
         self.ovl_solver.execute_run()
         alpha = self.ovl_solver.get_parameter("alpha")
@@ -149,7 +161,7 @@ class TestOMWrapper(unittest.TestCase):
     def test_CM_solve(self):
         prob = self.prob
         prob.model.add_design_var("ovlsolver.alpha", lower=-10, upper=10)
-        prob.model.add_constraint("ovlsolver.CM", equals=0.0, scaler=1e3)
+        prob.model.add_constraint("ovlsolver.Cm", equals=0.0, scaler=1e3)
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
         prob.setup(mode="rev")
         prob.driver = om.ScipyOptimizeDriver()
@@ -162,9 +174,9 @@ class TestOMWrapper(unittest.TestCase):
         prob.run_driver()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
 
-        om_val = prob.get_val("ovlsolver.alpha")
+        om_val = prob.get_val(f"ovlsolver.alpha")
 
-        self.ovl_solver.set_constraint("alpha", 0.00, con_var="Cm pitch moment")
+        self.ovl_solver.set_constraint("alpha", "Cm", 0.00)
         self.ovl_solver.execute_run()
         alpha = self.ovl_solver.get_parameter("alpha")
 
@@ -191,19 +203,20 @@ class TestOMWrapper(unittest.TestCase):
         prob.model.add_design_var("ovlsolver.X cg")
         prob.model.add_constraint("ovlsolver.CL", equals=cl_star)
         prob.model.add_constraint("ovlsolver.dCL/dalpha", equals=-dcl_dalpha_star)
+        prob.model.add_constraint("ovlsolver.dCl/dp", equals=-dcl_dalpha_star)
         prob.model.add_objective("ovlsolver.CD", scaler=1e3)
-        prob.model.add_objective("ovlsolver.CM", scaler=1e3)
+        prob.model.add_objective("ovlsolver.Cm", scaler=1e3)
         prob.setup(mode="rev")
         prob.run_model()
         om.n2(prob, show_browser=False, outfile="vlm_opt.html")
-
-        deriv_err = prob.check_totals()
-        rtol = 5e-4
+        deriv_err = prob.check_totals(step=1e-7, form="central")
+        rtol = 1e-3
         for key, data in deriv_err.items():
             np.testing.assert_allclose(
                 data["J_fd"],
                 data["J_rev"],
                 rtol=rtol,
+                atol=1e-9,
                 err_msg=f"deriv of {key[0]} wrt {key[1]} does not agree with FD to rtol={rtol}",
             )
 

@@ -1,7 +1,8 @@
 project(
   'optvl',
   'c',
-  version: '1.5.0',
+  # don't forget to change the value in pyproject.toml
+  version: '2.2.3',
   license: 'GPL-3.0',
   meson_version: '>= 0.64.0',
   default_options: [
@@ -154,7 +155,6 @@ avl_inc_dir = include_directories(incs_dir)
 inc_in = join_paths(incs_dir, 'AVL.INC.in')
 inc_out = join_paths(incs_dir, 'AVL.INC')
 
-run_command('src' / 'create_avl_inc.py', check: true)
 
 
 
