@@ -730,7 +730,7 @@ c--------------------------------------------------------------
       ! Set NK from input data (python layer will ensure this is consistent)
       NK(ISURF) = NVC(ISURF)
 
-      ! We need to start counting strips now since it's a global count
+      ! We need to start counting strips now since it is a global count
       idx_strip = JFRST(ISURF)
 
       ! Bypass the entire spanwise node generation routine and go straight to store counters
@@ -769,7 +769,7 @@ c--------------------------------------------------------------
       ! Set spanwise elements to 0
       NJ(ISURF) = 0
 
-      ! Check control and design vars (input routine should've already checked this tbh)
+      ! Check control and design vars
       IF(NCONTROL.GT.NDMAX) THEN
        WRITE(*,*) '*** Too many control variables.  Increase NDMAX to',
      &            NCONTROL
@@ -893,7 +893,7 @@ c--------------------------------------------------------------
       ! Strip geometric incidence angle at the mid-point
       ! This is strip incidence angle is computed from the LE and TE points
       ! of the given geometry and is completely independent of AINC
-      ! This quantity is needed to correctly handle nonplanar meshes and is only needed if the mesh isn't flattened
+      ! This quantity is needed to correctly handle nonplanar meshes and is only needed if the mesh isnt flattened
       GINCSTRIP(idx_strip) = atan2(((mesh_surf(3,idx_node_nx) 
      &  + mesh_surf(3,idx_node_nx_yp1))/2.- (mesh_surf(3,idx_node) + 
      &  mesh_surf(3,idx_node_yp1))/2.),
@@ -1084,7 +1084,7 @@ c--------------------------------------------------------------
        
        ! Left bound vortex points 
        idx_node = flatidx(idx_x,idx_y,isurf)
-      ! Compute the panel's left side chord
+      ! Compute the panel left side chord
        dc1 = sqrt((mesh_surf(1,idx_node+1) - mesh_surf(1,idx_node))**2
      &          + (mesh_surf(3,idx_node+1) - mesh_surf(3,idx_node))**2)
 
@@ -1096,7 +1096,7 @@ c--------------------------------------------------------------
        RV1(3,idx_vor) = RLE1(3,idx_strip)
        RV1(1,idx_vor) = RLE1(1,idx_strip) + dx1 + (dc1/4.)
 
-       ! Compute the panel's left side angle
+       ! Compute the panel left side angle
        a1 = atan2((mesh_surf(3,idx_node+1) - mesh_surf(3,idx_node)),
      &            (mesh_surf(1,idx_node+1) - mesh_surf(1,idx_node)))
       ! Place vortex at panel quarter chord of the true mesh
@@ -1104,7 +1104,7 @@ c--------------------------------------------------------------
        RV1MSH(1,idx_vor) = mesh_surf(1,idx_node) + (dc1/4.)*cos(a1)
        RV1MSH(3,idx_vor) = mesh_surf(3,idx_node) + (dc1/4.)*sin(a1) 
        else
-      ! Compute the panel's left side angle
+      ! Compute the panel left side angle
        a1 = atan2((mesh_surf(3,idx_node+1) - mesh_surf(3,idx_node)),
      &            (mesh_surf(1,idx_node+1) - mesh_surf(1,idx_node)))
       ! Place vortex at panel quarter chord
@@ -1120,7 +1120,7 @@ c--------------------------------------------------------------
 
        ! Right bound vortex points 
        idx_node_yp1 = flatidx(idx_x,idx_y+1,isurf)
-      ! Compute the panel's right side chord
+      ! Compute the panel right side chord
        dc2 = sqrt((mesh_surf(1,idx_node_yp1+1) 
      &  - mesh_surf(1,idx_node_yp1))**2 + (mesh_surf(3,idx_node_yp1+1) 
      &  - mesh_surf(3,idx_node_yp1))**2)
@@ -1133,7 +1133,7 @@ c--------------------------------------------------------------
        RV2(3,idx_vor) = RLE2(3,idx_strip)
        RV2(1,idx_vor) = RLE2(1,idx_strip) + dx2 + (dc2/4.)
 
-      ! Compute the panel's right side angle
+      ! Compute the panel right side angle
        a2 = atan2((mesh_surf(3,idx_node_yp1+1) -
      & mesh_surf(3,idx_node_yp1)), (mesh_surf(1,idx_node_yp1+1) - 
      & mesh_surf(1,idx_node_yp1)))
@@ -1142,7 +1142,7 @@ c--------------------------------------------------------------
        RV2MSH(1,idx_vor) = mesh_surf(1,idx_node_yp1) + (dc2/4.)*cos(a2)
        RV2MSH(3,idx_vor) = mesh_surf(3,idx_node_yp1) + (dc2/4.)*sin(a2)
       else
-      ! Compute the panel's right side angle
+      ! Compute the panel right side angle
        a2 = atan2((mesh_surf(3,idx_node_yp1+1) -
      & mesh_surf(3,idx_node_yp1)), (mesh_surf(1,idx_node_yp1+1) - 
      & mesh_surf(1,idx_node_yp1)))
@@ -1158,7 +1158,7 @@ c--------------------------------------------------------------
       end if
 
       ! Mid-point bound vortex points 
-      ! Compute the panel's mid-point chord
+      ! Compute the panel mid-point chord
       ! Panels themselves can never be curved so just interpolate the chord
       ! store as the panel chord in common block
        DXV(idx_vor) = (dc1+dc2)/2.
@@ -1276,7 +1276,7 @@ c--------------------------------------------------------------
        SLOPEV(idx_vor) =  (1.-fc)*(CHORDL/CHORD(idx_strip))*SLOPEL 
      &                    + fc *(CHORDR/CHORD(idx_strip))*SLOPER
 
-      ! Associate the panel with it's strip's chord and component
+      ! Associate the panel with strip chord and component
       CHORDV(idx_vor) = CHORD(idx_strip)
       NSURFV(idx_vor) = LSCOMP(isurf)
       
