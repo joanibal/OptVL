@@ -4684,8 +4684,7 @@ class OVLSolver(object):
         mesh_linewidth=0.3,
         show_mesh: bool = False,
     ):
-        """Plots the true mesh assigned to SURF_MESH AVL common block data on a 3D axis.
-        Can also plot the mesh stored in SURF on the same axis.
+        """Plots the mesh assigned to SURF_MESH AVL common block data on a 3D axis.
 
         Args:
             axis: axis to add the plot to
