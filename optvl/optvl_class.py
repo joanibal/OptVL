@@ -1191,13 +1191,13 @@ class OVLSolver(object):
         # Flag surface as using mesh geometry
         self.avl.SURF_MESH_L.LSURFMSH[idx_surf] = True
 
-    def get_mesh(self, idx_surf: int, get_full_mesh: bool = False, get_iptloc: bool = False):
-        """
+    def get_mesh(self, idx_surf: int, concat_dup_mesh: bool = False):
+        """Returns the current set mesh coordinates from AVL as a numpy array.
+        Note this is intended for 
 
         Args:
             idx_surf (int): the surface to get the mesh for
-            get_full_mesh (bool): concatenates and returns the meshes for idx_surf and idx_surf + 1, for use with duplicated surfaces
-            get_iptloc (bool) : should the iptloc vector for the surface be returned
+            concat_dup_mesh (bool): concatenates and returns the meshes for idx_surf and idx_surf + 1, for use with duplicated surfaces
         """
 
         # Check if surface is using mesh geometry
@@ -1220,7 +1220,7 @@ class OVLSolver(object):
             mesh[:,:,1] = -mesh[:,:,1] + self.y_offsets[idx_surf-1]
 
         # Concatenate with duplicate
-        if get_full_mesh:
+        if concat_dup_mesh:
             if imags[idx_surf] < 0:
                 raise RuntimeError(f"Concatenating a duplicated surface, {idx_surf}, with the next surface!")
             elif imags[idx_surf+1] > 0:
@@ -1233,35 +1233,7 @@ class OVLSolver(object):
             # Concatenate them
             mesh = np.hstack([mesh,mesh_dup])
 
-        # Get iptloc
-        iptloc = None
-        if get_iptloc:
-            iptloc = self.get_avl_fort_arr("SURF_MESH_I","IPTSEC",slicer=(idx_surf,slice(None,self.get_num_sections(self.get_surface_names()[idx_surf])))) - 1
-            return mesh, iptloc
-        else:
-            return mesh
-        
-
-        # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
-        # nspans by passing in all zeros
-        # if not (iptloc == 0).all():
-        #     iptloc += 1
-        # # set iptloc
-        # self.set_avl_fort_arr("SURF_MESH_I","IPTSEC",iptloc,slicer=(idx_surf,slice(None,len(iptloc))))
-
-        # Compute and set the mesh starting index
-        # if idx_surf != 0:
-        #    self.mesh_idx_first[idx_surf] = self.mesh_idx_first[idx_surf-1] + 3*(self.avl.SURF_GEOM_I.NVS[idx_surf-1]+1)*(self.avl.SURF_GEOM_I.NVC[idx_surf-1]+1)
-
-        # self.set_avl_fort_arr("SURF_MESH_I","MFRST",self.mesh_idx_first[idx_surf]+1,slicer=idx_surf)
-
-        # # Reshape the mesh
-        # # mesh = mesh.ravel(order="C").reshape((3,mesh.shape[0]*mesh.shape[1]), order="F")
-        # mesh = mesh.transpose((1,0,2)).reshape((mesh.shape[0]*mesh.shape[1],3))
-
-        # # Set the mesh
-        # self.set_avl_fort_arr("SURF_MESH_R","MSHBLK",mesh, slicer=(slice(self.mesh_idx_first[idx_surf],self.mesh_idx_first[idx_surf]+nx*ny),slice(0,3)))
-
+        return mesh
         
 
     def set_section_naca(self, isec: int, isurf: int, nasec: int, naca: str, xfminmax: np.ndarray):
@@ -3295,7 +3267,7 @@ class OVLSolver(object):
 
     def __fort_char_array_to_str(self, fort_string: str) -> str:
         # TODO: need a more general solution for |S<variable> type
-        # SB: This should fix it but keep things commented out in case
+        # SAB: This should fix it but keep things commented out in case
 
         if fort_string.dtype == np.dtype("|S0"):
             # there are no characters in the sting to add
@@ -4711,11 +4683,6 @@ class OVLSolver(object):
         mesh_style="--",
         mesh_linewidth=0.3,
         show_mesh: bool = False,
-        # show_avl_geom: bool = False,
-        # show_avl_mesh: bool = False,
-        # avl_mesh_color: str = "red",
-        # avl_mesh_style: str = "--",
-        # show_avl_control_points: bool = False
     ):
         """Plots the true mesh assigned to SURF_MESH AVL common block data on a 3D axis.
         Can also plot the mesh stored in SURF on the same axis.
@@ -4748,20 +4715,19 @@ class OVLSolver(object):
                 for j in range(mesh_x.shape[1]):
                     axis.plot(mesh_x[:, j], mesh_y[:, j],mesh_z[:, j], mesh_style, color=color, lw=mesh_linewidth, alpha=1.0)
 
-        # if show_avl_geom:
-        #     self.add_mesh_plot_3d_avl(
-        #         axis,
-        #         color = avl_mesh_color,
-        #         mesh_style=avl_mesh_style,
-        #         mesh_linewidth=mesh_linewidth,
-        #         show_mesh = show_avl_mesh,
-        #         show_control_points = show_avl_control_points)
             
     def plot_geom_3d(self, axes=None, plot_avl_mesh = True, plot_direct_mesh = False):
-        """Generate a matplotlib plot of geometry
+        """Generates a plot of the VLM mesh on a 3d axis.
+        By default the flat version of the mesh that satisfies AVL's VLM assumptions is plotted.
+        This is either the mesh that comes as a result of AVL's standard geometry specification system
+        or the custom user assigned mesh after it has undergone the transformation needed to flatten it to
+        satify the VLM assumptions. There is also an option to overlay the directly assigned mesh. This will
+        plot user assigned mesh as is with no modifications.
 
         Args:
             axes: Matplotlib axis object to add the plots too. If none are given, the axes will be generated.
+            plot_avl_mesh: If True the AVL flattenned mesh is plotted on the axis
+            plot_direct_mesh: If True the user assigned mesh will be plotted as is
         """
 
         if axes == None:
@@ -4773,7 +4739,7 @@ class OVLSolver(object):
             ax1._axis3don = False
             plt.subplots_adjust(left=0.025, right=0.925, top=0.925, bottom=0.025)
         else:
-            ax1, ax2 = axes
+            ax1 = axes
 
         if plot_avl_mesh:
             self.add_mesh_plot_3d_avl(ax1,
@@ -4790,7 +4756,7 @@ class OVLSolver(object):
                 mesh_linewidth=0.3,
                 show_mesh= True)
 
-        if axes == None:
+        if axes is None:
             # assume that if we don't provide axes that we want to see the plot
             plt.axis("equal")
             plt.show()
