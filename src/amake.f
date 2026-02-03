@@ -954,7 +954,7 @@ c--------------------------------------------------------------
        STOP
       ENDIF
 
-      ! New Loop over all strip in surface
+      ! New Loop over all strips in surface
       do ispan = 1,ny-1
 
 
@@ -972,16 +972,16 @@ c--------------------------------------------------------------
 
       ! We need to compute the chord and claf values at the left and right edge of the section
       ! These will be needed by AVL for control surface setup and control point placement 
-!       idx_node = flatidx(1,iptl,isurf)
-!       idx_node_nx = flatidx(nx,iptl,isurf)
-!       CHORDL = sqrt((mesh_surf(1,idx_node_nx)-mesh_surf(1,idx_node))**2 
-!      & + (mesh_surf(3,idx_node_nx)-mesh_surf(3,idx_node))**2)
-!       idx_node = flatidx(1,iptr,isurf)
-!       idx_node_nx = flatidx(nx,iptr,isurf)
-!       CHORDR = sqrt((mesh_surf(1,idx_node_nx)-mesh_surf(1,idx_node))**2
-!      & + (mesh_surf(3,idx_node_nx)-mesh_surf(3,idx_node))**2)
-!       CLAFL = CLAF(idx_sec,  isurf)
-!       CLAFR = CLAF(idx_sec+1,isurf)
+      idx_node = flatidx(1,iptl,isurf)
+      idx_node_nx = flatidx(nx,iptl,isurf)
+      CHORDL = sqrt((mesh_surf(1,idx_node_nx)-mesh_surf(1,idx_node))**2 
+     & + (mesh_surf(3,idx_node_nx)-mesh_surf(3,idx_node))**2)
+      idx_node = flatidx(1,iptr,isurf)
+      idx_node_nx = flatidx(nx,iptr,isurf)
+      CHORDR = sqrt((mesh_surf(1,idx_node_nx)-mesh_surf(1,idx_node))**2
+     & + (mesh_surf(3,idx_node_nx)-mesh_surf(3,idx_node))**2)
+      CLAFL = CLAF(idx_strip,  isurf)
+      CLAFR = CLAF(idx_strip+1,isurf)
 
       ! Compute the incidence angle at the section end points
       ! We will need this later to iterpolate chord projections
@@ -997,12 +997,12 @@ c--------------------------------------------------------------
       ! AINCS. However, when we twist we make sure to keep the leading and trailing edges
       ! linear (straight line along the LE and TE). The angles at each strip required to 
       ! do are what gets applied to the normal vector at each strip.
-      ! AINCL = AINCS(idx_sec,isurf)*DTR + ADDINC(isurf)*DTR
-      ! AINCR = AINCS(idx_sec+1,isurf)*DTR + ADDINC(isurf)*DTR
-      ! CHSINL = CHORDL*SIN(AINCL)
-      ! CHSINR = CHORDR*SIN(AINCR)
-      ! CHCOSL = CHORDL*COS(AINCL)
-      ! CHCOSR = CHORDR*COS(AINCR)
+      AINCL = AINCS(idx_strip,isurf)*DTR + ADDINC(isurf)*DTR
+      AINCR = AINCS(idx_strip+1,isurf)*DTR + ADDINC(isurf)*DTR
+      CHSINL = CHORDL*SIN(AINCL)
+      CHSINR = CHORDR*SIN(AINCR)
+      CHCOSL = CHORDL*COS(AINCL)
+      CHCOSR = CHORDR*COS(AINCR)
 
       ! We need to determine which controls belong to this section 
       ! Bring over the routine for this from makesurf
@@ -1168,14 +1168,14 @@ c--------------------------------------------------------------
 
       ELSE
       ! control variable # N is active here
-            GAINDA(N) = GAIND(ICL,idx_sec  ,isurf)*(1.0-FC)
-     &                 + GAIND(ICR,idx_sec+1,isurf)*     FC
+            GAINDA(N) = GAIND(ICL,idx_strip  ,isurf)*(1.0-FC)
+     &                 + GAIND(ICR,idx_strip+1,isurf)*     FC
 
             ! SAB Note: This interpolation ensures that the hinge line is 
             ! is linear which I think it is an ok assumption for arbitrary wings as long as the user is aware
             ! A curve hinge line could work if needed if we just interpolate XHINGED and scaled by local chord
-            XHD = CHORDL*XHINGED(ICL,idx_sec  ,isurf)*(1.0-FC)
-     &           + CHORDR*XHINGED(ICR,idx_sec+1,isurf)*     FC
+            XHD = CHORDL*XHINGED(ICL,idx_strip  ,isurf)*(1.0-FC)
+     &           + CHORDR*XHINGED(ICR,idx_strip+1,isurf)*     FC
             IF(XHD.GE.0.0) THEN
             ! TE control surface, with hinge at XHD
             XLED(N) = XHD
@@ -1186,18 +1186,18 @@ c--------------------------------------------------------------
             XTED(N) = -XHD
             ENDIF
 
-            VHX = VHINGED(1,ICL,idx_sec,isurf)*XYZSCAL(1,isurf)
-            VHY = VHINGED(2,ICL,idx_sec,isurf)*XYZSCAL(2,isurf)
-            VHZ = VHINGED(3,ICL,idx_sec,isurf)*XYZSCAL(3,isurf)
+            VHX = VHINGED(1,ICL,idx_strip,isurf)*XYZSCAL(1,isurf)
+            VHY = VHINGED(2,ICL,idx_strip,isurf)*XYZSCAL(2,isurf)
+            VHZ = VHINGED(3,ICL,idx_strip,isurf)*XYZSCAL(3,isurf)
             VSQ = VHX**2 + VHY**2 + VHZ**2
             IF(VSQ.EQ.0.0) THEN
             ! default: set hinge vector along hingeline
             ! We are just setting the hinge line across the section
             ! this assumes the hinge is linear even for a nonlinear wing
             VHX = mesh_surf(1,idx_noder)
-     &              + ABS(CHORDR*XHINGED(ICR,idx_sec+1,isurf))
+     &              + ABS(CHORDR*XHINGED(ICR,idx_strip+1,isurf))
      &              - mesh_surf(1,idx_nodel)
-     &              - ABS(CHORDL*XHINGED(ICL,idx_sec,isurf))
+     &              - ABS(CHORDL*XHINGED(ICL,idx_strip,isurf))
             VHY = mesh_surf(2,idx_noder)
      &            - mesh_surf(2,idx_nodel)
             VHZ = mesh_surf(3,idx_noder)
@@ -1213,7 +1213,7 @@ c--------------------------------------------------------------
             VHINGE(2,idx_strip,N) = VHY/VMOD
             VHINGE(3,idx_strip,N) = VHZ/VMOD
 
-            VREFL(idx_strip,N) = REFLD(ICL,idx_sec, isurf)
+            VREFL(idx_strip,N) = REFLD(ICL,idx_strip, isurf)
 
             IF(XHD .GE. 0.0) THEN
             PHINGE(1,idx_strip,N) = RLE(1,idx_strip) + XHD
@@ -1230,8 +1230,8 @@ c--------------------------------------------------------------
       ! Interpolate CD-CL polar defining data from input sections to strips
       DO idx_coef = 1, 6
       CLCD(idx_coef,idx_strip) = (1.0-fc)* 
-     & CLCDSEC(idx_coef,idx_sec,isurf) + 
-     & fc*CLCDSEC(idx_coef,idx_sec+1,isurf)
+     & CLCDSEC(idx_coef,idx_strip,isurf) + 
+     & fc*CLCDSEC(idx_coef,idx_strip+1,isurf)
       END DO
       ! If the min drag is zero flag the strip as no-viscous data
       LVISCSTRP(idx_strip) = (CLCD(4,idx_strip).NE.0.0)  
@@ -1253,8 +1253,8 @@ c--------------------------------------------------------------
       NSURFS(idx_strip) = isurf
 
       ! Prepare for cross section interpolation
-      NSL = NASEC(idx_sec  , isurf)
-      NSR = NASEC(idx_sec+1, isurf)
+      NSL = NASEC(idx_strip  , isurf)
+      NSR = NASEC(idx_strip+1, isurf)
 
       ! CHORDC = CHORD(idx_strip)      
 
@@ -1266,9 +1266,10 @@ c--------------------------------------------------------------
       ! between two secions is equal. 
       ! After reaching out to Hal Youngren it is determined that it is
       ! best to just interpolate claf straight up for now
-!       clafc =  (1.-FC)*(CHORDL/CHORD(idx_strip))*CLAFL
-!      &           +     FC *(CHORDR/CHORD(idx_strip))*CLAFR
-      clafc =  (1.-fc)*clafl + fc*clafr
+      ! UPDATE: Funny story. this is now valid now that we interpolate over the strip
+      clafc =  (1.-FC)*(CHORDL/CHORD(idx_strip))*CLAFL
+     &           +     FC *(CHORDR/CHORD(idx_strip))*CLAFR
+      ! clafc =  (1.-fc)*clafl + fc*clafr
 
       ! loop over vorticies for the strip
       do idx_x = 1, nvc(isurf)
@@ -1440,30 +1441,32 @@ c--------------------------------------------------------------
        ! Set the camber slopes for the panel
        
        ! Camber slope at control point
-       CALL AKIMA(XASEC(1,idx_sec,  isurf),SASEC(1,idx_sec,  isurf),
+       CALL AKIMA(XASEC(1,idx_strip,  isurf),SASEC(1,idx_strip,  isurf),
      &               NSL,(RC(1,idx_vor)-RLE(1,idx_strip))
      &                /CHORD(idx_strip),SLOPEL, DSDX)
-       CALL AKIMA(XASEC(1,idx_sec+1,isurf),SASEC(1,idx_sec+1,isurf),
+       CALL AKIMA(XASEC(1,idx_strip+1,isurf),SASEC(1,idx_strip+1,isurf),
      &               NSR,(RC(1,idx_vor)-RLE(1,idx_strip))
      &                /CHORD(idx_strip),SLOPER, DSDX)
 
        ! Interpolate this as is per Hal Youngren (for now)
-      SLOPEC(idx_vor) =  (1.-fc)*SLOPEL + fc*SLOPER
-!        SLOPEC(idx_vor) =  (1.-fc)*(CHORDL/CHORD(idx_strip))*SLOPEL 
-!      &                    +     fc *(CHORDR/CHORD(idx_strip))*SLOPER
+      ! SLOPEC(idx_vor) =  (1.-fc)*SLOPEL + fc*SLOPER
+      ! UPDATE THIS IS VALID AGAIN
+       SLOPEC(idx_vor) =  (1.-fc)*(CHORDL/CHORD(idx_strip))*SLOPEL 
+     &                    +     fc *(CHORDR/CHORD(idx_strip))*SLOPER
 
        ! Camber slope at vortex mid-point
-       CALL AKIMA(XASEC(1,idx_sec,  isurf),SASEC(1,idx_sec,  isurf),
+       CALL AKIMA(XASEC(1,idx_strip,  isurf),SASEC(1,idx_strip,  isurf),
      &               NSL,(RV(1,idx_vor)-RLE(1,idx_strip))
      &               /CHORD(idx_strip),SLOPEL, DSDX)
-       CALL AKIMA(XASEC(1,idx_sec+1,isurf),SASEC(1,idx_sec+1,isurf),
+       CALL AKIMA(XASEC(1,idx_strip+1,isurf),SASEC(1,idx_strip+1,isurf),
      &               NSR,(RV(1,idx_vor)-RLE(1,idx_strip))
      &               /CHORD(idx_strip),SLOPER, DSDX)
 
       ! Interpolate this as is per Hal Youngren (for now)
-      SLOPEV(idx_vor) =  (1.-fc)*SLOPEL + fc*SLOPER
-!        SLOPEV(idx_vor) =  (1.-fc)*(CHORDL/CHORD(idx_strip))*SLOPEL 
-!      &                    + fc *(CHORDR/CHORD(idx_strip))*SLOPER
+      ! SLOPEV(idx_vor) =  (1.-fc)*SLOPEL + fc*SLOPER
+      ! UPDATE THIS IS VALID AGAIN
+       SLOPEV(idx_vor) =  (1.-fc)*(CHORDL/CHORD(idx_strip))*SLOPEL 
+     &                    + fc *(CHORDR/CHORD(idx_strip))*SLOPER
 
       ! Associate the panel with it's strip's chord and component
       CHORDV(idx_vor) = CHORD(idx_strip)
@@ -1512,17 +1515,17 @@ c--------------------------------------------------------------
 !      &           - RLE2(1,idx_strip))/CHORD2(idx_strip) 
 
       ! Interpolate cross section on left side
-      CALL AKIMA( XLASEC(1,idx_sec,isurf), ZLASEC(1,idx_sec,isurf),
+      CALL AKIMA( XLASEC(1,idx_strip,isurf), ZLASEC(1,idx_strip,isurf),
      &               NSL,xptxind1, ZL_L, DSDX )
-      CALL AKIMA( XUASEC(1,idx_sec,isurf), ZUASEC(1,idx_sec,isurf),
+      CALL AKIMA( XUASEC(1,idx_strip,isurf), ZUASEC(1,idx_strip,isurf),
      &               NSL,xptxind1, ZU_L, DSDX )
 
       ! Interpolate cross section on right side
-      CALL AKIMA( XLASEC(1,idx_sec+1,isurf),ZLASEC(1,idx_sec+1,isurf),
-     &            NSR, xptxind1, ZL_R, DSDX)
+      CALL AKIMA( XLASEC(1,idx_strip+1,isurf),
+     & ZLASEC(1,idx_strip+1,isurf),NSR, xptxind1, ZL_R, DSDX)
                       
-      CALL AKIMA( XUASEC(1,idx_sec+1,isurf),ZUASEC(1,idx_sec+1,isurf),
-     &            NSR, xptxind1, ZU_R, DSDX)
+      CALL AKIMA( XUASEC(1,idx_strip+1,isurf),
+     & ZUASEC(1,idx_strip+1,isurf),NSR, xptxind1, ZU_R, DSDX)
 
 
       ! Compute the left aft node of panel 
@@ -2183,7 +2186,7 @@ C
 C
       REAL EP(3), EQ(3), ES(3), EB(3), EC(3), ECXB(3)
       REAL EC_G(3,NDMAX), ECXB_G(3)
-      real(kind=avl_real) :: dchstrip, DXT, DYT, DZT
+      real(kind=avl_real) :: dchstrip, DXT, DYT, DZT, ec_msh(3)
 C
 C...Calculate the normal vector at control points and bound vortex midpoints
 C
@@ -2337,28 +2340,63 @@ C
           ! from both the geometry itself and the incidence modification
           ! from the AVL AINC and camber slope variables
 
-          ! To avoid storing uncessary info in the common block 
           ! Get the geometric chordwise vector using RVMSH and RCMSH which should
           ! be located in the same plane given that each individual panel is a 
           ! plane
-          
-          ! Note that like in AVL the sin of the incidence is projected
-          ! to the strip's normal in the YZ plane (Treffz plane)
-          ! which is ES(2) and ES(3) computed earlier
-          EC(1) =  COSC + (RCMSH(1,I)-RVMSH(1,I))
-          EC(2) = -SINC*ES(2) + (RCMSH(2,I)-RVMSH(2,I))
-          EC(3) = -SINC*ES(3) + (RCMSH(3,I)-RVMSH(3,I))
+
+          EMAG = SQRT((RCMSH(1,I)-RVMSH(1,I))**2 
+     &  + (RCMSH(2,I)-RVMSH(2,I))**2 
+     &  + (RCMSH(3,I)-RVMSH(3,I))**2)
+          ec_msh(1) = (RCMSH(1,I)-RVMSH(1,I))/EMAG
+          ec_msh(2) = (RCMSH(2,I)-RVMSH(2,I))/EMAG
+          ec_msh(3) = (RCMSH(3,I)-RVMSH(3,I))/EMAG
+
+          ! Now we have to rotate this vector by the incidence contribution from AINC and CAMBER
+          ! However, this rotation needs to be done about the local y-axis of the wing 
+          ! Earlier we computed ES the normal vector of the strip projected to the Trefftz plane
+          ! The axis we need to rotate about is the one purpendicular to this ES.
+          ! As a result all panel normals in a given strip will be rotated about the same axis defined by the that strip
+          ! The components of the rotation axis are obtained from ES as follows
+          ! rot_axis(1) = 0
+          ! rot_axis(2) = -ES(3)
+          ! rot_axis(3) = ES(2)
+          ! We can then multiply ec_msh by the rotation matrix for a rotation about an arbitrary axis
+          ! see https://pubs.aip.org/aapt/ajp/article/44/1/63/1050167/Formalism-for-the-rotation-matrix-of-rotations
+          ! Note that standard AVL also does this exact same thing but since they always rotate the vector [1,0,0]
+          ! the result collapses into the ridiculously simple expression for EC that you see in the other branch
+
+          EC(1) =  COSC*ec_msh(1) + ES(2)*SINC*ec_msh(2) 
+     &     + ES(3)*SINC*ec_msh(3)
+          EC(2) = -ES(2)*SINC + ((ES(3)**2)*(1-COSC)+COSC)*ec_msh(2)
+     &     - (ES(2)*ES(3)*(1-COSC))*ec_msh(3)  
+          EC(3) = -ES(3)*SINC*ec_msh(1) - 
+     &     (ES(2)*ES(3)*(1-COSC))*ec_msh(2) + 
+     &    ((ES(2)**2)*(1-COSC) + COSC)*ec_msh(3)
 
           else
           EC(1) =  COSC
           EC(2) = -SINC*ES(2)
           EC(3) = -SINC*ES(3)
-      !     EC  = rotation of strip normal vector? or along chord?
           end if
+
           DO N = 1, NDESIGN
+            ! The derivative here also changes if we use a custom mesh
+            ! Note the derivative is only wrt to AVL incidence vars
+            ! as those are the vars AVL DVs can support
+            if (lsurfmsh(nsurfs(J))) then
+            EC(1) =  -SINC*ec_msh(1) + ES(2)*COSC*ec_msh(2) 
+     &     + ES(3)*COSC*ec_msh(3)
+          EC(2) = -ES(2)*COSC + ((ES(3)**2)*(1+SINC)-SINC)*ec_msh(2)
+     &     - (ES(2)*ES(3)*(1+SINC))*ec_msh(3)  
+          EC(3) = -ES(3)*COSC*ec_msh(1) - 
+     &     (ES(2)*ES(3)*(1+SINC))*ec_msh(2) + 
+     &    ((ES(2)**2)*(1+SINC) - SINC)*ec_msh(3)
+
+            else
             EC_G(1,N) = -SINC      *AINC_G(J,N)
             EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
             EC_G(3,N) = -COSC*ES(3)*AINC_G(J,N)
+            end if
           ENDDO
 C
 C...Normal vector is perpendicular to camberline vector and to the bound leg
@@ -2404,9 +2442,16 @@ C
           COSC = COS(ANG)
           if (lsurfmsh(nsurfs(J))) then
           ! direct mesh assignment branch
-          EC(1) =  COSC + (RCMSH(1,I)-RVMSH(1,I))
-          EC(2) = -SINC*ES(2) + (RCMSH(2,I)-RVMSH(2,I))
-          EC(3) = -SINC*ES(3) + (RCMSH(3,I)-RVMSH(3,I))
+          ! see explanation in section above for control point normals
+          ! ec_msh was already computed in that section
+          EC(1) =  COSC*ec_msh(1) + ES(2)*SINC*ec_msh(2) 
+     &     + ES(3)*SINC*ec_msh(3)
+          EC(2) = -ES(2)*SINC + ((ES(3)**2)*(1-COSC)+COSC)*ec_msh(2)
+     &     - (ES(2)*ES(3)*(1-COSC))*ec_msh(3)  
+          EC(3) = -ES(3)*SINC*ec_msh(1) - 
+     &     (ES(2)*ES(3)*(1-COSC))*ec_msh(2) + 
+     &    ((ES(2)**2)*(1-COSC) + COSC)*ec_msh(3)
+
           else
           EC(1) =  COSC
           EC(2) = -SINC*ES(2)
@@ -2414,9 +2459,21 @@ C
           end if
 
           DO N = 1, NDESIGN
+            if (lsurfmsh(nsurfs(J))) then
+            ! Direct mesh assignment branch
+            EC(1) =  -SINC*ec_msh(1) + ES(2)*COSC*ec_msh(2) 
+     &     + ES(3)*COSC*ec_msh(3)
+          EC(2) = -ES(2)*COSC + ((ES(3)**2)*(1+SINC)-SINC)*ec_msh(2)
+     &     - (ES(2)*ES(3)*(1+SINC))*ec_msh(3)  
+          EC(3) = -ES(3)*COSC*ec_msh(1) - 
+     &     (ES(2)*ES(3)*(1+SINC))*ec_msh(2) + 
+     &    ((ES(2)**2)*(1+SINC) - SINC)*ec_msh(3)
+
+            else
             EC_G(1,N) = -SINC      *AINC_G(J,N)
             EC_G(2,N) = -COSC*ES(2)*AINC_G(J,N)
             EC_G(3,N) = -COSC*ES(3)*AINC_G(J,N)
+            end if
           ENDDO
 C
 C...Normal vector is perpendicular to camberline vector and to the bound leg

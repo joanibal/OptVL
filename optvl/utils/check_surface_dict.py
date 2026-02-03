@@ -11,6 +11,7 @@ import warnings
 # External Python modules
 # =============================================================================
 import numpy as np
+import pdb
 
 
 # =============================================================================
@@ -161,6 +162,12 @@ def pre_check_input_dict(input_dict: dict):
         "sspaces",  # spanwise spacing vector (for each section), overriden by sspace
         "clcdsec",  # profile-drag CD(CL) function for each section in this surface
         "claf",  # CL alpha (dCL/da) scaling factor per section
+        # Geometry
+        "xles",  # leading edge cordinate vector(x component)
+        "yles",  # leading edge cordinate vector(y component)
+        "zles",  # leading edge cordinate vector(z component)
+        "chords",  # chord length vector
+        "aincs",  # incidence angle vector
         # Geometry: Cross Sections
         # NACA
         "naca",
@@ -357,7 +364,7 @@ def pre_check_input_dict(input_dict: dict):
                         "More than one airfoil section specification detected in input dictionary!\n"
                         "Select only a single approach for specifying airfoil sections!")
 
-
+                # Process all keys
                 for key in input_dict["surfaces"][surface].keys():
 
                     # Check to verify if redundant y-symmetry specification are not made
@@ -367,22 +374,44 @@ def pre_check_input_dict(input_dict: dict):
                                 f"ERROR: Redundant y-symmetry specifications in surface {surface} \nIYSYM /= 0 \nYDUPLICATE  0.0. \nCan use one or the other, but not both!"
                             )
 
-                    # Check the surface input size is a 2D array with second dim equal to num_sections
+                    # Verify that keys that need items specified for every strip/section have value specified for all strip/section or have a scalar/single vector that can be duplicated
                     if key in multi_section_keys:
-                        if (key in dim_2_keys) and (input_dict["surfaces"][surface][key].ndim != 2):
-                            raise ValueError(
-                                f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 2!"
-                            )
-                        if (key not in dim_2_keys) and input_dict["surfaces"][surface][key].ndim != 1:
-                            raise ValueError(
-                                f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 1!"
-                            )
 
-                        if (
-                            input_dict["surfaces"][surface][key].shape[0]
-                            != input_dict["surfaces"][surface]["num_sections"]
-                        ):
-                            raise ValueError(f"Key {key} does not have entries corresponding to each section!s")
+                        if (key in dim_2_keys):
+                            if not (isinstance(input_dict["surfaces"][surface][key],np.ndarray)):
+                                raise ValueError(f"Input for {key} must be a single dim 1 numpy array or a dim 2 numpy array with each vector along axis 0 corresponding to strip/section")
+
+                            # If the user provides a single dim 1 vector stack it num_sections times
+                            if (input_dict["surfaces"][surface][key].ndim == 1):
+                                input_dict["surfaces"][surface][key] = np.tile(input_dict["surfaces"][surface][key],(input_dict["surfaces"][surface]["num_sections"],1))
+                            # Otherwise make sure we have entries for each seciton
+                            elif (input_dict["surfaces"][surface][key].ndim == 2):
+                                if (input_dict["surfaces"][surface][key].shape[0] != input_dict["surfaces"][surface]["num_sections"]):
+                                    raise ValueError(
+                                        f"Key {key} only has {input_dict['surfaces'][surface][key].shape[0]}, expected {input_dict['surfaces'][surface]['num_sections']}!"
+                                    )
+                            else:
+                                raise ValueError(
+                                f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 1 or 2!"
+                            )
+                        else:
+    
+                            # If the user provides a scalar expand it out for all sections
+                            if isinstance(input_dict["surfaces"][surface][key],(int,float,np.int32,np.float64)):
+                                    input_dict["surfaces"][surface][key] = np.tile(input_dict["surfaces"][surface][key],(input_dict["surfaces"][surface]["num_sections"]))
+                            elif input_dict["surfaces"][surface][key].ndim > 1:
+                                raise ValueError(
+                                    f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 1!"
+                                )
+                            
+                            
+
+                        # if (
+                        #     input_dict["surfaces"][surface][key].shape[0]
+                        #     != input_dict["surfaces"][surface]["num_sections"]
+                        # ):
+                        #     # Expand scalars to t
+                        #     raise ValueError(f"Key {key} does not have entries corresponding to each section!s")
 
                     # Check for keys not implemented
                     if key not in keys_implemented_surface:
