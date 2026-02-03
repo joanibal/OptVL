@@ -139,34 +139,6 @@ python module libavl ! in
             integer :: isurf
         end subroutine makesurf_mesh
 
-        subroutine adjust_mesh_spacing(isurf, nx, ny, mesh, iptloc, nsecsurf) ! in :libavl:amake.f
-            integer :: isurf, nx, ny, nsecsurf
-            integer, intent(inout) :: iptloc(nsecsurf)
-            real*8 :: mesh(3,nx,ny)
-        end subroutine adjust_mesh_spacing
-
-        !subroutine getcam(x, y, n, xc, yc, tc, nc, lnorm) ! in :libavl:airutil.f
-            !integer, intent(in) :: n
-            !integer, intent(inout) :: nc
-            !real, dimension(nc), intent(out) :: xc, yc, tc
-            !real, dimension(n), intent(in) :: x, y
-            !logical, intent(in) :: lnorm
-        !end subroutine getcam
-
-        !subroutine getcam(x, y, n, xc, yc, tc, nc, lnorm) ! in :libavl:airutil.f
-            !integer, intent(inout) :: nc
-            !integer n
-            !real*8 x(n), y(n), xc(nc), yc(nc), tc(nc)
-            !logical lnorm
-        !end subroutine getcam
-
-        !subroutine akima(x, y, n, xx, yy, slp) ! in :libavl:sgutil.f
-            !integer, intent(in) :: n
-            !real, dimension(n), intent(in) :: x, y
-            !real, dimension(*), intent(in) ::  xx
-            !real, dimension(*), intent(out) :: yy, slp
-        !end subroutine akima
-
         subroutine set_section_coordinates(isec, isurf, x, y, n, nin, xfmin, xfmax, storecoords) ! in :libavl:amake.f
             integer :: isec, isurf, n, nin
             real*8 :: x(n), y(n), xfmin, xfmax
@@ -179,11 +151,5 @@ python module libavl ! in
             logical :: storecoords
         end subroutine set_body_coordinates
 
-        !subroutine update_surface_mesh_HACK(isurf,mesh,nx,ny,iptloc,nsecsurf,lcount,lcall) ! in :libavl:amake.f
-            !integer :: isurf, nx, ny, nsecsurf
-            !logical :: lcount, lcall
-            !real*8 :: mesh(3,nx,ny)
-            !integer :: iptloc(nsecsurf)
-        !end subroutine update_surfaces_mesh
     end interface 
 end python module libavl

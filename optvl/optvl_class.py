@@ -588,7 +588,7 @@ class OVLSolver(object):
                 return (bool, int,np.int32)
             else:
                 raise ValueError(f'type not able to be infered from common block {common_blk}')
-            
+
         def check_type(key, avl_vars, given_val):
             """Checks the type for a given AVL Fortran Common Block var against a given value
 
@@ -635,7 +635,7 @@ class OVLSolver(object):
         optional_header_defaults = {
             "CDp": 0.0
         }
-        
+
         for key, avl_vars in self.header_var_to_fort_var.items():
 
             if key not in input_dict:
@@ -706,12 +706,8 @@ class OVLSolver(object):
 
                 surf_dict = input_dict["surfaces"][surf_name]
 
-
-                # MOVED TO PRECHECK ROUTINE
-                # For meshes set the number of "sections" to the number of strips in the mesh so that the slice maps are setup correctly
-                # if "mesh" in surf_dict.keys():
-                #     num_secs = surf_dict["mesh"].shape[1] - 1
-                # else:
+                # For meshes set the number of "sections" to the number of strips in the mesh so that the slice maps are setup correctly.
+                # This is automatically done by the pre-check routine
                 num_secs = surf_dict["num_sections"]
 
                 # Check how many strip/sections we have defined so far and that it doesn't exceed NSMAX
@@ -810,13 +806,13 @@ class OVLSolver(object):
                 # determine what method of airfoil definition we are using
                 # check to make sure we don't have multiple airfoil definitions used for this surface
                 airfoil_spec_keys = {"naca", "airfoils", "afiles", "xasec"} & surf_dict.keys()
-                
+
                 if len(airfoil_spec_keys) > 1:
                     raise KeyError(f'OptVL can only have one method of specifing airfoil geometry per surface, found {airfoil_spec_keys} in surface {surf_name}')
-                
+
                 xfminmax_arr = surf_dict.get("xfminmax", np.array([0.0, 1.0]*num_secs))
                 num_pts = min(50, self.IBX)
-                
+
                 # setup for manually specifying coordinates
                 if "xasec" in surf_dict.keys():
                     warnings.warn(
@@ -835,32 +831,32 @@ class OVLSolver(object):
                 # Load the Airfoil Section into AVL
                 for j in range(num_secs):
                     xfminmax = xfminmax_arr[j]
-                    
+
                     # Manually Specify Coordiantes (no camberline verification, only use if you know what you're doing)
                     if "xasec" in surf_dict.keys():
                         self.set_avl_fort_arr("SURF_GEOM_I", "NASEC", nasec_list[j], slicer=(idx_surf, j))
-                        
+
                         # TODO-JLA: a user should not have to spcify XLASEC, XUASEC, ZLASEC, ZUASEC
                         # since these can be calculated from the other inputs
-                        
+
                         for key in self.surf_section_geom_to_fort_var[surf_name]:
                             avl_vars_secs = self.surf_section_geom_to_fort_var[surf_name][key]
                             avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
-                            
-                            
+
+
                             if key not in surf_dict:
                                 raise ValueError(f"Key `{key}` not found in surface dictionary, `{surf_name}`, but is required when manually specifing airfoil coordinates")
-                            
+
                             val = surf_dict[key][j]
-                            
-                            check_type(key, avl_vars, val)    
+
+                            check_type(key, avl_vars, val)
                             self.set_avl_fort_arr(avl_vars[0], avl_vars[1], val, slicer=avl_vars[2])
-                    
+
                     # 4 digit NACA airfoil specification
                     elif "naca" in surf_dict.keys():
                         if (xfminmax[0] > 0.01) or (xfminmax[1] < 0.99):
                             self.set_avl_fort_arr("SURF_L", "LRANGE", True, slicer=idx_surf)
-                                
+
                         # Store this stuff so we can read it later
                         self.avl.CASE_C.NACA[j, idx_surf] = surf_dict["naca"][j]
                         self.avl.SURF_GEOM_R.XFMIN_R[j, idx_surf] = xfminmax[0]
@@ -892,7 +888,7 @@ class OVLSolver(object):
                         self.set_avl_fort_arr("SURF_GEOM_R", "ZLASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "ZUASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "CASEC",  np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-                        
+
                 # --- setup control variables for each section ---
                 # Load control surfaces
                 if "icontd" in surf_dict.keys():
@@ -949,14 +945,9 @@ class OVLSolver(object):
                     print(f"Building surface: {surf_name}")
                 # Load the mesh and make if one is specified otherwise just make
                 if "mesh" in surf_dict.keys():
-                    # Check if we have to define the sections for the user
-                    if "iptloc" not in surf_dict.keys():
-                         surf_dict["iptloc"] = np.zeros(surf_dict["num_sections"],dtype=np.int32)
-                         self.avl.adjust_mesh_spacing(idx_surf+1,surf_dict["mesh"].transpose((2, 0, 1)),surf_dict["iptloc"])
-                         surf_dict["iptloc"] = surf_dict["iptloc"] - 1
                     if "flatten mesh" not in surf_dict.keys():
                          surf_dict["flatten mesh"] = True
-                    self.set_mesh(idx_surf, surf_dict["mesh"],surf_dict["iptloc"],flatten=surf_dict["flatten mesh"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
+                    self.set_mesh(idx_surf, surf_dict["mesh"],flatten=surf_dict["flatten mesh"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
                     self.avl.makesurf_mesh(idx_surf + 1) #+1 for Fortran indexing
                 else:
                     self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
@@ -1047,7 +1038,7 @@ class OVLSolver(object):
 
                     # Keep python data consistent with Fortran
                     idx_body += 1
-                    
+
                 idx_body += 1
 
 
@@ -1076,17 +1067,12 @@ class OVLSolver(object):
         # Tell AVL that geometry exists now and is ready for analysis
         self.avl.CASE_L.LGEO = True
 
-    def set_mesh(self, idx_surf: int, mesh: np.ndarray, iptloc: np.ndarray, flatten:bool=True, update_nvs: bool=False, update_nvc: bool=False):
-        """Sets a mesh directly into OptVL. Requires an iptloc vector to define the indices where the sections are defined.
-        This is required for many of AVL's features like control surfaces to work properly. OptVL's input routine has multiple
-        ways of automatically computing this vector. Alternatively, calling the adjust_mesh_spacing subroutine in the Fortran layer
-        can automatically compute the iptloc vector for a given mesh and number of sections. NOTE: the iptloc input is not differentiated.
-        Additionally, the length of iptloc cannot change (i.e the number sections cannot change for a surface that's already loaded).
+    def set_mesh(self, idx_surf: int, mesh: np.ndarray, flatten:bool=True, update_nvs: bool=False, update_nvc: bool=False):
+        """Sets a mesh directly into OptVL.
 
         Args:
             idx_surf (int): the surface to apply the mesh to
             mesh (np.ndarray): XYZ mesh array (nx,ny,3)
-            iptloc (np.ndarray): Vector containing the spanwise indicies where each section is defined (num_sections,)
             flatten (bool): Should OptVL flatten the mesh when placing vorticies and control points
             update_nvs (bool): Should OptVL update the number of spanwise elements for the given mesh
             update_nvc (bool): Should OptVL update the number of chordwise elements for the given mesh
@@ -1094,9 +1080,6 @@ class OVLSolver(object):
         nx = copy.deepcopy(mesh.shape[0])
         ny = copy.deepcopy(mesh.shape[1])
 
-        if len(iptloc) > self.NSMAX:
-            raise RuntimeError("Length of iptloc cannot exceed NSMAX. Raise NSMAX")
-        
         if update_nvs:
             self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1
 
@@ -1107,13 +1090,6 @@ class OVLSolver(object):
             self.avl.SURF_MESH_L.LMESHFLAT[idx_surf] = True
         else:
             self.avl.SURF_MESH_L.LMESHFLAT[idx_surf] = False
-
-        # Only add +1 for Fortran indexing if we are not explictly telling the routine to use
-        # nspans by passing in all zeros
-        if not (iptloc == 0).all():
-            iptloc += 1
-        # set iptloc
-        self.set_avl_fort_arr("SURF_MESH_I","IPTSEC",iptloc,slicer=(idx_surf,slice(None,len(iptloc))))
 
         # Compute and set the mesh starting index
         if idx_surf != 0:

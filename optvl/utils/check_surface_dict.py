@@ -11,8 +11,6 @@ import warnings
 # External Python modules
 # =============================================================================
 import numpy as np
-import pdb
-
 
 # =============================================================================
 # Extension modules
@@ -131,7 +129,6 @@ def pre_check_input_dict(input_dict: dict):
         "use surface spacing",  # surface spacing set under the surface heeading (known as LSURFSPACING in AVL)
         # Geometery: Mesh
         "mesh",
-        "iptloc",
         "flatten_mesh",
         # Control Surfaces
         "control_assignments",
@@ -246,40 +243,7 @@ def pre_check_input_dict(input_dict: dict):
         if len(input_dict["surfaces"]) > 0:
             for surface in input_dict["surfaces"].keys():
 
-                # Check if we are directly providing a mesh
-                # if "mesh" in input_dict["surfaces"][surface].keys():
-                #     # Check if sections are specified
-                #     if "num_sections" in input_dict["surfaces"][surface].keys():
-                #         # Check if the section indices are provided
-                #         if "iptloc" in input_dict["surfaces"][surface].keys():
-                #             # If they are make sure we provide one for every section
-                #             if len(input_dict["surfaces"][surface]["iptloc"]) != input_dict["surfaces"][surface]["num_sections"]:
-                #                 raise ValueError("iptloc vector length does not match num_sections")
-                #         # Check if the user provided nspans instead
-                #         elif "nspans" in input_dict["surfaces"][surface].keys():
-                #             # setting iptloc to 0 is how we tell the Fortran layer to use nspans
-                #             input_dict["surfaces"][surface]["iptloc"] = np.zeros(input_dict["surfaces"][surface]["num_sections"])
-                #         # The OptVL class will have to call the fudging routine to try and auto cut the mesh into sections
-                #         else:
-                #             warnings.warn(
-                #             "Mesh provided for surface dict `{}` for {} sections but locations not defined.\n OptVL will automatically define section locations as close to equally as possible.".format(
-                #                 surface, input_dict["surfaces"][surface]["num_sections"]
-                #             ),
-                #             category=RuntimeWarning,
-                #             stacklevel=2,
-                #         )
-                #     else:
-                #         # Assume we have two sections at the ends of mesh and inform the user
-                #         warnings.warn(
-                #             "Mesh provided for surface dict `{}` but no sections provided.\n Assuming 2 sections at tips.".format(
-                #                 surface
-                #             ),
-                #             category=RuntimeWarning,
-                #             stacklevel=2,
-                #         )
-                #         input_dict["surfaces"][surface]["iptloc"] = np.array([0,input_dict["surfaces"][surface]["mesh"].shape[1]-1],dtype=np.int32)
-                #         input_dict["surfaces"][surface]["num_sections"] = 2
-
+                # Check if we are directly providing a mesh and set the strips as "sections" so that the maps setup correctly
                 if "mesh" in input_dict["surfaces"][surface].keys():
                     # First check if the mesh is a valid numpy array shape
                     if len(input_dict["surfaces"][surface]["mesh"].shape) != 3:
@@ -403,15 +367,6 @@ def pre_check_input_dict(input_dict: dict):
                                 raise ValueError(
                                     f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 1!"
                                 )
-                            
-                            
-
-                        # if (
-                        #     input_dict["surfaces"][surface][key].shape[0]
-                        #     != input_dict["surfaces"][surface]["num_sections"]
-                        # ):
-                        #     # Expand scalars to t
-                        #     raise ValueError(f"Key {key} does not have entries corresponding to each section!s")
 
                     # Check for keys not implemented
                     if key not in keys_implemented_surface:
