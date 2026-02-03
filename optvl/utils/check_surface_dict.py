@@ -360,8 +360,8 @@ def pre_check_input_dict(input_dict: dict):
                             )
                         else:
     
-                            # If the user provides a scalar expand it out for all sections
-                            if isinstance(input_dict["surfaces"][surface][key],(int,float,np.int32,np.float64)):
+                            # If the user provides a scalar or string expand it out for all sections
+                            if isinstance(input_dict["surfaces"][surface][key],(int,float,np.int32,np.float64,str)):
                                     input_dict["surfaces"][surface][key] = np.tile(input_dict["surfaces"][surface][key],(input_dict["surfaces"][surface]["num_sections"]))
                             elif input_dict["surfaces"][surface][key].ndim > 1:
                                 raise ValueError(
