@@ -1050,6 +1050,7 @@ class OVLSolver(object):
                     # Insert duplicate into the mesh first index array
                     self.mesh_idx_first = np.insert(self.mesh_idx_first,idx_surf+1,self.mesh_idx_first[idx_surf])
                     self.y_offsets[idx_surf] = surf_dict["yduplicate"]
+                    self.y_offsets = np.insert(self.y_offsets,idx_surf+1,self.y_offsets[idx_surf])
                     self.avl.CASE_I.NSURF += 1
                     idx_surf += 1
 
@@ -1180,7 +1181,7 @@ class OVLSolver(object):
 
         # Compute and set the mesh starting index
         if idx_surf != 0:
-           self.mesh_idx_first[idx_surf] = self.mesh_idx_first[idx_surf-1] + 3*(self.avl.SURF_GEOM_I.NVS[idx_surf-1]+1)*(self.avl.SURF_GEOM_I.NVC[idx_surf-1]+1)
+           self.mesh_idx_first[idx_surf] = self.mesh_idx_first[idx_surf-1] + (self.avl.SURF_GEOM_I.NVS[idx_surf-1]+1)*(self.avl.SURF_GEOM_I.NVC[idx_surf-1]+1)
 
         self.set_avl_fort_arr("SURF_MESH_I","MFRST",self.mesh_idx_first[idx_surf]+1,slicer=idx_surf)
 
