@@ -124,11 +124,6 @@ C...  Calculate the influence of the REAL vortex
      &           RV2(1,J),RV2(2,J),RV2(3,J),
      &           BETM,U,V,W,RCORE)
 C     
-            ! print *, "Influence of", J, "on", I
-            ! print *, "U:", U
-            ! print *, "V:", V
-            ! print *, "W:", W
-            ! print *, "MARK"
             IF(IYSYM.NE.0) THEN
 C...  Calculate the influence of the y-IMAGE vortex
                LBOUND = .TRUE.
