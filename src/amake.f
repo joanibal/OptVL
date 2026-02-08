@@ -2209,13 +2209,13 @@ C
             ! Note the derivative is only wrt to AVL incidence vars
             ! as those are the vars AVL DVs can support
             if (lsurfmsh(lssurf(J))) then
-            EC(1) =  -SINC*ec_msh(1) + ES(2)*COSC*ec_msh(2) 
-     &     + ES(3)*COSC*ec_msh(3)
-          EC(2) = -ES(2)*COSC + ((ES(3)**2)*(1+SINC)-SINC)*ec_msh(2)
-     &     - (ES(2)*ES(3)*(1+SINC))*ec_msh(3)  
-          EC(3) = -ES(3)*COSC*ec_msh(1) - 
+            EC_G(1,N) =  (-SINC*ec_msh(1) + ES(2)*COSC*ec_msh(2) 
+     &     + ES(3)*COSC*ec_msh(3))*AINC_G(J,N)
+          EC_G(2,N) = (-ES(2)*COSC + ((ES(3)**2)*(1+SINC)-SINC)
+     &    *ec_msh(2) - (ES(2)*ES(3)*(1+SINC))*ec_msh(3))*AINC_G(J,N)  
+          EC_G(3,N) = (-ES(3)*COSC*ec_msh(1) - 
      &     (ES(2)*ES(3)*(1+SINC))*ec_msh(2) + 
-     &    ((ES(2)**2)*(1+SINC) - SINC)*ec_msh(3)
+     &    ((ES(2)**2)*(1+SINC) - SINC)*ec_msh(3))*AINC_G(J,N)
 
             else
             EC_G(1,N) = -SINC      *AINC_G(J,N)
@@ -2286,13 +2286,13 @@ C
           DO N = 1, NDESIGN
             if (lsurfmsh(lssurf(J))) then
             ! Direct mesh assignment branch
-            EC(1) =  -SINC*ec_msh(1) + ES(2)*COSC*ec_msh(2) 
-     &     + ES(3)*COSC*ec_msh(3)
-          EC(2) = -ES(2)*COSC + ((ES(3)**2)*(1+SINC)-SINC)*ec_msh(2)
-     &     - (ES(2)*ES(3)*(1+SINC))*ec_msh(3)  
-          EC(3) = -ES(3)*COSC*ec_msh(1) - 
+            EC_G(1,N) =  (-SINC*ec_msh(1) + ES(2)*COSC*ec_msh(2) 
+     &     + ES(3)*COSC*ec_msh(3))*AINC_G(J,N)
+          EC_G(2,N) = (-ES(2)*COSC + ((ES(3)**2)*(1+SINC)-SINC)
+     &     *ec_msh(2) - (ES(2)*ES(3)*(1+SINC))*ec_msh(3))*AINC_G(J,N)  
+          EC_G(3,N) = (-ES(3)*COSC*ec_msh(1) - 
      &     (ES(2)*ES(3)*(1+SINC))*ec_msh(2) + 
-     &    ((ES(2)**2)*(1+SINC) - SINC)*ec_msh(3)
+     &    ((ES(2)**2)*(1+SINC) - SINC)*ec_msh(3))*AINC_G(J,N)
 
             else
             EC_G(1,N) = -SINC      *AINC_G(J,N)
