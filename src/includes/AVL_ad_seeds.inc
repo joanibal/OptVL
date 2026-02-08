@@ -312,6 +312,7 @@ C
       real(kind=avl_real) CFS_D_DIFF
       real(kind=avl_real) CFS_G_DIFF
       real(kind=avl_real) CMSURF_DIFF
+      real(kind=avl_real) CMSURFBAX_DIFF
       real(kind=avl_real) CMS_U_DIFF
       real(kind=avl_real) CMS_D_DIFF
       real(kind=avl_real) CMS_G_DIFF
@@ -345,6 +346,7 @@ C
      & CFS_D_DIFF(3,NFMAX,NDMAX),
      & CFS_G_DIFF(3,NFMAX,NGMAX),
      & CMSURF_DIFF(3,NFMAX),
+     & CMSURFBAX_DIFF(3,NFMAX),
      & CMS_U_DIFF(3,NFMAX,NUMAX),
      & CMS_D_DIFF(3,NFMAX,NDMAX),
      & CMS_G_DIFF(3,NFMAX,NGMAX),
@@ -366,6 +368,8 @@ C
       real(kind=avl_real) XBOD_DIFF
       real(kind=avl_real) YBOD_DIFF
       real(kind=avl_real) TBOD_DIFF
+      real(kind=avl_real) XBOD_R_DIFF
+      real(kind=avl_real) YBOD_R_DIFF
       COMMON /BODY_GEOM_R_DIFF/
      & XYZSCAL_B_DIFF(3, NBMAX),
      & XYZTRAN_B_DIFF(3, NBMAX),
@@ -374,7 +378,9 @@ C
      & BSPACE_DIFF(NBMAX),
      & XBOD_DIFF(IBX, NBMAX),
      & YBOD_DIFF(IBX, NBMAX),
-     & TBOD_DIFF(IBX, NBMAX)
+     & TBOD_DIFF(IBX, NBMAX),
+     & XBOD_R_DIFF(IBX, NBMAX),
+     & YBOD_R_DIFF(IBX, NBMAX)
 C
       real(kind=avl_real) XYZSCAL_DIFF
       real(kind=avl_real) XYZTRAN_DIFF
@@ -386,8 +392,8 @@ C
       real(kind=avl_real) XYZLES_DIFF
       real(kind=avl_real) XSEC_DIFF
       real(kind=avl_real) YSEC_DIFF
-      real(kind=avl_real) XFMIN_DIFF
-      real(kind=avl_real) XFMAX_DIFF
+      real(kind=avl_real) XFMIN_R_DIFF
+      real(kind=avl_real) XFMAX_R_DIFF
       real(kind=avl_real) XLASEC_DIFF
       real(kind=avl_real) ZLASEC_DIFF
       real(kind=avl_real) XUASEC_DIFF
@@ -415,6 +421,10 @@ C
      & SSPACE_DIFF(NFMAX),
      & SSPACES_DIFF(NSECMAX, NFMAX),
      & XYZLES_DIFF(3, NSECMAX, NFMAX),
+     & XSEC_DIFF(IBX, NSECMAX, NFMAX),
+     & YSEC_DIFF(IBX, NSECMAX, NFMAX),
+     & XFMIN_R_DIFF(NSECMAX, NFMAX),
+     & XFMAX_R_DIFF(NSECMAX, NFMAX),
      & XLASEC_DIFF(IBX, NSECMAX, NFMAX),
      & ZLASEC_DIFF(IBX, NSECMAX, NFMAX),
      & XUASEC_DIFF(IBX, NSECMAX, NFMAX),
@@ -432,7 +442,19 @@ C
      & VHINGED_DIFF(3, ICONX, NSECMAX, NFMAX),
      & GAIND_DIFF(ICONX, NSECMAX, NFMAX),
      & REFLD_DIFF(ICONX, NSECMAX, NFMAX),
-     & GAING_DIFF(ICONX, NSECMAX, NFMax)
+     & GAING_DIFF(ICONX, NSECMAX, NFMAX)
+C
+      real(kind=avl_real) MSHBLK_DIFF
+      real(kind=avl_real) RV1MSH_DIFF
+      real(kind=avl_real) RV2MSH_DIFF
+      real(kind=avl_real) RVMSH_DIFF
+      real(kind=avl_real) RCMSH_DIFF
+      COMMON /SURF_MESH_R_DIFF/
+     & MSHBLK_DIFF(3, 4*NVMAX),
+     & RV1MSH_DIFF(3,NVMAX),
+     & RV2MSH_DIFF(3,NVMAX),
+     & RVMSH_DIFF(3,NVMAX),
+     & RCMSH_DIFF(3,NVMAX)
 C
       real(kind=avl_real) RLE_DIFF
       real(kind=avl_real) CHORD_DIFF
@@ -443,6 +465,7 @@ C
       real(kind=avl_real) WSTRIP_DIFF
       real(kind=avl_real) TANLE_DIFF
       real(kind=avl_real) TANTE_DIFF
+      real(kind=avl_real) GINCSTRIP_DIFF
       real(kind=avl_real) CLCD_DIFF
       real(kind=avl_real) SAXFR_DIFF
       real(kind=avl_real) ESS_DIFF
@@ -502,6 +525,7 @@ C
      & WSTRIP_DIFF(NSMAX),
      & TANLE_DIFF(NSMAX),
      & TANTE_DIFF(NSMAX),
+     & GINCSTRIP_DIFF(NSMAX),
      & CLCD_DIFF(6,NSMAX),
      & SAXFR_DIFF,
      & ESS_DIFF(3,NSMAX),
@@ -560,6 +584,7 @@ C
       real(kind=avl_real) RL_DIFF
       real(kind=avl_real) RADL_DIFF
       real(kind=avl_real) DXV_DIFF
+      real(kind=avl_real) DXSTRPV_DIFF
       real(kind=avl_real) CHORDV_DIFF
       real(kind=avl_real) SLOPEV_DIFF
       real(kind=avl_real) SLOPEC_DIFF
@@ -607,6 +632,7 @@ C
      & RL_DIFF(3,NLMAX),
      & RADL_DIFF(NLMAX),
      & DXV_DIFF(NVMAX),
+     & DXSTRPV_DIFF(NVMAX),
      & CHORDV_DIFF(NVMAX),
      & SLOPEV_DIFF(NVMAX),
      & SLOPEC_DIFF(NVMAX),
@@ -655,6 +681,7 @@ C
       real(kind=avl_real) CLBDY_DIFF
       real(kind=avl_real) CFBDY_DIFF
       real(kind=avl_real) CMBDY_DIFF
+      real(kind=avl_real) CMBDYBAX_DIFF
       COMMON /BODY_R_DIFF/
      & ELBDY_DIFF(NBMAX),
      & SRFBDY_DIFF(NBMAX),
@@ -664,7 +691,8 @@ C
      & CYBDY_DIFF(NBMAX),
      & CLBDY_DIFF(NBMAX),
      & CFBDY_DIFF(3,NBMAX),
-     & CMBDY_DIFF(3,NBMAX)
+     & CMBDY_DIFF(3,NBMAX),
+     & CMBDYBAX_DIFF(3,NBMAX)
 C
       real(kind=avl_real) AMACH_DIFF
       real(kind=avl_real) VC_DIFF

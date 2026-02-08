@@ -71,32 +71,29 @@ wing = {
 surf = {"Wing": {}}
 
 cont_surfs = {
-    # Control Surfaces
-    "icontd": [np.array([0], dtype=np.int32), np.array([], dtype=np.int32)],  # control variable index
-    "xhinged": [np.array([0.8]), np.array([], dtype=np.float64)],  # x/c location of hinge
-    "vhinged": [
-        np.array([[0.0, 0.0, 0.0]]),
-        np.array([], dtype=np.float64),
-    ],  # vector giving hinge axis about which surface rotates
-    "gaind": [np.array([1.0]), np.array([], dtype=np.float64)],  # control surface gain
-    "refld": [
-        np.array([1.0]),
-        np.array([], dtype=np.float64),
-    ],  # control surface reflection, sign of deflection for duplicated surface
+        "control_assignments": {
+        "flap" : {"assignment":np.arange(0,1),
+                    "xhinged": 0.8, # x/c location of hinge
+                    "vhinged": np.zeros(3), # vector giving hinge axis about which surface rotates
+                    "gaind": 1.0, # control surface gain
+                    "refld": 1.0  # control surface reflection, sign of deflection for duplicated surface
+                    }
+    },
 }
 
 des_var = {
-    # Design Variables (AVL)
-    "idestd": [np.array([0], dtype=np.int32), np.array([], dtype=np.int32)],  # design variable index
-    "gaing": [np.array([1.0]), np.array([], dtype=np.float64)],  # desgin variable gain
+            "design_var_assignments": {
+            "des" : {"assignment":np.arange(0,1),
+                     "gaing":1.0}
+        },
 }
 
 cont_surf_names = {
-    "dname": np.array(["flap"]),  # Name of control input for each corresonding index
+    "dname": ["flap"],  # Name of control input for each corresonding index
 }
 
 des_var_names = {
-    "gname": np.array(["des"]),  # Name of design var for each corresonding index
+    "gname": ["des"],  # Name of design var for each corresonding index
 }
 
 section_geom_naca = {

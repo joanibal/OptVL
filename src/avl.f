@@ -479,11 +479,11 @@ C
 C----- initialize state
 C        CALL VARINI
 C
-       LAIC = .FALSE.
-       LSRD = .FALSE.
-       LVEL = .FALSE.
-       LSOL = .FALSE.
-       LSEN = .FALSE.
+       LAIC = .FALSE. ! Tell AVL that the AIC is no longer valid and to regenerate it
+       LSRD = .FALSE. ! Tell AVL that unit source+doublet strengths are no longer valid and to regenerate them
+       LVEL = .FALSE. ! Tell AVL that the induced velocity matrix is no longer valid and to regenerate it
+       LSOL = .FALSE. ! Tell AVL that a valid solution no longer exists
+       LSEN = .FALSE. ! Tell AVL that valid sensitives no longer exists
        
 c---- initialize heap storage arrays for AIC's
       call avlheap_init(NVOR)

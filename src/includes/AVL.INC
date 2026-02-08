@@ -505,10 +505,32 @@ c
      & VHINGED(3, ICONX, NSECMAX, NFMAX), ! hinge vector
      & GAIND(ICONX, NSECMAX, NFMAX), ! control surface gain
      & REFLD(ICONX, NSECMAX, NFMAX), ! control surface reflection
-     & GAING(ICONX, NSECMAX, NFMax)  ! desgin variable gain
+     & GAING(ICONX, NSECMAX, NFMAX)  ! desgin variable gain
+
+      COMMON /SURF_MESH_I/
+     & MFRST(NFMAX), ! stores the index in the MSHBLK where each surface's mesh begins
+     & IPTSEC(NSMAX,NFMAX) ! stores the iptloc vector for each surface
+
+      REAL(kind=avl_real) MSHBLK
+      REAL(kind=avl_real) RV1MSH
+      REAL(kind=avl_real) RV2MSH
+      REAL(kind=avl_real) RVMSH
+      REAL(kind=avl_real) RCMSH
+      COMMON /SURF_MESH_R/
+     & MSHBLK(3, 4*NVMAX), ! block to store all surface meshes
+     & RV1MSH(3,NVMAX),    !  mesh h.v. vortex left  points
+     & RV2MSH(3,NVMAX),    !  mesh h.v. vortex right  points
+     & RVMSH(3,NVMAX),    ! mesh h.v. vortex center points
+     & RCMSH(3,NVMAX)    ! mesh h.v. control points
+
+      LOGICAL LSURFMSH
+      LOGICAL LMESHFLAT
+      COMMON /SURF_MESH_L/
+     & LSURFMSH(NFMAX), ! T if surface uses a mesh cordinates for its geometry
+     & LMESHFLAT(NFMAX) ! T if the surface's mesh should be flattened when computing vorticies and control points
 
 
-C      !!--- end added variables for python geometry minipulation ---
+C      !!--- end added variables for python geometry manipulation ---
 
       COMMON /STRP_I/
      & LSSURF(NSMAX),    ! index of surface which contains this strip
@@ -528,6 +550,7 @@ C      !!--- end added variables for python geometry minipulation ---
       REAL(kind=avl_real) RLE2, CHORD2
       REAL(kind=avl_real) WSTRIP
       REAL(kind=avl_real) TANLE,  TANTE
+      REAL(kind=avl_real) GINCSTRIP
       REAL(kind=avl_real) CLCD
       REAL(kind=avl_real) SAXFR
       REAL(kind=avl_real) ESS
@@ -564,6 +587,7 @@ C      !!--- end added variables for python geometry minipulation ---
      & RLE2(3,NSMAX), CHORD2(NSMAX),   ! strip right end LE point, chord
      & WSTRIP(NSMAX),                  ! strip y-z width
      & TANLE(NSMAX),  TANTE(NSMAX),    ! strip LE,TE sweep slopes
+     & GINCSTRIP(NSMAX),               ! strip geometric incidence angle
      & CLCD(6,NSMAX),                  ! strip viscous polar parameters (CL0,CD0,CL1,CD1,CL2,CD2) 
      & SAXFR,                          ! x/c of spanwise axis for Vperp def
      & ESS(3,NSMAX),                   ! spanwise unit vector for Vperp def
@@ -624,6 +648,7 @@ C
       REAL(kind=avl_real) RS
       REAL(kind=avl_real) RL, RADL
       REAL(kind=avl_real) DXV
+      REAL(kind=avl_real) DXSTRPV
       REAL(kind=avl_real) CHORDV
       REAL(kind=avl_real) SLOPEV
       REAL(kind=avl_real) SLOPEC
@@ -670,6 +695,7 @@ C
      & RS(3,NVMAX),     ! h.v. source points
      & RL(3,NLMAX), RADL(NLMAX),  ! source line node points, body radius
      & DXV(NVMAX),               ! chord of element
+     & DXSTRPV(NVMAX),           ! chord of element projected onto chord of element-containing strip
      & CHORDV(NVMAX),            ! chord of element-containing strip
      & SLOPEV(NVMAX),            ! camber slopes at h.v. bound leg
      & SLOPEC(NVMAX),            ! camber slopes at c.p.

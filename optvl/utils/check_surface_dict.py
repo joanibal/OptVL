@@ -12,10 +12,31 @@ import warnings
 # =============================================================================
 import numpy as np
 
-
 # =============================================================================
 # Extension modules
 # =============================================================================
+
+def scalar_to_strip_vec(given_val,num_secs):
+    """Converts a scalar into a numpy array of length matching
+    the number of sections. If a numpy array of length not matching
+    the number of sections is input then an exception is thrown.
+
+    Args:
+        given_val: Input value
+        num_secs: Number of sections
+
+    Returns:
+        np.ndarray of length number of sections
+    """
+    # check if we input a scalar
+    if not isinstance(given_val, np.ndarray):
+        return given_val*np.ones(num_secs)
+    elif isinstance(given_val,np.ndarray):
+        if given_val.shape[0] != num_secs:
+            raise ValueError("The length of a given surface/body input must either be a scalar or match the number of sections!")
+        return given_val
+    else:
+        return given_val
 
 
 def pre_check_input_dict(input_dict: dict):
@@ -106,13 +127,18 @@ def pre_check_input_dict(input_dict: dict):
         "nspans",  # number of spanwise elements vector, overriden by nspans
         "sspaces",  # spanwise spacing vector (for each section), overriden by sspace
         "use surface spacing",  # surface spacing set under the surface heeading (known as LSURFSPACING in AVL)
+        # Geometery: Mesh
+        "mesh",
+        "flatten_mesh",
         # Control Surfaces
-        # "dname" # IMPLEMENT THIS
+        "control_assignments",
         "icontd",  # control variable index
         "xhinged",  # x/c location of hinge
         "vhinged",  # vector giving hinge axis about which surface rotates
         "gaind",  # control surface gain
         "refld",  # control surface reflection, sign of deflection for duplicated surface
+        # Design Variables
+        "design_var_assignments",
         "idestd",  # design variable index
         "gaing",  # desgin variable gain
     ]
@@ -133,6 +159,12 @@ def pre_check_input_dict(input_dict: dict):
         "sspaces",  # spanwise spacing vector (for each section), overriden by sspace
         "clcdsec",  # profile-drag CD(CL) function for each section in this surface
         "claf",  # CL alpha (dCL/da) scaling factor per section
+        # Geometry
+        "xles",  # leading edge cordinate vector(x component)
+        "yles",  # leading edge cordinate vector(y component)
+        "zles",  # leading edge cordinate vector(z component)
+        "chords",  # chord length vector
+        "aincs",  # incidence angle vector
         # Geometry: Cross Sections
         # NACA
         "naca",
@@ -160,6 +192,11 @@ def pre_check_input_dict(input_dict: dict):
         "refld",  # control surface reflection, sign of deflection for duplicated surface
     ]
 
+    design_var_keys =[
+        "idestd",
+        "gaing",  # design variable surface gain
+    ]
+
 
     dim_2_keys = [
         "clcdsec",
@@ -183,7 +220,7 @@ def pre_check_input_dict(input_dict: dict):
         if key in ["Bref", "Sref", "Cref"]:
             if input_dict[key] < 0.0:
                 raise ValueError(f"Reference value {key} cannot be negative!")
-        
+
         # Correct incorrect symmetry plane defs with warning
         if key in ["iysym", "izsym"]:
             if input_dict[key] not in [-1,0,1]:
@@ -193,7 +230,7 @@ def pre_check_input_dict(input_dict: dict):
                     stacklevel=2,
                 )
                 input_dict[key] = np.sign(input_dict[key])
-                
+
         # Check for keys not implemented
         if key not in keys_implemented_general:
             warnings.warn(
@@ -201,31 +238,97 @@ def pre_check_input_dict(input_dict: dict):
                 category=RuntimeWarning,
                 stacklevel=2,
             )
-    total_global_control = 0
-    total_global_design_var = 0
+
     if "surfaces" in input_dict.keys():
         if len(input_dict["surfaces"]) > 0:
             for surface in input_dict["surfaces"].keys():
+
+                # Check if we are directly providing a mesh and set the strips as "sections" so that the maps setup correctly
+                if "mesh" in input_dict["surfaces"][surface].keys():
+                    # First check if the mesh is a valid numpy array shape
+                    if len(input_dict["surfaces"][surface]["mesh"].shape) != 3:
+                        raise ValueError("The provided mesh must be a numpy array of size (nx,ny,3)")
+                    # If we are using a mesh then set number of sections equal to number of strip for the purposes of intialization
+                    input_dict["surfaces"][surface]["num_sections"] = input_dict["surfaces"][surface]["mesh"].shape[1]
 
                 # Verify at least two section
                 if input_dict["surfaces"][surface]["num_sections"] < 2:
                     raise RuntimeError("Must have at least two sections per surface!")
 
-                # if no controls are specified then fill it in with 0s
-                if "num_controls" not in input_dict["surfaces"][surface].keys():
+                # Read and process the controls dictionary
+                if "control_assignments" in input_dict["surfaces"][surface]:
+                    num_controls_per_sec = np.zeros(input_dict["surfaces"][surface]["num_sections"],dtype=np.int32)
+
+                    for control in input_dict["surfaces"][surface]["control_assignments"]:
+                        if control not in input_dict["dname"]:
+                            raise ValueError(f"Control {control}, in surface {surface} not defined in dname!")
+
+                        # built the control data lists if needed 
+                        if "icontd" not in input_dict["surfaces"][surface]:
+                            input_dict["surfaces"][surface]["icontd"] = [[] for _ in range(input_dict["surfaces"][surface]["num_sections"])]
+                        if "xhinged" not in input_dict["surfaces"][surface]:
+                            input_dict["surfaces"][surface]["xhinged"] = [[] for _ in range(input_dict["surfaces"][surface]["num_sections"])]
+                        if "vhinged" not in input_dict["surfaces"][surface]:
+                            input_dict["surfaces"][surface]["vhinged"] = [[] for _ in range(input_dict["surfaces"][surface]["num_sections"])]
+                        if "gaind" not in input_dict["surfaces"][surface]:
+                            input_dict["surfaces"][surface]["gaind"] = [[] for _ in range(input_dict["surfaces"][surface]["num_sections"])]
+                        if "refld" not in input_dict["surfaces"][surface]:
+                            input_dict["surfaces"][surface]["refld"] = [[] for _ in range(input_dict["surfaces"][surface]["num_sections"])]
+
+                        # Add one to the number of controls defined for each section
+                        sec_assign = input_dict["surfaces"][surface]["control_assignments"][control]["assignment"]
+                        num_controls_per_sec[sec_assign] += 1
+                        # assign data to sections
+                        for idx_sec in input_dict["surfaces"][surface]["control_assignments"][control]["assignment"]:
+                            input_dict["surfaces"][surface]["icontd"][idx_sec].append(input_dict["dname"].index(control)) # Add control index to icontd for each section
+                            input_dict["surfaces"][surface]["xhinged"][idx_sec].append(input_dict["surfaces"][surface]["control_assignments"][control]["xhinged"]) # Add hinge line position
+                            input_dict["surfaces"][surface]["vhinged"][idx_sec].append(input_dict["surfaces"][surface]["control_assignments"][control]["vhinged"]) # Add hinge vector position
+                            input_dict["surfaces"][surface]["gaind"][idx_sec].append(input_dict["surfaces"][surface]["control_assignments"][control]["gaind"]) # Add gain information
+                            input_dict["surfaces"][surface]["refld"][idx_sec].append(input_dict["surfaces"][surface]["control_assignments"][control]["refld"]) # Add reflection information
+
+                    # set the control numbers per section
+                    input_dict["surfaces"][surface]["num_controls"] = num_controls_per_sec
+                elif "num_controls" not in input_dict["surfaces"][surface]:
+                    # Otherwise if we are not manually specifying controls then zero out the num_controls array
                     input_dict["surfaces"][surface]["num_controls"] = np.zeros(input_dict["surfaces"][surface]["num_sections"],dtype=np.int32)
 
-                 # if no dvs are specified then fill it in with 0s
-                if "num_design_vars" not in input_dict["surfaces"][surface].keys():
+                 # Read and process the design variables dictionary
+                if "design_var_assignments" in input_dict["surfaces"][surface]:
+                    num_design_vars_per_sec = np.zeros(input_dict["surfaces"][surface]["num_sections"],dtype=np.int32)
+
+                    for design_var in input_dict["surfaces"][surface]["design_var_assignments"]:
+                        if design_var not in input_dict["gname"]:
+                            raise ValueError(f"Design Variable {design_var}, in surface {surface} not defined in gname!")
+
+                        # built the control data lists if needed 
+                        if "idestd" not in input_dict["surfaces"][surface]:
+                            input_dict["surfaces"][surface]["idestd"] = [[] for _ in range(input_dict["surfaces"][surface]["num_sections"])]
+                        if "gaing" not in input_dict["surfaces"][surface]:
+                            input_dict["surfaces"][surface]["gaing"] = [[] for _ in range(input_dict["surfaces"][surface]["num_sections"])]
+
+
+                        # Add one to the number of controls defined for each section
+                        sec_assign = input_dict["surfaces"][surface]["design_var_assignments"][design_var]["assignment"]
+                        num_design_vars_per_sec[sec_assign] += 1
+                        # assign data to sections
+                        for idx_sec in input_dict["surfaces"][surface]["design_var_assignments"][design_var]["assignment"]:
+                            input_dict["surfaces"][surface]["idestd"][idx_sec].append(input_dict["gname"].index(design_var)) # Add design var index to idestd for each section
+                            input_dict["surfaces"][surface]["gaing"][idx_sec].append(input_dict["surfaces"][surface]["design_var_assignments"][design_var]["gaing"]) # Add gain information
+
+                    # set the control numbers per section
+                    input_dict["surfaces"][surface]["num_design_vars"] = num_design_vars_per_sec
+                elif "num_design_vars" not in input_dict["surfaces"][surface]:
+                    # Otherwise if we are not manually specifying controls then zero out the num_design_vars array
                     input_dict["surfaces"][surface]["num_design_vars"] = np.zeros(input_dict["surfaces"][surface]["num_sections"],dtype=np.int32)
-                
+
+
                 #Checks to see that at most only one of the options in af_load_ops or one of the options in manual_af_override is selected
                 if len(airfoil_spec_keys & input_dict["surfaces"][surface].keys()) > 1:
                     raise RuntimeError(
                         "More than one airfoil section specification detected in input dictionary!\n"
                         "Select only a single approach for specifying airfoil sections!")
 
-                
+                # Process all keys
                 for key in input_dict["surfaces"][surface].keys():
 
                     # Check to verify if redundant y-symmetry specification are not made
@@ -235,22 +338,35 @@ def pre_check_input_dict(input_dict: dict):
                                 f"ERROR: Redundant y-symmetry specifications in surface {surface} \nIYSYM /= 0 \nYDUPLICATE  0.0. \nCan use one or the other, but not both!"
                             )
 
-                    # Check the surface input size is a 2D array with second dim equal to num_sections
+                    # Verify that keys that need items specified for every strip/section have value specified for all strip/section or have a scalar/single vector that can be duplicated
                     if key in multi_section_keys:
-                        if (key in dim_2_keys) and (input_dict["surfaces"][surface][key].ndim != 2):
-                            raise ValueError(
-                                f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 2!"
-                            )
-                        if (key not in dim_2_keys) and input_dict["surfaces"][surface][key].ndim != 1:
-                            raise ValueError(
-                                f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 1!"
-                            )
 
-                        if (
-                            input_dict["surfaces"][surface][key].shape[0]
-                            != input_dict["surfaces"][surface]["num_sections"]
-                        ):
-                            raise ValueError(f"Key {key} does not have entries corresponding to each section!s")
+                        if (key in dim_2_keys):
+                            if not (isinstance(input_dict["surfaces"][surface][key],np.ndarray)):
+                                raise ValueError(f"Input for {key} must be a single dim 1 numpy array or a dim 2 numpy array with each vector along axis 0 corresponding to strip/section")
+
+                            # If the user provides a single dim 1 vector stack it num_sections times
+                            if (input_dict["surfaces"][surface][key].ndim == 1):
+                                input_dict["surfaces"][surface][key] = np.tile(input_dict["surfaces"][surface][key],(input_dict["surfaces"][surface]["num_sections"],1))
+                            # Otherwise make sure we have entries for each seciton
+                            elif (input_dict["surfaces"][surface][key].ndim == 2):
+                                if (input_dict["surfaces"][surface][key].shape[0] != input_dict["surfaces"][surface]["num_sections"]):
+                                    raise ValueError(
+                                        f"Key {key} only has {input_dict['surfaces'][surface][key].shape[0]}, expected {input_dict['surfaces'][surface]['num_sections']}!"
+                                    )
+                            else:
+                                raise ValueError(
+                                f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 1 or 2!"
+                            )
+                        else:
+    
+                            # If the user provides a scalar or string expand it out for all sections
+                            if isinstance(input_dict["surfaces"][surface][key],(int,float,np.int32,np.float64,str)):
+                                    input_dict["surfaces"][surface][key] = np.tile(input_dict["surfaces"][surface][key],(input_dict["surfaces"][surface]["num_sections"]))
+                            elif input_dict["surfaces"][surface][key].ndim > 1:
+                                raise ValueError(
+                                    f"Key {key} is of dimension {input_dict['surfaces'][surface][key].ndim}, expected 1!"
+                                )
 
                     # Check for keys not implemented
                     if key not in keys_implemented_surface:
@@ -267,50 +383,27 @@ def pre_check_input_dict(input_dict: dict):
                         for j in range(input_dict["surfaces"][surface]["num_sections"]):
                             for _ in range(input_dict["surfaces"][surface]["num_controls"][j]):
                                 if (
-                                    input_dict["surfaces"][surface][key][j].shape[0]
+                                    len(input_dict["surfaces"][surface][key][j])
                                     != input_dict["surfaces"][surface]["num_controls"][j]
                                 ):
                                     raise ValueError(
                                         f"Key {key} does not have entries corresponding to each control for this section!"
                                     )
 
-                    # Accumulate icont max
-                    if "icontd" in input_dict["surfaces"][surface].keys():
-                        arr = input_dict["surfaces"][surface]["icontd"]
-                        vals = [a.max() + 1 for a in arr if a.size > 0]
-                        total_global_control = max(vals) if vals else None
-                        # total_global_control = np.max(input_dict["surfaces"][surface]["icontd"])+1
 
                     # Check if dvs defined correctly
-                    if key in control_keys:
+                    if key in design_var_keys:
                         for j in range(input_dict["surfaces"][surface]["num_sections"]):
                             for _ in range(input_dict["surfaces"][surface]["num_design_vars"][j]):
                                 if (
-                                    input_dict["surfaces"][surface][key][j].shape[0]
+                                    len(input_dict["surfaces"][surface][key][j])
                                     != input_dict["surfaces"][surface]["num_design_vars"][j]
                                 ):
                                     raise ValueError(
                                         f"Key {key} does not have entries corresponding to each design var for this section!"
                                     )
 
-                    # Accumulate idestd max
-                    if "idestd" in input_dict["surfaces"][surface].keys():
-                        arr = input_dict["surfaces"][surface]["idestd"]
-                        vals = [a.max() + 1 for a in arr if a.size > 0]
-                        total_global_design_var = max(vals) if vals else None
-                        # total_global_design_var = np.max(input_dict["surfaces"][surface]["idestd"])+1
 
-            if "icontd" in input_dict["surfaces"][surface].keys():
-                if len(input_dict["dname"]) != (total_global_control):
-                    raise ValueError(
-                        "Number of unique control names does not match the number of unique controls defined!"
-                    )
-
-            if "idestd" in input_dict["surfaces"][surface].keys():
-                if len(input_dict["gname"]) != (total_global_design_var):
-                    raise ValueError(
-                        "Number of unique design vars does not match the number of unique controls defined!"
-                    )
     else:
         # Add dummy entry if surfaces are not defined
         input_dict["surfaces"] = {}
