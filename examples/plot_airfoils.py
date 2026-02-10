@@ -3,7 +3,7 @@
 from optvl import OVLSolver
 import matplotlib.pyplot as plt
 
-ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=True)
+ovl = OVLSolver(geo_file="../geom_files/aircraft.avl", debug=False)
 surf_data = ovl.get_surface_params(include_geom=True, include_airfoils=True)
 
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]

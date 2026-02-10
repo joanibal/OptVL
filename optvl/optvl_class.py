@@ -2469,12 +2469,10 @@ class OVLSolver(object):
                     naca = self.__fort_char_array_to_str(self.avl.CASE_C.NACA[idx_sec, idx_surf])
                     nacas.append(naca)
 
-                    airfoilx = np.trim_zeros(
-                        self.get_avl_fort_arr("SURF_GEOM_R", "XSEC")[idx_surf, idx_sec, slice(None)]
-                    )
-                    airfoily = np.trim_zeros(
-                        self.get_avl_fort_arr("SURF_GEOM_R", "YSEC")[idx_surf, idx_sec, slice(None)]
-                    )
+                    npts = self.get_avl_fort_arr("SURF_GEOM_I", "NAPTSSEC", slicer=(idx_surf,idx_sec))
+                    
+                    airfoilx = self.get_avl_fort_arr("SURF_GEOM_R", "XSEC", slicer=(idx_surf, idx_sec, slice(0, npts)))
+                    airfoily = self.get_avl_fort_arr("SURF_GEOM_R", "YSEC", slicer=(idx_surf, idx_sec, slice(0, npts)))
 
                     airfoils.append(np.array([airfoilx, airfoily]))
 
