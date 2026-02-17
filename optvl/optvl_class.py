@@ -3484,7 +3484,7 @@ class OVLSolver(object):
                 # print(blk, var, val, slicer)
                 self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
-    def get_mesh_seeds(self) -> Dict[str, Dict[str, float]]:
+    def get_mesh_ad_seeds(self) -> Dict[str, Dict[str, float]]:
         mesh_seeds = {}
         for surf_key in self.unique_surface_names:
             mesh_seeds[surf_key] = {}
@@ -3498,7 +3498,7 @@ class OVLSolver(object):
 
         return mesh_seeds
 
-    def set_mesh_seeds(self, mesh_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
+    def set_mesh_ad_seeds(self, mesh_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
         for surf_key in mesh_seeds:
             for mesh_key in mesh_seeds[surf_key]:
                 blk, var, slicer = self.surf_mesh_to_fort_var[surf_key][mesh_key]
@@ -3822,6 +3822,7 @@ class OVLSolver(object):
         self,
         con_seeds: Optional[Dict[str, float]] = None,
         geom_seeds: Optional[Dict[str, Dict[str, any]]] = None,
+        mesh_seeds: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
         param_seeds: Optional[Dict[str, float]] = None,
         ref_seeds: Optional[Dict[str, float]] = None,
         gamma_seeds: Optional[np.ndarray] = None,
@@ -3835,6 +3836,7 @@ class OVLSolver(object):
         Args:
             con_seeds: Case constraint AD seeds
             geom_seeds: Geometric AD seeds in the same format as the geometric data
+            mesh_seeds: Mesh geometry AD seeds in the same format as the mesh data
             param_seeds: Case parameter AD seeds
             ref_seeds: Reference condition AD seeds
             gamma_seeds: Circulation AD seeds
@@ -3865,6 +3867,9 @@ class OVLSolver(object):
         if geom_seeds is None:
             geom_seeds = {}
 
+        if mesh_seeds is None:
+            mesh_seeds = {}
+
         if gamma_seeds is None:
             gamma_seeds = np.zeros(mesh_size)
 
@@ -3889,6 +3894,7 @@ class OVLSolver(object):
             # self.clear_ad_seeds()
             self.set_variable_ad_seeds(con_seeds)
             self.set_geom_ad_seeds(geom_seeds)
+            self.set_mesh_ad_seeds(mesh_seeds)
             self.set_gamma_ad_seeds(gamma_seeds)
             self.set_gamma_d_ad_seeds(gamma_d_seeds)
             self.set_gamma_u_ad_seeds(gamma_u_seeds)
@@ -3911,6 +3917,7 @@ class OVLSolver(object):
 
             self.set_variable_ad_seeds(con_seeds, scale=0.0)
             self.set_geom_ad_seeds(geom_seeds, scale=0.0)
+            self.set_mesh_ad_seeds(mesh_seeds, scale=0.0)
             self.set_gamma_ad_seeds(gamma_seeds, scale=0.0)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, scale=0.0)
             self.set_gamma_u_ad_seeds(gamma_u_seeds, scale=0.0)
@@ -3923,6 +3930,7 @@ class OVLSolver(object):
         if mode == "FD":
             self.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
+            self.set_mesh_ad_seeds(mesh_seeds, mode="FD", scale=step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=step)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=step)
             self.set_gamma_u_ad_seeds(gamma_u_seeds, mode="FD", scale=step)
@@ -3946,6 +3954,7 @@ class OVLSolver(object):
 
             self.set_variable_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
+            self.set_mesh_ad_seeds(mesh_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_u_ad_seeds(gamma_u_seeds, mode="FD", scale=-1 * step)
@@ -4106,6 +4115,7 @@ class OVLSolver(object):
         # extract derivatives seeds and set the output dict of functions
         con_seeds = self.get_variable_ad_seeds()
         geom_seeds = self.get_geom_ad_seeds()
+        mesh_seeds = self.get_mesh_ad_seeds()
         gamma_seeds = self.get_gamma_ad_seeds()
         gamma_d_seeds = self.get_gamma_d_ad_seeds()
         gamma_u_seeds = self.get_gamma_u_ad_seeds()
@@ -4129,7 +4139,7 @@ class OVLSolver(object):
         if print_timings:
             print(f"   Total Time: {time.time() - time_start}")
 
-        return con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
+        return con_seeds, geom_seeds, mesh_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
 
     def execute_run_sensitivities(
         self,
@@ -4163,7 +4173,7 @@ class OVLSolver(object):
             # TODO: remove seeds if it doesn't effect accuracy
             # self.clear_ad_seeds()
             time_last = time.time()
-            _, _, pfpU, _, _, _, _ = self._execute_jac_vec_prod_rev(func_seeds={func: 1.0})
+            _, _, _, pfpU, _, _, _, _ = self._execute_jac_vec_prod_rev(func_seeds={func: 1.0})
             if print_timings:
                 print(f"Time to get RHS: {time.time() - time_last}")
                 time_last = time.time()
@@ -4180,7 +4190,7 @@ class OVLSolver(object):
             # get the resulting adjoint vector (dfunc/dRes) from fortran
             dfdR = self.get_residual_ad_seeds()
             # self.clear_ad_seeds()
-            con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+            con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                 func_seeds={func: 1.0}, res_seeds=dfdR
             )
             if print_timings:
@@ -4189,6 +4199,7 @@ class OVLSolver(object):
 
             sens[func].update(con_seeds)
             sens[func].update(geom_seeds)
+            sens[func].update(mesh_seeds)
             sens[func].update(param_seeds)
             sens[func].update(ref_seeds)
 
@@ -4203,7 +4214,7 @@ class OVLSolver(object):
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
-                _, _, pfpU, pf_pU_d, _, _, _ = self._execute_jac_vec_prod_rev(consurf_derivs_seeds={func_key: 1.0})
+                _, _, _, pfpU, pf_pU_d, _, _, _ = self._execute_jac_vec_prod_rev(consurf_derivs_seeds={func_key: 1.0})
                 if print_timings:
                     print(f"Time to get RHS: {time.time() - time_last}")
                     time_last = time.time()
@@ -4223,7 +4234,7 @@ class OVLSolver(object):
                 dfdR = self.get_residual_ad_seeds()
                 dfdR_d = self.get_residual_d_ad_seeds()
                 # self.clear_ad_seeds()
-                con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                     consurf_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d
                 )
                 if print_timings:
@@ -4232,6 +4243,7 @@ class OVLSolver(object):
 
                 sens[func_key].update(con_seeds)
                 sens[func_key].update(geom_seeds)
+                sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
 
@@ -4246,7 +4258,7 @@ class OVLSolver(object):
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
-                _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(stab_derivs_seeds={func_key: 1.0})
+                _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(stab_derivs_seeds={func_key: 1.0})
                 if print_timings:
                     print(f"Time to get RHS: {time.time() - time_last}")
                     time_last = time.time()
@@ -4266,7 +4278,7 @@ class OVLSolver(object):
                 dfdR = self.get_residual_ad_seeds()
                 dfdR_u = self.get_residual_u_ad_seeds()
                 # self.clear_ad_seeds()
-                con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                     stab_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_u_seeds=dfdR_u
                 )
 
@@ -4276,6 +4288,7 @@ class OVLSolver(object):
 
                 sens[func_key].update(con_seeds)
                 sens[func_key].update(geom_seeds)
+                sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
                 # sd_deriv_seeds[func_key] = 0.0
@@ -4291,7 +4304,7 @@ class OVLSolver(object):
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
-                _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(body_axis_derivs_seeds={func_key: 1.0})
+                _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(body_axis_derivs_seeds={func_key: 1.0})
                 if print_timings:
                     print(f"Time to get RHS: {time.time() - time_last}")
                     time_last = time.time()
@@ -4311,7 +4324,7 @@ class OVLSolver(object):
                 dfdR = self.get_residual_ad_seeds()
                 dfdR_u = self.get_residual_u_ad_seeds()
                 # self.clear_ad_seeds()
-                con_seeds, geom_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                     body_axis_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_u_seeds=dfdR_u
                 )
 
@@ -4321,6 +4334,7 @@ class OVLSolver(object):
 
                 sens[func_key].update(con_seeds)
                 sens[func_key].update(geom_seeds)
+                sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
 
