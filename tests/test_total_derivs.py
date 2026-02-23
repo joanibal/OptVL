@@ -244,6 +244,7 @@ class TestTotals(unittest.TestCase):
                 )
 
                 for func_key in func_vars:
+                    print(sens[func_key][surf_key])
                     geom_dot = np.sum(sens[func_key][surf_key][geom_key] * rand_arr)
                     func_dot = func_seeds[func_key]
 

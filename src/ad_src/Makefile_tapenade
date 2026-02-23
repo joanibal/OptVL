@@ -103,7 +103,7 @@ ad_forward: preprocess_files clean_fwd
 	
 	python ad_utils/edit_ad_src.py forward --input=forward_tmp --output=forward_ad_src
 	
-ad_reverse: preprocess_files clean_rev
+ad_reverse: preprocess_files
 
 # The following is the single Tapenade command to run:
 	$(TAPENADE_HOME)/bin/tapenade \

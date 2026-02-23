@@ -165,7 +165,7 @@ class TestResidualUPartials(unittest.TestCase):
         res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[6]
         self.ovl_solver.clear_ad_seeds_fast()
 
-        gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[4]
+        gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_u_seeds=res_u_seeds_rev)[5]
 
         gamma_sum = np.sum(gamma_u_seeds_rev * gamma_u_seeds_fwd)
         res_sum = np.sum(res_u_seeds_rev * res_u_seeds_fwd)
@@ -378,7 +378,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
             # for var_key in sd_d_fwd[deriv_func]:
             sd_d_rev = {deriv_func: 1.0}
 
-            gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(stab_derivs_seeds=sd_d_rev)[4]
+            gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(stab_derivs_seeds=sd_d_rev)[5]
 
             rev_sum = np.sum(gamma_u_seeds_rev * gamma_u_seeds_fwd)
 
@@ -425,7 +425,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
         for deriv_func, var_dict in self.ovl_solver.case_stab_derivs_to_fort_var.items():
             stab_deriv_seeds_rev[deriv_func] = np.random.rand(1)[0]
 
-        ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(stab_derivs_seeds=stab_deriv_seeds_rev)[6]
+        ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(stab_derivs_seeds=stab_deriv_seeds_rev)[7]
 
         self.ovl_solver.clear_ad_seeds_fast()
 

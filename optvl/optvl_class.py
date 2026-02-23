@@ -403,6 +403,11 @@ class OVLSolver(object):
                 deriv_key = self._get_deriv_key(var, func)
                 self.case_body_derivs_to_fort_var[deriv_key] = ["CASE_R", f"{func_to_prefix[func]}TOT_U_BA", idx_var]
 
+        # In the case where there is no mesh then we have to initialize these before _init_map_data so ad seeds work correclty
+        if not input_dict or ("mesh" not in input_dict.keys()):
+            self.mesh_idx_first = np.zeros(self.get_num_surfaces(),dtype=np.int32)
+            self.y_offsets = np.zeros(self.get_num_surfaces(),dtype=np.float64)
+
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
         self._init_map_data()
@@ -500,14 +505,15 @@ class OVLSolver(object):
             "load": ["SURF_L", "LFLOAD", slice_idx_surf],
         }
 
-        if self.get_avl_fort_arr("SURF_MESH_L", "LSURFMSH", slicer=slice_idx_surf):
-            nvc = self.get_avl_fort_arr("SURF_GEOM_I", "NVC", slicer=slice_idx_surf)
-            nvs = self.get_avl_fort_arr("SURF_GEOM_I", "NVS", slicer=slice_idx_surf)
-            mesh_size = ((nvc+1)*(nvs+1))
-            slice_mesh_surf = (slice(self.mesh_idx_first[idx_surf],self.mesh_idx_first[idx_surf]+mesh_size),slice(None))
-            self.surf_mesh_to_fort_var[surf_name] = {
-                "mesh": ["SURF_MESH_R", "MSHBLK", slice_mesh_surf]
-            }
+        # We need this map to be setup regardless of if we have a mesh so that the ad routines work correctly
+        # if self.get_avl_fort_arr("SURF_MESH_L", "LSURFMSH", slicer=slice_idx_surf):
+        nvc = self.get_avl_fort_arr("SURF_GEOM_I", "NVC", slicer=slice_idx_surf)
+        nvs = self.get_avl_fort_arr("SURF_GEOM_I", "NVS", slicer=slice_idx_surf)
+        mesh_size = ((nvc+1)*(nvs+1))
+        slice_mesh_surf = (slice(self.mesh_idx_first[idx_surf],self.mesh_idx_first[idx_surf]+mesh_size),slice(None))
+        self.surf_mesh_to_fort_var[surf_name] = {
+            "mesh": ["SURF_MESH_R", "MSHBLK", slice_mesh_surf]
+        }
 
         icontd_slices = []
         idestd_slices = []
@@ -789,6 +795,7 @@ class OVLSolver(object):
             # setup surface data for initial input
             self.surf_geom_to_fort_var = {}
             self.surf_section_geom_to_fort_var = {}
+            self.surf_mesh_to_fort_var = {}
             self.surf_pannel_to_fort_var = {}
             self.con_surf_to_fort_var = {}
             self.des_var_to_fort_var = {}
@@ -4198,8 +4205,10 @@ class OVLSolver(object):
                 time_last = time.time()
 
             sens[func].update(con_seeds)
-            sens[func].update(geom_seeds)
-            sens[func].update(mesh_seeds)
+            # I don't know if it's worth combining geom_seeds and mesh_seeds into one just to make this one part less nasty
+            for key in geom_seeds:
+                sens[func][key] = geom_seeds[key] | mesh_seeds[key]
+            # sens[func].update(mesh_seeds)
             sens[func].update(param_seeds)
             sens[func].update(ref_seeds)
 
