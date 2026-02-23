@@ -168,7 +168,7 @@ class TestResidualDPartials(unittest.TestCase):
         res_d_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_d_seeds=gamma_d_seeds_fwd)[5]
         self.ovl_solver.clear_ad_seeds_fast()
 
-        gamma_d_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)[3]
+        gamma_d_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_d_seeds=res_d_seeds_rev)[4]
 
         gamma_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
         res_sum = np.sum(res_d_seeds_rev * res_d_seeds_fwd)
@@ -359,7 +359,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         for deriv_func in cs_d_fwd:
             cs_d_rev = {deriv_func: 1.0}
 
-            gamma_d_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)[3]
+            gamma_d_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(consurf_derivs_seeds=cs_d_rev)[4]
 
             rev_sum = np.sum(gamma_d_seeds_rev * gamma_d_seeds_fwd)
 
