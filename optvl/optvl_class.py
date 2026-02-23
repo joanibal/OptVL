@@ -4207,7 +4207,11 @@ class OVLSolver(object):
             sens[func].update(con_seeds)
             # I don't know if it's worth combining geom_seeds and mesh_seeds into one just to make this one part less nasty
             for key in geom_seeds:
+                # if func == 'e':
+                #     import pdb
+                #     pdb.set_trace()
                 sens[func][key] = geom_seeds[key] | mesh_seeds[key]
+            # sens[func].update(geom_seeds)
             # sens[func].update(mesh_seeds)
             sens[func].update(param_seeds)
             sens[func].update(ref_seeds)
@@ -4251,8 +4255,10 @@ class OVLSolver(object):
                     time_last = time.time()
 
                 sens[func_key].update(con_seeds)
-                sens[func_key].update(geom_seeds)
-                sens[func_key].update(mesh_seeds)
+                for key in geom_seeds:
+                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key]
+                # sens[func_key].update(geom_seeds)
+                # sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
 
@@ -4296,8 +4302,10 @@ class OVLSolver(object):
                     time_last = time.time()
 
                 sens[func_key].update(con_seeds)
-                sens[func_key].update(geom_seeds)
-                sens[func_key].update(mesh_seeds)
+                for key in geom_seeds:
+                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key]
+                # sens[func_key].update(geom_seeds)
+                # sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
                 # sd_deriv_seeds[func_key] = 0.0
@@ -4342,8 +4350,10 @@ class OVLSolver(object):
                     time_last = time.time()
 
                 sens[func_key].update(con_seeds)
-                sens[func_key].update(geom_seeds)
-                sens[func_key].update(mesh_seeds)
+                for key in geom_seeds:
+                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key]
+                # sens[func_key].update(geom_seeds)
+                # sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
 
