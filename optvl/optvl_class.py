@@ -3214,7 +3214,7 @@ class OVLSolver(object):
         # Check if we have an DVGeo object to deal with:
         if self.DVGeo is not None:
             # Loop over all surfaces
-            for surface in self.get_surface_names(remove_dublicated=True):
+            for surface in self.unique_surface_names:
                 # Get the pointset name
                 idx_surf = self.get_surface_index(surf_name=surface)
                 if idx_surf in self.point_sets.keys():
@@ -3225,7 +3225,7 @@ class OVLSolver(object):
                 # Embed the points if they haven't been already
                 if point_set_name not in self.DVGeo.points:
                     mesh = self.get_mesh(idx_surf)
-                    coords0 = np.reshape(mesh,(mesh.shape[0]*mesh.shape[1],3))
+                    coords0 = mesh.transpose((1,0,2)).reshape((mesh.shape[0]*mesh.shape[1],3))
                     self.DVGeo.addPointSet(coords0, point_set_name, **self.pointSetKwargs)
                     # print(f"Embedeed point set {point_set_name}!")
         
@@ -3233,7 +3233,7 @@ class OVLSolver(object):
                 if not self.DVGeo.pointSetUpToDate(point_set_name):
                     coords = self.DVGeo.update(point_set_name)
                     mesh_old = self.get_mesh(idx_surf)
-                    mesh_new = np.reshape(coords,(mesh_old.shape[0],mesh_old.shape[1],3))
+                    mesh_new = copy.deepcopy(coords.reshape((mesh_old.shape[1],mesh_old.shape[0],3)).transpose((1,0,2)))
                     self.set_mesh(idx_surf,mesh_new)
 
             # Now update all of our surfaces in AVL
@@ -4219,6 +4219,24 @@ class OVLSolver(object):
             print(f"    Time to extract seeds: {time.time() - time_last}")
             time_last = time.time()
 
+        dvgeo_seeds = {}
+        # If a DVGeo is present then propagate the mesh seeds all the way back to the DVs
+        if self.DVGeo is not None and self.DVGeo.getNDV() > 0:
+            # Loop over all surfaces
+            for surface in self.unique_surface_names:
+                # Get the pointset name
+                idx_surf = self.get_surface_index(surf_name=surface)
+                if idx_surf in self.point_sets.keys():
+                    point_set_name = self.point_sets[idx_surf]
+                else:
+                    continue # This surface doesn't have a mesh, skip it
+                dvgeo_seeds[surface] = {}
+
+                # Get the sensitivities
+                dvgeo_seeds[surface].update(
+                            self.DVGeo.totalSensitivity(mesh_seeds[surface]["mesh"], point_set_name)
+                        )
+
         self.set_function_ad_seeds(func_seeds, scale=0.0)
         self.set_residual_ad_seeds(res_seeds, scale=0.0)
         self.set_residual_d_ad_seeds(res_d_seeds, scale=0.0)
@@ -4233,7 +4251,7 @@ class OVLSolver(object):
         if print_timings:
             print(f"   Total Time: {time.time() - time_start}")
 
-        return con_seeds, geom_seeds, mesh_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
+        return con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
 
     def execute_run_sensitivities(
         self,
@@ -4267,7 +4285,7 @@ class OVLSolver(object):
             # TODO: remove seeds if it doesn't effect accuracy
             # self.clear_ad_seeds()
             time_last = time.time()
-            _, _, _, pfpU, _, _, _, _ = self._execute_jac_vec_prod_rev(func_seeds={func: 1.0})
+            _, _, _, _, pfpU, _, _, _, _ = self._execute_jac_vec_prod_rev(func_seeds={func: 1.0})
             if print_timings:
                 print(f"Time to get RHS: {time.time() - time_last}")
                 time_last = time.time()
@@ -4284,7 +4302,7 @@ class OVLSolver(object):
             # get the resulting adjoint vector (dfunc/dRes) from fortran
             dfdR = self.get_residual_ad_seeds()
             # self.clear_ad_seeds()
-            con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+            con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                 func_seeds={func: 1.0}, res_seeds=dfdR
             )
             if print_timings:
@@ -4294,10 +4312,7 @@ class OVLSolver(object):
             sens[func].update(con_seeds)
             # I don't know if it's worth combining geom_seeds and mesh_seeds into one just to make this one part less nasty
             for key in geom_seeds:
-                # if func == 'e':
-                #     import pdb
-                #     pdb.set_trace()
-                sens[func][key] = geom_seeds[key] | mesh_seeds[key]
+                sens[func][key] = geom_seeds[key] | mesh_seeds[key] | dvgeo_seeds[key]
             # sens[func].update(geom_seeds)
             # sens[func].update(mesh_seeds)
             sens[func].update(param_seeds)
@@ -4314,7 +4329,7 @@ class OVLSolver(object):
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
-                _, _, _, pfpU, pf_pU_d, _, _, _ = self._execute_jac_vec_prod_rev(consurf_derivs_seeds={func_key: 1.0})
+                _, _, _, _, pfpU, pf_pU_d, _, _, _ = self._execute_jac_vec_prod_rev(consurf_derivs_seeds={func_key: 1.0})
                 if print_timings:
                     print(f"Time to get RHS: {time.time() - time_last}")
                     time_last = time.time()
@@ -4334,7 +4349,7 @@ class OVLSolver(object):
                 dfdR = self.get_residual_ad_seeds()
                 dfdR_d = self.get_residual_d_ad_seeds()
                 # self.clear_ad_seeds()
-                con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                     consurf_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d
                 )
                 if print_timings:
@@ -4343,7 +4358,7 @@ class OVLSolver(object):
 
                 sens[func_key].update(con_seeds)
                 for key in geom_seeds:
-                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key]
+                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key] | dvgeo_seeds[key]
                 # sens[func_key].update(geom_seeds)
                 # sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
@@ -4360,7 +4375,7 @@ class OVLSolver(object):
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
-                _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(stab_derivs_seeds={func_key: 1.0})
+                _, _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(stab_derivs_seeds={func_key: 1.0})
                 if print_timings:
                     print(f"Time to get RHS: {time.time() - time_last}")
                     time_last = time.time()
@@ -4380,7 +4395,7 @@ class OVLSolver(object):
                 dfdR = self.get_residual_ad_seeds()
                 dfdR_u = self.get_residual_u_ad_seeds()
                 # self.clear_ad_seeds()
-                con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                     stab_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_u_seeds=dfdR_u
                 )
 
@@ -4390,7 +4405,7 @@ class OVLSolver(object):
 
                 sens[func_key].update(con_seeds)
                 for key in geom_seeds:
-                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key]
+                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key] | dvgeo_seeds[key]
                 # sens[func_key].update(geom_seeds)
                 # sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
@@ -4408,7 +4423,7 @@ class OVLSolver(object):
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
-                _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(body_axis_derivs_seeds={func_key: 1.0})
+                _, _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(body_axis_derivs_seeds={func_key: 1.0})
                 if print_timings:
                     print(f"Time to get RHS: {time.time() - time_last}")
                     time_last = time.time()
@@ -4428,7 +4443,7 @@ class OVLSolver(object):
                 dfdR = self.get_residual_ad_seeds()
                 dfdR_u = self.get_residual_u_ad_seeds()
                 # self.clear_ad_seeds()
-                con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                     body_axis_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_u_seeds=dfdR_u
                 )
 
@@ -4438,7 +4453,7 @@ class OVLSolver(object):
 
                 sens[func_key].update(con_seeds)
                 for key in geom_seeds:
-                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key]
+                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key] | dvgeo_seeds[key]
                 # sens[func_key].update(geom_seeds)
                 # sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
