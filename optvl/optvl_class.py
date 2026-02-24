@@ -403,10 +403,11 @@ class OVLSolver(object):
                 deriv_key = self._get_deriv_key(var, func)
                 self.case_body_derivs_to_fort_var[deriv_key] = ["CASE_R", f"{func_to_prefix[func]}TOT_U_BA", idx_var]
 
-        # In the case where there is no mesh then we have to initialize these before _init_map_data so ad seeds work correclty
-        if not input_dict or ("mesh" not in input_dict.keys()):
+        # In the case where we used a file then we have to initialize these before _init_map_data so ad seeds work correclty
+        if not input_dict:
             self.mesh_idx_first = np.zeros(self.get_num_surfaces(),dtype=np.int32)
             self.y_offsets = np.zeros(self.get_num_surfaces(),dtype=np.float64)
+            self.point_sets = {}
 
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
@@ -788,6 +789,9 @@ class OVLSolver(object):
         # a duplicated mesh as its normally only passed as a dummy argument into the SDUPL subroutine and not stored in the fortran layer.
         self.y_offsets = np.zeros(self.get_num_surfaces(),dtype=np.float64)
 
+        # Class dictionary to store the point set names if a DVGeo object is used
+        self.point_sets = {}
+
         # Load surfaces
         if num_surfs > 0:
             surf_names = list(input_dict["surfaces"].keys())
@@ -1058,8 +1062,10 @@ class OVLSolver(object):
                          surf_dict["flatten mesh"] = True
                     self.set_mesh(idx_surf, surf_dict["mesh"],flatten=surf_dict["flatten mesh"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
                     self.avl.makesurf_mesh(idx_surf + 1) #+1 for Fortran indexing
+                    self.point_sets[idx_surf] = "optvl_%s_coords" % surf_name # store the pointset name for DVGeo later
                 else:
                     self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
+                    self.point_sets[idx_surf] = None # No pointset available if no mesh
 
                 if "yduplicate" in surf_dict.keys():
                     self.avl.sdupl(idx_surf + 1, surf_dict["yduplicate"], "YDUP")
@@ -3151,6 +3157,87 @@ class OVLSolver(object):
                 fid.write("#surface   gain\n")
                 fid.write(f" {design_var_names[idx_des_var - 1]} ")
                 fid.write(f" {data['gaing'][idx_sec][idx_local_des_var]}\n")
+    
+    # region --- pyGeo API
+
+    def set_DVGeo(self, DVGeo, pointSetKwargs=None, customPointSetFamilies=None):
+        """
+        Set the DVGeometry object that will manipulate 'geometry' in
+        this object. Note that <SOLVER> does not **strictly** need a
+        DVGeometry object, but if optimization with geometric
+        changes is desired, then it is required.
+
+        Parameters
+        ----------
+        DVGeo : A DVGeometry object.
+            Object responsible for manipulating the geometry.
+
+        pointSetKwargs : dict
+            Keyword arguments to be passed to the DVGeo addPointSet call.
+            Useful for DVGeometryMulti, specifying FFD projection tolerances, etc.
+            These arguments are used for all point sets added by this solver.
+
+        customPointSetFamilies : dict of dicts
+            This argument is used to split up the surface points added to the DVGeo by the solver into potentially
+            multiple subsets. The keys of the dictionary will be used to determine what families should be
+            added to the dvgeo object as separate point sets. The values of each key is another dictionary, which can be empty.
+            If desired, the inner dictionaries can contain custom kwargs for the addPointSet call for each surface family,
+            specified by the keys of the top level dictionary.
+            The surface families need to be all part of the designSurfaceFamily.
+            Useful for DVGeometryMulti, specifying FFD projection tolerances, etc.
+            If this is provided together with pointSetKwargs, the regular pointSetKwargs
+            will be appended to each component's dictionary. If the same argument
+            is also provided in pointSetKwargs, the value specified in customPointSetFamilies
+            will be used.
+
+        Examples
+        --------
+        >>> CFDsolver = <SOLVER>(comm=comm, options=CFDoptions)
+        >>> CFDsolver.setDVGeo(DVGeo)
+        """
+
+        self.DVGeo = DVGeo
+
+        # save the common kwargs dict. default is empty
+        if pointSetKwargs is None:
+            self.pointSetKwargs = {}
+        else:
+            self.pointSetKwargs = pointSetKwargs
+
+        # save if we have customPointSetFamilies. this default is not mutable so we can just set it as is.
+        self.customPointSetFamilies = customPointSetFamilies
+
+    def update_DVGeo(self):
+        """If DVGeo is present this function will embed all the meshes into it if needed and then perform an update
+        of the pointset and set the meshes back into AVL.
+        """
+        # Check if we have an DVGeo object to deal with:
+        if self.DVGeo is not None:
+            # Loop over all surfaces
+            for surface in self.get_surface_names(remove_dublicated=True):
+                # Get the pointset name
+                idx_surf = self.get_surface_index(surf_name=surface)
+                if idx_surf in self.point_sets.keys():
+                    point_set_name = self.point_sets[idx_surf]
+                else:
+                    continue # This surface doesn't have a mesh, skip it
+
+                # Embed the points if they haven't been already
+                if point_set_name not in self.DVGeo.points:
+                    mesh = self.get_mesh(idx_surf)
+                    coords0 = np.reshape(mesh,(mesh.shape[0]*mesh.shape[1],3))
+                    self.DVGeo.addPointSet(coords0, point_set_name, **self.pointSetKwargs)
+                    # print(f"Embedeed point set {point_set_name}!")
+        
+                # Check if our point-set is up to date and update the mesh accordingly
+                if not self.DVGeo.pointSetUpToDate(point_set_name):
+                    coords = self.DVGeo.update(point_set_name)
+                    mesh_old = self.get_mesh(idx_surf)
+                    mesh_new = np.reshape(coords,(mesh_old.shape[0],mesh_old.shape[1],3))
+                    self.set_mesh(idx_surf,mesh_new)
+
+            # Now update all of our surfaces in AVL
+            self.avl.update_surfaces()
 
     # region --- Utility functions
     def get_num_surfaces(self) -> int:
