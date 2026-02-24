@@ -1,4 +1,9 @@
 # =============================================================================
+# Standard modules
+# =============================================================================
+import os
+
+# =============================================================================
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
@@ -8,10 +13,17 @@ from optvl import OVLSolver
 # =============================================================================
 import unittest
 import numpy as np
+import pickle
 
 
+base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
-mesh = np.load("wing_mesh.npy")
+mesh_file = os.path.join(geom_dir, "wing_mesh.pkl")
+
+
+with open(mesh_file, 'rb') as f:
+    mesh = pickle.load(f)
 
 surf = {
     "Wing": {

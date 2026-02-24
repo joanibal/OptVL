@@ -14,6 +14,7 @@ import psutil
 # =============================================================================
 import unittest
 import numpy as np
+import pickle
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
@@ -22,11 +23,15 @@ geom_dir = os.path.join(base_dir, '..', 'geom_files')
 geom_file = os.path.join(geom_dir, "aircraft_L1_with_body.avl")
 # mass_file = os.path.join(geom_dir, "aircraft.mass")
 # rect_file = os.path.join(geom_dir, 'rect.avl')
-rect_file = os.path.join(geom_dir, 'rect_with_body.avl')
+# rect_file = os.path.join(geom_dir, 'rect_with_body.avl')
+rect_file = os.path.join(geom_dir, 'rect_with_body.pkl')
+with open(rect_file, 'rb') as f:
+    input_dict = pickle.load(f)
 
 class TestFunctionPartials(unittest.TestCase):
     def setUp(self):
-        self.ovl_solver = OVLSolver(geo_file=rect_file)
+        # self.ovl_solver = OVLSolver(geo_file=rect_file)
+        self.ovl_solver = OVLSolver(input_dict=input_dict)
         self.ovl_solver.set_variable("alpha", 25.0)
         self.ovl_solver.set_variable("beta", 5.0)
         self.ovl_solver.execute_run()
