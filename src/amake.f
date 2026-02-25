@@ -1648,6 +1648,7 @@ c--------------------------------------------------------------
         call GETCAM(x,y,n,xin,yin,tin,nin,.true.)
 
         NASEC(isec,isurf) = nin
+        NAPTSSEC(isec,isurf) = n
 
         do i = 1, nin
           xf = xfmin + 
