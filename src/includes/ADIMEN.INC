@@ -57,9 +57,3 @@
       PARAMETER (IBX=200)  ! max number of airfoil coordinates
       ! PARAMETER (IBX=300)  ! max number of airfoil coordinates
 
-      
-
-      
-
-
-      

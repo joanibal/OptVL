@@ -8,6 +8,7 @@ from optvl import OVLSolver
 # =============================================================================
 import os
 import psutil
+import re
 
 # =============================================================================
 # External Python modules
@@ -168,11 +169,7 @@ class TestOutput(unittest.TestCase):
             new_mach, 
             mach0,
             err_msg=f"Mach does not match set value")
-    
         
-
-        
-
 class TestFortranLevelAPI(unittest.TestCase):
     def setUp(self):
         self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file)
@@ -192,6 +189,35 @@ class TestFortranLevelAPI(unittest.TestCase):
         self.assertEqual(chords.shape, (100, 301))
         np.testing.assert_array_equal(chords[0, :5], np.array([0.45, 0.45, 0.4, 0.3, 0.2]))
 
+def parse_constants_file(filepath: str) -> dict[str, int]:
+        constants = {}
+        with open(filepath, 'r') as f:
+            for line in f:
+                line = line.strip()
+                # Skip comments and blank lines
+                if not line or line.startswith('!'):
+                    continue
+                # Skip commented-out PARAMETER lines
+                if line.startswith('!'):
+                    continue
+                # Match active PARAMETER lines
+                match = re.match(r'PARAMETER\s*\(\s*(\w+)\s*=\s*(\d+)\s*\)', line)
+                if match:
+                    name = match.group(1)
+                    value = int(match.group(2))
+                    constants[name] = value
+        return constants
+
+
+class TestConstants(unittest.TestCase):
+    def setUp(self):
+        self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+    
+    def test_constants(self):
+        # read the constants from src
+        constants = parse_constants_file(os.path.join(base_dir, "..", "src", "includes", "ADIMEN.INC"))
+        for var in constants:
+            assert getattr(self.ovl, var) == constants[var]
 
 if __name__ == "__main__":
     unittest.main()
