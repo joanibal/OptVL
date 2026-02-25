@@ -5,8 +5,7 @@ PROJECT_DIR="$1"
 cd $PROJECT_DIR/tests
 
 # install tesing dependencies
-pip install  --only-binary=:all: scipy<=1.16
-pippsutil openmdao!=3.38
+pip install scipy<=1.16 psutil openmdao!=3.38
 
 
 #HACK: if the tests are not split up the CI runs out of memory...
