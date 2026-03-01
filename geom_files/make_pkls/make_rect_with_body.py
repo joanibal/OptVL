@@ -1,35 +1,30 @@
-import numpy as np
-
+# =============================================================================
+# Extension modules
+# =============================================================================
 from optvl import OVLSolver
-import pickle
+
+# =============================================================================
+# Standard Python Modules
+# =============================================================================
 import os
 
+# =============================================================================
+# External Python modules
+# =============================================================================
+import numpy as np
+import pickle
 
 
-mesh = np.load("wing_mesh.npy")
-
-
-with open("wing_mesh.pkl", 'wb') as f:
-    pickle.dump(mesh, f)
-
-
-
-test_mesh = np.zeros((2,2,3))
-test_mesh[1,:,0] = 1.0
-test_mesh[:,1,1] = 1.0
-test_mesh[:,:,2] = 1.0
-
-
-base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_dir = os.path.join(base_dir, '..', 'geom_files')
-
-rect_file = os.path.join(geom_dir, 'rect_with_body.avl')
+mesh = np.zeros((2,2,3))
+mesh[1,:,0] = 1.0
+mesh[:,1,1] = 1.0
+mesh[:,:,2] = 1.0
 
 
 surf = {
     "Wing": {
         # General
-        "component": np.int32(1),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
+        # "component": np.int32(1),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
         # "yduplicate": np.float64(0.0),  # surface is duplicated over the ysymm plane
         # Geometry
         "scale": np.array(
@@ -39,10 +34,10 @@ surf = {
             [0.0, 0.0, 0.0], dtype=np.float64
         ),  # offset added on to all X,Y,Z values in this surface
         # Geometry: Mesh
-        "mesh": np.float64(test_mesh), # (nx,ny,3) numpy array containing mesh coordinates
+        "mesh": np.float64(mesh), # (nx,ny,3) numpy array containing mesh coordinates
         # Control Surface Specification
         "control_assignments": {
-            "Elevator" : {"assignment":np.arange(0,test_mesh.shape[1]),
+            "Elevator" : {"assignment":np.arange(0,mesh.shape[1]),
                       "xhinged": 0.5, # x/c location of hinge
                       "vhinged": np.array([0,1,0]), # vector giving hinge axis about which surface rotates
                       "gaind": -1.0, # control surface gain
@@ -85,15 +80,21 @@ input_dict = {
     "dname": ["Elevator"],  # Name of control input for each corresonding index
 }
 
+# For verification
+# base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
+# geom_dir = os.path.join(base_dir, '..', 'geom_files')
+# rect_file = os.path.join(geom_dir, 'rect_with_body.avl')
 
-solver = OVLSolver(input_dict=input_dict,debug=True)
+
+# solver = OVLSolver(input_dict=input_dict,debug=True)
 # solver = OVLSolver(geo_file=rect_file,debug=True)
 
-solver.set_variable("alpha", 25.0)
-solver.set_variable("beta", 5.0)
-solver.execute_run()
+# solver.set_variable("alpha", 25.0)
+# solver.set_variable("beta", 5.0)
+# solver.execute_run()
 
 # solver.plot_geom()
+
 with open("rect_with_body.pkl", 'wb') as f:
     pickle.dump(input_dict, f)
 

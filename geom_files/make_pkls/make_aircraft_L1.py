@@ -1,9 +1,18 @@
-import numpy as np
-
+# =============================================================================
+# Extension modules
+# =============================================================================
 from optvl import OVLSolver
-import pickle
+
+# =============================================================================
+# Standard Python Modules
+# =============================================================================
 import os
 
+# =============================================================================
+# External Python modules
+# =============================================================================
+import numpy as np
+import pickle
 from openaerostruct.meshing.mesh_generator import generate_mesh
 from openaerostruct.geometry.utils import taper
 
@@ -42,13 +51,6 @@ mesh_tail[:,:,1] = -mesh_tail[:,:,1]
 mesh_tail = mesh_tail[:,::-1,:]
 
 mesh_tail[:,:,0] += 1.5
-
-
-
-base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
-geom_dir = os.path.join(base_dir, '..', 'geom_files')
-
-rect_file = os.path.join(geom_dir, 'aircraft_L1.avl')
 
 
 surf = {
@@ -111,17 +113,18 @@ input_dict = {
     "dname": ["Elevator"],  # Name of control input for each corresonding index
 }
 
+# For verification
+# base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
+# geom_dir = os.path.join(base_dir, '..', 'geom_files')
+# rect_file = os.path.join(geom_dir, 'aircraft_L1.avl')
 
-solver = OVLSolver(input_dict=input_dict,debug=True)
+
+# solver = OVLSolver(input_dict=input_dict,debug=True)
 # solver = OVLSolver(geo_file=rect_file,debug=True)
 
-solver.set_variable("alpha", 25.0)
-solver.set_variable("beta", 5.0)
-solver.execute_run()
+# solver.set_variable("alpha", 25.0)
+# solver.set_variable("beta", 5.0)
+# solver.execute_run()
 
 with open("aircraft_L1.pkl", 'wb') as f:
     pickle.dump(input_dict, f)
-
-
-
-
