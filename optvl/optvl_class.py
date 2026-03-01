@@ -403,8 +403,8 @@ class OVLSolver(object):
                 deriv_key = self._get_deriv_key(var, func)
                 self.case_body_derivs_to_fort_var[deriv_key] = ["CASE_R", f"{func_to_prefix[func]}TOT_U_BA", idx_var]
 
-        # In the case where there is no mesh then we have to initialize these before _init_map_data so ad seeds work correclty
-        if not input_dict or ("mesh" not in input_dict.keys()):
+        # In the case where we used a file then we have to initialize these before _init_map_data so ad seeds work correctly
+        if not input_dict:
             self.mesh_idx_first = np.zeros(self.get_num_surfaces(),dtype=np.int32)
             self.y_offsets = np.zeros(self.get_num_surfaces(),dtype=np.float64)
 
