@@ -207,8 +207,7 @@ class TestTotals(unittest.TestCase):
                     )
 
     def test_mesh(self):
-        # compare the analytical gradients with finite difference for each
-        # geometric variable and function
+        # compare the analytical gradients with finite difference for meshes
 
         surf_key = list(self.ovl_solver.surf_mesh_to_fort_var.keys())[0]
         mesh_vars = self.ovl_solver.surf_mesh_to_fort_var[surf_key]
