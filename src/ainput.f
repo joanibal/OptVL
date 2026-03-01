@@ -595,6 +595,7 @@ C
 C------ default section...
 C    ...flat camberline
         NASEC(ISEC,ISURF)   = 2
+        NAPTSSEC(ISEC,ISURF) = 0
         XASEC(1,ISEC, ISURF) = 0.0
         XASEC(2,ISEC, ISURF) = 1.0
         SASEC(1,ISEC, ISURF)  = 0.0
@@ -677,6 +678,7 @@ C------ parse designator and set camber coordinates
         T = FLOAT(ITHK) / 100.0
 C
         NASEC(ISEC,ISURF) = MIN( 50 , IBX )
+        NAPTSSEC(ISEC,ISURF) = NASEC(ISEC,ISURF)*2
         DO I = 1, NASEC(ISEC,ISURF)
           XF = XFMIN +
      &        (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC,ISURF)-1)
@@ -812,6 +814,7 @@ C------ set camber and thickness, normalized to unit chord
 C
 C------ store airfoil only if surface and section are active
         NASEC(ISEC,ISURF) = NIN
+        NAPTSSEC(ISEC,ISURF) = NB
         DO I = 1, NIN
           XF = XFMIN + 
      &         (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC,ISURF)-1)
@@ -934,6 +937,7 @@ C------- camber and thickness
 C
 C------- camberline slopes at specified locations from spline
          NASEC(ISEC,ISURF) = NIN
+         NAPTSSEC(ISEC,ISURF) = NB
          DO I = 1, NIN
            XF = XFMIN + 
      &         (XFMAX-XFMIN)*FLOAT(I-1)/FLOAT(NASEC(ISEC,ISURF)-1)
