@@ -54,7 +54,7 @@ rect_file = os.path.join(geom_dir, 'aircraft_L1.avl')
 surf = {
     "Wing": {
         # General
-        "component": np.int32(1),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
+        # "component": np.int32(0),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
         # "yduplicate": np.float64(0.0),  # surface is duplicated over the ysymm plane
         # Geometry
         "scale": np.array(
@@ -69,7 +69,7 @@ surf = {
     },
     "Horizontal Tail": {
         # General
-        "component": np.int32(1),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
+        # "component": np.int32(1),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
         # "yduplicate": np.float64(0.0),  # surface is duplicated over the ysymm plane
         # Geometry
         "scale": np.array(
@@ -119,8 +119,6 @@ solver.set_variable("alpha", 25.0)
 solver.set_variable("beta", 5.0)
 solver.execute_run()
 
-# solver.plot_geom()
-solver.plot_cp()
 with open("aircraft_L1.pkl", 'wb') as f:
     pickle.dump(input_dict, f)
 
