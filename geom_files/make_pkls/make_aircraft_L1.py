@@ -1,0 +1,130 @@
+# =============================================================================
+# Extension modules
+# =============================================================================
+from optvl import OVLSolver
+
+# =============================================================================
+# Standard Python Modules
+# =============================================================================
+import os
+
+# =============================================================================
+# External Python modules
+# =============================================================================
+import numpy as np
+import pickle
+from openaerostruct.meshing.mesh_generator import generate_mesh
+from openaerostruct.geometry.utils import taper
+
+
+mesh_dict = {
+        "num_y": 5,
+        "num_x": 3,
+        "wing_type": "rect",
+        "symmetry": True,
+        "span": 2.0,
+        "root_chord": 0.4,
+        "span_cos_spacing": 0.0,
+        "chord_cos_spacing": 1.0,
+    }
+mesh_wing = generate_mesh(mesh_dict)
+
+taper(mesh_wing,0.35,True,ref_axis_pos=0.0)
+
+
+mesh_dict = {
+        "num_y": 3,
+        "num_x": 11,
+        "wing_type": "rect",
+        "symmetry": True,
+        "span": 1.0,
+        "root_chord": 0.325,
+        "span_cos_spacing": 0.0,
+        "chord_cos_spacing": 1.0,
+    }
+mesh_tail = generate_mesh(mesh_dict)
+
+mesh_wing[:,:,1] = -mesh_wing[:,:,1]
+mesh_wing = mesh_wing[:,::-1,:]
+
+mesh_tail[:,:,1] = -mesh_tail[:,:,1]
+mesh_tail = mesh_tail[:,::-1,:]
+
+mesh_tail[:,:,0] += 1.5
+
+
+surf = {
+    "Wing": {
+        # General
+        # "component": np.int32(0),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
+        # "yduplicate": np.float64(0.0),  # surface is duplicated over the ysymm plane
+        # Geometry
+        "scale": np.array(
+            [1.0, 1.0, 1.0], dtype=np.float64
+        ),  # scaling factors applied to all x,y,z coordinates (chords arealso scaled by Xscale)
+        "translate": np.array(
+            [0.0, 0.0, 0.0], dtype=np.float64
+        ),  # offset added on to all X,Y,Z values in this surface
+        # Geometry: Mesh
+        "mesh": np.float64(mesh_wing), # (nx,ny,3) numpy array containing mesh coordinates
+
+    },
+    "Horizontal Tail": {
+        # General
+        # "component": np.int32(1),  # logical surface component index (for grouping interacting surfaces, see AVL manual)
+        # "yduplicate": np.float64(0.0),  # surface is duplicated over the ysymm plane
+        # Geometry
+        "scale": np.array(
+            [1.0, 1.0, 1.0], dtype=np.float64
+        ),  # scaling factors applied to all x,y,z coordinates (chords arealso scaled by Xscale)
+        "translate": np.array(
+            [0.0, 0.0, 0.0], dtype=np.float64
+        ),  # offset added on to all X,Y,Z values in this surface
+        # Geometry: Mesh
+        "mesh": np.float64(mesh_tail), # (nx,ny,3) numpy array containing mesh coordinates
+        # Control Surface Specification
+        "control_assignments": {
+            "Elevator" : {"assignment":np.arange(0,mesh_tail.shape[1]),
+                      "xhinged": 0.0, # x/c location of hinge
+                      "vhinged": np.array([0,1,0]), # vector giving hinge axis about which surface rotates
+                      "gaind": -1.0, # control surface gain
+                      "refld": 1.0  # control surface reflection, sign of deflection for duplicated surface
+                      }
+        },
+
+    }
+}
+
+
+input_dict = {
+    "title": "MACH MDAO AVL",
+    "mach": np.float64(0.0),
+    "iysym": np.int32(0),
+    "izsym": np.int32(0),
+    "zsym": np.float64(0.0),
+    "Sref": np.float64(1.13),
+    "Cref": np.float64(0.4),
+    "Bref": np.float64(1.0),
+    "XYZref": np.array([0.0, 0.0, 0.0],dtype=np.float64),
+    "CDp": np.float64(0.0),
+    "surfaces": surf,
+    # "bodies": fuselage,
+    # Global Control and DV info
+    "dname": ["Elevator"],  # Name of control input for each corresonding index
+}
+
+# For verification
+# base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
+# geom_dir = os.path.join(base_dir, '..', 'geom_files')
+# rect_file = os.path.join(geom_dir, 'aircraft_L1.avl')
+
+
+# solver = OVLSolver(input_dict=input_dict,debug=True)
+# solver = OVLSolver(geo_file=rect_file,debug=True)
+
+# solver.set_variable("alpha", 25.0)
+# solver.set_variable("beta", 5.0)
+# solver.execute_run()
+
+with open("aircraft_L1.pkl", 'wb') as f:
+    pickle.dump(input_dict, f)
