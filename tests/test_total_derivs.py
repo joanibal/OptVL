@@ -211,7 +211,6 @@ class TestTotals(unittest.TestCase):
 
         surf_key = list(self.ovl_solver.surf_geom_to_fort_var.keys())[0]
         geom_vars = self.ovl_solver.surf_geom_to_fort_var[surf_key]
-        # geom_vars += self.ovl_solver.surf_mesh_to_fort_var[surf_key]
         cs_names = self.ovl_solver.get_control_names()
 
         consurf_vars = []

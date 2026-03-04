@@ -3515,7 +3515,7 @@ class OVLSolver(object):
                 elif mode == "FD":
                     val = self.get_avl_fort_arr(blk, var, slicer=slicer)
                     val += mesh_seeds[surf_key][mesh_key] * scale
-                # print(blk, var, val, slicer)
+
                 self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
     # --- state ad seeds ---
@@ -3757,10 +3757,10 @@ class OVLSolver(object):
         num_airfoil_pts = np.max(self.get_avl_fort_arr("SURF_GEOM_I", "NASEC"))
 
         mesh_size_max = 4*num_vor_max
-        mesh_surf = np.trim_zeros(self.get_avl_fort_arr("SURF_MESH_L", "LSURFMSH"))
+        mesh_surf_flags = np.trim_zeros(self.get_avl_fort_arr("SURF_MESH_L", "LSURFMSH"))
         mesh_size = 0
-        for i, is_mesh in enumerate(mesh_surf):
-            if is_mesh == 1:
+        for i, is_mesh_flag in enumerate(mesh_surf_flags):
+            if is_mesh_flag == 1:
                 nvc = self.get_avl_fort_arr("SURF_GEOM_I", "NVC", slicer=i)
                 nvs = self.get_avl_fort_arr("SURF_GEOM_I", "NVS", slicer=i)
                 mesh_size += (nvc+1)*(nvs+1)
@@ -4205,9 +4205,6 @@ class OVLSolver(object):
             sens[func].update(con_seeds)
             # I don't know if it's worth combining geom_seeds and mesh_seeds into one just to make this one part less nasty
             for key in geom_seeds:
-                # if func == 'e':
-                #     import pdb
-                #     pdb.set_trace()
                 sens[func][key] = geom_seeds[key] | mesh_seeds[key]
             # sens[func].update(geom_seeds)
             # sens[func].update(mesh_seeds)
@@ -4300,10 +4297,8 @@ class OVLSolver(object):
                     time_last = time.time()
 
                 sens[func_key].update(con_seeds)
-                for key in geom_seeds:
-                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key]
-                # sens[func_key].update(geom_seeds)
-                # sens[func_key].update(mesh_seeds)
+                for surf_key in geom_seeds:
+                    sens[func_key][surf_key] = geom_seeds[surf_key] | mesh_seeds[surf_key]
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
                 # sd_deriv_seeds[func_key] = 0.0
@@ -4348,10 +4343,8 @@ class OVLSolver(object):
                     time_last = time.time()
 
                 sens[func_key].update(con_seeds)
-                for key in geom_seeds:
-                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key]
-                # sens[func_key].update(geom_seeds)
-                # sens[func_key].update(mesh_seeds)
+                for surf_key in geom_seeds:
+                    sens[func_key][surf_key] = geom_seeds[surf_key] | mesh_seeds[surf_key]
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
 

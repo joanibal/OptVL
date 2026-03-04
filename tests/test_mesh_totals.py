@@ -14,14 +14,17 @@ import psutil
 # =============================================================================
 import unittest
 import numpy as np
-import pickle
+import sys
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_dir = os.path.join(base_dir, "..", "geom_files")
-rect_file = os.path.join(geom_dir, 'rect_with_body.pkl')
-with open(rect_file, 'rb') as f:
-    input_dict = pickle.load(f)
+
+# Add geom_files to path for importing
+sys.path.insert(0, geom_dir)
+
+# Import input_dict from the .py file instead of loading from .pkl
+from rect_with_body import input_dict
 
 class TestTotals(unittest.TestCase):
     # TODO: beta derivatives likely wrong

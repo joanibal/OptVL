@@ -13,17 +13,18 @@ from optvl import OVLSolver
 # =============================================================================
 import unittest
 import numpy as np
-import pickle
+import sys
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
-mesh_file = os.path.join(geom_dir, "wing_mesh.pkl")
+# Add geom_files to path for importing
+sys.path.insert(0, geom_dir)
 
+# Import mesh from the .py file instead of loading from .pkl
+from wing_mesh import mesh
 
-with open(mesh_file, 'rb') as f:
-    mesh = pickle.load(f)
 
 surf = {
     "Wing": {

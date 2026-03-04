@@ -14,18 +14,18 @@ import psutil
 # =============================================================================
 import unittest
 import numpy as np
-import pickle
+import sys
 
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_dir = os.path.join(base_dir, '..', 'geom_files')
-rect_file = os.path.join(geom_dir, 'rect_with_body.pkl')
-with open(rect_file, 'rb') as f:
-    input_dict = pickle.load(f)
 
-geom_file2 = os.path.join(geom_dir, 'aircraft_L1.pkl')
-with open(rect_file, 'rb') as f:
-    input_dict2 = pickle.load(f)
+# Add geom_files to path for importing
+sys.path.insert(0, geom_dir)
+
+# Import input_dict from the .py files instead of loading from .pkl
+from rect_with_body import input_dict
+from aircraft_L1 import input_dict as input_dict2
 
 
 class TestFunctionPartials(unittest.TestCase):

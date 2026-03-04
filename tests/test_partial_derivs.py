@@ -16,7 +16,6 @@ import unittest
 import numpy as np
 
 
-
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
