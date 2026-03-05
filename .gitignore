@@ -68,6 +68,8 @@ tests/opt_*.avl
 **.DS_Store
 **/*_out
 external
+
+geom_files/rect_out.avl
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
