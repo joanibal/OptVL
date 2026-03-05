@@ -6,18 +6,18 @@ C   gradient     of useful results: rle chord rle1 chord1 rle2
 C                chord2 wstrip ess ensy ensz xsref ysref zsref
 C                rv1 rv2 rv rc rs dxv chordv enc env enc_d
 C   with respect to varying inputs: xyzscal xyztran addinc xyzles
-C                chords aincs xasec sasec claf rle chord rle1 chord1
-C                rle2 chord2 wstrip ess ensy ensz xsref ysref zsref
-C                rv1 rv2 rv rc rs dxv chordv enc env enc_d
+C                chords aincs xasec sasec claf mshblk rle chord
+C                rle1 chord1 rle2 chord2 wstrip ess ensy ensz xsref
+C                ysref zsref rv1 rv2 rv rc rs dxv chordv enc env
+C                enc_d
 C   RW status of diff variables: xyzscal:out xyztran:out addinc:out
 C                xyzles:out chords:out aincs:out xasec:out sasec:out
-C                claf:out rle:in-out chord:in-out rle1:in-out chord1:in-out
-C                rle2:in-out chord2:in-out wstrip:in-out ess:in-out
-C                ensy:in-out ensz:in-out xsref:in-out ysref:in-out
-C                zsref:in-out rv1:in-out rv2:in-out rv:in-out rc:in-out
-C                rs:in-out dxv:in-out chordv:in-out enc:in-out
-C                env:in-out enc_d:in-out
-C MAKESURF
+C                claf:out mshblk:out rle:in-out chord:in-out rle1:in-out
+C                chord1:in-out rle2:in-out chord2:in-out wstrip:in-out
+C                ess:in-out ensy:in-out ensz:in-out xsref:in-out
+C                ysref:in-out zsref:in-out rv1:in-out rv2:in-out
+C                rv:in-out rc:in-out rs:in-out dxv:in-out chordv:in-out
+C                enc:in-out env:in-out enc_d:in-out
       SUBROUTINE UPDATE_SURFACES_B()
       use avl_heap_inc
       use avl_heap_diff_inc
@@ -36,23 +36,55 @@ C MAKESURF
       nstrip = 0
       nvor = 0
       isurf = 1
+      nsurfdupl = 0
+      DO ii=1,nsurf
+        IF (ldupl(ii)) THEN
+          CALL PUSHCONTROL1B(1)
+          nsurfdupl = nsurfdupl + 1
+        ELSE
+          CALL PUSHCONTROL1B(0)
+        END IF
+      ENDDO
 C     the iterations of this loop are not independent because we count
 C     up the size information as we make each surface
       DO ii=1,nsurf-nsurfdupl
         IF (lverbose) WRITE(*, *) 'Updating surface ', isurf
-        CALL PUSHREAL8ARRAY(chord, nsmax)
-        CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
-        CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
-        CALL PUSHINTEGER4ARRAY(nvs, nfmax)
-        CALL PUSHINTEGER4ARRAY(nvc, nfmax)
-        CALL PUSHINTEGER4ARRAY(jfrst, nfmax)
-        CALL PUSHINTEGER4ARRAY(nj, nfmax)
-        CALL MAKESURF(isurf)
+        IF (lsurfmsh(isurf)) THEN
+          CALL PUSHREAL8ARRAY(dxv, nvmax)
+          CALL PUSHREAL8ARRAY(rc, 3*nvmax)
+          CALL PUSHREAL8ARRAY(rv, 3*nvmax)
+          CALL PUSHREAL8ARRAY(chord2, nsmax)
+          CALL PUSHREAL8ARRAY(rle2, 3*nsmax)
+          CALL PUSHREAL8ARRAY(chord1, nsmax)
+          CALL PUSHREAL8ARRAY(rle1, 3*nsmax)
+          CALL PUSHREAL8ARRAY(chord, nsmax)
+          CALL PUSHREAL8ARRAY(rle, 3*nsmax)
+          CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
+          CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
+          CALL PUSHINTEGER4ARRAY(nvs, nfmax)
+          CALL PUSHINTEGER4ARRAY(nvc, nfmax)
+          CALL PUSHINTEGER4ARRAY(jfrst, nfmax)
+          CALL PUSHINTEGER4ARRAY(nj, nfmax)
+          CALL MAKESURF_MESH(isurf)
+          CALL PUSHCONTROL1B(0)
+        ELSE
+          CALL PUSHREAL8ARRAY(chord, nsmax)
+          CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
+          CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
+          CALL PUSHINTEGER4ARRAY(nvs, nfmax)
+          CALL PUSHINTEGER4ARRAY(nvc, nfmax)
+          CALL PUSHINTEGER4ARRAY(jfrst, nfmax)
+          CALL PUSHINTEGER4ARRAY(nj, nfmax)
+          CALL MAKESURF(isurf)
+          CALL PUSHCONTROL1B(1)
+        END IF
         IF (ldupl(isurf)) THEN
           IF (lverbose) WRITE(*, *) ' reduplicating ', isurf
           CALL PUSHREAL8ARRAY(vrefl, nsmax*ndmax)
           CALL PUSHINTEGER4ARRAY(nvstrp, nsmax)
           CALL PUSHINTEGER4ARRAY(ijfrst, nsmax)
+          CALL PUSHBOOLEANARRAY(lmeshflat, nfmax)
+          CALL PUSHBOOLEANARRAY(lsurfmsh, nfmax)
           CALL PUSHINTEGER4ARRAY(nvs, nfmax)
           CALL PUSHINTEGER4ARRAY(nvc, nfmax)
           CALL PUSHBOOLEANARRAY(lsurfspacing, nfmax)
@@ -122,6 +154,11 @@ C     up the size information as we make each surface
           claf_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
+      DO ii1=1,4*nvmax
+        DO ii2=1,3
+          mshblk_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
       DO ii=nsurf-nsurfdupl,1,-1
         CALL POPINTEGER4(isurf)
         CALL POPCONTROL1B(branch)
@@ -136,19 +173,44 @@ C     up the size information as we make each surface
           CALL POPBOOLEANARRAY(lsurfspacing, nfmax)
           CALL POPINTEGER4ARRAY(nvc, nfmax)
           CALL POPINTEGER4ARRAY(nvs, nfmax)
+          CALL POPBOOLEANARRAY(lsurfmsh, nfmax)
+          CALL POPBOOLEANARRAY(lmeshflat, nfmax)
           CALL POPINTEGER4ARRAY(ijfrst, nsmax)
           CALL POPINTEGER4ARRAY(nvstrp, nsmax)
           CALL POPREAL8ARRAY(vrefl, nsmax*ndmax)
           CALL SDUPL_B(isurf, ydupl(isurf), 'ydup')
         END IF
-        CALL POPINTEGER4ARRAY(nj, nfmax)
-        CALL POPINTEGER4ARRAY(jfrst, nfmax)
-        CALL POPINTEGER4ARRAY(nvc, nfmax)
-        CALL POPINTEGER4ARRAY(nvs, nfmax)
-        CALL POPINTEGER4ARRAY(ijfrst, nsmax)
-        CALL POPINTEGER4ARRAY(nvstrp, nsmax)
-        CALL POPREAL8ARRAY(chord, nsmax)
-        CALL MAKESURF_B(isurf)
+        CALL POPCONTROL1B(branch)
+        IF (branch .EQ. 0) THEN
+          CALL POPINTEGER4ARRAY(nj, nfmax)
+          CALL POPINTEGER4ARRAY(jfrst, nfmax)
+          CALL POPINTEGER4ARRAY(nvc, nfmax)
+          CALL POPINTEGER4ARRAY(nvs, nfmax)
+          CALL POPINTEGER4ARRAY(ijfrst, nsmax)
+          CALL POPINTEGER4ARRAY(nvstrp, nsmax)
+          CALL POPREAL8ARRAY(rle, 3*nsmax)
+          CALL POPREAL8ARRAY(chord, nsmax)
+          CALL POPREAL8ARRAY(rle1, 3*nsmax)
+          CALL POPREAL8ARRAY(chord1, nsmax)
+          CALL POPREAL8ARRAY(rle2, 3*nsmax)
+          CALL POPREAL8ARRAY(chord2, nsmax)
+          CALL POPREAL8ARRAY(rv, 3*nvmax)
+          CALL POPREAL8ARRAY(rc, 3*nvmax)
+          CALL POPREAL8ARRAY(dxv, nvmax)
+          CALL MAKESURF_MESH_B(isurf)
+        ELSE
+          CALL POPINTEGER4ARRAY(nj, nfmax)
+          CALL POPINTEGER4ARRAY(jfrst, nfmax)
+          CALL POPINTEGER4ARRAY(nvc, nfmax)
+          CALL POPINTEGER4ARRAY(nvs, nfmax)
+          CALL POPINTEGER4ARRAY(ijfrst, nsmax)
+          CALL POPINTEGER4ARRAY(nvstrp, nsmax)
+          CALL POPREAL8ARRAY(chord, nsmax)
+          CALL MAKESURF_B(isurf)
+        END IF
+      ENDDO
+      DO ii=nsurf,1,-1
+        CALL POPCONTROL1B(branch)
       ENDDO
       END
 
@@ -508,6 +570,8 @@ C----- find node nearest each section
             ad_count0 = 1
 C
 C----- fudge spacing array to make nodes match up exactly with interior sections
+C Throws an error in the case where the same node is the closest node 
+C to two consecutive sections
             DO isec=2,nsec(isurf)-1
               CALL PUSHINTEGER4(ipt1)
               ipt1 = iptloc(isec-1)
@@ -2159,13 +2223,1729 @@ C
      +      )
       END
 
+C  Differentiation of makesurf_mesh in reverse (adjoint) mode (with options i4 dr8 r8):
+C   gradient     of useful results: xyzscal xyztran addinc aincs
+C                xasec sasec claf mshblk rv1msh rv2msh rvmsh rcmsh
+C                rle chord rle1 chord1 rle2 chord2 wstrip ainc
+C                ainc_g rv1 rv2 rv rc rs dxv chordv slopev slopec
+C                dcontrol vhinge
+C   with respect to varying inputs: xyzscal xyztran addinc aincs
+C                xasec sasec claf mshblk rv1msh rv2msh rvmsh rcmsh
+C                rle chord rle1 chord1 rle2 chord2 wstrip ainc
+C                ainc_g rv1 rv2 rv rc rs dxv chordv slopev slopec
+C                dcontrol vhinge
+C
+      SUBROUTINE MAKESURF_MESH_B(isurf)
+      INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_ad_seeds.inc'
+C working variables (AVL original)
+      INTEGER isurf
+      INTEGER kcmax
+      INTEGER ksmax
+      PARAMETER (kcmax=50, ksmax=500)
+      REAL chsin, chcos, chsinl, chsinr, chcosl, chcosr, aincl, aincr, 
+     +     chordl, chordr, clafl, clafr, slopel, sloper, dxdx, zu_l, 
+     +     zl_l, zu_r, zl_r, zl, zr, sum, wtot, astrp
+      REAL chsin_diff, chcos_diff, chsinl_diff, chsinr_diff, chcosl_diff
+     +     , chcosr_diff, aincl_diff, aincr_diff, chordl_diff, 
+     +     chordr_diff, clafl_diff, clafr_diff, slopel_diff, sloper_diff
+      REAL chsinl_g(ngmax), chcosl_g(ngmax), chsinr_g(ngmax), chcosr_g(
+     +     ngmax), xled(ndmax), xted(ndmax), gainda(ndmax)
+      REAL chsinl_g_diff(ngmax), chcosl_g_diff(ngmax), chsinr_g_diff(
+     +     ngmax), chcosr_g_diff(ngmax), xled_diff(ndmax), xted_diff(
+     +     ndmax)
+C working variables (OptVL additions)
+      INTEGER isconl(ndmax), isconr(ndmax)
+      REAL m1, m2, m3, f1, f2, fc, dc1, dc2, dc, a1, a2, a3, xptxind1, 
+     +     xptxind2
+      REAL m2_diff, m3_diff, dc1_diff, dc2_diff, a1_diff, a2_diff, 
+     +     a3_diff
+      REAL mesh_surf(3, (nvc(isurf)+1)*(nvs(isurf)+1))
+      REAL mesh_surf_diff(3, (nvc(isurf)+1)*(nvs(isurf)+1))
+C functions
+      INTEGER idx_vor, idx_strip, idx_sec, idx_dim, idx_coef, idx_x, 
+     +        idx_node, idx_nodel, idx_noder, idx_node_yp1, idx_node_nx
+     +        , idx_node_nx_yp1, idx_y, nx, ny
+C
+C Get data from common block
+      INTEGER FLATIDX
+      INTEGER isec
+      INTEGER ii
+      INTEGER ispan
+      INTEGER iptl
+      INTEGER iptr
+      INTRINSIC SQRT
+      INTRINSIC SIN
+      INTRINSIC COS
+      INTEGER n
+      INTEGER iscon
+      INTEGER isdes
+      INTRINSIC ATAN2
+      REAL chsin_g
+      REAL chsin_g_diff
+      REAL chcos_g
+      REAL chcos_g_diff
+      INTEGER icl
+      INTEGER icr
+      REAL xhd
+      REAL xhd_diff
+      REAL vhx
+      REAL vhx_diff
+      REAL vhy
+      REAL vhy_diff
+      REAL vhz
+      REAL vhz_diff
+      REAL vsq
+      REAL vsq_diff
+      INTRINSIC ABS
+      REAL vmod
+      REAL vmod_diff
+      INTEGER nsl
+      INTEGER nsr
+      REAL clafc
+      REAL clafc_diff
+      REAL dx1
+      REAL dx1_diff
+      REAL dx2
+      REAL dx2_diff
+      REAL dx3
+      REAL dx3_diff
+      REAL dsdx
+      REAL xpt
+      REAL xpt_diff
+      REAL fracle
+      REAL fracle_diff
+      REAL fracte
+      REAL fracte_diff
+      INTRINSIC MAX
+      INTRINSIC MIN
+      REAL zu
+      INTEGER jj
+      INTEGER j
+      REAL y1
+      REAL y1_diff
+      REAL y2
+      REAL y2_diff
+      REAL(kind=avl_real) abs0
+      REAL(kind=avl_real) abs0_diff
+      REAL(kind=avl_real) abs1
+      REAL(kind=avl_real) abs1_diff
+      REAL(kind=avl_real) arg1
+      REAL(kind=avl_real) arg1_diff
+      REAL temp
+      REAL temp0
+      REAL temp1
+      REAL temp_diff
+      REAL temp_diff0
+      REAL temp_diff1
+      REAL(kind=8) temp2
+      REAL(kind=8) temp_diff2
+      REAL(kind=8) temp3
+      REAL(kind=8) temp_diff3
+      REAL(kind=8) temp4
+      REAL(kind=8) temp_diff4
+      REAL(kind=avl_real) temp5
+      REAL(kind=avl_real) temp_diff5
+      INTEGER ad_to
+      INTEGER ad_to0
+      INTEGER ad_to1
+      INTEGER branch
+      INTEGER ad_to2
+      INTEGER ad_to3
+      INTEGER ad_to4
+C
+      nx = nvc(isurf) + 1
+C Check MFRST
+      ny = nvs(isurf) + 1
+C Get the mesh for this surface from the the common block
+C
+C
+C Perform input checks from makesurf (section check removed)
+      mesh_surf = mshblk(:, mfrst(isurf):mfrst(isurf)+nx*ny-1)
+C
+C
+      IF (nvc(isurf) .GT. kcmax) nvc(isurf) = kcmax
+C Set NK from input data (python layer will ensure this is consistent)
+C
+      IF (isurf .EQ. 1) THEN
+        jfrst(isurf) = 1
+      ELSE
+        jfrst(isurf) = jfrst(isurf-1) + nj(isurf-1)
+      END IF
+C We need to start counting strips now since it is a global count
+C
+C Bypass the entire spanwise node generation routine and go straight to store counters
+C skips MAKESURF 94-234
+C Index of first strip in surface
+C This is normally used to store the index of each section in AVL
+C but since we use strips now each is effectively just a section
+C We assign this variable accordingly so as not to break anything else
+      idx_strip = jfrst(isurf)
+C Number of strips/sections in surface
+C
+C Apply the scaling and translations to the mesh as a whole
+C
+C
+      DO idx_y=1,ny
+        DO idx_x=1,nx
+          DO idx_dim=1,3
+            CALL PUSHINTEGER4(idx_node)
+            idx_node = FLATIDX(idx_x, idx_y, isurf)
+            CALL PUSHREAL8(mesh_surf(idx_dim, idx_node))
+            mesh_surf(idx_dim, idx_node) = xyzscal(idx_dim, isurf)*
+     +        mesh_surf(idx_dim, idx_node) + xyztran(idx_dim, isurf)
+          ENDDO
+        ENDDO
+        CALL PUSHINTEGER4(idx_x - 1)
+      ENDDO
+      CALL PUSHINTEGER4(idx_y - 1)
+C Setup the strips
+C Set spanwise elements to 0
+C
+C
+C
+C Check control and design vars
+C
+      IF (ncontrol .GT. ndmax) THEN
+        STOP
+      ELSE IF (ndesign .GT. ngmax) THEN
+C Instead of looping over sections just loop over all strips in the surface
+C
+        STOP
+      ELSE
+C
+Cispan loop
+C Set reference information for the strip
+C This code was used in the original to loop over strips in a section. 
+C We will just reuse the variables here 
+        DO ispan=1,ny-1
+C
+C
+          CALL PUSHINTEGER4(idx_y)
+          idx_y = idx_strip - jfrst(isurf) + 1
+          CALL PUSHINTEGER4(iptl)
+          iptl = idx_y
+          CALL PUSHINTEGER4(iptr)
+          iptr = idx_y + 1
+C We need to compute the chord and claf values at the left and right edge of the strip
+C This code was used in the original to interpolate over sections. 
+C We will just reuse here to interpolate over a strip which is trivial but avoids pointless code rewrites.
+C
+C
+          CALL PUSHINTEGER4(idx_node)
+          idx_node = FLATIDX(1, iptl, isurf)
+          CALL PUSHINTEGER4(idx_node_nx)
+          idx_node_nx = FLATIDX(nx, iptl, isurf)
+          CALL PUSHREAL8(chordl)
+          chordl = SQRT((mesh_surf(1, idx_node_nx)-mesh_surf(1, idx_node
+     +      ))**2 + (mesh_surf(3, idx_node_nx)-mesh_surf(3, idx_node))**
+     +      2)
+          CALL PUSHINTEGER4(idx_node)
+          idx_node = FLATIDX(1, iptr, isurf)
+          CALL PUSHINTEGER4(idx_node_nx)
+          idx_node_nx = FLATIDX(nx, iptr, isurf)
+          CALL PUSHREAL8(chordr)
+          chordr = SQRT((mesh_surf(1, idx_node_nx)-mesh_surf(1, idx_node
+     +      ))**2 + (mesh_surf(3, idx_node_nx)-mesh_surf(3, idx_node))**
+     +      2)
+          clafl = claf(iptl, isurf)
+C Linearly interpolate the incidence projections over the STRIP
+          clafr = claf(iptr, isurf)
+C
+          aincl = aincs(iptl, isurf)*dtr + addinc(isurf)*dtr
+          aincr = aincs(iptr, isurf)*dtr + addinc(isurf)*dtr
+          chsinl = chordl*SIN(aincl)
+          chsinr = chordr*SIN(aincr)
+          chcosl = chordl*COS(aincl)
+C We need to determine which controls belong to this section 
+C Bring over the routine for this from makesurf but do it for each strip now
+          chcosr = chordr*COS(aincr)
+C
+          DO n=1,ncontrol
+            isconl(n) = 0
+            isconr(n) = 0
+            DO iscon=1,nscon(iptl, isurf)
+              IF (icontd(iscon, iptl, isurf) .EQ. n) THEN
+                CALL PUSHCONTROL1B(1)
+                isconl(n) = iscon
+              ELSE
+                CALL PUSHCONTROL1B(0)
+              END IF
+            ENDDO
+            CALL PUSHINTEGER4(iscon - 1)
+            DO iscon=1,nscon(iptr, isurf)
+              IF (icontd(iscon, iptr, isurf) .EQ. n) THEN
+                CALL PUSHCONTROL1B(1)
+                isconr(n) = iscon
+              ELSE
+                CALL PUSHCONTROL1B(0)
+              END IF
+            ENDDO
+            CALL PUSHINTEGER4(iscon - 1)
+          ENDDO
+C We need to determine which dvs belong to this strip 
+C and setup the chord projection gains
+C Bring over the routine for this from makesurf but setup for strips
+C
+          DO n=1,ndesign
+            chsinl_g(n) = 0.
+            chsinr_g(n) = 0.
+            chcosl_g(n) = 0.
+            chcosr_g(n) = 0.
+C
+            DO isdes=1,nsdes(iptl, isurf)
+              IF (idestd(isdes, iptl, isurf) .EQ. n) THEN
+                chsinl_g(n) = chcosl*gaing(isdes, iptl, isurf)*dtr
+                chcosl_g(n) = -(chsinl*gaing(isdes, iptl, isurf)*dtr)
+                CALL PUSHCONTROL1B(1)
+              ELSE
+                CALL PUSHCONTROL1B(0)
+              END IF
+            ENDDO
+            CALL PUSHINTEGER4(isdes - 1)
+C
+            DO isdes=1,nsdes(iptr, isurf)
+              IF (idestd(isdes, iptr, isurf) .EQ. n) THEN
+                chsinr_g(n) = chcosr*gaing(isdes, iptr, isurf)*dtr
+                chcosr_g(n) = -(chsinr*gaing(isdes, iptr, isurf)*dtr)
+                CALL PUSHCONTROL1B(1)
+              ELSE
+                CALL PUSHCONTROL1B(0)
+              END IF
+            ENDDO
+            CALL PUSHINTEGER4(isdes - 1)
+          ENDDO
+C Set the strip geometry data
+C Note these computations assume the mesh is not necessarily planar
+C ultimately if/when we flatten the mesh into a planar one we will want
+C to use the leading edge positions and chords from the original input mesh
+C Strip left side
+C
+C
+C
+          CALL PUSHINTEGER4(idx_node)
+          idx_node = FLATIDX(1, idx_y, isurf)
+          CALL PUSHINTEGER4(idx_node_nx)
+          idx_node_nx = FLATIDX(nx, idx_y, isurf)
+          DO idx_dim=1,3
+            CALL PUSHREAL8(rle1(idx_dim, idx_strip))
+            rle1(idx_dim, idx_strip) = mesh_surf(idx_dim, idx_node)
+          ENDDO
+C
+C Strip right side
+          chord1(idx_strip) = SQRT((mesh_surf(1, idx_node_nx)-mesh_surf(
+     +      1, idx_node))**2 + (mesh_surf(3, idx_node_nx)-mesh_surf(3, 
+     +      idx_node))**2)
+C
+          CALL PUSHINTEGER4(idx_node_yp1)
+          idx_node_yp1 = FLATIDX(1, idx_y + 1, isurf)
+          CALL PUSHINTEGER4(idx_node_nx_yp1)
+          idx_node_nx_yp1 = FLATIDX(nx, idx_y + 1, isurf)
+          DO idx_dim=1,3
+            CALL PUSHREAL8(rle2(idx_dim, idx_strip))
+            rle2(idx_dim, idx_strip) = mesh_surf(idx_dim, idx_node_yp1)
+          ENDDO
+C Strip mid-point 
+          chord2(idx_strip) = SQRT((mesh_surf(1, idx_node_nx_yp1)-
+     +      mesh_surf(1, idx_node_yp1))**2 + (mesh_surf(3, 
+     +      idx_node_nx_yp1)-mesh_surf(3, idx_node_yp1))**2)
+C
+C Since the strips are linear SPANWISE we can just interpolate
+          DO idx_dim=1,3
+            CALL PUSHREAL8(rle(idx_dim, idx_strip))
+            rle(idx_dim, idx_strip) = (rle1(idx_dim, idx_strip)+rle2(
+     +        idx_dim, idx_strip))/2.
+          ENDDO
+C The strips are not necessarily linear chord wise but by definition the chord value is
+C so we can interpolate
+C Strip geometric incidence angle at the mid-point
+C This is strip incidence angle is computed from the LE and TE points
+C of the given geometry and is completely independent of AINC
+C This quantity is needed to correctly handle nonplanar meshes and is only needed if the mesh isnt flattened
+          CALL PUSHREAL8(chord(idx_strip))
+          chord(idx_strip) = (chord1(idx_strip)+chord2(idx_strip))/2.
+C
+C Strip width
+C
+C Strip LE and TE sweep slopes
+C
+C Compute chord projections and strip twists
+C In AVL the AINCS are not interpolated. The chord projections are
+C So we have to replicate this effect.
+C LINEAR interpolation over the strip: left, right, and midpoint
+C
+C
+          CALL PUSHINTEGER4(idx_nodel)
+          idx_nodel = FLATIDX(1, iptl, isurf)
+C       f1 = (mesh_surf(2,idx_node)-mesh_surf(2,idx_nodel))/
+C      & (mesh_surf(2,idx_noder)-mesh_surf(2,idx_nodel))
+C       f2 = (mesh_surf(2,idx_node_yp1)-mesh_surf(2,idx_nodel))/
+C      & (mesh_surf(2,idx_noder)-mesh_surf(2,idx_nodel))
+C       fc = (((mesh_surf(2,idx_node_yp1)+mesh_surf(2,idx_node))/2.) 
+C      & -mesh_surf(2,idx_nodel))/(mesh_surf(2,idx_noder)
+C      & -mesh_surf(2,idx_nodel))
+C the above expressions will always evaluate to the following for individual strips
+          CALL PUSHINTEGER4(idx_noder)
+          idx_noder = FLATIDX(1, iptr, isurf)
+C
+C
+C Strip left side incidence
+C CHSIN = CHSINL + f1*(CHSINR-CHSINL)
+C CHCOS = CHCOSL + f1*(CHCOSR-CHCOSL)
+          fc = 0.5
+C
+C Strip right side incidence
+C CHSIN = CHSINL + f2*(CHSINR-CHSINL)
+C CHCOS = CHCOSL + f2*(CHCOSR-CHCOSL)
+C
+C Strip mid-point incidence
+C
+          CALL PUSHREAL8(chsin)
+          chsin = chsinl + fc*(chsinr-chsinl)
+          CALL PUSHREAL8(chcos)
+          chcos = chcosl + fc*(chcosr-chcosl)
+C Set dv gains for incidence angles
+C Bring over the routine for this from make surf
+C
+          DO n=1,ndesign
+            CALL PUSHREAL8(chsin_g)
+            chsin_g = (1.0-fc)*chsinl_g(n) + fc*chsinr_g(n)
+            CALL PUSHREAL8(chcos_g)
+            chcos_g = (1.0-fc)*chcosl_g(n) + fc*chcosr_g(n)
+          ENDDO
+C We have to now setup any control surfaces we defined for this strip
+C Bring over the routine for this from makesurf but modified for a strip
+C
+          DO n=1,ncontrol
+            CALL PUSHINTEGER4(icl)
+            icl = isconl(n)
+            CALL PUSHINTEGER4(icr)
+            icr = isconr(n)
+C
+            IF (icl .EQ. 0 .OR. icr .EQ. 0) THEN
+C no control effect here
+              CALL PUSHREAL8(gainda(n))
+              gainda(n) = 0.
+              CALL PUSHREAL8(xled(n))
+              xled(n) = 0.
+              CALL PUSHREAL8(xted(n))
+              xted(n) = 0.
+C
+C
+C
+C
+              CALL PUSHCONTROL1B(1)
+            ELSE
+C control variable # N is active here
+C SAB Note: This interpolation ensures that the hinge line is 
+C is linear which I think it is an ok assumption for arbitrary wings as long as the user is aware
+C A curve hinge line could work if needed if we just interpolate XHINGED and scaled by local chord
+              CALL PUSHREAL8(gainda(n))
+              gainda(n) = gaind(icl, iptl, isurf)*(1.0-fc) + gaind(icr, 
+     +          iptr, isurf)*fc
+C
+              xhd = chordl*xhinged(icl, iptl, isurf)*(1.0-fc) + chordr*
+     +          xhinged(icr, iptr, isurf)*fc
+              IF (xhd .GE. 0.0) THEN
+C TE control surface, with hinge at XHD
+                CALL PUSHREAL8(xled(n))
+                xled(n) = xhd
+                CALL PUSHREAL8(xted(n))
+                xted(n) = chord(idx_strip)
+                CALL PUSHCONTROL1B(0)
+              ELSE
+C LE control surface, with hinge at -XHD
+                CALL PUSHREAL8(xled(n))
+                xled(n) = 0.0
+                CALL PUSHREAL8(xted(n))
+                xted(n) = -xhd
+                CALL PUSHCONTROL1B(1)
+              END IF
+C
+              CALL PUSHREAL8(vhx)
+              vhx = vhinged(1, icl, iptl, isurf)*xyzscal(1, isurf)
+              CALL PUSHREAL8(vhy)
+              vhy = vhinged(2, icl, iptl, isurf)*xyzscal(2, isurf)
+              CALL PUSHREAL8(vhz)
+              vhz = vhinged(3, icl, iptl, isurf)*xyzscal(3, isurf)
+              CALL PUSHREAL8(vsq)
+              vsq = vhx**2 + vhy**2 + vhz**2
+              IF (vsq .EQ. 0.0) THEN
+                IF (chordr*xhinged(icr, iptr, isurf) .GE. 0.) THEN
+                  abs0 = chordr*xhinged(icr, iptr, isurf)
+                  CALL PUSHCONTROL1B(1)
+                ELSE
+                  abs0 = -(chordr*xhinged(icr, iptr, isurf))
+                  CALL PUSHCONTROL1B(0)
+                END IF
+                IF (chordl*xhinged(icl, iptl, isurf) .GE. 0.) THEN
+                  abs1 = chordl*xhinged(icl, iptl, isurf)
+                  CALL PUSHCONTROL1B(0)
+                ELSE
+                  abs1 = -(chordl*xhinged(icl, iptl, isurf))
+                  CALL PUSHCONTROL1B(1)
+                END IF
+C default: set hinge vector along hingeline
+C We are just setting the hinge line across the section
+C this assumes the hinge is linear even for a nonlinear wing
+                vhx = mesh_surf(1, idx_noder) + abs0 - mesh_surf(1, 
+     +            idx_nodel) - abs1
+                vhy = mesh_surf(2, idx_noder) - mesh_surf(2, idx_nodel)
+                vhz = mesh_surf(3, idx_noder) - mesh_surf(3, idx_nodel)
+                CALL PUSHREAL8(vhx)
+                vhx = vhx*xyzscal(1, isurf)
+                CALL PUSHREAL8(vhy)
+                vhy = vhy*xyzscal(2, isurf)
+                CALL PUSHREAL8(vhz)
+                vhz = vhz*xyzscal(3, isurf)
+                vsq = vhx**2 + vhy**2 + vhz**2
+                CALL PUSHCONTROL1B(0)
+              ELSE
+                CALL PUSHCONTROL1B(1)
+              END IF
+C
+              CALL PUSHREAL8(vmod)
+              vmod = SQRT(vsq)
+C
+C
+              CALL PUSHCONTROL1B(0)
+            END IF
+          ENDDO
+C If the min drag is zero flag the strip as no-viscous data
+C Set the panel (vortex) geometry data
+C Accumulate the strip element indicies and start counting vorticies
+C
+          IF (idx_strip .EQ. 1) THEN
+            ijfrst(idx_strip) = 1
+          ELSE
+            ijfrst(idx_strip) = ijfrst(idx_strip-1) + nvstrp(idx_strip-1
+     +        )
+          END IF
+          idx_vor = ijfrst(idx_strip)
+C Associate the strip with the surface
+          nvstrp(idx_strip) = nvc(isurf)
+C
+C Prepare for cross section interpolation
+C
+          nsl = nasec(iptl, isurf)
+C CHORDC = CHORD(idx_strip)      
+C Funny story. this original line is now valid now that we interpolate over the strip
+          nsr = nasec(iptr, isurf)
+C
+C
+C
+C Suggestion from Hal Yougren for non linear sections:
+C clafc =  (1.-fc)*clafl + fc*clafr
+C loop over vorticies for the strip
+          CALL PUSHREAL8(clafc)
+          clafc = (1.-fc)*(chordl/chord(idx_strip))*clafl + fc*(chordr/
+     +      chord(idx_strip))*clafr
+C
+C Left bound vortex points 
+          DO idx_x=1,nvc(isurf)
+C Compute the panel left side chord
+            CALL PUSHINTEGER4(idx_node)
+            idx_node = FLATIDX(idx_x, idx_y, isurf)
+            CALL PUSHREAL8(dc1)
+            dc1 = SQRT((mesh_surf(1, idx_node+1)-mesh_surf(1, idx_node))
+     +        **2 + (mesh_surf(3, idx_node+1)-mesh_surf(3, idx_node))**2
+     +        )
+C Right bound vortex points 
+C
+            IF (lmeshflat(isurf)) THEN
+C Place vortex at panel quarter chord of the flat mesh
+C Compute the panel left side angle
+C Place vortex at panel quarter chord of the true mesh
+              CALL PUSHREAL8(a1)
+              a1 = ATAN2(mesh_surf(3, idx_node+1) - mesh_surf(3, 
+     +          idx_node), mesh_surf(1, idx_node+1) - mesh_surf(1, 
+     +          idx_node))
+              CALL PUSHCONTROL1B(0)
+            ELSE
+C Compute the panel left side angle
+C Place vortex at panel quarter chord
+              CALL PUSHREAL8(a1)
+              a1 = ATAN2(mesh_surf(3, idx_node+1) - mesh_surf(3, 
+     +          idx_node), mesh_surf(1, idx_node+1) - mesh_surf(1, 
+     +          idx_node))
+C Make a copy in the true mesh array for post processing
+              CALL PUSHCONTROL1B(1)
+            END IF
+C Compute the panel right side chord
+            CALL PUSHINTEGER4(idx_node_yp1)
+            idx_node_yp1 = FLATIDX(idx_x, idx_y + 1, isurf)
+            CALL PUSHREAL8(dc2)
+            dc2 = SQRT((mesh_surf(1, idx_node_yp1+1)-mesh_surf(1, 
+     +        idx_node_yp1))**2 + (mesh_surf(3, idx_node_yp1+1)-
+     +        mesh_surf(3, idx_node_yp1))**2)
+C Mid-point bound vortex points 
+C Compute the panel mid-point chord
+C Panels themselves can never be curved so just interpolate the chord
+C store as the panel chord in common block
+C
+            IF (lmeshflat(isurf)) THEN
+C Place vortex at panel quarter chord of the flat mesh
+C
+C Compute the panel right side angle
+C
+C Place vortex at panel quarter chord of the true mesh
+              CALL PUSHREAL8(a2)
+              a2 = ATAN2(mesh_surf(3, idx_node_yp1+1) - mesh_surf(3, 
+     +          idx_node_yp1), mesh_surf(1, idx_node_yp1+1) - mesh_surf(
+     +          1, idx_node_yp1))
+              CALL PUSHCONTROL1B(0)
+            ELSE
+C Compute the panel right side angle
+C Place vortex at panel quarter chord
+              CALL PUSHREAL8(a2)
+              a2 = ATAN2(mesh_surf(3, idx_node_yp1+1) - mesh_surf(3, 
+     +          idx_node_yp1), mesh_surf(1, idx_node_yp1+1) - mesh_surf(
+     +          1, idx_node_yp1))
+C Make a copy in the true mesh array for post processing
+C
+              CALL PUSHCONTROL1B(1)
+            END IF
+C
+C We need to compute the midpoint angle and panel strip chord projection 
+C as we need them to compute normals based on the real mesh
+            CALL PUSHREAL8(dxv(idx_vor))
+            dxv(idx_vor) = (dc1+dc2)/2.
+C project the panel chord onto the strip chord
+            CALL PUSHREAL8(a3)
+            a3 = ATAN2((mesh_surf(3, idx_node_yp1+1)+mesh_surf(3, 
+     +        idx_node+1))/2. - (mesh_surf(3, idx_node_yp1)+mesh_surf(3
+     +        , idx_node))/2., (mesh_surf(1, idx_node_yp1+1)+mesh_surf(1
+     +        , idx_node+1))/2. - (mesh_surf(1, idx_node_yp1)+mesh_surf(
+     +        1, idx_node))/2.)
+C Panel Control points
+C Y- point 
+C is just the panel midpoint
+C
+            IF (lmeshflat(isurf)) THEN
+C Place vortex at panel quarter chord of the flat mesh
+              dx3 = SQRT(((mesh_surf(1, idx_node_yp1)+mesh_surf(1, 
+     +          idx_node))/2-rle(1, idx_strip))**2 + ((mesh_surf(3, 
+     +          idx_node_yp1)+mesh_surf(3, idx_node))/2-rle(3, idx_strip
+     +          ))**2)
+              CALL PUSHREAL8(rv(2, idx_vor))
+              rv(2, idx_vor) = rle(2, idx_strip)
+              CALL PUSHREAL8(rv(3, idx_vor))
+              rv(3, idx_vor) = rle(3, idx_strip)
+C Place vortex at panel quarter chord of the true mesh
+              CALL PUSHREAL8(rv(1, idx_vor))
+              rv(1, idx_vor) = rle(1, idx_strip) + dx3 + dxv(idx_vor)/4.
+C
+              CALL PUSHCONTROL1B(0)
+            ELSE
+C  Place vortex at panel quarter chord
+              CALL PUSHREAL8(rv(2, idx_vor))
+              rv(2, idx_vor) = (mesh_surf(2, idx_node_yp1)+mesh_surf(2, 
+     +          idx_node))/2.
+              CALL PUSHREAL8(rv(1, idx_vor))
+              rv(1, idx_vor) = (mesh_surf(1, idx_node_yp1)+mesh_surf(1, 
+     +          idx_node))/2. + dxv(idx_vor)/4.*COS(a3)
+C Make a copy in the true mesh array for post processing
+              CALL PUSHREAL8(rv(3, idx_vor))
+              rv(3, idx_vor) = (mesh_surf(3, idx_node_yp1)+mesh_surf(3, 
+     +          idx_node))/2. + dxv(idx_vor)/4.*SIN(a3)
+C
+              CALL PUSHCONTROL1B(1)
+            END IF
+C
+C
+C Place the control point at the quarter chord + half chord*clafc
+C note that clafc is a scaler so is 1. is for 2pi
+C use data from vortex mid-point computation
+            CALL PUSHREAL8(rc(2, idx_vor))
+            rc(2, idx_vor) = rv(2, idx_vor)
+C Source points
+C Y- point
+            IF (lmeshflat(isurf)) THEN
+              CALL PUSHREAL8(rc(1, idx_vor))
+              rc(1, idx_vor) = rv(1, idx_vor) + clafc*(dxv(idx_vor)/2.)
+              CALL PUSHREAL8(rc(3, idx_vor))
+              rc(3, idx_vor) = rv(3, idx_vor)
+C
+              CALL PUSHCONTROL1B(0)
+            ELSE
+              CALL PUSHREAL8(rc(1, idx_vor))
+              rc(1, idx_vor) = rv(1, idx_vor) + clafc*(dxv(idx_vor)/2.)*
+     +          COS(a3)
+C Make a copy in the true mesh array for post processing
+              CALL PUSHREAL8(rc(3, idx_vor))
+              rc(3, idx_vor) = rv(3, idx_vor) + clafc*(dxv(idx_vor)/2.)*
+     +          SIN(a3)
+C
+              CALL PUSHCONTROL1B(1)
+            END IF
+C
+C Place the source point at the half chord
+C use data from vortex mid-point computation
+C add another quarter chord to the quarter chord
+C Set the camber slopes for the panel
+C Camber slope at control point
+            IF (lmeshflat(isurf)) THEN
+              CALL PUSHCONTROL1B(0)
+            ELSE
+              CALL PUSHCONTROL1B(1)
+            END IF
+C
+C
+            arg1 = (rc(1, idx_vor)-rle(1, idx_strip))/chord(idx_strip)
+            CALL PUSHREAL8(slopel)
+            CALL AKIMA(xasec(1, iptl, isurf), sasec(1, iptl, isurf), nsl
+     +                 , arg1, slopel, dsdx)
+            arg1 = (rc(1, idx_vor)-rle(1, idx_strip))/chord(idx_strip)
+            CALL PUSHREAL8(sloper)
+            CALL AKIMA(xasec(1, iptr, isurf), sasec(1, iptr, isurf), nsr
+     +                 , arg1, sloper, dsdx)
+C Alternative for nonlinear sections per Hal Youngren
+C SLOPEC(idx_vor) =  (1.-fc)*SLOPEL + fc*SLOPER
+C The original line is valid for interpolation over a strip
+C
+C Camber slope at vortex mid-point
+C
+            arg1 = (rv(1, idx_vor)-rle(1, idx_strip))/chord(idx_strip)
+            CALL PUSHREAL8(slopel)
+            CALL AKIMA(xasec(1, iptl, isurf), sasec(1, iptl, isurf), nsl
+     +                 , arg1, slopel, dsdx)
+            arg1 = (rv(1, idx_vor)-rle(1, idx_strip))/chord(idx_strip)
+            CALL PUSHREAL8(sloper)
+            CALL AKIMA(xasec(1, iptr, isurf), sasec(1, iptr, isurf), nsr
+     +                 , arg1, sloper, dsdx)
+C Alternative for nonlinear sections per Hal Youngren
+C SLOPEV(idx_vor) =  (1.-fc)*SLOPEL + fc*SLOPER
+C The original line is valid for interpolation over a strip
+C
+C Associate the panel with strip chord and component
+C
+C Enforce no penetration at the control point
+C element inherits alpha,beta flag from surface
+C
+C We need to scale the control surface gains by the fraction
+C of the element on the control surface
+C
+Cscale control gain by factor 0..1, (fraction of element on control surface)
+            DO n=1,ncontrol
+              xpt = ((mesh_surf(1, idx_node)+mesh_surf(1, idx_node_yp1))
+     +          /2-rle(1, idx_strip))/chord(idx_strip)
+C
+              fracle = (xled(n)/chord(idx_strip)-xpt)/(dxv(idx_vor)/
+     +          chord(idx_strip))
+C
+              fracte = (xted(n)/chord(idx_strip)-xpt)/(dxv(idx_vor)/
+     +          chord(idx_strip))
+              IF (0.0 .LT. fracle) THEN
+                y1 = fracle
+                CALL PUSHCONTROL1B(0)
+              ELSE
+                y1 = 0.0
+                CALL PUSHCONTROL1B(1)
+              END IF
+              IF (1.0 .GT. y1) THEN
+                CALL PUSHCONTROL1B(0)
+              ELSE
+                CALL PUSHCONTROL1B(1)
+              END IF
+              IF (0.0 .LT. fracte) THEN
+                y2 = fracte
+                CALL PUSHCONTROL1B(0)
+              ELSE
+                y2 = 0.0
+                CALL PUSHCONTROL1B(1)
+              END IF
+              IF (1.0 .GT. y2) THEN
+                CALL PUSHCONTROL1B(0)
+              ELSE
+                CALL PUSHCONTROL1B(1)
+              END IF
+            ENDDO
+C TE control point used only if surface sheds a wake
+C Use the cross sections to generate the OML
+C nodal grid associated with vortex strip (aft-panel nodes)
+C NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
+C retained in (x,z) plane at this point
+C Store the panel LE mid point for the next panel in the strip
+C This gets used a lot here 
+C We use the original input mesh (true mesh) to compute points for the OML
+C
+C
+C   xptxind2 = (mesh_surf(1,idx_node_yp1+1)
+C  &           - RLE2(1,idx_strip))/CHORD2(idx_strip) 
+C Interpolate cross section on left side
+C
+C
+C Interpolate cross section on right side
+C
+C Compute the left aft node of panel 
+C X-point
+C
+C
+C Y-point
+C
+C Interpolate z from sections to left aft node of panel
+C
+C Store left aft z-point
+C
+C Compute the right aft node of panel 
+C X-point
+C
+C Y-point
+C
+C Interpolate z from sections to right aft node of panel
+C Store right aft z-point
+C
+C
+            CALL PUSHINTEGER4(idx_vor)
+            idx_vor = idx_vor + 1
+          ENDDO
+C End vortex loop
+          CALL PUSHINTEGER4(idx_strip)
+          idx_strip = idx_strip + 1
+        ENDDO
+        mesh_surf_diff = 0.D0
+        chcosl_g_diff = 0.D0
+        chsinr_g_diff = 0.D0
+        xted_diff = 0.D0
+        xled_diff = 0.D0
+        chsinl_g_diff = 0.D0
+        chcosr_g_diff = 0.D0
+        DO ispan=ny-1,1,-1
+          CALL POPINTEGER4(idx_strip)
+          fc = 0.5
+          nsl = nasec(iptl, isurf)
+          nsr = nasec(iptr, isurf)
+          chordl_diff = 0.D0
+          chordr_diff = 0.D0
+          clafc_diff = 0.D0
+          DO idx_x=nvc(isurf),1,-1
+            CALL POPINTEGER4(idx_vor)
+            DO n=ncontrol,1,-1
+              fracte_diff = gainda(n)*dcontrol_diff(idx_vor, n)
+              fracle_diff = -(gainda(n)*dcontrol_diff(idx_vor, n))
+              dcontrol_diff(idx_vor, n) = 0.D0
+              CALL POPCONTROL1B(branch)
+              IF (branch .EQ. 0) THEN
+                xpt = ((mesh_surf(1, idx_node)+mesh_surf(1, idx_node_yp1
+     +            ))/2-rle(1, idx_strip))/chord(idx_strip)
+                y2_diff = fracte_diff
+              ELSE
+                xpt = ((mesh_surf(1, idx_node)+mesh_surf(1, idx_node_yp1
+     +            ))/2-rle(1, idx_strip))/chord(idx_strip)
+                y2_diff = 0.D0
+              END IF
+              CALL POPCONTROL1B(branch)
+              IF (branch .EQ. 0) THEN
+                fracte_diff = y2_diff
+              ELSE
+                fracte_diff = 0.D0
+              END IF
+              CALL POPCONTROL1B(branch)
+              IF (branch .EQ. 0) THEN
+                y1_diff = fracle_diff
+              ELSE
+                y1_diff = 0.D0
+              END IF
+              CALL POPCONTROL1B(branch)
+              IF (branch .EQ. 0) THEN
+                fracle_diff = y1_diff
+              ELSE
+                fracle_diff = 0.D0
+              END IF
+              temp5 = chord(idx_strip)/dxv(idx_vor)
+              temp4 = xted(n)/chord(idx_strip)
+              temp_diff4 = temp5*fracte_diff/chord(idx_strip)
+              xpt_diff = -(temp5*fracte_diff)
+              temp_diff5 = (temp4-xpt)*fracte_diff/dxv(idx_vor)
+              chord_diff(idx_strip) = chord_diff(idx_strip) + temp_diff5
+     +          - temp4*temp_diff4
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) - temp5*temp_diff5
+              xted_diff(n) = xted_diff(n) + temp_diff4
+              temp5 = chord(idx_strip)/dxv(idx_vor)
+              temp4 = xled(n)/chord(idx_strip)
+              temp_diff4 = temp5*fracle_diff/chord(idx_strip)
+              xpt_diff = xpt_diff - temp5*fracle_diff
+              temp_diff5 = (temp4-xpt)*fracle_diff/dxv(idx_vor)
+              chord_diff(idx_strip) = chord_diff(idx_strip) + temp_diff5
+     +          - temp4*temp_diff4
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) - temp5*temp_diff5
+              xled_diff(n) = xled_diff(n) + temp_diff4
+              temp_diff4 = xpt_diff/chord(idx_strip)
+              mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) 
+     +          + temp_diff4/2
+              mesh_surf_diff(1, idx_node_yp1) = mesh_surf_diff(1, 
+     +          idx_node_yp1) + temp_diff4/2
+              rle_diff(1, idx_strip) = rle_diff(1, idx_strip) - 
+     +          temp_diff4
+              chord_diff(idx_strip) = chord_diff(idx_strip) - ((
+     +          mesh_surf(1, idx_node)+mesh_surf(1, idx_node_yp1))/2-rle
+     +          (1, idx_strip))*temp_diff4/chord(idx_strip)
+            ENDDO
+            temp_diff3 = fc*slopev_diff(idx_vor)/chord(idx_strip)
+            chord_diff(idx_strip) = chord_diff(idx_strip) + chordv_diff(
+     +        idx_vor) - chordr*sloper*temp_diff3/chord(idx_strip)
+            chordv_diff(idx_vor) = 0.D0
+            temp_diff4 = (1.-fc)*slopev_diff(idx_vor)/chord(idx_strip)
+            slopev_diff(idx_vor) = 0.D0
+            chordr_diff = chordr_diff + sloper*temp_diff3
+            sloper_diff = chordr*temp_diff3
+            chordl_diff = chordl_diff + slopel*temp_diff4
+            slopel_diff = chordl*temp_diff4
+            arg1 = (rv(1, idx_vor)-rle(1, idx_strip))/chord(idx_strip)
+            CALL POPREAL8(sloper)
+            arg1_diff = 0.D0
+            CALL AKIMA_B(xasec(1, iptr, isurf), xasec_diff(1, iptr, 
+     +                   isurf), sasec(1, iptr, isurf), sasec_diff(1, 
+     +                   iptr, isurf), nsr, arg1, arg1_diff, sloper, 
+     +                   sloper_diff, dsdx)
+            temp_diff5 = arg1_diff/chord(idx_strip)
+            chord_diff(idx_strip) = chord_diff(idx_strip) - chordl*
+     +        slopel*temp_diff4/chord(idx_strip) - (rv(1, idx_vor)-rle(1
+     +        , idx_strip))*temp_diff5/chord(idx_strip)
+            rv_diff(1, idx_vor) = rv_diff(1, idx_vor) + temp_diff5
+            rle_diff(1, idx_strip) = rle_diff(1, idx_strip) - temp_diff5
+            arg1 = (rv(1, idx_vor)-rle(1, idx_strip))/chord(idx_strip)
+            CALL POPREAL8(slopel)
+            arg1_diff = 0.D0
+            CALL AKIMA_B(xasec(1, iptl, isurf), xasec_diff(1, iptl, 
+     +                   isurf), sasec(1, iptl, isurf), sasec_diff(1, 
+     +                   iptl, isurf), nsl, arg1, arg1_diff, slopel, 
+     +                   slopel_diff, dsdx)
+            temp_diff5 = arg1_diff/chord(idx_strip)
+            rv_diff(1, idx_vor) = rv_diff(1, idx_vor) + temp_diff5
+            rle_diff(1, idx_strip) = rle_diff(1, idx_strip) - temp_diff5
+            temp_diff4 = (1.-fc)*slopec_diff(idx_vor)/chord(idx_strip)
+            temp_diff3 = fc*slopec_diff(idx_vor)/chord(idx_strip)
+            chord_diff(idx_strip) = chord_diff(idx_strip) - (rv(1, 
+     +        idx_vor)-rle(1, idx_strip))*temp_diff5/chord(idx_strip) - 
+     +        chordr*sloper*temp_diff3/chord(idx_strip)
+            slopec_diff(idx_vor) = 0.D0
+            chordr_diff = chordr_diff + sloper*temp_diff3
+            sloper_diff = chordr*temp_diff3
+            chordl_diff = chordl_diff + slopel*temp_diff4
+            slopel_diff = chordl*temp_diff4
+            arg1 = (rc(1, idx_vor)-rle(1, idx_strip))/chord(idx_strip)
+            CALL POPREAL8(sloper)
+            arg1_diff = 0.D0
+            CALL AKIMA_B(xasec(1, iptr, isurf), xasec_diff(1, iptr, 
+     +                   isurf), sasec(1, iptr, isurf), sasec_diff(1, 
+     +                   iptr, isurf), nsr, arg1, arg1_diff, sloper, 
+     +                   sloper_diff, dsdx)
+            temp_diff5 = arg1_diff/chord(idx_strip)
+            chord_diff(idx_strip) = chord_diff(idx_strip) - chordl*
+     +        slopel*temp_diff4/chord(idx_strip) - (rc(1, idx_vor)-rle(1
+     +        , idx_strip))*temp_diff5/chord(idx_strip)
+            rc_diff(1, idx_vor) = rc_diff(1, idx_vor) + temp_diff5
+            rle_diff(1, idx_strip) = rle_diff(1, idx_strip) - temp_diff5
+            arg1 = (rc(1, idx_vor)-rle(1, idx_strip))/chord(idx_strip)
+            CALL POPREAL8(slopel)
+            arg1_diff = 0.D0
+            CALL AKIMA_B(xasec(1, iptl, isurf), xasec_diff(1, iptl, 
+     +                   isurf), sasec(1, iptl, isurf), sasec_diff(1, 
+     +                   iptl, isurf), nsl, arg1, arg1_diff, slopel, 
+     +                   slopel_diff, dsdx)
+            temp_diff5 = arg1_diff/chord(idx_strip)
+            rc_diff(1, idx_vor) = rc_diff(1, idx_vor) + temp_diff5
+            rle_diff(1, idx_strip) = rle_diff(1, idx_strip) - temp_diff5
+            chord_diff(idx_strip) = chord_diff(idx_strip) - (rc(1, 
+     +        idx_vor)-rle(1, idx_strip))*temp_diff5/chord(idx_strip)
+            CALL POPCONTROL1B(branch)
+            IF (branch .EQ. 0) THEN
+              rv_diff(3, idx_vor) = rv_diff(3, idx_vor) + rs_diff(3, 
+     +          idx_vor)
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) + rs_diff(3, idx_vor
+     +          )/4. + rs_diff(1, idx_vor)/4.
+              rs_diff(3, idx_vor) = 0.D0
+              rv_diff(1, idx_vor) = rv_diff(1, idx_vor) + rs_diff(1, 
+     +          idx_vor)
+              rs_diff(1, idx_vor) = 0.D0
+              a3_diff = 0.D0
+            ELSE
+              rv_diff(3, idx_vor) = rv_diff(3, idx_vor) + rs_diff(3, 
+     +          idx_vor)
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) + SIN(a3)*rs_diff(3
+     +          , idx_vor)/4. + COS(a3)*rs_diff(1, idx_vor)/4.
+              a3_diff = COS(a3)*dxv(idx_vor)*rs_diff(3, idx_vor)/4. - 
+     +          SIN(a3)*dxv(idx_vor)*rs_diff(1, idx_vor)/4.
+              rs_diff(3, idx_vor) = 0.D0
+              rv_diff(1, idx_vor) = rv_diff(1, idx_vor) + rs_diff(1, 
+     +          idx_vor)
+              rs_diff(1, idx_vor) = 0.D0
+            END IF
+            rv_diff(2, idx_vor) = rv_diff(2, idx_vor) + rs_diff(2, 
+     +        idx_vor)
+            rs_diff(2, idx_vor) = 0.D0
+            CALL POPCONTROL1B(branch)
+            IF (branch .EQ. 0) THEN
+              rvmsh_diff(2, idx_vor) = rvmsh_diff(2, idx_vor) + 
+     +          rcmsh_diff(2, idx_vor)
+              rcmsh_diff(2, idx_vor) = 0.D0
+              rvmsh_diff(3, idx_vor) = rvmsh_diff(3, idx_vor) + 
+     +          rcmsh_diff(3, idx_vor)
+              temp_diff4 = SIN(a3)*rcmsh_diff(3, idx_vor)
+              a3_diff = a3_diff + COS(a3)*clafc*dxv(idx_vor)*rcmsh_diff(
+     +          3, idx_vor)/2. - SIN(a3)*clafc*dxv(idx_vor)*rcmsh_diff(1
+     +          , idx_vor)/2.
+              rcmsh_diff(3, idx_vor) = 0.D0
+              clafc_diff = clafc_diff + dxv(idx_vor)*temp_diff4/2.
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) + clafc*temp_diff4/
+     +          2.
+              rvmsh_diff(1, idx_vor) = rvmsh_diff(1, idx_vor) + 
+     +          rcmsh_diff(1, idx_vor)
+              temp_diff4 = COS(a3)*rcmsh_diff(1, idx_vor)
+              rcmsh_diff(1, idx_vor) = 0.D0
+              clafc_diff = clafc_diff + dxv(idx_vor)*temp_diff4/2. + dxv
+     +          (idx_vor)*rc_diff(1, idx_vor)/2.
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) + clafc*temp_diff4/
+     +          2. + clafc*rc_diff(1, idx_vor)/2.
+              CALL POPREAL8(rc(3, idx_vor))
+              rv_diff(3, idx_vor) = rv_diff(3, idx_vor) + rc_diff(3, 
+     +          idx_vor)
+              rc_diff(3, idx_vor) = 0.D0
+              CALL POPREAL8(rc(1, idx_vor))
+              rv_diff(1, idx_vor) = rv_diff(1, idx_vor) + rc_diff(1, 
+     +          idx_vor)
+              rc_diff(1, idx_vor) = 0.D0
+            ELSE
+              rc_diff(2, idx_vor) = rc_diff(2, idx_vor) + rcmsh_diff(2, 
+     +          idx_vor)
+              rcmsh_diff(2, idx_vor) = 0.D0
+              rc_diff(3, idx_vor) = rc_diff(3, idx_vor) + rcmsh_diff(3, 
+     +          idx_vor)
+              rcmsh_diff(3, idx_vor) = 0.D0
+              rc_diff(1, idx_vor) = rc_diff(1, idx_vor) + rcmsh_diff(1, 
+     +          idx_vor)
+              rcmsh_diff(1, idx_vor) = 0.D0
+              CALL POPREAL8(rc(3, idx_vor))
+              rv_diff(3, idx_vor) = rv_diff(3, idx_vor) + rc_diff(3, 
+     +          idx_vor)
+              temp_diff4 = SIN(a3)*rc_diff(3, idx_vor)
+              a3_diff = a3_diff + COS(a3)*clafc*dxv(idx_vor)*rc_diff(3, 
+     +          idx_vor)/2. - SIN(a3)*clafc*dxv(idx_vor)*rc_diff(1, 
+     +          idx_vor)/2.
+              rc_diff(3, idx_vor) = 0.D0
+              clafc_diff = clafc_diff + dxv(idx_vor)*temp_diff4/2.
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) + clafc*temp_diff4/
+     +          2.
+              CALL POPREAL8(rc(1, idx_vor))
+              rv_diff(1, idx_vor) = rv_diff(1, idx_vor) + rc_diff(1, 
+     +          idx_vor)
+              temp_diff4 = COS(a3)*rc_diff(1, idx_vor)
+              rc_diff(1, idx_vor) = 0.D0
+              clafc_diff = clafc_diff + dxv(idx_vor)*temp_diff4/2.
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) + clafc*temp_diff4/
+     +          2.
+            END IF
+            CALL POPREAL8(rc(2, idx_vor))
+            rv_diff(2, idx_vor) = rv_diff(2, idx_vor) + rc_diff(2, 
+     +        idx_vor)
+            rc_diff(2, idx_vor) = 0.D0
+            CALL POPCONTROL1B(branch)
+            IF (branch .EQ. 0) THEN
+              dx3_diff = rv_diff(1, idx_vor)
+              temp4 = (mesh_surf(3, idx_node_yp1)+mesh_surf(3, idx_node)
+     +          )/2 - rle(3, idx_strip)
+              temp3 = (mesh_surf(1, idx_node_yp1)+mesh_surf(1, idx_node)
+     +          )/2 - rle(1, idx_strip)
+              IF (temp3**2 + temp4**2 .EQ. 0.D0) THEN
+                temp_diff2 = 0.D0
+              ELSE
+                temp_diff2 = dx3_diff/(2.0*SQRT(temp3**2+temp4**2))
+              END IF
+              temp_diff3 = 2*temp3*temp_diff2
+              temp_diff4 = 2*temp4*temp_diff2
+              mesh_surf_diff(3, idx_node_yp1) = mesh_surf_diff(3, 
+     +          idx_node_yp1) + rvmsh_diff(3, idx_vor)/2.
+              mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) 
+     +          + rvmsh_diff(3, idx_vor)/2.
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) + SIN(a3)*rvmsh_diff
+     +          (3, idx_vor)/4. + COS(a3)*rvmsh_diff(1, idx_vor)/4. + 
+     +          rv_diff(1, idx_vor)/4.
+              a3_diff = a3_diff + COS(a3)*dxv(idx_vor)*rvmsh_diff(3, 
+     +          idx_vor)/4. - SIN(a3)*dxv(idx_vor)*rvmsh_diff(1, idx_vor
+     +          )/4.
+              rvmsh_diff(3, idx_vor) = 0.D0
+              mesh_surf_diff(1, idx_node_yp1) = mesh_surf_diff(1, 
+     +          idx_node_yp1) + rvmsh_diff(1, idx_vor)/2.
+              mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) 
+     +          + rvmsh_diff(1, idx_vor)/2.
+              rvmsh_diff(1, idx_vor) = 0.D0
+              mesh_surf_diff(2, idx_node_yp1) = mesh_surf_diff(2, 
+     +          idx_node_yp1) + rvmsh_diff(2, idx_vor)/2.
+              mesh_surf_diff(2, idx_node) = mesh_surf_diff(2, idx_node) 
+     +          + rvmsh_diff(2, idx_vor)/2.
+              rvmsh_diff(2, idx_vor) = 0.D0
+              CALL POPREAL8(rv(1, idx_vor))
+              rle_diff(1, idx_strip) = rle_diff(1, idx_strip) + rv_diff(
+     +          1, idx_vor) - temp_diff3
+              rv_diff(1, idx_vor) = 0.D0
+              CALL POPREAL8(rv(3, idx_vor))
+              rle_diff(3, idx_strip) = rle_diff(3, idx_strip) + rv_diff(
+     +          3, idx_vor) - temp_diff4
+              rv_diff(3, idx_vor) = 0.D0
+              CALL POPREAL8(rv(2, idx_vor))
+              rle_diff(2, idx_strip) = rle_diff(2, idx_strip) + rv_diff(
+     +          2, idx_vor)
+              rv_diff(2, idx_vor) = 0.D0
+              mesh_surf_diff(3, idx_node_yp1) = mesh_surf_diff(3, 
+     +          idx_node_yp1) + temp_diff4/2
+              mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) 
+     +          + temp_diff4/2
+              mesh_surf_diff(1, idx_node_yp1) = mesh_surf_diff(1, 
+     +          idx_node_yp1) + temp_diff3/2
+              mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) 
+     +          + temp_diff3/2
+            ELSE
+              rv_diff(3, idx_vor) = rv_diff(3, idx_vor) + rvmsh_diff(3, 
+     +          idx_vor)
+              rvmsh_diff(3, idx_vor) = 0.D0
+              rv_diff(1, idx_vor) = rv_diff(1, idx_vor) + rvmsh_diff(1, 
+     +          idx_vor)
+              rvmsh_diff(1, idx_vor) = 0.D0
+              rv_diff(2, idx_vor) = rv_diff(2, idx_vor) + rvmsh_diff(2, 
+     +          idx_vor)
+              rvmsh_diff(2, idx_vor) = 0.D0
+              CALL POPREAL8(rv(3, idx_vor))
+              mesh_surf_diff(3, idx_node_yp1) = mesh_surf_diff(3, 
+     +          idx_node_yp1) + rv_diff(3, idx_vor)/2.
+              mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) 
+     +          + rv_diff(3, idx_vor)/2.
+              dxv_diff(idx_vor) = dxv_diff(idx_vor) + SIN(a3)*rv_diff(3
+     +          , idx_vor)/4. + COS(a3)*rv_diff(1, idx_vor)/4.
+              a3_diff = a3_diff + COS(a3)*dxv(idx_vor)*rv_diff(3, 
+     +          idx_vor)/4. - SIN(a3)*dxv(idx_vor)*rv_diff(1, idx_vor)/
+     +          4.
+              rv_diff(3, idx_vor) = 0.D0
+              CALL POPREAL8(rv(1, idx_vor))
+              mesh_surf_diff(1, idx_node_yp1) = mesh_surf_diff(1, 
+     +          idx_node_yp1) + rv_diff(1, idx_vor)/2.
+              mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) 
+     +          + rv_diff(1, idx_vor)/2.
+              rv_diff(1, idx_vor) = 0.D0
+              CALL POPREAL8(rv(2, idx_vor))
+              mesh_surf_diff(2, idx_node_yp1) = mesh_surf_diff(2, 
+     +          idx_node_yp1) + rv_diff(2, idx_vor)/2.
+              mesh_surf_diff(2, idx_node) = mesh_surf_diff(2, idx_node) 
+     +          + rv_diff(2, idx_vor)/2.
+              rv_diff(2, idx_vor) = 0.D0
+            END IF
+            CALL POPREAL8(a3)
+            temp1 = (mesh_surf(1, idx_node_yp1+1)+mesh_surf(1, idx_node+
+     +        1))/2. - (mesh_surf(1, idx_node_yp1)+mesh_surf(1, idx_node
+     +        ))/2.
+            temp0 = (mesh_surf(3, idx_node_yp1+1)+mesh_surf(3, idx_node+
+     +        1))/2. - (mesh_surf(3, idx_node_yp1)+mesh_surf(3, idx_node
+     +        ))/2.
+            temp_diff0 = temp1*a3_diff/(temp0**2+temp1**2)
+            temp_diff = -(temp0*a3_diff/(temp0**2+temp1**2))
+            mesh_surf_diff(1, idx_node_yp1+1) = mesh_surf_diff(1, 
+     +        idx_node_yp1+1) + temp_diff/2.
+            mesh_surf_diff(1, idx_node+1) = mesh_surf_diff(1, idx_node+1
+     +        ) + temp_diff/2.
+            mesh_surf_diff(1, idx_node_yp1) = mesh_surf_diff(1, 
+     +        idx_node_yp1) - temp_diff/2.
+            mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) - 
+     +        temp_diff/2.
+            mesh_surf_diff(3, idx_node_yp1+1) = mesh_surf_diff(3, 
+     +        idx_node_yp1+1) + temp_diff0/2.
+            mesh_surf_diff(3, idx_node+1) = mesh_surf_diff(3, idx_node+1
+     +        ) + temp_diff0/2.
+            mesh_surf_diff(3, idx_node_yp1) = mesh_surf_diff(3, 
+     +        idx_node_yp1) - temp_diff0/2.
+            mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) - 
+     +        temp_diff0/2.
+            CALL POPREAL8(dxv(idx_vor))
+            dc1_diff = dxv_diff(idx_vor)/2.
+            dc2_diff = dxv_diff(idx_vor)/2.
+            dxv_diff(idx_vor) = 0.D0
+            CALL POPCONTROL1B(branch)
+            IF (branch .EQ. 0) THEN
+              dx2_diff = rv2_diff(1, idx_vor)
+              temp4 = mesh_surf(3, idx_node_yp1) - rle2(3, idx_strip)
+              temp3 = mesh_surf(1, idx_node_yp1) - rle2(1, idx_strip)
+              IF (temp3**2 + temp4**2 .EQ. 0.D0) THEN
+                temp_diff2 = 0.D0
+              ELSE
+                temp_diff2 = dx2_diff/(2.0*SQRT(temp3**2+temp4**2))
+              END IF
+              temp_diff3 = 2*temp3*temp_diff2
+              temp_diff4 = 2*temp4*temp_diff2
+              a2_diff = COS(a2)*dc2*rv2msh_diff(3, idx_vor)/4. - SIN(a2)
+     +          *dc2*rv2msh_diff(1, idx_vor)/4.
+              temp1 = mesh_surf(1, idx_node_yp1+1) - mesh_surf(1, 
+     +          idx_node_yp1)
+              temp0 = mesh_surf(3, idx_node_yp1+1) - mesh_surf(3, 
+     +          idx_node_yp1)
+              temp_diff0 = temp1*a2_diff/(temp0**2+temp1**2)
+              temp_diff = -(temp0*a2_diff/(temp0**2+temp1**2))
+              mesh_surf_diff(3, idx_node_yp1) = mesh_surf_diff(3, 
+     +          idx_node_yp1) + rv2msh_diff(3, idx_vor) + temp_diff4 - 
+     +          temp_diff0
+              dc2_diff = dc2_diff + SIN(a2)*rv2msh_diff(3, idx_vor)/4. +
+     +          COS(a2)*rv2msh_diff(1, idx_vor)/4. + rv2_diff(1, idx_vor
+     +          )/4.
+              rv2msh_diff(3, idx_vor) = 0.D0
+              mesh_surf_diff(1, idx_node_yp1) = mesh_surf_diff(1, 
+     +          idx_node_yp1) + rv2msh_diff(1, idx_vor) + temp_diff3 - 
+     +          temp_diff
+              rv2msh_diff(1, idx_vor) = 0.D0
+              mesh_surf_diff(2, idx_node_yp1) = mesh_surf_diff(2, 
+     +          idx_node_yp1) + rv2msh_diff(2, idx_vor)
+              rv2msh_diff(2, idx_vor) = 0.D0
+              CALL POPREAL8(a2)
+              mesh_surf_diff(1, idx_node_yp1+1) = mesh_surf_diff(1, 
+     +          idx_node_yp1+1) + temp_diff
+              mesh_surf_diff(3, idx_node_yp1+1) = mesh_surf_diff(3, 
+     +          idx_node_yp1+1) + temp_diff0
+              rle2_diff(1, idx_strip) = rle2_diff(1, idx_strip) + 
+     +          rv2_diff(1, idx_vor) - temp_diff3
+              rv2_diff(1, idx_vor) = 0.D0
+              rle2_diff(3, idx_strip) = rle2_diff(3, idx_strip) + 
+     +          rv2_diff(3, idx_vor) - temp_diff4
+              rv2_diff(3, idx_vor) = 0.D0
+              rle2_diff(2, idx_strip) = rle2_diff(2, idx_strip) + 
+     +          rv2_diff(2, idx_vor)
+              rv2_diff(2, idx_vor) = 0.D0
+            ELSE
+              rv2_diff(3, idx_vor) = rv2_diff(3, idx_vor) + rv2msh_diff(
+     +          3, idx_vor)
+              rv2msh_diff(3, idx_vor) = 0.D0
+              rv2_diff(1, idx_vor) = rv2_diff(1, idx_vor) + rv2msh_diff(
+     +          1, idx_vor)
+              rv2msh_diff(1, idx_vor) = 0.D0
+              rv2_diff(2, idx_vor) = rv2_diff(2, idx_vor) + rv2msh_diff(
+     +          2, idx_vor)
+              rv2msh_diff(2, idx_vor) = 0.D0
+              dc2_diff = dc2_diff + SIN(a2)*rv2_diff(3, idx_vor)/4. + 
+     +          COS(a2)*rv2_diff(1, idx_vor)/4.
+              a2_diff = COS(a2)*dc2*rv2_diff(3, idx_vor)/4. - SIN(a2)*
+     +          dc2*rv2_diff(1, idx_vor)/4.
+              mesh_surf_diff(2, idx_node_yp1) = mesh_surf_diff(2, 
+     +          idx_node_yp1) + rv2_diff(2, idx_vor)
+              rv2_diff(2, idx_vor) = 0.D0
+              CALL POPREAL8(a2)
+              temp1 = mesh_surf(1, idx_node_yp1+1) - mesh_surf(1, 
+     +          idx_node_yp1)
+              temp0 = mesh_surf(3, idx_node_yp1+1) - mesh_surf(3, 
+     +          idx_node_yp1)
+              temp_diff0 = temp1*a2_diff/(temp0**2+temp1**2)
+              mesh_surf_diff(3, idx_node_yp1) = mesh_surf_diff(3, 
+     +          idx_node_yp1) + rv2_diff(3, idx_vor) - temp_diff0
+              rv2_diff(3, idx_vor) = 0.D0
+              temp_diff = -(temp0*a2_diff/(temp0**2+temp1**2))
+              mesh_surf_diff(1, idx_node_yp1) = mesh_surf_diff(1, 
+     +          idx_node_yp1) + rv2_diff(1, idx_vor) - temp_diff
+              rv2_diff(1, idx_vor) = 0.D0
+              mesh_surf_diff(1, idx_node_yp1+1) = mesh_surf_diff(1, 
+     +          idx_node_yp1+1) + temp_diff
+              mesh_surf_diff(3, idx_node_yp1+1) = mesh_surf_diff(3, 
+     +          idx_node_yp1+1) + temp_diff0
+            END IF
+            CALL POPREAL8(dc2)
+            temp1 = mesh_surf(3, idx_node_yp1+1) - mesh_surf(3, 
+     +        idx_node_yp1)
+            temp0 = mesh_surf(1, idx_node_yp1+1) - mesh_surf(1, 
+     +        idx_node_yp1)
+            IF (temp0**2 + temp1**2 .EQ. 0.D0) THEN
+              temp_diff1 = 0.D0
+            ELSE
+              temp_diff1 = dc2_diff/(2.0*SQRT(temp0**2+temp1**2))
+            END IF
+            temp_diff0 = 2*temp0*temp_diff1
+            temp_diff = 2*temp1*temp_diff1
+            mesh_surf_diff(3, idx_node_yp1+1) = mesh_surf_diff(3, 
+     +        idx_node_yp1+1) + temp_diff
+            mesh_surf_diff(3, idx_node_yp1) = mesh_surf_diff(3, 
+     +        idx_node_yp1) - temp_diff
+            mesh_surf_diff(1, idx_node_yp1+1) = mesh_surf_diff(1, 
+     +        idx_node_yp1+1) + temp_diff0
+            mesh_surf_diff(1, idx_node_yp1) = mesh_surf_diff(1, 
+     +        idx_node_yp1) - temp_diff0
+            CALL POPINTEGER4(idx_node_yp1)
+            CALL POPCONTROL1B(branch)
+            IF (branch .EQ. 0) THEN
+              dx1_diff = rv1_diff(1, idx_vor)
+              temp3 = mesh_surf(3, idx_node) - rle1(3, idx_strip)
+              temp2 = mesh_surf(1, idx_node) - rle1(1, idx_strip)
+              IF (temp2**2 + temp3**2 .EQ. 0.D0) THEN
+                temp_diff4 = 0.D0
+              ELSE
+                temp_diff4 = dx1_diff/(2.0*SQRT(temp2**2+temp3**2))
+              END IF
+              temp_diff2 = 2*temp2*temp_diff4
+              temp_diff3 = 2*temp3*temp_diff4
+              a1_diff = COS(a1)*dc1*rv1msh_diff(3, idx_vor)/4. - SIN(a1)
+     +          *dc1*rv1msh_diff(1, idx_vor)/4.
+              temp1 = mesh_surf(1, idx_node+1) - mesh_surf(1, idx_node)
+              temp0 = mesh_surf(3, idx_node+1) - mesh_surf(3, idx_node)
+              temp_diff0 = temp1*a1_diff/(temp0**2+temp1**2)
+              temp_diff = -(temp0*a1_diff/(temp0**2+temp1**2))
+              mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) 
+     +          + rv1msh_diff(3, idx_vor) + temp_diff3 - temp_diff0
+              dc1_diff = dc1_diff + SIN(a1)*rv1msh_diff(3, idx_vor)/4. +
+     +          COS(a1)*rv1msh_diff(1, idx_vor)/4. + rv1_diff(1, idx_vor
+     +          )/4.
+              rv1msh_diff(3, idx_vor) = 0.D0
+              mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) 
+     +          + rv1msh_diff(1, idx_vor) + temp_diff2 - temp_diff
+              rv1msh_diff(1, idx_vor) = 0.D0
+              mesh_surf_diff(2, idx_node) = mesh_surf_diff(2, idx_node) 
+     +          + rv1msh_diff(2, idx_vor)
+              rv1msh_diff(2, idx_vor) = 0.D0
+              CALL POPREAL8(a1)
+              mesh_surf_diff(1, idx_node+1) = mesh_surf_diff(1, idx_node
+     +          +1) + temp_diff
+              mesh_surf_diff(3, idx_node+1) = mesh_surf_diff(3, idx_node
+     +          +1) + temp_diff0
+              rle1_diff(1, idx_strip) = rle1_diff(1, idx_strip) + 
+     +          rv1_diff(1, idx_vor) - temp_diff2
+              rv1_diff(1, idx_vor) = 0.D0
+              rle1_diff(3, idx_strip) = rle1_diff(3, idx_strip) + 
+     +          rv1_diff(3, idx_vor) - temp_diff3
+              rv1_diff(3, idx_vor) = 0.D0
+              rle1_diff(2, idx_strip) = rle1_diff(2, idx_strip) + 
+     +          rv1_diff(2, idx_vor)
+              rv1_diff(2, idx_vor) = 0.D0
+            ELSE
+              rv1_diff(3, idx_vor) = rv1_diff(3, idx_vor) + rv1msh_diff(
+     +          3, idx_vor)
+              rv1msh_diff(3, idx_vor) = 0.D0
+              rv1_diff(1, idx_vor) = rv1_diff(1, idx_vor) + rv1msh_diff(
+     +          1, idx_vor)
+              rv1msh_diff(1, idx_vor) = 0.D0
+              rv1_diff(2, idx_vor) = rv1_diff(2, idx_vor) + rv1msh_diff(
+     +          2, idx_vor)
+              rv1msh_diff(2, idx_vor) = 0.D0
+              dc1_diff = dc1_diff + SIN(a1)*rv1_diff(3, idx_vor)/4. + 
+     +          COS(a1)*rv1_diff(1, idx_vor)/4.
+              a1_diff = COS(a1)*dc1*rv1_diff(3, idx_vor)/4. - SIN(a1)*
+     +          dc1*rv1_diff(1, idx_vor)/4.
+              mesh_surf_diff(2, idx_node) = mesh_surf_diff(2, idx_node) 
+     +          + rv1_diff(2, idx_vor)
+              rv1_diff(2, idx_vor) = 0.D0
+              CALL POPREAL8(a1)
+              temp1 = mesh_surf(1, idx_node+1) - mesh_surf(1, idx_node)
+              temp0 = mesh_surf(3, idx_node+1) - mesh_surf(3, idx_node)
+              temp_diff0 = temp1*a1_diff/(temp0**2+temp1**2)
+              mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) 
+     +          + rv1_diff(3, idx_vor) - temp_diff0
+              rv1_diff(3, idx_vor) = 0.D0
+              temp_diff = -(temp0*a1_diff/(temp0**2+temp1**2))
+              mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) 
+     +          + rv1_diff(1, idx_vor) - temp_diff
+              rv1_diff(1, idx_vor) = 0.D0
+              mesh_surf_diff(1, idx_node+1) = mesh_surf_diff(1, idx_node
+     +          +1) + temp_diff
+              mesh_surf_diff(3, idx_node+1) = mesh_surf_diff(3, idx_node
+     +          +1) + temp_diff0
+            END IF
+            CALL POPREAL8(dc1)
+            temp1 = mesh_surf(3, idx_node+1) - mesh_surf(3, idx_node)
+            temp0 = mesh_surf(1, idx_node+1) - mesh_surf(1, idx_node)
+            IF (temp0**2 + temp1**2 .EQ. 0.D0) THEN
+              temp_diff1 = 0.D0
+            ELSE
+              temp_diff1 = dc1_diff/(2.0*SQRT(temp0**2+temp1**2))
+            END IF
+            temp_diff0 = 2*temp0*temp_diff1
+            temp_diff = 2*temp1*temp_diff1
+            mesh_surf_diff(3, idx_node+1) = mesh_surf_diff(3, idx_node+1
+     +        ) + temp_diff
+            mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) - 
+     +        temp_diff
+            mesh_surf_diff(1, idx_node+1) = mesh_surf_diff(1, idx_node+1
+     +        ) + temp_diff0
+            mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) - 
+     +        temp_diff0
+            CALL POPINTEGER4(idx_node)
+          ENDDO
+          clafr = claf(iptr, isurf)
+          clafl = claf(iptl, isurf)
+          CALL POPREAL8(clafc)
+          temp_diff2 = (1.-fc)*clafc_diff/chord(idx_strip)
+          temp_diff3 = fc*clafc_diff/chord(idx_strip)
+          chordr_diff = chordr_diff + clafr*temp_diff3
+          clafr_diff = chordr*temp_diff3
+          chord_diff(idx_strip) = chord_diff(idx_strip) - chordr*clafr*
+     +      temp_diff3/chord(idx_strip) - chordl*clafl*temp_diff2/chord(
+     +      idx_strip)
+          chordl_diff = chordl_diff + clafl*temp_diff2
+          clafl_diff = chordl*temp_diff2
+          DO n=ncontrol,1,-1
+            CALL POPCONTROL1B(branch)
+            IF (branch .EQ. 0) THEN
+              vhz_diff = vhinge_diff(3, idx_strip, n)/vmod
+              vmod_diff = -(vhz*vhinge_diff(3, idx_strip, n)/vmod**2) - 
+     +          vhy*vhinge_diff(2, idx_strip, n)/vmod**2 - vhx*
+     +          vhinge_diff(1, idx_strip, n)/vmod**2
+              vhinge_diff(3, idx_strip, n) = 0.D0
+              vhy_diff = vhinge_diff(2, idx_strip, n)/vmod
+              vhinge_diff(2, idx_strip, n) = 0.D0
+              vhx_diff = vhinge_diff(1, idx_strip, n)/vmod
+              vhinge_diff(1, idx_strip, n) = 0.D0
+              CALL POPREAL8(vmod)
+              IF (vsq .EQ. 0.D0) THEN
+                vsq_diff = 0.D0
+              ELSE
+                vsq_diff = vmod_diff/(2.0*SQRT(vsq))
+              END IF
+              CALL POPCONTROL1B(branch)
+              IF (branch .EQ. 0) THEN
+                vhx_diff = vhx_diff + 2*vhx*vsq_diff
+                vhy_diff = vhy_diff + 2*vhy*vsq_diff
+                vhz_diff = vhz_diff + 2*vhz*vsq_diff
+                CALL POPREAL8(vhz)
+                xyzscal_diff(3, isurf) = xyzscal_diff(3, isurf) + vhz*
+     +            vhz_diff
+                vhz_diff = xyzscal(3, isurf)*vhz_diff
+                CALL POPREAL8(vhy)
+                xyzscal_diff(2, isurf) = xyzscal_diff(2, isurf) + vhy*
+     +            vhy_diff
+                vhy_diff = xyzscal(2, isurf)*vhy_diff
+                CALL POPREAL8(vhx)
+                xyzscal_diff(1, isurf) = xyzscal_diff(1, isurf) + vhx*
+     +            vhx_diff
+                vhx_diff = xyzscal(1, isurf)*vhx_diff
+                mesh_surf_diff(3, idx_noder) = mesh_surf_diff(3, 
+     +            idx_noder) + vhz_diff
+                mesh_surf_diff(3, idx_nodel) = mesh_surf_diff(3, 
+     +            idx_nodel) - vhz_diff
+                mesh_surf_diff(2, idx_noder) = mesh_surf_diff(2, 
+     +            idx_noder) + vhy_diff
+                mesh_surf_diff(2, idx_nodel) = mesh_surf_diff(2, 
+     +            idx_nodel) - vhy_diff
+                mesh_surf_diff(1, idx_noder) = mesh_surf_diff(1, 
+     +            idx_noder) + vhx_diff
+                abs0_diff = vhx_diff
+                mesh_surf_diff(1, idx_nodel) = mesh_surf_diff(1, 
+     +            idx_nodel) - vhx_diff
+                abs1_diff = -vhx_diff
+                vhy = vhinged(2, icl, iptl, isurf)*xyzscal(2, isurf)
+                vhz = vhinged(3, icl, iptl, isurf)*xyzscal(3, isurf)
+                vhx = vhinged(1, icl, iptl, isurf)*xyzscal(1, isurf)
+                CALL POPCONTROL1B(branch)
+                IF (branch .EQ. 0) THEN
+                  chordl_diff = chordl_diff + xhinged(icl, iptl, isurf)*
+     +              abs1_diff
+                ELSE
+                  chordl_diff = chordl_diff - xhinged(icl, iptl, isurf)*
+     +              abs1_diff
+                END IF
+                CALL POPCONTROL1B(branch)
+                IF (branch .EQ. 0) THEN
+                  chordr_diff = chordr_diff - xhinged(icr, iptr, isurf)*
+     +              abs0_diff
+                ELSE
+                  chordr_diff = chordr_diff + xhinged(icr, iptr, isurf)*
+     +              abs0_diff
+                END IF
+                vhx_diff = 0.D0
+                vhy_diff = 0.D0
+                vhz_diff = 0.D0
+                vsq_diff = 0.D0
+              END IF
+              CALL POPREAL8(vsq)
+              vhx_diff = vhx_diff + 2*vhx*vsq_diff
+              vhy_diff = vhy_diff + 2*vhy*vsq_diff
+              vhz_diff = vhz_diff + 2*vhz*vsq_diff
+              CALL POPREAL8(vhz)
+              xyzscal_diff(3, isurf) = xyzscal_diff(3, isurf) + vhinged(
+     +          3, icl, iptl, isurf)*vhz_diff
+              CALL POPREAL8(vhy)
+              xyzscal_diff(2, isurf) = xyzscal_diff(2, isurf) + vhinged(
+     +          2, icl, iptl, isurf)*vhy_diff
+              CALL POPREAL8(vhx)
+              xyzscal_diff(1, isurf) = xyzscal_diff(1, isurf) + vhinged(
+     +          1, icl, iptl, isurf)*vhx_diff
+              CALL POPCONTROL1B(branch)
+              IF (branch .EQ. 0) THEN
+                CALL POPREAL8(xted(n))
+                chord_diff(idx_strip) = chord_diff(idx_strip) + 
+     +            xted_diff(n)
+                xted_diff(n) = 0.D0
+                CALL POPREAL8(xled(n))
+                xhd_diff = xled_diff(n)
+                xled_diff(n) = 0.D0
+              ELSE
+                CALL POPREAL8(xted(n))
+                xhd_diff = -xted_diff(n)
+                xted_diff(n) = 0.D0
+                CALL POPREAL8(xled(n))
+                xled_diff(n) = 0.D0
+              END IF
+              chordl_diff = chordl_diff + (1.0-fc)*xhinged(icl, iptl, 
+     +          isurf)*xhd_diff
+              chordr_diff = chordr_diff + fc*xhinged(icr, iptr, isurf)*
+     +          xhd_diff
+              CALL POPREAL8(gainda(n))
+            ELSE
+              vhinge_diff(3, idx_strip, n) = 0.D0
+              vhinge_diff(2, idx_strip, n) = 0.D0
+              vhinge_diff(1, idx_strip, n) = 0.D0
+              CALL POPREAL8(xted(n))
+              xted_diff(n) = 0.D0
+              CALL POPREAL8(xled(n))
+              xled_diff(n) = 0.D0
+              CALL POPREAL8(gainda(n))
+            END IF
+            CALL POPINTEGER4(icr)
+            CALL POPINTEGER4(icl)
+          ENDDO
+          chsin_diff = 0.D0
+          chcos_diff = 0.D0
+          DO n=ndesign,1,-1
+            temp1 = chsin*chsin + chcos*chcos
+            temp_diff0 = ainc_g_diff(idx_strip, n)/temp1
+            ainc_g_diff(idx_strip, n) = 0.D0
+            chsin_g_diff = chcos*temp_diff0
+            chcos_g_diff = -(chsin*temp_diff0)
+            temp_diff = -((chcos*chsin_g-chsin*chcos_g)*temp_diff0/temp1
+     +        )
+            chcos_diff = chcos_diff + chsin_g*temp_diff0 + 2*chcos*
+     +        temp_diff
+            chsin_diff = chsin_diff + 2*chsin*temp_diff - chcos_g*
+     +        temp_diff0
+            CALL POPREAL8(chcos_g)
+            chcosl_g_diff(n) = chcosl_g_diff(n) + (1.0-fc)*chcos_g_diff
+            chcosr_g_diff(n) = chcosr_g_diff(n) + fc*chcos_g_diff
+            CALL POPREAL8(chsin_g)
+            chsinl_g_diff(n) = chsinl_g_diff(n) + (1.0-fc)*chsin_g_diff
+            chsinr_g_diff(n) = chsinr_g_diff(n) + fc*chsin_g_diff
+          ENDDO
+          chsin_diff = chsin_diff + chcos*ainc_diff(idx_strip)/(chsin**2
+     +      +chcos**2)
+          chcos_diff = chcos_diff - chsin*ainc_diff(idx_strip)/(chsin**2
+     +      +chcos**2)
+          ainc_diff(idx_strip) = 0.D0
+          CALL POPREAL8(chcos)
+          chcosl_diff = (1.0-fc)*chcos_diff
+          chcosr_diff = fc*chcos_diff
+          CALL POPREAL8(chsin)
+          chsinl_diff = (1.0-fc)*chsin_diff
+          chsinr_diff = fc*chsin_diff
+          CALL POPINTEGER4(idx_noder)
+          CALL POPINTEGER4(idx_nodel)
+          m2 = mesh_surf(2, idx_node_yp1) - mesh_surf(2, idx_node)
+          m3 = mesh_surf(3, idx_node_yp1) - mesh_surf(3, idx_node)
+          IF (m2**2 + m3**2 .EQ. 0.D0) THEN
+            temp_diff = 0.D0
+          ELSE
+            temp_diff = wstrip_diff(idx_strip)/(2.0*SQRT(m2**2+m3**2))
+          END IF
+          wstrip_diff(idx_strip) = 0.D0
+          m2_diff = 2*m2*temp_diff
+          m3_diff = 2*m3*temp_diff
+          mesh_surf_diff(3, idx_node_yp1) = mesh_surf_diff(3, 
+     +      idx_node_yp1) + m3_diff
+          mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) - 
+     +      m3_diff
+          mesh_surf_diff(2, idx_node_yp1) = mesh_surf_diff(2, 
+     +      idx_node_yp1) + m2_diff
+          mesh_surf_diff(2, idx_node) = mesh_surf_diff(2, idx_node) - 
+     +      m2_diff
+          CALL POPREAL8(chord(idx_strip))
+          chord1_diff(idx_strip) = chord1_diff(idx_strip) + chord_diff(
+     +      idx_strip)/2.
+          chord2_diff(idx_strip) = chord2_diff(idx_strip) + chord_diff(
+     +      idx_strip)/2.
+          chord_diff(idx_strip) = 0.D0
+          DO idx_dim=3,1,-1
+            CALL POPREAL8(rle(idx_dim, idx_strip))
+            rle1_diff(idx_dim, idx_strip) = rle1_diff(idx_dim, idx_strip
+     +        ) + rle_diff(idx_dim, idx_strip)/2.
+            rle2_diff(idx_dim, idx_strip) = rle2_diff(idx_dim, idx_strip
+     +        ) + rle_diff(idx_dim, idx_strip)/2.
+            rle_diff(idx_dim, idx_strip) = 0.D0
+          ENDDO
+          temp1 = mesh_surf(3, idx_node_nx_yp1) - mesh_surf(3, 
+     +      idx_node_yp1)
+          temp0 = mesh_surf(1, idx_node_nx_yp1) - mesh_surf(1, 
+     +      idx_node_yp1)
+          IF (temp0**2 + temp1**2 .EQ. 0.D0) THEN
+            temp_diff1 = 0.D0
+          ELSE
+            temp_diff1 = chord2_diff(idx_strip)/(2.0*SQRT(temp0**2+temp1
+     +        **2))
+          END IF
+          chord2_diff(idx_strip) = 0.D0
+          temp_diff0 = 2*temp0*temp_diff1
+          temp_diff = 2*temp1*temp_diff1
+          mesh_surf_diff(3, idx_node_nx_yp1) = mesh_surf_diff(3, 
+     +      idx_node_nx_yp1) + temp_diff
+          mesh_surf_diff(3, idx_node_yp1) = mesh_surf_diff(3, 
+     +      idx_node_yp1) - temp_diff
+          mesh_surf_diff(1, idx_node_nx_yp1) = mesh_surf_diff(1, 
+     +      idx_node_nx_yp1) + temp_diff0
+          mesh_surf_diff(1, idx_node_yp1) = mesh_surf_diff(1, 
+     +      idx_node_yp1) - temp_diff0
+          DO idx_dim=3,1,-1
+            CALL POPREAL8(rle2(idx_dim, idx_strip))
+            mesh_surf_diff(idx_dim, idx_node_yp1) = mesh_surf_diff(
+     +        idx_dim, idx_node_yp1) + rle2_diff(idx_dim, idx_strip)
+            rle2_diff(idx_dim, idx_strip) = 0.D0
+          ENDDO
+          CALL POPINTEGER4(idx_node_nx_yp1)
+          CALL POPINTEGER4(idx_node_yp1)
+          temp1 = mesh_surf(3, idx_node_nx) - mesh_surf(3, idx_node)
+          temp0 = mesh_surf(1, idx_node_nx) - mesh_surf(1, idx_node)
+          IF (temp0**2 + temp1**2 .EQ. 0.D0) THEN
+            temp_diff1 = 0.D0
+          ELSE
+            temp_diff1 = chord1_diff(idx_strip)/(2.0*SQRT(temp0**2+temp1
+     +        **2))
+          END IF
+          chord1_diff(idx_strip) = 0.D0
+          temp_diff0 = 2*temp0*temp_diff1
+          temp_diff = 2*temp1*temp_diff1
+          mesh_surf_diff(3, idx_node_nx) = mesh_surf_diff(3, idx_node_nx
+     +      ) + temp_diff
+          mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) - 
+     +      temp_diff
+          mesh_surf_diff(1, idx_node_nx) = mesh_surf_diff(1, idx_node_nx
+     +      ) + temp_diff0
+          mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) - 
+     +      temp_diff0
+          DO idx_dim=3,1,-1
+            CALL POPREAL8(rle1(idx_dim, idx_strip))
+            mesh_surf_diff(idx_dim, idx_node) = mesh_surf_diff(idx_dim, 
+     +        idx_node) + rle1_diff(idx_dim, idx_strip)
+            rle1_diff(idx_dim, idx_strip) = 0.D0
+          ENDDO
+          CALL POPINTEGER4(idx_node_nx)
+          CALL POPINTEGER4(idx_node)
+          DO n=ndesign,1,-1
+            CALL POPINTEGER4(ad_to4)
+            DO isdes=ad_to4,1,-1
+              CALL POPCONTROL1B(branch)
+              IF (branch .NE. 0) THEN
+                chsinr_diff = chsinr_diff - dtr*gaing(isdes, iptr, isurf
+     +            )*chcosr_g_diff(n)
+                chcosr_g_diff(n) = 0.D0
+                chcosr_diff = chcosr_diff + dtr*gaing(isdes, iptr, isurf
+     +            )*chsinr_g_diff(n)
+                chsinr_g_diff(n) = 0.D0
+              END IF
+            ENDDO
+            CALL POPINTEGER4(ad_to3)
+            DO isdes=ad_to3,1,-1
+              CALL POPCONTROL1B(branch)
+              IF (branch .NE. 0) THEN
+                chsinl_diff = chsinl_diff - dtr*gaing(isdes, iptl, isurf
+     +            )*chcosl_g_diff(n)
+                chcosl_g_diff(n) = 0.D0
+                chcosl_diff = chcosl_diff + dtr*gaing(isdes, iptl, isurf
+     +            )*chsinl_g_diff(n)
+                chsinl_g_diff(n) = 0.D0
+              END IF
+            ENDDO
+            chcosr_g_diff(n) = 0.D0
+            chcosl_g_diff(n) = 0.D0
+            chsinr_g_diff(n) = 0.D0
+            chsinl_g_diff(n) = 0.D0
+          ENDDO
+          DO n=ncontrol,1,-1
+            CALL POPINTEGER4(ad_to2)
+            DO iscon=ad_to2,1,-1
+              CALL POPCONTROL1B(branch)
+            ENDDO
+            CALL POPINTEGER4(ad_to1)
+            DO iscon=ad_to1,1,-1
+              CALL POPCONTROL1B(branch)
+            ENDDO
+          ENDDO
+          aincr = aincs(iptr, isurf)*dtr + addinc(isurf)*dtr
+          chordr_diff = chordr_diff + COS(aincr)*chcosr_diff + SIN(aincr
+     +      )*chsinr_diff
+          aincr_diff = COS(aincr)*chordr*chsinr_diff - SIN(aincr)*chordr
+     +      *chcosr_diff
+          aincl = aincs(iptl, isurf)*dtr + addinc(isurf)*dtr
+          chordl_diff = chordl_diff + COS(aincl)*chcosl_diff + SIN(aincl
+     +      )*chsinl_diff
+          aincl_diff = COS(aincl)*chordl*chsinl_diff - SIN(aincl)*chordl
+     +      *chcosl_diff
+          aincs_diff(iptr, isurf) = aincs_diff(iptr, isurf) + dtr*
+     +      aincr_diff
+          addinc_diff(isurf) = addinc_diff(isurf) + dtr*aincr_diff + dtr
+     +      *aincl_diff
+          aincs_diff(iptl, isurf) = aincs_diff(iptl, isurf) + dtr*
+     +      aincl_diff
+          claf_diff(iptr, isurf) = claf_diff(iptr, isurf) + clafr_diff
+          claf_diff(iptl, isurf) = claf_diff(iptl, isurf) + clafl_diff
+          CALL POPREAL8(chordr)
+          temp1 = mesh_surf(3, idx_node_nx) - mesh_surf(3, idx_node)
+          temp0 = mesh_surf(1, idx_node_nx) - mesh_surf(1, idx_node)
+          IF (temp0**2 + temp1**2 .EQ. 0.D0) THEN
+            temp_diff1 = 0.D0
+          ELSE
+            temp_diff1 = chordr_diff/(2.0*SQRT(temp0**2+temp1**2))
+          END IF
+          temp_diff0 = 2*temp0*temp_diff1
+          temp_diff = 2*temp1*temp_diff1
+          mesh_surf_diff(3, idx_node_nx) = mesh_surf_diff(3, idx_node_nx
+     +      ) + temp_diff
+          mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) - 
+     +      temp_diff
+          mesh_surf_diff(1, idx_node_nx) = mesh_surf_diff(1, idx_node_nx
+     +      ) + temp_diff0
+          mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) - 
+     +      temp_diff0
+          CALL POPINTEGER4(idx_node_nx)
+          CALL POPINTEGER4(idx_node)
+          CALL POPREAL8(chordl)
+          temp = mesh_surf(3, idx_node_nx) - mesh_surf(3, idx_node)
+          temp0 = mesh_surf(1, idx_node_nx) - mesh_surf(1, idx_node)
+          IF (temp0**2 + temp**2 .EQ. 0.D0) THEN
+            temp_diff = 0.D0
+          ELSE
+            temp_diff = chordl_diff/(2.0*SQRT(temp0**2+temp**2))
+          END IF
+          temp_diff0 = 2*temp0*temp_diff
+          temp_diff1 = 2*temp*temp_diff
+          mesh_surf_diff(3, idx_node_nx) = mesh_surf_diff(3, idx_node_nx
+     +      ) + temp_diff1
+          mesh_surf_diff(3, idx_node) = mesh_surf_diff(3, idx_node) - 
+     +      temp_diff1
+          mesh_surf_diff(1, idx_node_nx) = mesh_surf_diff(1, idx_node_nx
+     +      ) + temp_diff0
+          mesh_surf_diff(1, idx_node) = mesh_surf_diff(1, idx_node) - 
+     +      temp_diff0
+          CALL POPINTEGER4(idx_node_nx)
+          CALL POPINTEGER4(idx_node)
+          CALL POPINTEGER4(iptr)
+          CALL POPINTEGER4(iptl)
+          CALL POPINTEGER4(idx_y)
+        ENDDO
+        CALL POPINTEGER4(ad_to0)
+        DO idx_y=ad_to0,1,-1
+          CALL POPINTEGER4(ad_to)
+          DO idx_x=ad_to,1,-1
+            DO idx_dim=3,1,-1
+              CALL POPREAL8(mesh_surf(idx_dim, idx_node))
+              xyzscal_diff(idx_dim, isurf) = xyzscal_diff(idx_dim, isurf
+     +          ) + mesh_surf(idx_dim, idx_node)*mesh_surf_diff(idx_dim
+     +          , idx_node)
+              xyztran_diff(idx_dim, isurf) = xyztran_diff(idx_dim, isurf
+     +          ) + mesh_surf_diff(idx_dim, idx_node)
+              mesh_surf_diff(idx_dim, idx_node) = xyzscal(idx_dim, isurf
+     +          )*mesh_surf_diff(idx_dim, idx_node)
+              CALL POPINTEGER4(idx_node)
+            ENDDO
+          ENDDO
+        ENDDO
+        mshblk_diff(:, mfrst(isurf):mfrst(isurf)+nx*ny-1) = mshblk_diff(
+     +    :, mfrst(isurf):mfrst(isurf)+nx*ny-1) + mesh_surf_diff
+      END IF
+      END
+
 C  Differentiation of sdupl in reverse (adjoint) mode (with options i4 dr8 r8):
-C   gradient     of useful results: rle chord rle1 chord1 rle2
-C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc dxv chordv
-C                slopev slopec dcontrol vhinge
-C   with respect to varying inputs: rle chord rle1 chord1 rle2
-C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc dxv chordv
-C                slopev slopec dcontrol vhinge
+C   gradient     of useful results: rv1msh rv2msh rvmsh rcmsh rle
+C                chord rle1 chord1 rle2 chord2 wstrip ainc ainc_g
+C                rv1 rv2 rv rc dxv chordv slopev slopec dcontrol
+C                vhinge
+C   with respect to varying inputs: rv1msh rv2msh rvmsh rcmsh rle
+C                chord rle1 chord1 rle2 chord2 wstrip ainc ainc_g
+C                rv1 rv2 rv rc dxv chordv slopev slopec dcontrol
+C                vhinge
 C
       SUBROUTINE SDUPL_B(nn, ypt, msg)
       INCLUDE 'AVL.INC'
@@ -2201,45 +3981,59 @@ C
       REAL(kind=avl_real) tmp4
       REAL(kind=avl_real) tmp_diff2
       REAL(kind=avl_real) tmp5
-      REAL(kind=avl_real) tmp_diff3
       REAL(kind=avl_real) tmp6
+      REAL(kind=avl_real) tmp_diff3
       REAL(kind=avl_real) tmp7
-      REAL(kind=avl_real) tmp_diff4
       REAL(kind=avl_real) tmp8
-      REAL(kind=avl_real) tmp_diff5
+      REAL(kind=avl_real) tmp_diff4
       REAL(kind=avl_real) tmp9
+      REAL(kind=avl_real) tmp_diff5
       REAL(kind=avl_real) tmp10
-      REAL(kind=avl_real) tmp_diff6
       REAL(kind=avl_real) tmp11
-      REAL(kind=avl_real) tmp_diff7
+      REAL(kind=avl_real) tmp_diff6
       REAL(kind=avl_real) tmp12
-      REAL(kind=avl_real) tmp_diff8
+      REAL(kind=avl_real) tmp_diff7
       REAL(kind=avl_real) tmp13
+      REAL(kind=avl_real) tmp_diff8
       REAL(kind=avl_real) tmp14
       REAL(kind=avl_real) tmp15
       REAL(kind=avl_real) tmp16
       REAL(kind=avl_real) tmp17
-      REAL(kind=avl_real) tmp_diff9
       REAL(kind=avl_real) tmp18
-      REAL(kind=avl_real) tmp_diff10
+      REAL(kind=avl_real) tmp_diff9
       REAL(kind=avl_real) tmp19
-      REAL(kind=avl_real) tmp_diff11
+      REAL(kind=avl_real) tmp_diff10
       REAL(kind=avl_real) tmp20
-      REAL(kind=avl_real) tmp_diff12
+      REAL(kind=avl_real) tmp_diff11
       REAL(kind=avl_real) tmp21
-      REAL(kind=avl_real) tmp_diff13
+      REAL(kind=avl_real) tmp_diff12
       REAL(kind=avl_real) tmp22
-      REAL(kind=avl_real) tmp_diff14
+      REAL(kind=avl_real) tmp_diff13
       REAL(kind=avl_real) tmp23
-      REAL(kind=avl_real) tmp_diff15
+      REAL(kind=avl_real) tmp_diff14
       REAL(kind=avl_real) tmp24
-      REAL(kind=avl_real) tmp_diff16
+      REAL(kind=avl_real) tmp_diff15
       REAL(kind=avl_real) tmp25
-      REAL(kind=avl_real) tmp_diff17
+      REAL(kind=avl_real) tmp_diff16
       REAL(kind=avl_real) tmp26
-      REAL(kind=avl_real) tmp_diff18
+      REAL(kind=avl_real) tmp_diff17
       REAL(kind=avl_real) tmp27
+      REAL(kind=avl_real) tmp28
+      REAL(kind=avl_real) tmp_diff18
+      REAL(kind=avl_real) tmp29
       REAL(kind=avl_real) tmp_diff19
+      REAL(kind=avl_real) tmp30
+      REAL(kind=avl_real) tmp_diff20
+      REAL(kind=avl_real) tmp31
+      REAL(kind=avl_real) tmp_diff21
+      REAL(kind=avl_real) tmp32
+      REAL(kind=avl_real) tmp_diff22
+      REAL(kind=avl_real) tmp33
+      REAL(kind=avl_real) tmp_diff23
+      REAL(kind=avl_real) tmp34
+      REAL(kind=avl_real) tmp_diff24
+      REAL(kind=avl_real) tmp35
+      REAL(kind=avl_real) tmp_diff25
       INTEGER ad_count
       INTEGER i
       INTEGER branch
@@ -2283,10 +4077,11 @@ C---- duplicate surface is assumed to be the same logical component surface
 C
 C---- same various logical flags
 C IFRST(NNI) = NVOR   + 1
+ 110    lsurfmsh(nni) = lsurfmsh(nn)
 C
 C---- accumulate stuff for new image surface 
 C JFRST(NNI) = NSTRIP + 1
- 110    jfrst(nni) = jfrst(nni-1) + nj(nni-1)
+        jfrst(nni) = jfrst(nni-1) + nj(nni-1)
         nj(nni) = nj(nn)
         nk(nni) = nk(nn)
 C
@@ -2324,8 +4119,8 @@ C
             CALL PUSHINTEGER4(n - 1)
 C
             DO n=1,ncontrol
-              tmp9 = vrefl(jj, n)
-              vrefl(jji, n) = tmp9
+              tmp10 = vrefl(jj, n)
+              vrefl(jji, n) = tmp10
 C
 C
             ENDDO
@@ -2351,6 +4146,12 @@ C
                 iii = ijfrst(jji) + ivc - 1
                 CALL PUSHINTEGER4(ii)
                 ii = ijfrst(jj) + ivc - 1
+C Duplicate mesh data if we are using a mesh
+                IF (lsurfmsh(nn)) THEN
+                  CALL PUSHCONTROL1B(1)
+                ELSE
+                  CALL PUSHCONTROL1B(0)
+                END IF
 C
                 DO n=1,ncontrol
 Ccc         RSGN = SIGN( 1.0 , VREFL(JJ,N) )
@@ -2385,6 +4186,26 @@ C
             IF (i0 .EQ. 1) THEN
               CALL POPCONTROL1B(branch)
               IF (branch .NE. 0) THEN
+                DO ii1=1,nvor
+                  DO ii2=1,3
+                    rv1msh_diff(ii2, ii1) = 0.D0
+                  ENDDO
+                ENDDO
+                DO ii1=1,nvor
+                  DO ii2=1,3
+                    rv2msh_diff(ii2, ii1) = 0.D0
+                  ENDDO
+                ENDDO
+                DO ii1=1,nvor
+                  DO ii2=1,3
+                    rvmsh_diff(ii2, ii1) = 0.D0
+                  ENDDO
+                ENDDO
+                DO ii1=1,nvor
+                  DO ii2=1,3
+                    rcmsh_diff(ii2, ii1) = 0.D0
+                  ENDDO
+                ENDDO
                 DO ii1=1,NSTRIP
                   DO ii2=1,3
                     rle_diff(ii2, ii1) = 0.D0
@@ -2468,12 +4289,51 @@ C
             ELSE
               CALL POPINTEGER4(ad_to1)
               DO n=ad_to1,1,-1
-                tmp_diff19 = dcontrol_diff(iii, n)
+                tmp_diff25 = dcontrol_diff(iii, n)
                 dcontrol_diff(iii, n) = 0.D0
                 dcontrol_diff(ii, n) = dcontrol_diff(ii, n) - rsgn*
-     +            tmp_diff19
+     +            tmp_diff25
                 CALL POPREAL8(rsgn)
               ENDDO
+              CALL POPCONTROL1B(branch)
+              IF (branch .NE. 0) THEN
+                tmp_diff24 = rcmsh_diff(3, iii)
+                rcmsh_diff(3, iii) = 0.D0
+                rcmsh_diff(3, ii) = rcmsh_diff(3, ii) + tmp_diff24
+                tmp_diff23 = rcmsh_diff(2, iii)
+                rcmsh_diff(2, iii) = 0.D0
+                rcmsh_diff(2, ii) = rcmsh_diff(2, ii) - tmp_diff23
+                tmp_diff22 = rcmsh_diff(1, iii)
+                rcmsh_diff(1, iii) = 0.D0
+                rcmsh_diff(1, ii) = rcmsh_diff(1, ii) + tmp_diff22
+                tmp_diff21 = rvmsh_diff(3, iii)
+                rvmsh_diff(3, iii) = 0.D0
+                rvmsh_diff(3, ii) = rvmsh_diff(3, ii) + tmp_diff21
+                tmp_diff20 = rvmsh_diff(2, iii)
+                rvmsh_diff(2, iii) = 0.D0
+                rvmsh_diff(2, ii) = rvmsh_diff(2, ii) - tmp_diff20
+                tmp_diff19 = rvmsh_diff(1, iii)
+                rvmsh_diff(1, iii) = 0.D0
+                rvmsh_diff(1, ii) = rvmsh_diff(1, ii) + tmp_diff19
+                rv1msh_diff(3, ii) = rv1msh_diff(3, ii) + rv2msh_diff(3
+     +            , iii)
+                rv2msh_diff(3, iii) = 0.D0
+                rv1msh_diff(2, ii) = rv1msh_diff(2, ii) - rv2msh_diff(2
+     +            , iii)
+                rv2msh_diff(2, iii) = 0.D0
+                rv1msh_diff(1, ii) = rv1msh_diff(1, ii) + rv2msh_diff(1
+     +            , iii)
+                rv2msh_diff(1, iii) = 0.D0
+                rv2msh_diff(3, ii) = rv2msh_diff(3, ii) + rv1msh_diff(3
+     +            , iii)
+                rv1msh_diff(3, iii) = 0.D0
+                rv2msh_diff(2, ii) = rv2msh_diff(2, ii) - rv1msh_diff(2
+     +            , iii)
+                rv1msh_diff(2, iii) = 0.D0
+                rv2msh_diff(1, ii) = rv2msh_diff(1, ii) + rv1msh_diff(1
+     +            , iii)
+                rv1msh_diff(1, iii) = 0.D0
+              END IF
               tmp_diff18 = chordv_diff(iii)
               chordv_diff(iii) = 0.D0
               chordv_diff(ii) = chordv_diff(ii) + tmp_diff18
@@ -2591,14 +4451,16 @@ C
 C  Differentiation of encalc in reverse (adjoint) mode (with options i4 dr8 r8):
 C   gradient     of useful results: ess ensy ensz xsref ysref zsref
 C                rv1 rv2 rv enc env enc_d
-C   with respect to varying inputs: ess ensy ensz xsref ysref zsref
-C                ainc ainc_g rv1 rv2 rv slopev slopec dcontrol
-C                vhinge enc env enc_d
+C   with respect to varying inputs: rv1msh rv2msh rvmsh rcmsh ess
+C                ensy ensz xsref ysref zsref ainc ainc_g rv1 rv2
+C                rv slopev slopec dcontrol vhinge enc env enc_d
 C BDUPL
 C
 C
 C
 C
+C Also checks if surface has been assigned a point cloud mesh
+C and uses the real mesh to compute normals if it is
       SUBROUTINE ENCALC_B()
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
@@ -2607,6 +4469,8 @@ C
       REAL ep_diff(3), eq_diff(3), es_diff(3), eb_diff(3), ec_diff(3), 
      +     ecxb_diff(3)
       REAL ec_g(3, ndmax), ecxb_g(3)
+      REAL(kind=avl_real) dchstrip, dxt, dyt, dzt, ec_msh(3)
+      REAL(kind=avl_real) dxt_diff, dyt_diff, dzt_diff, ec_msh_diff(3)
       INTEGER j
       INTEGER i
       REAL dxle
@@ -2633,12 +4497,6 @@ C
       REAL ayte_diff
       REAL azte
       REAL azte_diff
-      REAL dxt
-      REAL dxt_diff
-      REAL dyt
-      REAL dyt_diff
-      REAL dzt
-      REAL dzt_diff
       INTRINSIC SQRT
       INTEGER nv
       INTEGER ii
@@ -2668,10 +4526,18 @@ C
       REAL endot
       REAL endot_diff
       REAL DOT
-      REAL temp
-      REAL temp0
-      REAL temp_diff
-      REAL temp_diff0
+      REAL(kind=avl_real) temp
+      REAL(kind=avl_real) temp0
+      REAL(kind=avl_real) temp_diff
+      REAL(kind=avl_real) temp_diff0
+      REAL temp_diff1
+      REAL(kind=avl_real) temp1
+      REAL(kind=avl_real) temp_diff2
+      REAL(kind=avl_real) temp_diff3
+      REAL(kind=8) temp_diff4
+      REAL temp_diff5
+      INTEGER ad_count
+      INTEGER i0
       INTEGER branch
       INTEGER ad_to
       INTEGER ii1
@@ -2680,38 +4546,87 @@ C
 C
 C...Calculate the normal vector at control points and bound vortex midpoints
 C
+C Since we cannot seperate the encalc routine for direct mesh assignment we have to make it a branch here
       DO j=1,nstrip
 C
+        IF (lsurfmsh(lssurf(j))) THEN
+C Calculate normal vector for the strip (normal to X axis)
+C we can't just interpolate this anymore given that 
+C the strip is no longer necessarily linear chordwise
+C We want the spanwise unit vector for the strip at the 
+C chordwise location specified by SAXFR (usually set to 0.25)
+C Loop over all panels in the strip until we find the one that contains
+C the SAXFR position in it's projected chord. Since the panels themselves are still linear
+C we can just use the bound vortex unit vector of that panel as 
+C the spanwise unit vector of the strip at SAXFR
+C SAB: This is slow, find a better way to do this
+C
+C
+C
+          dchstrip = 0.0
+          CALL PUSHINTEGER4(i)
+          ad_count = 1
+C compute the spanwise unit vector for Vperp def
+      searchsaxfr:DO i=ijfrst(j),ijfrst(j)+(nvstrp(j)-1)
+            dchstrip = dchstrip + dxstrpv(i)
+            IF (dchstrip .GE. chord(j)*saxfr) THEN
+              GOTO 100
+            ELSE
+              CALL PUSHINTEGER4(i)
+              ad_count = ad_count + 1
+            END IF
+          ENDDO searchsaxfr
+          CALL PUSHCONTROL1B(0)
+          CALL PUSHINTEGER4(ad_count)
+          GOTO 110
+ 100      CALL PUSHCONTROL1B(1)
+          CALL PUSHINTEGER4(ad_count)
+C
+C
+ 110      CALL PUSHREAL8(dxt)
+          dxt = rv2msh(1, i) - rv1msh(1, i)
+          CALL PUSHREAL8(dyt)
+          dyt = rv2msh(2, i) - rv1msh(2, i)
+          CALL PUSHREAL8(dzt)
+          dzt = rv2msh(3, i) - rv1msh(3, i)
+C
+          CALL PUSHCONTROL1B(0)
+        ELSE
+C original encalc routine for standard AVL geometry
+C
 C...Calculate normal vector for the strip (normal to X axis)
-        CALL PUSHINTEGER4(i)
-        i = ijfrst(j)
-        dxle = rv2(1, i) - rv1(1, i)
-        dyle = rv2(2, i) - rv1(2, i)
-        dzle = rv2(3, i) - rv1(3, i)
+          CALL PUSHINTEGER4(i)
+          i = ijfrst(j)
+          dxle = rv2(1, i) - rv1(1, i)
+          dyle = rv2(2, i) - rv1(2, i)
+          dzle = rv2(3, i) - rv1(3, i)
 C       AXLE = (RV2(1,I)+RV1(1,I))*0.5
 C       AYLE = (RV2(2,I)+RV1(2,I))*0.5
 C       AZLE = (RV2(3,I)+RV1(3,I))*0.5
 C
-        i = ijfrst(j) + (nvstrp(j)-1)
-        dxte = rv2(1, i) - rv1(1, i)
-        dyte = rv2(2, i) - rv1(2, i)
-        dzte = rv2(3, i) - rv1(3, i)
+          i = ijfrst(j) + (nvstrp(j)-1)
+          dxte = rv2(1, i) - rv1(1, i)
+          dyte = rv2(2, i) - rv1(2, i)
+          dzte = rv2(3, i) - rv1(3, i)
 C       AXTE = (RV2(1,I)+RV1(1,I))*0.5
 C       AYTE = (RV2(2,I)+RV1(2,I))*0.5
 C       AZTE = (RV2(3,I)+RV1(3,I))*0.5
 C
-        CALL PUSHREAL8(dxt)
-        dxt = (1.0-saxfr)*dxle + saxfr*dxte
-        CALL PUSHREAL8(dyt)
-        dyt = (1.0-saxfr)*dyle + saxfr*dyte
-        CALL PUSHREAL8(dzt)
-        dzt = (1.0-saxfr)*dzle + saxfr*dzte
+          CALL PUSHREAL8(dxt)
+          dxt = (1.0-saxfr)*dxle + saxfr*dxte
+          CALL PUSHREAL8(dyt)
+          dyt = (1.0-saxfr)*dyle + saxfr*dyte
+          CALL PUSHREAL8(dzt)
+          dzt = (1.0-saxfr)*dzle + saxfr*dzte
 C
+          CALL PUSHCONTROL1B(1)
+        END IF
+C
+C
+C Treffz plane normals
 C
         ensy(j) = -(dzt/SQRT(dyt*dyt+dzt*dzt))
         ensz(j) = dyt/SQRT(dyt*dyt+dzt*dzt)
-C
-C
 C
         CALL PUSHREAL8(es(1))
         es(1) = 0.
@@ -2727,17 +4642,39 @@ C
           CALL PUSHINTEGER4(i)
           i = ijfrst(j) + (ii-1)
 C
+          IF (lsurfmsh(lssurf(j))) THEN
+C Define unit vector along bound leg
+C right h.v. pt - left h.v. pt 
+            CALL PUSHREAL8(dxb)
+            dxb = rv2msh(1, i) - rv1msh(1, i)
+            CALL PUSHREAL8(dyb)
+            dyb = rv2msh(2, i) - rv1msh(2, i)
+            CALL PUSHREAL8(dzb)
+            dzb = rv2msh(3, i) - rv1msh(3, i)
+            CALL PUSHCONTROL1B(0)
+          ELSE
+C
 C...Define unit vector along bound leg
 C right h.v. pt - left h.v. pt 
-          dxb = rv2(1, i) - rv1(1, i)
-          dyb = rv2(2, i) - rv1(2, i)
-          dzb = rv2(3, i) - rv1(3, i)
+            CALL PUSHREAL8(dxb)
+            dxb = rv2(1, i) - rv1(1, i)
+            CALL PUSHREAL8(dyb)
+            dyb = rv2(2, i) - rv1(2, i)
+            CALL PUSHREAL8(dzb)
+            dzb = rv2(3, i) - rv1(3, i)
+            CALL PUSHCONTROL1B(1)
+          END IF
           CALL PUSHREAL8(emag)
           emag = SQRT(dxb**2 + dyb**2 + dzb**2)
           CALL PUSHREAL8(eb(1))
           eb(1) = dxb/emag
           CALL PUSHREAL8(eb(2))
           eb(2) = dyb/emag
+C First start by combining the contributions to the panel 
+C incidence from AVL incidence and camberline slope variables
+C these are not actual geometric transformations of the mesh
+C but rather further modifications to the chordwise vector that 
+C will get used to compute normals
           CALL PUSHREAL8(eb(3))
           eb(3) = dzb/emag
 C
@@ -2755,20 +4692,75 @@ Cc          ENDIF
 C
           CALL PUSHREAL8(sinc)
           sinc = SIN(ang)
+          CALL PUSHREAL8(cosc)
           cosc = COS(ang)
-          CALL PUSHREAL8(ec(1))
-          ec(1) = cosc
-          CALL PUSHREAL8(ec(2))
-          ec(2) = -(sinc*es(2))
-C     EC  = rotation of strip normal vector? or along chord?
-          CALL PUSHREAL8(ec(3))
-          ec(3) = -(sinc*es(3))
+C
+          IF (lsurfmsh(lssurf(j))) THEN
+C direct mesh assignemnt branch
+C now we compute the chordwise panel vector
+C note that panel`s chordwise vector has contributions
+C from both the geometry itself and the incidence modification
+C from the AVL AINC and camber slope variables
+C Get the geometric chordwise vector using RVMSH and RCMSH which should
+C be located in the same plane given that each individual panel is a 
+C plane
+C
+C
+            CALL PUSHREAL8(emag)
+            emag = SQRT((rcmsh(1, i)-rvmsh(1, i))**2 + (rcmsh(2, i)-
+     +        rvmsh(2, i))**2 + (rcmsh(3, i)-rvmsh(3, i))**2)
+            CALL PUSHREAL8(ec_msh(1))
+            ec_msh(1) = (rcmsh(1, i)-rvmsh(1, i))/emag
+            CALL PUSHREAL8(ec_msh(2))
+            ec_msh(2) = (rcmsh(2, i)-rvmsh(2, i))/emag
+C Now we have to rotate this vector by the incidence contribution from AINC and CAMBER
+C However, this rotation needs to be done about the local y-axis of the wing 
+C Earlier we computed ES the normal vector of the strip projected to the Trefftz plane
+C The axis we need to rotate about is the one purpendicular to this ES.
+C As a result all panel normals in a given strip will be rotated about the same axis defined by the that strip
+C The components of the rotation axis are obtained from ES as follows
+C rot_axis(1) = 0
+C rot_axis(2) = -ES(3)
+C rot_axis(3) = ES(2)
+C We can then multiply ec_msh by the rotation matrix for a rotation about an arbitrary axis
+C see https://pubs.aip.org/aapt/ajp/article/44/1/63/1050167/Formalism-for-the-rotation-matrix-of-rotations
+C Note that standard AVL also does this exact same thing but since they always rotate the vector [1,0,0]
+C the result collapses into the ridiculously simple expression for EC that you see in the other branch
+            CALL PUSHREAL8(ec_msh(3))
+            ec_msh(3) = (rcmsh(3, i)-rvmsh(3, i))/emag
+C
+C
+            CALL PUSHREAL8(ec(1))
+            ec(1) = cosc*ec_msh(1) + es(2)*sinc*ec_msh(2) + es(3)*sinc*
+     +        ec_msh(3)
+            CALL PUSHREAL8(ec(2))
+            ec(2) = -(es(2)*sinc) + (es(3)**2*(1-cosc)+cosc)*ec_msh(2) -
+     +        es(2)*es(3)*(1-cosc)*ec_msh(3)
+            CALL PUSHREAL8(ec(3))
+            ec(3) = -(es(3)*sinc*ec_msh(1)) - es(2)*es(3)*(1-cosc)*
+     +        ec_msh(2) + (es(2)**2*(1-cosc)+cosc)*ec_msh(3)
+C
+            CALL PUSHCONTROL1B(1)
+          ELSE
+            CALL PUSHREAL8(ec(1))
+            ec(1) = cosc
+            CALL PUSHREAL8(ec(2))
+            ec(2) = -(sinc*es(2))
+            CALL PUSHREAL8(ec(3))
+            ec(3) = -(sinc*es(3))
+            CALL PUSHCONTROL1B(0)
+          END IF
 C
 C...Normal vector is perpendicular to camberline vector and to the bound leg
           CALL PUSHREAL8ARRAY(ecxb, 3)
           CALL CROSS(ec, eb, ecxb)
           CALL PUSHREAL8(emag)
           emag = SQRT(ecxb(1)**2 + ecxb(2)**2 + ecxb(3)**2)
+C This section is identical to the normal vector at the control
+C point. The only different is that the AVL camberline slope 
+C is taken at the bound vortex point rather than the control point
+C the geometric contributions to the normal vector at both of these
+C point is identical as the lie in the plane of the same panel.
           IF (emag .NE. 0.0) THEN
             CALL PUSHREAL8(enc(1, i))
             enc(1, i) = ecxb(1)/emag
@@ -2802,19 +4794,40 @@ Cc          ENDIF
 C
           CALL PUSHREAL8(sinc)
           sinc = SIN(ang)
+          CALL PUSHREAL8(cosc)
           cosc = COS(ang)
-          CALL PUSHREAL8(ec(1))
-          ec(1) = cosc
-          CALL PUSHREAL8(ec(2))
-          ec(2) = -(sinc*es(2))
-          CALL PUSHREAL8(ec(3))
-          ec(3) = -(sinc*es(3))
+          IF (lsurfmsh(lssurf(j))) THEN
+C direct mesh assignment branch
+C see explanation in section above for control point normals
+C ec_msh was already computed in that section
+            CALL PUSHREAL8(ec(1))
+            ec(1) = cosc*ec_msh(1) + es(2)*sinc*ec_msh(2) + es(3)*sinc*
+     +        ec_msh(3)
+            CALL PUSHREAL8(ec(2))
+            ec(2) = -(es(2)*sinc) + (es(3)**2*(1-cosc)+cosc)*ec_msh(2) -
+     +        es(2)*es(3)*(1-cosc)*ec_msh(3)
+            CALL PUSHREAL8(ec(3))
+            ec(3) = -(es(3)*sinc*ec_msh(1)) - es(2)*es(3)*(1-cosc)*
+     +        ec_msh(2) + (es(2)**2*(1-cosc)+cosc)*ec_msh(3)
+C
+            CALL PUSHCONTROL1B(1)
+          ELSE
+            CALL PUSHREAL8(ec(1))
+            ec(1) = cosc
+            CALL PUSHREAL8(ec(2))
+            ec(2) = -(sinc*es(2))
+            CALL PUSHREAL8(ec(3))
+            ec(3) = -(sinc*es(3))
+            CALL PUSHCONTROL1B(0)
+          END IF
 C
 C...Normal vector is perpendicular to camberline vector and to the bound leg
           CALL PUSHREAL8ARRAY(ecxb, 3)
           CALL CROSS(ec, eb, ecxb)
           CALL PUSHREAL8(emag)
           emag = SQRT(ecxb(1)**2 + ecxb(2)**2 + ecxb(3)**2)
+C this is a pure rotation of the normal vector
+C the geometric contribution from the mesh is already accounted for
           IF (emag .NE. 0.0) THEN
             CALL PUSHREAL8(env(1, i))
             env(1, i) = ecxb(1)/emag
@@ -2896,6 +4909,26 @@ C---------- linearize about zero deflection (COSD=1, SIND=0)
         ENDDO
         CALL PUSHINTEGER4(ii - 1)
       ENDDO
+      DO ii1=1,nvor
+        DO ii2=1,3
+          rv1msh_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
+        DO ii2=1,3
+          rv2msh_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
+        DO ii2=1,3
+          rvmsh_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
+        DO ii2=1,3
+          rcmsh_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
       DO ii1=1,NSTRIP
         ainc_diff(ii1) = 0.D0
       ENDDO
@@ -2940,10 +4973,12 @@ C---------- linearize about zero deflection (COSD=1, SIND=0)
       DO ii1=1,3
         ecxb_diff(ii1) = 0.D0
       ENDDO
+      DO ii1=1,3
+        ec_msh_diff(ii1) = 0.D0
+      ENDDO
       DO j=nstrip,1,-1
         CALL POPINTEGER4(ad_to)
         DO ii=ad_to,1,-1
-          i = ijfrst(j) + (ii-1)
           DO n=ncontrol,1,-1
             CALL POPCONTROL1B(branch)
             IF (branch .NE. 0) THEN
@@ -3029,26 +5064,62 @@ C---------- linearize about zero deflection (COSD=1, SIND=0)
           END IF
           CALL POPREAL8(emag)
           IF (ecxb(1)**2 + ecxb(2)**2 + ecxb(3)**2 .EQ. 0.D0) THEN
-            temp_diff0 = 0.D0
+            temp_diff5 = 0.D0
           ELSE
-            temp_diff0 = emag_diff/(2.0*SQRT(ecxb(1)**2+ecxb(2)**2+ecxb(
+            temp_diff5 = emag_diff/(2.0*SQRT(ecxb(1)**2+ecxb(2)**2+ecxb(
      +        3)**2))
           END IF
-          ecxb_diff(1) = ecxb_diff(1) + 2*ecxb(1)*temp_diff0
-          ecxb_diff(2) = ecxb_diff(2) + 2*ecxb(2)*temp_diff0
-          ecxb_diff(3) = ecxb_diff(3) + 2*ecxb(3)*temp_diff0
+          ecxb_diff(1) = ecxb_diff(1) + 2*ecxb(1)*temp_diff5
+          ecxb_diff(2) = ecxb_diff(2) + 2*ecxb(2)*temp_diff5
+          ecxb_diff(3) = ecxb_diff(3) + 2*ecxb(3)*temp_diff5
           CALL POPREAL8ARRAY(ecxb, 3)
           CALL CROSS_B(ec, ec_diff, eb, eb_diff, ecxb, ecxb_diff)
-          CALL POPREAL8(ec(3))
-          sinc_diff = -(es(3)*ec_diff(3)) - es(2)*ec_diff(2)
-          es_diff(3) = es_diff(3) - sinc*ec_diff(3)
-          ec_diff(3) = 0.D0
-          CALL POPREAL8(ec(2))
-          es_diff(2) = es_diff(2) - sinc*ec_diff(2)
-          ec_diff(2) = 0.D0
-          CALL POPREAL8(ec(1))
-          cosc_diff = ec_diff(1)
-          ec_diff(1) = 0.D0
+          n = 0
+          CALL POPCONTROL1B(branch)
+          IF (branch .EQ. 0) THEN
+            CALL POPREAL8(ec(3))
+            sinc_diff = -(es(3)*ec_diff(3)) - es(2)*ec_diff(2)
+            es_diff(3) = es_diff(3) - sinc*ec_diff(3)
+            ec_diff(3) = 0.D0
+            CALL POPREAL8(ec(2))
+            es_diff(2) = es_diff(2) - sinc*ec_diff(2)
+            ec_diff(2) = 0.D0
+            CALL POPREAL8(ec(1))
+            cosc_diff = ec_diff(1)
+            ec_diff(1) = 0.D0
+          ELSE
+            CALL POPREAL8(ec(3))
+            temp_diff5 = ec_msh(3)*ec_diff(3)
+            temp_diff1 = -((1-cosc)*ec_msh(2)*ec_diff(3))
+            temp_diff4 = -(es(2)*es(3)*ec_diff(3))
+            es_diff(3) = es_diff(3) + es(2)*temp_diff1 - sinc*ec_msh(1)*
+     +        ec_diff(3)
+            sinc_diff = (es(2)*ec_msh(2)+es(3)*ec_msh(3))*ec_diff(1) - 
+     +        es(3)*ec_msh(1)*ec_diff(3) - es(2)*ec_diff(2)
+            ec_msh_diff(1) = ec_msh_diff(1) + cosc*ec_diff(1) - es(3)*
+     +        sinc*ec_diff(3)
+            cosc_diff = (1.0-es(2)**2)*temp_diff5 - ec_msh(2)*temp_diff4
+            ec_msh_diff(2) = ec_msh_diff(2) + (1-cosc)*temp_diff4 + (es(
+     +        3)**2*(1-cosc)+cosc)*ec_diff(2) + es(2)*sinc*ec_diff(1)
+            es_diff(2) = es_diff(2) + es(3)*temp_diff1
+            CALL POPREAL8(ec(2))
+            temp_diff1 = -((1-cosc)*ec_msh(3)*ec_diff(2))
+            es_diff(2) = es_diff(2) + 2*es(2)*(1-cosc)*temp_diff5 + es(3
+     +        )*temp_diff1 - sinc*ec_diff(2) + sinc*ec_msh(2)*ec_diff(1)
+            temp_diff5 = ec_msh(2)*ec_diff(2)
+            temp_diff4 = -(es(2)*es(3)*ec_diff(2))
+            ec_msh_diff(3) = ec_msh_diff(3) + (es(2)**2*(1-cosc)+cosc)*
+     +        ec_diff(3) + (1-cosc)*temp_diff4 + es(3)*sinc*ec_diff(1)
+            ec_diff(3) = 0.D0
+            ec_diff(2) = 0.D0
+            cosc_diff = cosc_diff + (1.0-es(3)**2)*temp_diff5 - ec_msh(3
+     +        )*temp_diff4 + ec_msh(1)*ec_diff(1)
+            es_diff(3) = es_diff(3) + es(2)*temp_diff1 + 2*es(3)*(1-cosc
+     +        )*temp_diff5 + sinc*ec_msh(3)*ec_diff(1)
+            CALL POPREAL8(ec(1))
+            ec_diff(1) = 0.D0
+          END IF
+          CALL POPREAL8(cosc)
           ang_diff = COS(ang)*sinc_diff - SIN(ang)*cosc_diff
           CALL POPREAL8(sinc)
           DO n=ndesign,1,-1
@@ -3084,60 +5155,150 @@ C---------- linearize about zero deflection (COSD=1, SIND=0)
           END IF
           CALL POPREAL8(emag)
           IF (ecxb(1)**2 + ecxb(2)**2 + ecxb(3)**2 .EQ. 0.D0) THEN
-            temp_diff0 = 0.D0
+            temp_diff5 = 0.D0
           ELSE
-            temp_diff0 = emag_diff/(2.0*SQRT(ecxb(1)**2+ecxb(2)**2+ecxb(
+            temp_diff5 = emag_diff/(2.0*SQRT(ecxb(1)**2+ecxb(2)**2+ecxb(
      +        3)**2))
           END IF
-          ecxb_diff(1) = ecxb_diff(1) + 2*ecxb(1)*temp_diff0
-          ecxb_diff(2) = ecxb_diff(2) + 2*ecxb(2)*temp_diff0
-          ecxb_diff(3) = ecxb_diff(3) + 2*ecxb(3)*temp_diff0
+          ecxb_diff(1) = ecxb_diff(1) + 2*ecxb(1)*temp_diff5
+          ecxb_diff(2) = ecxb_diff(2) + 2*ecxb(2)*temp_diff5
+          ecxb_diff(3) = ecxb_diff(3) + 2*ecxb(3)*temp_diff5
           CALL POPREAL8ARRAY(ecxb, 3)
           CALL CROSS_B(ec, ec_diff, eb, eb_diff, ecxb, ecxb_diff)
-          CALL POPREAL8(ec(3))
-          sinc_diff = -(es(3)*ec_diff(3)) - es(2)*ec_diff(2)
-          es_diff(3) = es_diff(3) - sinc*ec_diff(3)
-          ec_diff(3) = 0.D0
-          CALL POPREAL8(ec(2))
-          es_diff(2) = es_diff(2) - sinc*ec_diff(2)
-          ec_diff(2) = 0.D0
-          CALL POPREAL8(ec(1))
-          cosc_diff = ec_diff(1)
-          ec_diff(1) = 0.D0
+          n = 0
+          CALL POPCONTROL1B(branch)
+          IF (branch .EQ. 0) THEN
+            CALL POPREAL8(ec(3))
+            sinc_diff = -(es(3)*ec_diff(3)) - es(2)*ec_diff(2)
+            es_diff(3) = es_diff(3) - sinc*ec_diff(3)
+            ec_diff(3) = 0.D0
+            CALL POPREAL8(ec(2))
+            es_diff(2) = es_diff(2) - sinc*ec_diff(2)
+            ec_diff(2) = 0.D0
+            CALL POPREAL8(ec(1))
+            cosc_diff = ec_diff(1)
+            ec_diff(1) = 0.D0
+          ELSE
+            temp_diff4 = -(es(2)*es(3)*ec_diff(3))
+            cosc_diff = -(ec_msh(2)*temp_diff4)
+            ec_msh_diff(2) = ec_msh_diff(2) + (1-cosc)*temp_diff4 + (es(
+     +        3)**2*(1-cosc)+cosc)*ec_diff(2) + es(2)*sinc*ec_diff(1)
+            temp_diff4 = -(es(2)*es(3)*ec_diff(2))
+            CALL POPREAL8(ec(3))
+            temp_diff5 = ec_msh(3)*ec_diff(3)
+            ec_msh_diff(3) = ec_msh_diff(3) + (es(2)**2*(1-cosc)+cosc)*
+     +        ec_diff(3) + (1-cosc)*temp_diff4 + es(3)*sinc*ec_diff(1)
+            temp_diff1 = -((1-cosc)*ec_msh(2)*ec_diff(3))
+            es_diff(3) = es_diff(3) + es(2)*temp_diff1 - sinc*ec_msh(1)*
+     +        ec_diff(3)
+            sinc_diff = (es(2)*ec_msh(2)+es(3)*ec_msh(3))*ec_diff(1) - 
+     +        es(3)*ec_msh(1)*ec_diff(3) - es(2)*ec_diff(2)
+            ec_msh_diff(1) = ec_msh_diff(1) + cosc*ec_diff(1) - es(3)*
+     +        sinc*ec_diff(3)
+            ec_diff(3) = 0.D0
+            es_diff(2) = es_diff(2) + es(3)*temp_diff1 + 2*es(2)*(1-cosc
+     +        )*temp_diff5
+            CALL POPREAL8(ec(2))
+            temp_diff1 = ec_msh(2)*ec_diff(2)
+            cosc_diff = cosc_diff + (1.0-es(2)**2)*temp_diff5 + (1.0-es(
+     +        3)**2)*temp_diff1 - ec_msh(3)*temp_diff4 + ec_msh(1)*
+     +        ec_diff(1)
+            temp_diff5 = -((1-cosc)*ec_msh(3)*ec_diff(2))
+            es_diff(2) = es_diff(2) + es(3)*temp_diff5 - sinc*ec_diff(2)
+     +        + sinc*ec_msh(2)*ec_diff(1)
+            ec_diff(2) = 0.D0
+            es_diff(3) = es_diff(3) + es(2)*temp_diff5 + 2*es(3)*(1-cosc
+     +        )*temp_diff1 + sinc*ec_msh(3)*ec_diff(1)
+            CALL POPREAL8(ec(1))
+            ec_diff(1) = 0.D0
+            CALL POPREAL8(ec_msh(3))
+            temp_diff4 = ec_msh_diff(3)/emag
+            ec_msh_diff(3) = 0.D0
+            rcmsh_diff(3, i) = rcmsh_diff(3, i) + temp_diff4
+            rvmsh_diff(3, i) = rvmsh_diff(3, i) - temp_diff4
+            emag_diff = -((rcmsh(3, i)-rvmsh(3, i))*temp_diff4/emag)
+            CALL POPREAL8(ec_msh(2))
+            temp_diff4 = ec_msh_diff(2)/emag
+            ec_msh_diff(2) = 0.D0
+            rcmsh_diff(2, i) = rcmsh_diff(2, i) + temp_diff4
+            rvmsh_diff(2, i) = rvmsh_diff(2, i) - temp_diff4
+            emag_diff = emag_diff - (rcmsh(2, i)-rvmsh(2, i))*temp_diff4
+     +        /emag
+            CALL POPREAL8(ec_msh(1))
+            temp_diff4 = ec_msh_diff(1)/emag
+            ec_msh_diff(1) = 0.D0
+            emag_diff = emag_diff - (rcmsh(1, i)-rvmsh(1, i))*temp_diff4
+     +        /emag
+            CALL POPREAL8(emag)
+            temp0 = rcmsh(3, i) - rvmsh(3, i)
+            temp = rcmsh(2, i) - rvmsh(2, i)
+            temp1 = rcmsh(1, i) - rvmsh(1, i)
+            IF (temp1**2 + temp**2 + temp0**2 .EQ. 0.D0) THEN
+              temp_diff2 = 0.D0
+            ELSE
+              temp_diff2 = emag_diff/(2.0*SQRT(temp1**2+temp**2+temp0**2
+     +          ))
+            END IF
+            temp_diff3 = 2*temp1*temp_diff2
+            rcmsh_diff(1, i) = rcmsh_diff(1, i) + temp_diff4 + 
+     +        temp_diff3
+            rvmsh_diff(1, i) = rvmsh_diff(1, i) - temp_diff4 - 
+     +        temp_diff3
+            temp_diff = 2*temp*temp_diff2
+            temp_diff0 = 2*temp0*temp_diff2
+            rcmsh_diff(3, i) = rcmsh_diff(3, i) + temp_diff0
+            rvmsh_diff(3, i) = rvmsh_diff(3, i) - temp_diff0
+            rcmsh_diff(2, i) = rcmsh_diff(2, i) + temp_diff
+            rvmsh_diff(2, i) = rvmsh_diff(2, i) - temp_diff
+          END IF
+          CALL POPREAL8(cosc)
           ang_diff = COS(ang)*sinc_diff - SIN(ang)*cosc_diff
           CALL POPREAL8(sinc)
           DO n=ndesign,1,-1
             ainc_g_diff(j, n) = ainc_g_diff(j, n) + deldes(n)*ang_diff
           ENDDO
-          dxb = rv2(1, i) - rv1(1, i)
-          dyb = rv2(2, i) - rv1(2, i)
+          emag_diff = -(dzb*eb_diff(3)/emag**2) - dyb*eb_diff(2)/emag**2
+     +      - dxb*eb_diff(1)/emag**2
+          IF (dxb**2 + dyb**2 + dzb**2 .EQ. 0.D0) THEN
+            temp_diff1 = 0.D0
+          ELSE
+            temp_diff1 = emag_diff/(2.0*SQRT(dxb**2+dyb**2+dzb**2))
+          END IF
           CALL POPREAL8(ang)
           ainc_diff(j) = ainc_diff(j) + ang_diff
           slopec_diff(i) = slopec_diff(i) - ang_diff/(1.0+slopec(i)**2)
-          dzb = rv2(3, i) - rv1(3, i)
           CALL POPREAL8(eb(3))
-          emag_diff = -(dzb*eb_diff(3)/emag**2) - dyb*eb_diff(2)/emag**2
-     +      - dxb*eb_diff(1)/emag**2
-          CALL POPREAL8(eb(2))
-          CALL POPREAL8(eb(1))
-          IF (dxb**2 + dyb**2 + dzb**2 .EQ. 0.D0) THEN
-            temp_diff0 = 0.D0
-          ELSE
-            temp_diff0 = emag_diff/(2.0*SQRT(dxb**2+dyb**2+dzb**2))
-          END IF
-          dzb_diff = eb_diff(3)/emag + 2*dzb*temp_diff0
+          dzb_diff = eb_diff(3)/emag + 2*dzb*temp_diff1
           eb_diff(3) = 0.D0
-          dyb_diff = eb_diff(2)/emag + 2*dyb*temp_diff0
+          CALL POPREAL8(eb(2))
+          dyb_diff = eb_diff(2)/emag + 2*dyb*temp_diff1
           eb_diff(2) = 0.D0
-          dxb_diff = eb_diff(1)/emag + 2*dxb*temp_diff0
+          CALL POPREAL8(eb(1))
+          dxb_diff = eb_diff(1)/emag + 2*dxb*temp_diff1
           eb_diff(1) = 0.D0
           CALL POPREAL8(emag)
-          rv2_diff(3, i) = rv2_diff(3, i) + dzb_diff
-          rv1_diff(3, i) = rv1_diff(3, i) - dzb_diff
-          rv2_diff(2, i) = rv2_diff(2, i) + dyb_diff
-          rv1_diff(2, i) = rv1_diff(2, i) - dyb_diff
-          rv2_diff(1, i) = rv2_diff(1, i) + dxb_diff
-          rv1_diff(1, i) = rv1_diff(1, i) - dxb_diff
+          CALL POPCONTROL1B(branch)
+          IF (branch .EQ. 0) THEN
+            CALL POPREAL8(dzb)
+            rv2msh_diff(3, i) = rv2msh_diff(3, i) + dzb_diff
+            rv1msh_diff(3, i) = rv1msh_diff(3, i) - dzb_diff
+            CALL POPREAL8(dyb)
+            rv2msh_diff(2, i) = rv2msh_diff(2, i) + dyb_diff
+            rv1msh_diff(2, i) = rv1msh_diff(2, i) - dyb_diff
+            CALL POPREAL8(dxb)
+            rv2msh_diff(1, i) = rv2msh_diff(1, i) + dxb_diff
+            rv1msh_diff(1, i) = rv1msh_diff(1, i) - dxb_diff
+          ELSE
+            CALL POPREAL8(dzb)
+            rv2_diff(3, i) = rv2_diff(3, i) + dzb_diff
+            rv1_diff(3, i) = rv1_diff(3, i) - dzb_diff
+            CALL POPREAL8(dyb)
+            rv2_diff(2, i) = rv2_diff(2, i) + dyb_diff
+            rv1_diff(2, i) = rv1_diff(2, i) - dyb_diff
+            CALL POPREAL8(dxb)
+            rv2_diff(1, i) = rv2_diff(1, i) + dxb_diff
+            rv1_diff(1, i) = rv1_diff(1, i) - dxb_diff
+          END IF
           DO n=ncontrol,1,-1
             enc_d_diff(3, i, n) = 0.D0
             enc_d_diff(2, i, n) = 0.D0
@@ -3153,15 +5314,6 @@ C---------- linearize about zero deflection (COSD=1, SIND=0)
         es_diff(2) = 0.D0
         CALL POPREAL8(es(1))
         es_diff(1) = 0.D0
-        azle_diff = (1.0-saxfr)*zsref_diff(j)
-        azte_diff = saxfr*zsref_diff(j)
-        zsref_diff(j) = 0.D0
-        ayle_diff = (1.0-saxfr)*ysref_diff(j)
-        ayte_diff = saxfr*ysref_diff(j)
-        ysref_diff(j) = 0.D0
-        axle_diff = (1.0-saxfr)*xsref_diff(j)
-        axte_diff = saxfr*xsref_diff(j)
-        xsref_diff(j) = 0.D0
         temp0 = dyt*dyt + dzt*dzt
         temp = SQRT(temp0)
         IF (temp0 .EQ. 0.D0) THEN
@@ -3213,37 +5365,69 @@ C---------- linearize about zero deflection (COSD=1, SIND=0)
         dyt_diff = dyt_diff + 2*dyt*temp_diff0 + 2*dyt*temp_diff
         dzt_diff = dzt_diff + 2*dzt*temp_diff0 + 2*dzt*temp_diff
         ess_diff(1, j) = 0.D0
-        CALL POPREAL8(dzt)
-        dzle_diff = (1.0-saxfr)*dzt_diff
-        dzte_diff = saxfr*dzt_diff
-        CALL POPREAL8(dyt)
-        dyle_diff = (1.0-saxfr)*dyt_diff
-        dyte_diff = saxfr*dyt_diff
-        CALL POPREAL8(dxt)
-        dxle_diff = (1.0-saxfr)*dxt_diff
-        dxte_diff = saxfr*dxt_diff
-        rv_diff(3, i) = rv_diff(3, i) + azte_diff
-        rv_diff(2, i) = rv_diff(2, i) + ayte_diff
-        rv_diff(1, i) = rv_diff(1, i) + axte_diff
-        rv2_diff(3, i) = rv2_diff(3, i) + dzte_diff
-        rv1_diff(3, i) = rv1_diff(3, i) - dzte_diff
-        rv2_diff(2, i) = rv2_diff(2, i) + dyte_diff
-        rv1_diff(2, i) = rv1_diff(2, i) - dyte_diff
-        rv2_diff(1, i) = rv2_diff(1, i) + dxte_diff
-        rv1_diff(1, i) = rv1_diff(1, i) - dxte_diff
-        i = ijfrst(j)
-        rv_diff(3, i) = rv_diff(3, i) + azle_diff
-        rv_diff(2, i) = rv_diff(2, i) + ayle_diff
-        rv_diff(1, i) = rv_diff(1, i) + axle_diff
-        rv2_diff(3, i) = rv2_diff(3, i) + dzle_diff
-        rv1_diff(3, i) = rv1_diff(3, i) - dzle_diff
-        rv2_diff(2, i) = rv2_diff(2, i) + dyle_diff
-        rv1_diff(2, i) = rv1_diff(2, i) - dyle_diff
-        rv2_diff(1, i) = rv2_diff(1, i) + dxle_diff
-        rv1_diff(1, i) = rv1_diff(1, i) - dxle_diff
-        CALL POPINTEGER4(i)
+        CALL POPCONTROL1B(branch)
+        IF (branch .EQ. 0) THEN
+          rvmsh_diff(3, i) = rvmsh_diff(3, i) + zsref_diff(j)
+          zsref_diff(j) = 0.D0
+          rvmsh_diff(2, i) = rvmsh_diff(2, i) + ysref_diff(j)
+          ysref_diff(j) = 0.D0
+          rvmsh_diff(1, i) = rvmsh_diff(1, i) + xsref_diff(j)
+          xsref_diff(j) = 0.D0
+          CALL POPREAL8(dzt)
+          rv2msh_diff(3, i) = rv2msh_diff(3, i) + dzt_diff
+          rv1msh_diff(3, i) = rv1msh_diff(3, i) - dzt_diff
+          CALL POPREAL8(dyt)
+          rv2msh_diff(2, i) = rv2msh_diff(2, i) + dyt_diff
+          rv1msh_diff(2, i) = rv1msh_diff(2, i) - dyt_diff
+          CALL POPREAL8(dxt)
+          rv2msh_diff(1, i) = rv2msh_diff(1, i) + dxt_diff
+          rv1msh_diff(1, i) = rv1msh_diff(1, i) - dxt_diff
+          CALL POPINTEGER4(ad_count)
+          DO i0=1,ad_count
+            IF (i0 .EQ. 1) CALL POPCONTROL1B(branch)
+            CALL POPINTEGER4(i)
+          ENDDO
+        ELSE
+          azle_diff = (1.0-saxfr)*zsref_diff(j)
+          azte_diff = saxfr*zsref_diff(j)
+          zsref_diff(j) = 0.D0
+          ayle_diff = (1.0-saxfr)*ysref_diff(j)
+          ayte_diff = saxfr*ysref_diff(j)
+          ysref_diff(j) = 0.D0
+          axle_diff = (1.0-saxfr)*xsref_diff(j)
+          axte_diff = saxfr*xsref_diff(j)
+          xsref_diff(j) = 0.D0
+          CALL POPREAL8(dzt)
+          dzle_diff = (1.0-saxfr)*dzt_diff
+          dzte_diff = saxfr*dzt_diff
+          CALL POPREAL8(dyt)
+          dyle_diff = (1.0-saxfr)*dyt_diff
+          dyte_diff = saxfr*dyt_diff
+          CALL POPREAL8(dxt)
+          dxle_diff = (1.0-saxfr)*dxt_diff
+          dxte_diff = saxfr*dxt_diff
+          rv_diff(3, i) = rv_diff(3, i) + azte_diff
+          rv_diff(2, i) = rv_diff(2, i) + ayte_diff
+          rv_diff(1, i) = rv_diff(1, i) + axte_diff
+          rv2_diff(3, i) = rv2_diff(3, i) + dzte_diff
+          rv1_diff(3, i) = rv1_diff(3, i) - dzte_diff
+          rv2_diff(2, i) = rv2_diff(2, i) + dyte_diff
+          rv1_diff(2, i) = rv1_diff(2, i) - dyte_diff
+          rv2_diff(1, i) = rv2_diff(1, i) + dxte_diff
+          rv1_diff(1, i) = rv1_diff(1, i) - dxte_diff
+          i = ijfrst(j)
+          rv_diff(3, i) = rv_diff(3, i) + azle_diff
+          rv_diff(2, i) = rv_diff(2, i) + ayle_diff
+          rv_diff(1, i) = rv_diff(1, i) + axle_diff
+          rv2_diff(3, i) = rv2_diff(3, i) + dzle_diff
+          rv1_diff(3, i) = rv1_diff(3, i) - dzle_diff
+          rv2_diff(2, i) = rv2_diff(2, i) + dyle_diff
+          rv1_diff(2, i) = rv1_diff(2, i) - dyle_diff
+          rv2_diff(1, i) = rv2_diff(1, i) + dxle_diff
+          rv1_diff(1, i) = rv1_diff(1, i) - dxle_diff
+          CALL POPINTEGER4(i)
+        END IF
       ENDDO
       END
 C ENCALC
-C
 

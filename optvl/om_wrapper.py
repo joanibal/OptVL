@@ -340,7 +340,7 @@ class OVLSolverComp(om.ImplicitComponent):
                 res_d_seeds = d_residuals["gamma_d"]
                 res_u_seeds = d_residuals["gamma_u"]
 
-                con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = (
+                con_seeds, geom_seeds, mesh_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = (
                     self.ovl._execute_jac_vec_prod_rev(
                         res_seeds=res_seeds, res_d_seeds=res_d_seeds, res_u_seeds=res_u_seeds
                     )
@@ -610,7 +610,7 @@ class OVLFuncsComp(om.ExplicitComponent):
                         # print(var_name, body_axis_seeds[func_key])
                         print(f"  running rev mode derivs for {func_key}")
 
-            con_seeds, geom_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = (
+            con_seeds, geom_seeds, mesh_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = (
                 self.ovl._execute_jac_vec_prod_rev(
                     func_seeds=func_seeds,
                     consurf_derivs_seeds=csd_seeds,

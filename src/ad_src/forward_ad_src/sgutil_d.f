@@ -290,6 +290,24 @@ C SPACER
 C
 C
 C
+C This is a extremely important funciton that is not
+C documented for some reason.
+C Inputs: 
+C      NVC: NUMBER OF DESIRED POINTS IN ARRAY
+C      CSPACE: SPACING PARAMETER (-3<=PSPACE<=3).
+C                   DEFINES POINT DISTRIBUTION
+C                   TO BE USED AS FOLLOWS:
+C           PSPACE = 0  : EQUAL SPACING
+C           PSPACE = 1  : COSINE SPACING.
+C           PSPACE = 2  : SINE SPACING
+C                         (CONCENTRATING POINTS NEAR 0).
+C           PSPACE = 3  : EQUAL SPACING.
+C      CLAF: CL alfa (needed to determine control point location)
+C Outputs:
+C           XPT: Array of panel leading edge x-locations
+C           XVR: Array of vortex x-locations
+C           XSR: Array of source x-locations
+C           XCP: Array of control point x-locations
       SUBROUTINE CSPACER_D(nvc, cspace, claf, claf_diff, xpt, xvr, xsr, 
      +                     xcp, xcp_diff)
       REAL xpt(*), xvr(*), xsr(*), xcp(*)
@@ -342,6 +360,8 @@ C
         acsp = -cspace
       END IF
       ncsp = INT(acsp)
+C Each of these provides a quarter panel chord offset for cosine, 
+C sine, and uniform spacing respectively.
       IF (ncsp .EQ. 0) THEN
         f0 = 1.0 - acsp
         f1 = acsp
@@ -363,10 +383,16 @@ C---- cosine chordwise spacing
 C
       DO ivc=1,nvc
 C------ uniform
+C eqv (IVC-1)/NVC
         xc0 = INT(4*ivc-4)*dxc0
         xpt0 = xc0
+C quarter-chord
         xvr0 = xc0 + dxc0
+C half-chord
         xsr0 = xc0 + 2.0*dxc0
+C quarter-chord + half-chord*claf
+C Note: claf is a scaling factor so typically claf = 1 and the control point 
+C is at the three-quarter chord position of the panel
         xcp0_diff = dxc0*2.0*claf_diff
         xcp0 = xc0 + dxc0 + 2.0*dxc0*claf
 C

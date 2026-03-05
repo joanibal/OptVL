@@ -38,7 +38,7 @@ OFILES=$(f90FilesNoDir:%.f90=%.o) $(f77FilesNoDir:%.f=%.o) $(cFilesNoDir:%.c=%.o
 
 default: lib ../f2py/libavl.pyf
 # Generate Python inlude directory
-	 $(eval PYTHON_INCLUDES = $(shell python-config --includes))
+	 $(eval PYTHON_INCLUDES = $(shell python3-config --includes))
 	 @echo "#------------------------------------------------------#"
 	 @echo Python Inclue Flags $(PYTHON_INCLUDES)
 	 @echo "#------------------------------------------------------#"

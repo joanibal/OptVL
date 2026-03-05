@@ -1,4 +1,9 @@
 # =============================================================================
+# Standard modules
+# =============================================================================
+import os
+
+# =============================================================================
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
@@ -8,10 +13,18 @@ from optvl import OVLSolver
 # =============================================================================
 import unittest
 import numpy as np
+import sys
 
 
+base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
+geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
-mesh = np.load("wing_mesh.npy")
+# Add geom_files to path for importing
+sys.path.insert(0, geom_dir)
+
+# Import mesh from the .py file instead of loading from .pkl
+from wing_mesh import mesh
+
 
 surf = {
     "Wing": {
