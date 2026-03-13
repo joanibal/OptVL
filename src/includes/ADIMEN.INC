@@ -59,7 +59,7 @@
 
 
       ! PARAMETER (NVMAX=4000)
-      PARAMETER (NVMAX=5)
+      PARAMETER (NVMAX=5000)
 
       ! PARAMETER (NSMAX=4) ! max number of strips
       ! PARAMETER (NSECMAX=4) ! max number of geometry sections
