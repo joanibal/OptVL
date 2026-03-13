@@ -177,17 +177,6 @@ output : ['libavlmodule.c', 'libavl-f2pywrappers.f'],
 command: [py3, '-m', 'numpy.f2py',  '@INPUT@', ]
 )
 
-llvm_nm = find_program('llvm-nm', required: false)
-if llvm_nm.found()
-  custom_target('symbol-sizes',
-    output: 'symbol_sizes.txt',
-    command: [find_program('python3'), '-c',
-      'import glob,subprocess,sys; objs=glob.glob("**/*.obj",recursive=True); r=subprocess.run(["llvm-nm","--print-size","--size-sort","--reverse-sort"]+objs,capture_output=True,text=True); print(r.stdout); open(sys.argv[1],"w").write(r.stdout)',
-      '@OUTPUT@'],
-    build_by_default: true,
-  )
-endif
-
 py3.extension_module('libavl',
     avl_source_files,
     avl_c_wrapper,
