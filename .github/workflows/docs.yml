@@ -1,46 +1,46 @@
-name: MkDocs
+# name: MkDocs
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-      - dev
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
+#       - dev
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: Checkout Repository
+#       uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
+#     - name: Set up Python
+#       uses: actions/setup-python@v2
+#       with:
+#         python-version: '3.x'
 
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install mkdocs-material
-        pip install markdown
-        pip install pymdown-extensions
-        pip install Pygments 
-        pip install mkdocstrings
-        pip install 'mkdocstrings[python]'
-        pip install mkdocs-gen-files
-        pip install mkdocs-literate-nav
-        pip install mkdocs-include-markdown-plugin
+#     - name: Install Dependencies
+#       run: |
+#         python -m pip install --upgrade pip
+#         pip install mkdocs-material
+#         pip install markdown
+#         pip install pymdown-extensions
+#         pip install Pygments 
+#         pip install mkdocstrings
+#         pip install 'mkdocstrings[python]'
+#         pip install mkdocs-gen-files
+#         pip install mkdocs-literate-nav
+#         pip install mkdocs-include-markdown-plugin
         
-    - name: Test Build
-      run: |
-        # mkdocs build --strict # can't use strict mode because of some typ annotations
-        mkdocs build
+#     - name: Test Build
+#       run: |
+#         # mkdocs build --strict # can't use strict mode because of some typ annotations
+#         mkdocs build
         
 
-    - name: Build and Deploy
-      if: github.event_name == 'push'
-      run: |
-        mkdocs gh-deploy --force
+#     - name: Build and Deploy
+#       if: github.event_name == 'push'
+#       run: |
+#         mkdocs gh-deploy --force

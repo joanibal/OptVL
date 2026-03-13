@@ -5,7 +5,7 @@ PROJECT_DIR="$1"
 cd $PROJECT_DIR/tests
 
 # install tesing dependencies
-pip install --only-binary "scipy<=1.16" 
+pip install --only-binary :all: 'scipy<=1.16' 
 pip install psutil "openmdao!=3.38"
 
 
