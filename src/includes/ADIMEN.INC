@@ -68,11 +68,11 @@
       PARAMETER (NBMAX=20)  ! max number of bodies
 
       PARAMETER (NUMAX=6)  ! number of velocity components
-      PARAMETER (NDMAX=3) ! max number of control surfaces
-      PARAMETER (NGMAX=2) ! max number of design variables
+      PARAMETER (NDMAX=30) ! max number of control surfaces
+      PARAMETER (NGMAX=21) ! max number of design variables
 
-      PARAMETER (NRMAX=2)  ! max number of run cases
-      PARAMETER (NTMAX=5) ! max number of time values
+      PARAMETER (NRMAX=25)  ! max number of run cases
+      PARAMETER (NTMAX=503) ! max number of time values
 
       PARAMETER (NOBMAX=1) ! max number of off body points
       ! PARAMETER (NOBMAX=1) ! max number of off body points
