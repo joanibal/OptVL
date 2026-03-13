@@ -12,6 +12,15 @@ TARGET_ARCH="${TARGET_ARCH:-}" # Default to empty string if not set
 
 if [ "$TARGET_ARCH" = "ARM64" ]; then
     echo "Skipping stripping for ARM64 target."
+    
+    pushd $DEST_DIR
+    mkdir -p tmp
+    pushd tmp
+    wheel unpack $WHEEL
+    pushd optvl*
+
+    llvm-objdump -p *.pyd | grep "DLL Name"
+    dumpbin /dependents *.pyd
 else
     echo "Performing stripping for AMD64 target."
 
@@ -40,7 +49,5 @@ else
     rm -rf tmp
 fi
 
-llvm-objdump -p $WHEEL | grep "DLL Name"
-dumpbin /dependents $WHEEL
 delvewheel repair  -w $DEST_DIR $WHEEL
 

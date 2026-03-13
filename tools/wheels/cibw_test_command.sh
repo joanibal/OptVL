@@ -14,6 +14,7 @@ pip install psutil "openmdao!=3.38"
 # pip install testflo
 # testflo -v .
 
+python -c "import platform; print(platform.machine())"
 
 # test package built and installed correctly
 python test_import.py
