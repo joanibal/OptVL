@@ -39,6 +39,8 @@ else
     cd $DEST_DIR
     rm -rf tmp
 fi
-# the libopenblas.dll is placed into this directory in the cibw_before_build
-# script.
+
+llvm-objdump -p $WHEEL | grep "DLL Name"
+dumpbin /dependents $WHEEL
 delvewheel repair  -w $DEST_DIR $WHEEL
+
