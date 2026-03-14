@@ -32,7 +32,7 @@
 !              to make it easier to termine the true size in clear_ad_seeds_fast()
 !              I increased some values to avoid matching
 
-      ! ! PARAMETER (NVMAX=4000)
+      ! ! ! PARAMETER (NVMAX=4000)
       ! PARAMETER (NVMAX=5000)
 
       ! ! PARAMETER (NSMAX=400) ! max number of strips
@@ -77,7 +77,7 @@
       PARAMETER (NOBMAX=1) ! max number of off body points
       ! PARAMETER (NOBMAX=1) ! max number of off body points
       
-      PARAMETER (ICONX=2) ! 
-      PARAMETER (IBX=2)  ! max number of airfoil coordinates
+      PARAMETER (ICONX=20) ! 
+      PARAMETER (IBX=50)  ! max number of airfoil coordinates
       ! PARAMETER (IBX=300)  ! max number of airfoil coordinates
 

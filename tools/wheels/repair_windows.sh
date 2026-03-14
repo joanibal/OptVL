@@ -19,8 +19,8 @@ if [ "$TARGET_ARCH" = "ARM64" ]; then
     wheel unpack $WHEEL
     pushd optvl*
     ls 
-    llvm-objdump -p (Get-ChildItem *.pyd) | Select-String 'DLL Name'
-    dumpbin /dependents (Get-ChildItem *.pyd)
+    llvm-objdump -p *.pyd | grep 'DLL Name'
+    dumpbin /dependents *.pyd
 else
     echo "Performing stripping for AMD64 target."
 
