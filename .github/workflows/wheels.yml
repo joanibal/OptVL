@@ -26,14 +26,16 @@ jobs:
         # - [macos-14, macosx, arm64, accelerate, "14.0"]
         
         # working
-        - [windows-2025, win, AMD64]
-        - [ubuntu-22.04, manylinux, x86_64]
-        - [macos-14, macosx, arm64, openblas, "12.3"]
-        - [macos-15-intel, macosx, x86_64, openblas, "10.14"]
+        # - [windows-2025, win, AMD64]
+        # - [ubuntu-22.04, manylinux, x86_64]
+        # - [macos-14, macosx, arm64, openblas, "12.3"]
+        - [windows-11-arm, win, ARM64, "", ""]
 
+        # removed 
+        # - [macos-15-intel, macosx, x86_64, openblas, "10.14"]
         
-        python: [["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11"], ["cp312", "3.12"], ["cp313", "3.13"]]
-        # python: [["cp312", "3.12"]]
+        # python: [["cp39", "3.9"], ["cp310", "3.10"], ["cp311", "3.11"], ["cp312", "3.12"], ["cp313", "3.13"]]
+        python: [["cp312", "3.12"]]
 
 
 
@@ -53,6 +55,19 @@ jobs:
           choco install rtools -y --no-progress --force --version=4.0.0.20220206
           echo "c:\rtools40\ucrt64\bin;" >> $env:GITHUB_PATH
         if: ${{ runner.os == 'Windows' }}
+
+
+      - name: Set environment variables for ARM64
+        if: matrix.buildplat[1] == 'win' && matrix.buildplat[2] == 'ARM64'
+        run: |
+            echo "CC=clang-cl" >> $env:GITHUB_ENV
+            echo "CXX=clang-cl" >> $env:GITHUB_ENV
+            echo "FC=flang" >> $env:GITHUB_ENV
+            echo "TARGET_ARCH=${{ matrix.buildplat[2] }}" >> $env:GITHUB_ENV
+   
+      - name: Set up Flang and pkgconf for ARM64
+        if: matrix.buildplat[1] == 'win' && matrix.buildplat[2] == 'ARM64'
+        uses: ./.github/windows_arm64_steps
 
 
       - name: Setup macOS

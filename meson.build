@@ -8,7 +8,6 @@ project(
   default_options: [
     'buildtype=debugoptimized',
     'c_std=c99',
-    'fortran_std=legacy',
   ],
 )
 
@@ -111,12 +110,26 @@ ff_args = ff.get_supported_arguments(
 
 ff_args += [
   '-ffixed-line-length-80', 
-  '-std=legacy',
   '-fdefault-real-8',
   '-fdefault-double-8',
-  '-fPIC',
   '-O2'
 ]
+
+if host_machine.system() != 'windows'
+  ff_args += ['-fPIC']
+endif
+
+# --- add flags for fortran standard ---
+if ff.get_id() == 'gcc'
+  # -std=legacy is not supported by all Fortran compilers, but very useful with
+  # gfortran since it avoids a ton of warnings that we don't care about.
+  # Needs fixing in Meson, see https://github.com/mesonbuild/meson/issues/11633.
+  ff_args += ['-std=legacy']
+elif ff.get_id() == 'llvm-flang'
+
+  ff_args += ['-ffixed-form', '-w']
+  
+endif
 
 numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
 
@@ -178,5 +191,6 @@ py3.extension_module('libavl',
     link_language: 'fortran'
                    
 )
+
 
 install_subdir('optvl', install_dir: py3.get_install_dir())

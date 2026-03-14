@@ -33,7 +33,7 @@ version = "2.4.0" # this automatically updates __init__.py and setup_deprecated.
 
 
 [tool.cibuildwheel]
-skip = "cp36-* cp37-* pp* *_ppc64le *_i686 *_s390x"
+skip = "cp38-* pp* *_ppc64le *_i686 *_s390x"
 build-verbosity = "3"
 test-command = "bash {project}/tools/wheels/cibw_test_command.sh {project}"
 
