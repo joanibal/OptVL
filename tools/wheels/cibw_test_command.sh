@@ -3,6 +3,8 @@ set -xe
 PROJECT_DIR="$1"
 
 cd $PROJECT_DIR/tests
+python -c "import platform; print(platform.machine())"
+llvm-objdump -p ../optvl/libavl.cp312-win_arm64.pyd | findstr "DLL Name"
 
 # install tesing dependencies
 pip install --only-binary :all: scipy 
@@ -14,7 +16,8 @@ pip install psutil "openmdao!=3.38"
 # pip install testflo
 # testflo -v .
 
-python -c "import platform; print(platform.machine())"
+
+
 
 # test package built and installed correctly
 python test_import.py
