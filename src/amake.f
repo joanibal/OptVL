@@ -577,6 +577,14 @@ cc#ifdef USE_CPOML
 C...        nodal grid associated with vortex strip (aft-panel nodes)
 C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
 C...        retained in (x,z) plane at this point
+
+            ! recompute 
+            ! XLASEC
+            ! XUASEC
+            ! ZLASEC
+            ! ZUASEC
+
+
             CALL AKIMA( XLASEC(1,ISEC,ISURF), ZLASEC(1,ISEC,ISURF), NSL,
      &                  XPT(IVC+1), ZL_L, DSDX )
             CALL AKIMA( XUASEC(1,ISEC,ISURF), ZUASEC(1,ISEC,ISURF), NSL,
