@@ -77,7 +77,7 @@
       PARAMETER (NOBMAX=1) ! max number of off body points
       ! PARAMETER (NOBMAX=1) ! max number of off body points
       
-      PARAMETER (ICONX=5) ! 
+      PARAMETER (ICONX=2) ! 
       PARAMETER (IBX=5)  ! max number of airfoil coordinates
       ! PARAMETER (IBX=300)  ! max number of airfoil coordinates
 
