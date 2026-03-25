@@ -594,18 +594,18 @@ C
       real(kind=avl_real) VREFL_DIFF
       real(kind=avl_real) ENC_DIFF
       real(kind=avl_real) ENV_DIFF
-      real(kind=avl_real) ENC_D_DIFF
-      real(kind=avl_real) ENC_G_DIFF
-      real(kind=avl_real) ENV_D_DIFF
-      real(kind=avl_real) ENV_G_DIFF
+c      real(kind=avl_real) ENC_D_DIFF
+c      real(kind=avl_real) ENC_G_DIFF
+c      real(kind=avl_real) ENV_D_DIFF
+c      real(kind=avl_real) ENV_G_DIFF
       real(kind=avl_real) DCP_DIFF
       real(kind=avl_real) DCP_U_DIFF
       real(kind=avl_real) DCP_D_DIFF
       real(kind=avl_real) DCP_G_DIFF
       real(kind=avl_real) GAM_DIFF
       real(kind=avl_real) GAM_U_0_DIFF
-      real(kind=avl_real) GAM_U_D_DIFF
-      real(kind=avl_real) GAM_U_G_DIFF
+c      real(kind=avl_real) GAM_U_D_DIFF
+C      real(kind=avl_real) GAM_U_G_DIFF
       real(kind=avl_real) GAM_U_DIFF
       real(kind=avl_real) GAM_D_DIFF
       real(kind=avl_real) GAM_G_DIFF
@@ -643,17 +643,17 @@ C
      & ENC_DIFF(3,NVMAX),
      & ENV_DIFF(3,NVMAX),
      & ENC_D_DIFF(3,NVMAX,NDMAX),
-     & ENC_G_DIFF(3,NVMAX,NGMAX),
-     & ENV_D_DIFF(3,NVMAX,NDMAX),
-     & ENV_G_DIFF(3,NVMAX,NGMAX),
+c     & ENC_G_DIFF(3,NVMAX,NGMAX),
+c     & ENV_D_DIFF(3,NVMAX,NDMAX),
+c     & ENV_G_DIFF(3,NVMAX,NGMAX),
      & DCP_DIFF(NVMAX),
      & DCP_U_DIFF(NVMAX,NUMAX),
      & DCP_D_DIFF(NVMAX,NDMAX),
      & DCP_G_DIFF(NVMAX,NGMAX),
      & GAM_DIFF(NVMAX),
      & GAM_U_0_DIFF(NVMAX,NUMAX),
-     & GAM_U_D_DIFF(NVMAX,NUMAX,NDMAX),
-     & GAM_U_G_DIFF(NVMAX,NUMAX,NGMAX),
+c     & GAM_U_D_DIFF(NVMAX,NUMAX,NDMAX),
+c      & GAM_U_G_DIFF(NVMAX,NUMAX,NGMAX),
      & GAM_U_DIFF(NVMAX,NUMAX),
      & GAM_D_DIFF(NVMAX,NDMAX),
      & GAM_G_DIFF(NVMAX,NGMAX),
@@ -697,38 +697,38 @@ C
       real(kind=avl_real) AMACH_DIFF
       real(kind=avl_real) VC_DIFF
       real(kind=avl_real) VC_U_DIFF
-      real(kind=avl_real) VC_D_DIFF
-      real(kind=avl_real) VC_G_DIFF
+c      real(kind=avl_real) VC_D_DIFF
+c      real(kind=avl_real) VC_G_DIFF
       real(kind=avl_real) WC_DIFF
       real(kind=avl_real) WC_U_DIFF
-      real(kind=avl_real) WC_D_DIFF
-      real(kind=avl_real) WC_G_DIFF
+c      real(kind=avl_real) WC_D_DIFF
+c      real(kind=avl_real) WC_G_DIFF
       real(kind=avl_real) VV_DIFF
       real(kind=avl_real) VV_U_DIFF
       real(kind=avl_real) VV_D_DIFF
-      real(kind=avl_real) VV_G_DIFF
+c      real(kind=avl_real) VV_G_DIFF
       real(kind=avl_real) WV_DIFF
       real(kind=avl_real) WV_U_DIFF
       real(kind=avl_real) WV_D_DIFF
-      real(kind=avl_real) WV_G_DIFF
+c      real(kind=avl_real) WV_G_DIFF
       COMMON /SOLV_R_DIFF/
      & AMACH_DIFF,
      & VC_DIFF(3,NVMAX),
      & VC_U_DIFF(3,NVMAX,NUMAX),
-     & VC_D_DIFF(3,NVMAX,NDMAX),
-     & VC_G_DIFF(3,NVMAX,NGMAX),
+c     & VC_D_DIFF(3,NVMAX,NDMAX),
+c     & VC_G_DIFF(3,NVMAX,NGMAX),
      & WC_DIFF(3,NVMAX),
      & WC_U_DIFF(3,NVMAX,NUMAX),
-     & WC_D_DIFF(3,NVMAX,NDMAX),
-     & WC_G_DIFF(3,NVMAX,NGMAX),
+c     & WC_D_DIFF(3,NVMAX,NDMAX),
+c     & WC_G_DIFF(3,NVMAX,NGMAX),
      & VV_DIFF(3,NVMAX),
      & VV_U_DIFF(3,NVMAX,NUMAX),
      & VV_D_DIFF(3,NVMAX,NDMAX),
-     & VV_G_DIFF(3,NVMAX,NGMAX),
+c     & VV_G_DIFF(3,NVMAX,NGMAX),
      & WV_DIFF(3,NVMAX),
      & WV_U_DIFF(3,NVMAX,NUMAX),
-     & WV_D_DIFF(3,NVMAX,NDMAX),
-     & WV_G_DIFF(3,NVMAX,NGMAX)
+     & WV_D_DIFF(3,NVMAX,NDMAX)
+c     & WV_G_DIFF(3,NVMAX,NGMAX)
 C
       real(kind=avl_real) ROB_DIFF
       real(kind=avl_real) VOB_DIFF
