@@ -390,28 +390,28 @@ C
       real(kind=avl_real) SSPACE_DIFF
       real(kind=avl_real) SSPACES_DIFF
       real(kind=avl_real) XYZLES_DIFF
-      real(kind=avl_real) XSEC_DIFF
-      real(kind=avl_real) YSEC_DIFF
+c      real(kind=avl_real) XSEC_DIFF
+c      real(kind=avl_real) YSEC_DIFF
       real(kind=avl_real) XFMIN_R_DIFF
       real(kind=avl_real) XFMAX_R_DIFF
-      real(kind=avl_real) XLASEC_DIFF
-      real(kind=avl_real) ZLASEC_DIFF
-      real(kind=avl_real) XUASEC_DIFF
-      real(kind=avl_real) ZUASEC_DIFF
+c      real(kind=avl_real) XLASEC_DIFF
+c      real(kind=avl_real) ZLASEC_DIFF
+c      real(kind=avl_real) XUASEC_DIFF
+c      real(kind=avl_real) ZUASEC_DIFF
       real(kind=avl_real) CHORDS_DIFF
       real(kind=avl_real) AINCS_DIFF
-      real(kind=avl_real) XASEC_DIFF
-      real(kind=avl_real) CASEC_DIFF
-      real(kind=avl_real) SASEC_DIFF
-      real(kind=avl_real) TASEC_DIFF
-      real(kind=avl_real) CLCDSEC_DIFF
+c      real(kind=avl_real) XASEC_DIFF
+c      real(kind=avl_real) CASEC_DIFF
+c      real(kind=avl_real) SASEC_DIFF
+c      real(kind=avl_real) TASEC_DIFF
+c      real(kind=avl_real) CLCDSEC_DIFF
       real(kind=avl_real) CLCDSRF_DIFF
       real(kind=avl_real) CLAF_DIFF
-      real(kind=avl_real) XHINGED_DIFF
-      real(kind=avl_real) VHINGED_DIFF
-      real(kind=avl_real) GAIND_DIFF
-      real(kind=avl_real) REFLD_DIFF
-      real(kind=avl_real) GAING_DIFF
+c      real(kind=avl_real) XHINGED_DIFF
+c      real(kind=avl_real) VHINGED_DIFF
+c      real(kind=avl_real) GAIND_DIFF
+c      real(kind=avl_real) REFLD_DIFF
+c      real(kind=avl_real) GAING_DIFF
       COMMON /SURF_GEOM_R_DIFF/
      & XYZSCAL_DIFF(3, NFMAX),
      & XYZTRAN_DIFF(3, NFMAX),
@@ -421,28 +421,28 @@ C
      & SSPACE_DIFF(NFMAX),
      & SSPACES_DIFF(NSECMAX, NFMAX),
      & XYZLES_DIFF(3, NSECMAX, NFMAX),
-     & XSEC_DIFF(IBX, NSECMAX, NFMAX),
-     & YSEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & XSEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & YSEC_DIFF(IBX, NSECMAX, NFMAX),
      & XFMIN_R_DIFF(NSECMAX, NFMAX),
      & XFMAX_R_DIFF(NSECMAX, NFMAX),
-     & XLASEC_DIFF(IBX, NSECMAX, NFMAX),
-     & ZLASEC_DIFF(IBX, NSECMAX, NFMAX),
-     & XUASEC_DIFF(IBX, NSECMAX, NFMAX),
-     & ZUASEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & XLASEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & ZLASEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & XUASEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & ZUASEC_DIFF(IBX, NSECMAX, NFMAX),
      & CHORDS_DIFF(NSECMAX, NFMAX),
      & AINCS_DIFF(NSECMAX, NFMAX),
-     & XASEC_DIFF(IBX, NSECMAX, NFMAX),
-     & CASEC_DIFF(IBX, NSECMAX, NFMAX),
-     & SASEC_DIFF(IBX, NSECMAX, NFMAX),
-     & TASEC_DIFF(IBX, NSECMAX, NFMAX),
-     & CLCDSEC_DIFF(6, NSECMAX, NFMAX),
+c     & XASEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & CASEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & SASEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & TASEC_DIFF(IBX, NSECMAX, NFMAX),
+c     & CLCDSEC_DIFF(6, NSECMAX, NFMAX),
      & CLCDSRF_DIFF(6, NFMAX),
-     & CLAF_DIFF(NSECMAX, NFMAX),
-     & XHINGED_DIFF(ICONX, NSECMAX, NFMAX),
-     & VHINGED_DIFF(3, ICONX, NSECMAX, NFMAX),
-     & GAIND_DIFF(ICONX, NSECMAX, NFMAX),
-     & REFLD_DIFF(ICONX, NSECMAX, NFMAX),
-     & GAING_DIFF(ICONX, NSECMAX, NFMAX)
+     & CLAF_DIFF(NSECMAX, NFMAX)
+c     & XHINGED_DIFF(ICONX, NSECMAX, NFMAX),
+c     & VHINGED_DIFF(3, ICONX, NSECMAX, NFMAX),
+c     & GAIND_DIFF(ICONX, NSECMAX, NFMAX),
+c     & REFLD_DIFF(ICONX, NSECMAX, NFMAX),
+c     & GAING_DIFF(ICONX, NSECMAX, NFMAX)
 C
       real(kind=avl_real) MSHBLK_DIFF
       real(kind=avl_real) RV1MSH_DIFF
