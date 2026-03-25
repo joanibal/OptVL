@@ -8,6 +8,7 @@ python module libavl ! in
 
         subroutine avl ! in :libavl:avl.f
             include '../includes/AVL.INC'
+            include '../includes/AVL_surf.INC'
             include '../includes/AVL_ad_seeds.inc'
         
             ! parameters from 

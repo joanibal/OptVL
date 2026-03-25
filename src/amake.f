@@ -24,6 +24,7 @@ C     Sets up all stuff for surface ISURF,
 C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
 C
 C
       REAL XYZLEL(3), XYZLER(3)
@@ -650,6 +651,7 @@ C
 
       integer function flatidx(idx_x, idx_y, idx_surf)
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       ! store MFRST and  NVC in the common block
       integer idx_x, idx_y, idx_surf
       flatidx = idx_x + (idx_y - 1) * (NVC(idx_surf)+1)
@@ -663,6 +665,7 @@ C     using info from configuration input
 C     and the given mesh coordinate array.
 c--------------------------------------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       ! input/output
       integer isurf
 
@@ -1425,6 +1428,7 @@ c     arrays on the next execution.
 c--------------------------------------------------------------
       use avl_heap_inc
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       integer ii
       
       NSTRIP = 0
@@ -1484,6 +1488,7 @@ C     Sets up all stuff for body IBODY,
 C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
 C
 C      REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
 C
@@ -1582,6 +1587,7 @@ c--------------------------------------------------------------
 c     Updates all bodies, using the stored data.
 c--------------------------------------------------------------
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       integer IBODY, NBOD, NBLDS
       character*120 upname
 
@@ -1623,6 +1629,7 @@ c--------------------------------------------------------------
 c     Sets the airfoil coodinate data for the given section and surface
 c--------------------------------------------------------------
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
 c      input
       integer isec, isurf, n, nin
       real x(n), y(n)
@@ -1682,6 +1689,7 @@ c--------------------------------------------------------------
 c     Sets the body oml coodinate data for the given section and surface
 c--------------------------------------------------------------
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       integer ibod, nb, nin
       real xb(nb), yb(nb)
       logical storecoords
@@ -1710,6 +1718,7 @@ C     Adds image of surface NN,
 C     reflected about y=Ypt.
 C-----------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       CHARACTER*(*) MSG
       integer idx_vor
 C
@@ -1931,6 +1940,7 @@ C     Adds image of surface NN,
 C     reflected about y=Ypt.
 C-----------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       CHARACTER*(*) MSG
 C
       NNI = NBODY + 1
@@ -2017,6 +2027,7 @@ C
 C...COMMENTS   
 C
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
 C
       REAL EP(3), EQ(3), ES(3), EB(3), EC(3), ECXB(3)
       REAL EC_G(3,NDMAX), ECXB_G(3)

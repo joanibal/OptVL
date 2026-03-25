@@ -23,6 +23,7 @@ C---------------------------------------------------------
 C     Reads an processes an AVL configuration input file
 C---------------------------------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
 C
       CHARACTER*(*) FNAME
       LOGICAL FERR

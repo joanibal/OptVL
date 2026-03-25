@@ -286,6 +286,7 @@ class OVLSolver(object):
 
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
+        
 
         self.avl = MExt.MExt("libavl", module_name, "optvl", lib_so_file=avl_lib_so_file, debug=debug)._module
 
