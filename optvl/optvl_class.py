@@ -416,6 +416,9 @@ class OVLSolver(object):
         # set the default solver tolerance
         self.set_avl_fort_arr("CASE_R", "EXEC_TOL", 2e-5)
 
+        # init the DVGeo variable
+        self.DVGeo = None
+
         if timing:
             print(f"AVL init took {time.time() - start_time} seconds")
 
@@ -3159,7 +3162,6 @@ class OVLSolver(object):
                 fid.write(f" {data['gaing'][idx_sec][idx_local_des_var]}\n")
     
     # region --- pyGeo API
-
     def set_DVGeo(self, DVGeo, pointSetKwargs=None, customPointSetFamilies=None):
         """
         Set the DVGeometry object that will manipulate 'geometry' in
@@ -3917,6 +3919,7 @@ class OVLSolver(object):
         con_seeds: Optional[Dict[str, float]] = None,
         geom_seeds: Optional[Dict[str, Dict[str, any]]] = None,
         mesh_seeds: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
+        dvgeo_seeds: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
         param_seeds: Optional[Dict[str, float]] = None,
         ref_seeds: Optional[Dict[str, float]] = None,
         gamma_seeds: Optional[np.ndarray] = None,
@@ -3931,6 +3934,7 @@ class OVLSolver(object):
             con_seeds: Case constraint AD seeds
             geom_seeds: Geometric AD seeds in the same format as the geometric data
             mesh_seeds: Mesh geometry AD seeds in the same format as the mesh data
+            dvgeo_seeds: DVGeo DV seeds for a given surface and then design variable
             param_seeds: Case parameter AD seeds
             ref_seeds: Reference condition AD seeds
             gamma_seeds: Circulation AD seeds
@@ -3964,6 +3968,9 @@ class OVLSolver(object):
         if mesh_seeds is None:
             mesh_seeds = {}
 
+        if self.DVGeo is None:
+            dvgeo_seeds = {}
+
         if gamma_seeds is None:
             gamma_seeds = np.zeros(mesh_size)
 
@@ -3988,12 +3995,36 @@ class OVLSolver(object):
             # self.clear_ad_seeds()
             self.set_variable_ad_seeds(con_seeds)
             self.set_geom_ad_seeds(geom_seeds)
-            self.set_mesh_ad_seeds(mesh_seeds)
+            # self.set_mesh_ad_seeds(mesh_seeds)
             self.set_gamma_ad_seeds(gamma_seeds)
             self.set_gamma_d_ad_seeds(gamma_d_seeds)
             self.set_gamma_u_ad_seeds(gamma_u_seeds)
             self.set_parameter_ad_seeds(param_seeds)
             self.set_reference_ad_seeds(ref_seeds)
+
+            # Since DVGeo seeds operate entirely within the python layer we set them here
+            if self.DVGeo is not None and dvgeo_seeds is not None and mesh_seeds is not None:
+                # Loop over all surfaces
+                for surface in self.unique_surface_names:
+                    # Get the pointset name
+                    idx_surf = self.get_surface_index(surf_name=surface)
+                    if idx_surf in self.point_sets.keys():
+                        point_set_name = self.point_sets[idx_surf]
+                    else:
+                        continue # This surface doesn't have a pointset, skip it
+
+                    # If no mesh seed was provided for the surface we will need to start it at zero
+                    if surface not in mesh_seeds.keys():
+                        nx = self.avl.SURF_GEOM_I.NVC[idx_surf] + 1
+                        ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
+                        mesh_seeds[surface] = {}
+                        mesh_seeds[surface]["mesh"] = np.zeros((nx*ny,3))
+
+                    # Loop over the design variables and accumulate the sensitivity product into the mesh_seeds
+                    mesh_seeds[surface]["mesh"] += self.DVGeo.totalSensitivityProd(dvgeo_seeds[surface], point_set_name).reshape(
+                        mesh_seeds[surface]["mesh"].shape
+                    )
+            self.set_mesh_ad_seeds(mesh_seeds)
 
             self.avl.update_surfaces_d()
             self.avl.get_res_d()
@@ -4024,12 +4055,37 @@ class OVLSolver(object):
         if mode == "FD":
             self.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
             self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
-            self.set_mesh_ad_seeds(mesh_seeds, mode="FD", scale=step)
+            # self.set_mesh_ad_seeds(mesh_seeds, mode="FD", scale=step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=step)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=step)
             self.set_gamma_u_ad_seeds(gamma_u_seeds, mode="FD", scale=step)
             self.set_parameter_ad_seeds(param_seeds, mode="FD", scale=step)
             self.set_reference_ad_seeds(ref_seeds, mode="FD", scale=step)
+
+            # Since DVGeo seeds operate entirely within the python layer we set them here
+            if self.DVGeo is not None and dvgeo_seeds is not None and mesh_seeds is not None:
+                # Loop over all surfaces
+                for surface in self.unique_surface_names:
+                    # Get the pointset name
+                    idx_surf = self.get_surface_index(surf_name=surface)
+                    if idx_surf in self.point_sets.keys():
+                        point_set_name = self.point_sets[idx_surf]
+                    else:
+                        continue # This surface doesn't have a pointset, skip it
+
+                    # If no mesh seed was provided for the surface we will need to start it at zero
+                    if surface not in mesh_seeds.keys():
+                        nx = self.avl.SURF_GEOM_I.NVC[idx_surf] + 1
+                        ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
+                        mesh_seeds[surface] = {}
+                        mesh_seeds[surface]["mesh"] = np.zeros((nx*ny,3))
+
+                    # Loop over the design variables and accumulate the sensitivity product into the mesh_seeds
+                    # for dv in dvgeo_seeds[surface].keys():
+                    mesh_seeds[surface]["mesh"] += self.DVGeo.totalSensitivityProd(dvgeo_seeds[surface], point_set_name).reshape(
+                        mesh_seeds[surface]["mesh"].shape
+                    )
+            self.set_mesh_ad_seeds(mesh_seeds, mode="FD", scale=step)
 
             # propogate the seeds through without resolving
             self.avl.update_surfaces()
