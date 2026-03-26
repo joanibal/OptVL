@@ -4310,7 +4310,11 @@ class OVLSolver(object):
             print(f"    Time to extract seeds: {time.time() - time_last}")
             time_last = time.time()
 
+        # Create dv_geo seeds a empty dict of surface keys
         dvgeo_seeds = {}
+        for surf_key in self.unique_surface_names:
+            dvgeo_seeds[surf_key] = {}
+
         # If a DVGeo is present then propagate the mesh seeds all the way back to the DVs
         if self.DVGeo is not None and self.DVGeo.getNDV() > 0:
             # Loop over all surfaces
