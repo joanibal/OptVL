@@ -62,6 +62,11 @@ select = "*-win_amd64"
 # environment = { CMAKE_PREFIX_PATH="c:/opt/64" }
 environment = { PKG_CONFIG_PATH="c:/opt/64/lib/pkgconfig" }
 
+# pyproject.toml
+[tool.cibuildwheel.config-settings]
+setup-args = ["-Dbuildtype=debug"]   # optional, but helps
+compile-args = ["-v"]                # this is the key one — makes ninja verbose
+
 [project.urls]
 homepage = "https://github.com/joanibal/OptVL"
 # documentation =
