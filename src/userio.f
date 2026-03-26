@@ -298,7 +298,7 @@ C---- put input into local work string (which will be munched)
       REC(1:ILENP) = INPUT(1:ILEN) // ' ,'
 C
 C---- ignore everything after a "!" character
-      K = INDEX(REC,'!')
+      K = INDEX(REC(1:ILENP),'!')
       IF(K.GT.0) REC(1:ILEN) = REC(1:K-1)
 C
       NINP = N
@@ -371,7 +371,7 @@ C---- put input into local work string (which will be munched)
       REC(1:ILENP) = INPUT(1:ILEN) // ' ,'
 C
 C---- ignore everything after a "!" character
-      K = INDEX(REC,'!')
+      K = INDEX(REC(1:ILENP),'!')
       IF(K.GT.0) REC(1:ILEN) = REC(1:K-1)
 C
       NINP = N
@@ -429,7 +429,7 @@ C----------------------------------------------------------
 C     Parses character string INPUT into an array
 C     of logical variables returned in A(1...N)
 C
-C     Will attempt to extract no more than N variables, 
+C     Will attempt to extract no more than N variables,
 C     unless N = 0, in which case all variables present
 C     in INPUT will be extracted.
 C
@@ -445,7 +445,7 @@ C---- put input into local work string (which will be munched)
       REC(1:ILENP) = INPUT(1:ILEN) // ' ,'
 C
 C---- ignore everything after a "!" character
-      K = INDEX(REC,'!')
+      K = INDEX(REC(1:ILENP),'!')
       IF(K.GT.0) REC(1:ILEN) = REC(1:K-1)
 C
       NINP = N
