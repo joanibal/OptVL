@@ -1,6 +1,7 @@
       subroutine write_tecplot(file_name, add_time, solution_time)
 C
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_oml.INC'
 C
       LOGICAL LRANGEALL
       INTEGER LU, nChords, nStrips, nPts

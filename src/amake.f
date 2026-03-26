@@ -25,6 +25,7 @@ C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_oml.INC'
 C
 C
       REAL XYZLEL(3), XYZLER(3)
@@ -666,6 +667,7 @@ C     and the given mesh coordinate array.
 c--------------------------------------------------------------
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_oml.INC'
       ! input/output
       integer isurf
 
@@ -1719,6 +1721,7 @@ C     reflected about y=Ypt.
 C-----------------------------------
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_oml.INC'
       CHARACTER*(*) MSG
       integer idx_vor
 C

@@ -23,6 +23,7 @@ C***********************************************************************
       SUBROUTINE CPOML(save_file)
 C
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_oml.INC'
 C
       logical :: save_file
       LOGICAL LRANGEALL
@@ -59,6 +60,7 @@ C
 C...COMMENTS
 C
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_oml.INC'
 C
       PARAMETER (NCMAX=256)
       DIMENSION AICT(NCMAX,NCMAX)       ! AIC for no normal flow BC
@@ -186,6 +188,7 @@ C
 C...COMMENTS    C code reader in read_cpoml.c
 C
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_oml.INC'
       logical :: save_file
       
       integer idx_mesh, idx_mesh_surf, idx_LE, idx_LE_lo, idx_LE_up

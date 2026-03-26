@@ -170,23 +170,23 @@ C
 C
       DO i=1,nvor
         DO k=1,3
-          vc(k, i) = 0.0
+          ! vc(k, i) = 0.0
           vv_diff(k, i) = 0.D0
           vv(k, i) = 0.0
 C--- h.v. velocity at control points and vortex midpoints
           DO j=1,nvor
-            vc(k, i) = vc(k, i) + wc_gam(k, i, j)*gam(j)
+            ! vc(k, i) = vc(k, i) + wc_gam(k, i, j)*gam(j)
             vv_diff(k, i) = vv_diff(k, i) + gam(j)*wv_gam_diff(k, i, j) 
      +        + wv_gam(k, i, j)*gam_diff(j)
             vv(k, i) = vv(k, i) + wv_gam(k, i, j)*gam(j)
           ENDDO
           DO n=1,numax
-            vc_u(k, i, n) = 0.0
+            ! vc_u(k, i, n) = 0.0
             vv_u_diff(k, i, n) = 0.D0
             vv_u(k, i, n) = 0.0
             DO j=1,nvor
-              vc_u(k, i, n) = vc_u(k, i, n) + wc_gam(k, i, j)*gam_u(j, n
-     +          )
+              ! vc_u(k, i, n) = vc_u(k, i, n) + wc_gam(k, i, j)*gam_u(j, n
+    !  +          )
               vv_u_diff(k, i, n) = vv_u_diff(k, i, n) + gam_u(j, n)*
      +          wv_gam_diff(k, i, j) + wv_gam(k, i, j)*gam_u_diff(j, n)
               vv_u(k, i, n) = vv_u(k, i, n) + wv_gam(k, i, j)*gam_u(j, n
@@ -194,12 +194,12 @@ C--- h.v. velocity at control points and vortex midpoints
             ENDDO
           ENDDO
           DO n=1,ncontrol
-            vc_d(k, i, n) = 0.0
+            ! vc_d(k, i, n) = 0.0
             vv_d_diff(k, i, n) = 0.D0
             vv_d(k, i, n) = 0.0
             DO j=1,nvor
-              vc_d(k, i, n) = vc_d(k, i, n) + wc_gam(k, i, j)*gam_d(j, n
-     +          )
+              ! vc_d(k, i, n) = vc_d(k, i, n) + wc_gam(k, i, j)*gam_d(j, n
+    !  +          )
               vv_d_diff(k, i, n) = vv_d_diff(k, i, n) + gam_d(j, n)*
      +          wv_gam_diff(k, i, j) + wv_gam(k, i, j)*gam_d_diff(j, n)
               vv_d(k, i, n) = vv_d(k, i, n) + wv_gam(k, i, j)*gam_d(j, n
@@ -207,11 +207,11 @@ C--- h.v. velocity at control points and vortex midpoints
             ENDDO
           ENDDO
           DO n=1,ndesign
-            vc_g(k, i, n) = 0.0
+            ! vc_g(k, i, n) = 0.0
             vv_g(k, i, n) = 0.0
             DO j=1,nvor
-              vc_g(k, i, n) = vc_g(k, i, n) + wc_gam(k, i, j)*gam_g(j, n
-     +          )
+              ! vc_g(k, i, n) = vc_g(k, i, n) + wc_gam(k, i, j)*gam_g(j, n
+    !  +          )
               vv_g(k, i, n) = vv_g(k, i, n) + wv_gam(k, i, j)*gam_g(j, n
      +          )
             ENDDO
@@ -228,21 +228,21 @@ C--- velocity contribution from body sources and doublets
      +      (2) + wvsrd_u(k, i, 3)*vinf(3) + wvsrd_u(k, i, 4)*wrot(1) + 
      +      wvsrd_u(k, i, 5)*wrot(2) + wvsrd_u(k, i, 6)*wrot(3)
 C--- total velocity at control points and vortex midpoints
-          wc(k, i) = vc(k, i) + wcsrd(k, i)
+          ! wc(k, i) = vc(k, i) + wcsrd(k, i)
           wv_diff(k, i) = vv_diff(k, i) + wvsrd_diff(k, i)
           wv(k, i) = vv(k, i) + wvsrd(k, i)
           DO n=1,numax
-            wc_u(k, i, n) = vc_u(k, i, n) + wcsrd_u(k, i, n)
+            ! wc_u(k, i, n) = vc_u(k, i, n) + wcsrd_u(k, i, n)
             wv_u_diff(k, i, n) = vv_u_diff(k, i, n)
             wv_u(k, i, n) = vv_u(k, i, n) + wvsrd_u(k, i, n)
           ENDDO
           DO n=1,ndmax
-            wc_d(k, i, n) = vc_d(k, i, n)
+            ! wc_d(k, i, n) = vc_d(k, i, n)
             wv_d_diff(k, i, n) = vv_d_diff(k, i, n)
             wv_d(k, i, n) = vv_d(k, i, n)
           ENDDO
           DO n=1,ngmax
-            wc_g(k, i, n) = vc_g(k, i, n)
+            ! wc_g(k, i, n) = vc_g(k, i, n)
             wv_g(k, i, n) = vv_g(k, i, n)
           ENDDO
         ENDDO

@@ -44,10 +44,10 @@ C
      & FEVDEF,         ! default eigenvalue save file
      & TITLE,          ! configuration title
      & STITLE(NFMAX),  ! surface title
-     & AFILES(NSMAX,NFMAX),  ! airfoil file names
+     & AFILES(NSECMAX,NFMAX),  ! airfoil file names
      & BTITLE(NBMAX),  ! body title
      & BFILES(NBMAX),  ! body file names
-     & NACA(NSMAX,NFMAX),  ! naca section names
+     & NACA(NSECMAX,NFMAX),  ! naca section names
      & RTITLE(NRMAX),  ! run case title
      & DNAME(NDMAX),   ! control variable name
      & GNAME(NGMAX),   ! design  variable name
@@ -600,22 +600,6 @@ cc#else
      & RES_U(NVMAX,NUMAX),               ! residual for gamma_u lin sys
      & RES_D(NVMAX,NDMAX)        ! residual for gamma_d lin. sys 
 
-cc#ifdef USE_CPOML
-      REAL(kind=avl_real) XYN1
-      REAL(kind=avl_real) XYN2
-      REAL(kind=avl_real) ZLON1
-      REAL(kind=avl_real) ZLON2
-      REAL(kind=avl_real) ZUPN1
-      REAL(kind=avl_real) ZUPN2
-      REAL(kind=avl_real) XYZSURF
-      REAL(kind=avl_real) CPSURF
-      COMMON /VRTX_S/
-     & XYN1(2,NVMAX), XYN2(2,NVMAX),  ! left/right aft-node of element
-     & ZLON1(NVMAX), ZLON2(NVMAX),    ! left/right lower z-coord of aft-node
-     & ZUPN1(NVMAX), ZUPN2(NVMAX),     ! left/right upper z-coord of aft-node
-     & XYZSURF(3, NVMAX, NFMAX),
-     & CPSURF(NVMAX,NFMAX)
-cc#endif
 C
       COMMON /BODY_I/
      & NL(NBMAX),       ! number of source-line nodes in body
@@ -644,13 +628,13 @@ C
 
       REAL(kind=avl_real) AMACH
       REAL(kind=avl_real) VC
-      REAL(kind=avl_real) VC_U
-      REAL(kind=avl_real) VC_D
-      REAL(kind=avl_real) VC_G
-      REAL(kind=avl_real) WC
-      REAL(kind=avl_real) WC_U
-      REAL(kind=avl_real) WC_D
-      REAL(kind=avl_real) WC_G
+c      REAL(kind=avl_real) VC_U
+c      REAL(kind=avl_real) VC_D
+c      REAL(kind=avl_real) VC_G
+c      REAL(kind=avl_real) WC
+c      REAL(kind=avl_real) WC_U
+c      REAL(kind=avl_real) WC_D
+c      REAL(kind=avl_real) WC_G
       REAL(kind=avl_real) WV
       REAL(kind=avl_real) WV_U
       REAL(kind=avl_real) WV_D
@@ -667,14 +651,14 @@ cc     & AICN(NVMAX,NVMAX),     ! normalwash AIC matrix (and VL system matrix)
 cc     & WC_GAM(3,NVMAX,NVMAX), ! c.p. velocity/Gamma influence matrix
 cc     & WV_GAM(3,NVMAX,NVMAX), ! h.v. velocity/Gamma influence matrix
      & VC(3,NVMAX),           ! h.v. induced velocity at c.p.
-     & VC_U(3,NVMAX,NUMAX),
-     & VC_D(3,NVMAX,NDMAX),
-     & VC_G(3,NVMAX,NGMAX),
+c     & VC_U(3,NVMAX,NUMAX),
+c     & VC_D(3,NVMAX,NDMAX),
+c     & VC_G(3,NVMAX,NGMAX),
 C
-     & WC(3,NVMAX),           ! total induced velocity at c.p. (used in residual)
-     & WC_U(3,NVMAX,NUMAX),
-     & WC_D(3,NVMAX,NDMAX),
-     & WC_G(3,NVMAX,NGMAX),
+c     & WC(3,NVMAX),           ! total induced velocity at c.p. (used in residual)
+C    & WC_U(3,NVMAX,NUMAX),
+C    & WC_D(3,NVMAX,NDMAX),
+C    & WC_G(3,NVMAX,NGMAX),
 C
      & VV(3,NVMAX),           ! h.v. induced velocity at h.v.
      & VV_U(3,NVMAX,NUMAX),
