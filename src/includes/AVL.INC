@@ -439,7 +439,8 @@ c
      & NVC(NFMAX), ! number of chordwise elements
      & NVS(NFMAX), ! number of spanwise elements
      & NSPANS(NSECMAX, NFMAX), ! number of spanwise elements vector
-     & NASEC(NSECMAX, NFMAX),
+     & NASEC(NSECMAX, NFMAX), ! number of points used to represent section geometry
+     & NAPTSSEC(NSECMAX, IBX), ! number of points of input airfoil geometry
      & ICONTD(ICONX, NSECMAX, NFMAX), ! control variable index
      & NSCON(NSECMAX, NFMAX), ! number of control variables
      & IDESTD(ICONX, NSECMAX, NFMAX), ! design variable index
