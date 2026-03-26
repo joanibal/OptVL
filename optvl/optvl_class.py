@@ -4064,7 +4064,7 @@ class OVLSolver(object):
             self.set_reference_ad_seeds(ref_seeds, mode="FD", scale=step)
 
 
-            # Since DVGeo operates entirely within the python layer we set them here
+            # Since DVGeo operates entirely within the python layer we have have to do this
             if self.DVGeo is not None and dvgeo_seeds is not None:
                 # Loop over all surfaces
                 for surface in self.unique_surface_names:
@@ -4088,9 +4088,8 @@ class OVLSolver(object):
                     ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
 
                     # Compute the perturbed mesh values
-                    mesh_pertub = self.DVGeo.update(point_set_name).reshape(
-                        (nx,ny,3)
-                    )
+                    coords = self.DVGeo.update(point_set_name)
+                    mesh_pertub = copy.deepcopy(coords.reshape((ny,nx,3)).transpose((1,0,2)))
 
                     self.set_mesh(idx_surf,mesh_pertub)
 
@@ -4142,10 +4141,9 @@ class OVLSolver(object):
                     nx = self.avl.SURF_GEOM_I.NVC[idx_surf] + 1
                     ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
 
-                    # Compute the perturbed mesh values
-                    mesh_orig = self.DVGeo.update(point_set_name).reshape(
-                        (nx,ny,3)
-                    )
+                    # Compute the original mesh values
+                    coords = self.DVGeo.update(point_set_name)
+                    mesh_orig = copy.deepcopy(coords.reshape((ny,nx,3)).transpose((1,0,2)))
 
                     self.set_mesh(idx_surf,mesh_orig)
 
