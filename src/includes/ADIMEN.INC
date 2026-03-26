@@ -78,6 +78,6 @@
       ! PARAMETER (NOBMAX=1) ! max number of off body points
       
       PARAMETER (ICONX=20) ! max number of control or design variable declaration lines per section 
-      PARAMETER (IBX=75)  ! max number of airfoil coordinates
+      PARAMETER (IBX=100)  ! max number of airfoil coordinates
       ! PARAMETER (IBX=300)  ! max number of airfoil coordinates
 
