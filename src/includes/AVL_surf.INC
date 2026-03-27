@@ -1,4 +1,6 @@
 C      !start added variables for python geometry minipulation
+      ! include ADIMEN.INC
+      
 
       LOGICAL LDUPL_B
       COMMON /BODY_GEOM_L/
@@ -92,16 +94,16 @@ c
      & YSEC(IBX, NSECMAX, NFMAX), ! raw section input y coordinates
      & XFMIN_R(NSECMAX, NFMAX), ! section input lower x bound 
      & XFMAX_R(NSECMAX, NFMAX), ! section input upper x bound 
-     & XLASEC(50, NSECMAX, NFMAX), ! airfoil lower surface x-coords
-     & ZLASEC(50, NSECMAX, NFMAX), ! airfoil lower surface z-coords
-     & XUASEC(50, NSECMAX, NFMAX), ! airfoil upper surface x-coords
-     & ZUASEC(50, NSECMAX, NFMAX), ! airfoil upper surface z-coords
+     & XLASEC(25, NSECMAX, NFMAX), ! airfoil lower surface x-coords
+     & ZLASEC(25, NSECMAX, NFMAX), ! airfoil lower surface z-coords
+     & XUASEC(25, NSECMAX, NFMAX), ! airfoil upper surface x-coords
+     & ZUASEC(25, NSECMAX, NFMAX), ! airfoil upper surface z-coords
      & CHORDS(NSECMAX, NFMAX), ! chord length vectorm
      & AINCS(NSECMAX, NFMAX), ! incidence angle vector
-     & XASEC(50, NSECMAX, NFMAX),  ! the x coordinate aifoil section
-     & CASEC(50, NSECMAX, NFMAX),  ! camber line at xasec
-     & SASEC(50, NSECMAX, NFMAX),  ! slope of camber line at xasec
-     & TASEC(50, NSECMAX, NFMAX),   ! thickness at xasec
+     & XASEC(25, NSECMAX, NFMAX),  ! the x coordinate aifoil section
+     & CASEC(25, NSECMAX, NFMAX),  ! camber line at xasec
+     & SASEC(25, NSECMAX, NFMAX),  ! slope of camber line at xasec
+     & TASEC(25, NSECMAX, NFMAX),   ! thickness at xasec
      & CLCDSEC(6, NSECMAX, NFMAX),
      & CLCDSRF(6, NFMAX),
      & CLAF(NSECMAX, NFMAX),   ! CL alpha (dCL/da) scaling factor
