@@ -61,10 +61,10 @@ c
       REAL(kind=avl_real) YSEC
       REAL(kind=avl_real) XFMIN_R
       REAL(kind=avl_real) XFMAX_R
-c      REAL(kind=avl_real) XLASEC
-c      REAL(kind=avl_real) ZLASEC
-c      REAL(kind=avl_real) XUASEC
-c      REAL(kind=avl_real) ZUASEC
+      REAL(kind=avl_real) XLASEC
+      REAL(kind=avl_real) ZLASEC
+      REAL(kind=avl_real) XUASEC
+      REAL(kind=avl_real) ZUASEC
       REAL(kind=avl_real) CHORDS
       REAL(kind=avl_real) AINCS
       REAL(kind=avl_real) XASEC
@@ -92,16 +92,16 @@ c      REAL(kind=avl_real) ZUASEC
      & YSEC(IBX, NSECMAX, NFMAX), ! raw section input y coordinates
      & XFMIN_R(NSECMAX, NFMAX), ! section input lower x bound 
      & XFMAX_R(NSECMAX, NFMAX), ! section input upper x bound 
-c     & XLASEC(IBX, NSECMAX, NFMAX), ! airfoil lower surface x-coords
-c     & ZLASEC(IBX, NSECMAX, NFMAX), ! airfoil lower surface z-coords
-c     & XUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface x-coords
-c     & ZUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface z-coords
+     & XLASEC(50, NSECMAX, NFMAX), ! airfoil lower surface x-coords
+     & ZLASEC(50, NSECMAX, NFMAX), ! airfoil lower surface z-coords
+     & XUASEC(50, NSECMAX, NFMAX), ! airfoil upper surface x-coords
+     & ZUASEC(50, NSECMAX, NFMAX), ! airfoil upper surface z-coords
      & CHORDS(NSECMAX, NFMAX), ! chord length vectorm
      & AINCS(NSECMAX, NFMAX), ! incidence angle vector
-     & XASEC(IBX, NSECMAX, NFMAX),  ! the x coordinate aifoil section
-     & CASEC(IBX, NSECMAX, NFMAX),  ! camber line at xasec
-     & SASEC(IBX, NSECMAX, NFMAX),  ! slope of camber line at xasec
-     & TASEC(IBX, NSECMAX, NFMAX),   ! thickness at xasec
+     & XASEC(50, NSECMAX, NFMAX),  ! the x coordinate aifoil section
+     & CASEC(50, NSECMAX, NFMAX),  ! camber line at xasec
+     & SASEC(50, NSECMAX, NFMAX),  ! slope of camber line at xasec
+     & TASEC(50, NSECMAX, NFMAX),   ! thickness at xasec
      & CLCDSEC(6, NSECMAX, NFMAX),
      & CLCDSRF(6, NFMAX),
      & CLAF(NSECMAX, NFMAX),   ! CL alpha (dCL/da) scaling factor
