@@ -61,10 +61,10 @@ c
       REAL(kind=avl_real) YSEC
       REAL(kind=avl_real) XFMIN_R
       REAL(kind=avl_real) XFMAX_R
-      REAL(kind=avl_real) XLASEC
-      REAL(kind=avl_real) ZLASEC
-      REAL(kind=avl_real) XUASEC
-      REAL(kind=avl_real) ZUASEC
+c      REAL(kind=avl_real) XLASEC
+c      REAL(kind=avl_real) ZLASEC
+c      REAL(kind=avl_real) XUASEC
+c      REAL(kind=avl_real) ZUASEC
       REAL(kind=avl_real) CHORDS
       REAL(kind=avl_real) AINCS
       REAL(kind=avl_real) XASEC
@@ -92,10 +92,10 @@ c
      & YSEC(IBX, NSECMAX, NFMAX), ! raw section input y coordinates
      & XFMIN_R(NSECMAX, NFMAX), ! section input lower x bound 
      & XFMAX_R(NSECMAX, NFMAX), ! section input upper x bound 
-     & XLASEC(IBX, NSECMAX, NFMAX), ! airfoil lower surface x-coords
-     & ZLASEC(IBX, NSECMAX, NFMAX), ! airfoil lower surface z-coords
-     & XUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface x-coords
-     & ZUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface z-coords
+c     & XLASEC(IBX, NSECMAX, NFMAX), ! airfoil lower surface x-coords
+c     & ZLASEC(IBX, NSECMAX, NFMAX), ! airfoil lower surface z-coords
+c     & XUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface x-coords
+c     & ZUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface z-coords
      & CHORDS(NSECMAX, NFMAX), ! chord length vectorm
      & AINCS(NSECMAX, NFMAX), ! incidence angle vector
      & XASEC(IBX, NSECMAX, NFMAX),  ! the x coordinate aifoil section

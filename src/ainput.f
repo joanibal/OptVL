@@ -605,14 +605,14 @@ C    ...flat camberline
         TASEC(2,ISEC, ISURF)  = 0.0
 cc#ifdef USE_CPOML
 C
-        XLASEC(1,ISEC,ISURF) = 0
-        XLASEC(2,ISEC,ISURF) = 0
-        XUASEC(1,ISEC,ISURF) = 0
-        XUASEC(2,ISEC,ISURF) = 0
-        ZLASEC(1,ISEC,ISURF) = 0
-        ZLASEC(2,ISEC,ISURF) = 0
-        ZUASEC(1,ISEC,ISURF) = 0
-        ZUASEC(2,ISEC,ISURF) = 0
+        ! XLASEC(1,ISEC,ISURF) = 0
+        ! XLASEC(2,ISEC,ISURF) = 0
+        ! XUASEC(1,ISEC,ISURF) = 0
+        ! XUASEC(2,ISEC,ISURF) = 0
+        ! ZLASEC(1,ISEC,ISURF) = 0
+        ! ZLASEC(2,ISEC,ISURF) = 0
+        ! ZUASEC(1,ISEC,ISURF) = 0
+        ! ZUASEC(2,ISEC,ISURF) = 0
         CASEC(2,ISEC,ISURF) = 0
         CASEC(2,ISEC,ISURF) = 0
 cc#endif
@@ -710,10 +710,10 @@ c...      lower/upper coordinates (for oml)
             ZF = 0
           ENDIF
           TH = ATAN(SLP)
-          XLASEC(I,ISEC,ISURF) = XF + 0.5*THK*SIN(TH)
-          XUASEC(I,ISEC,ISURF) = XF - 0.5*THK*SIN(TH)
-          ZLASEC(I,ISEC,ISURF) = ZF - 0.5*THK*COS(TH)
-          ZUASEC(I,ISEC,ISURF) = ZF + 0.5*THK*COS(TH)
+        !   XLASEC(I,ISEC,ISURF) = XF + 0.5*THK*SIN(TH)
+        !   XUASEC(I,ISEC,ISURF) = XF - 0.5*THK*SIN(TH)
+        !   ZLASEC(I,ISEC,ISURF) = ZF - 0.5*THK*COS(TH)
+        !   ZUASEC(I,ISEC,ISURF) = ZF + 0.5*THK*COS(TH)
           CASEC(I,ISEC,ISURF) = ZF
 cc#endif
         ENDDO
@@ -725,15 +725,15 @@ cc#endif
           idx_upper = NASEC(ISEC,ISURF) - I +1
           idx_lower = I 
           
-          XSEC(I                  ,isec, isurf) = 
-     &                                   XUASEC(idx_upper, ISEC, ISURF)
-          XSEC(I+NASEC(ISEC,ISURF),isec, isurf) = 
-     &                                   XLASEC(idx_lower, ISEC, ISURF)
+!           XSEC(I                  ,isec, isurf) = 
+!      &                                   XUASEC(idx_upper, ISEC, ISURF)
+!           XSEC(I+NASEC(ISEC,ISURF),isec, isurf) = 
+!      &                                   XLASEC(idx_lower, ISEC, ISURF)
 
-          YSEC(I                  ,isec, isurf) = 
-     &                                   ZUASEC(idx_upper, ISEC, ISURF)
-          YSEC(I+NASEC(ISEC,ISURF),isec, isurf) = 
-     &                                   ZLASEC(idx_lower, ISEC, ISURF)
+!           YSEC(I                  ,isec, isurf) = 
+!      &                                   ZUASEC(idx_upper, ISEC, ISURF)
+!           YSEC(I+NASEC(ISEC,ISURF),isec, isurf) = 
+!      &                                   ZLASEC(idx_lower, ISEC, ISURF)
 
         enddo 
 
@@ -827,10 +827,10 @@ C------ store airfoil only if surface and section are active
 cc#ifdef USE_CPOML
 C...      lower/upper coordinates (for oml)
           CALL AKIMA(XIN,YIN,NIN,XASEC(I,ISEC,ISURF),ZC,DUMMY)
-          XLASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
-          XUASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
-          ZLASEC(I,ISEC,ISURF) = ZC - 0.5*TASEC(I,ISEC,ISURF)
-          ZUASEC(I,ISEC,ISURF) = ZC + 0.5*TASEC(I,ISEC,ISURF)
+        !   XLASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
+        !   XUASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
+        !   ZLASEC(I,ISEC,ISURF) = ZC - 0.5*TASEC(I,ISEC,ISURF)
+        !   ZUASEC(I,ISEC,ISURF) = ZC + 0.5*TASEC(I,ISEC,ISURF)
           CASEC(I,ISEC,ISURF) = ZC
 cc#endif
         END DO
@@ -919,10 +919,10 @@ C C
           SASEC(I,ISEC,ISURF) = 0.0
           TASEC(I,ISEC,ISURF) = 0.0
 cc#ifdef USE_CPOML
-          XLASEC(I,ISEC,ISURF) = 0
-          XUASEC(I,ISEC,ISURF) = 0
-          ZLASEC(I,ISEC,ISURF) = 0
-          ZUASEC(I,ISEC,ISURF) = 0
+        !   XLASEC(I,ISEC,ISURF) = 0
+        !   XUASEC(I,ISEC,ISURF) = 0
+        !   ZLASEC(I,ISEC,ISURF) = 0
+        !   ZUASEC(I,ISEC,ISURF) = 0
           CASEC(I,ISEC,ISURF) = 0
 cc#endif
          ENDDO
@@ -950,10 +950,10 @@ C------- camberline slopes at specified locations from spline
 cc#ifdef USE_CPOML
 C...       lower/upper coordinates (for oml)
            CALL AKIMA(XIN,YIN,NIN,XASEC(I,ISEC,ISURF),ZC,DUMMY)
-           XLASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
-           XUASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
-           ZLASEC(I,ISEC,ISURF) = ZC - 0.5*TASEC(I,ISEC,ISURF)
-           ZUASEC(I,ISEC,ISURF) = ZC + 0.5*TASEC(I,ISEC,ISURF)
+        !    XLASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
+        !    XUASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
+        !    ZLASEC(I,ISEC,ISURF) = ZC - 0.5*TASEC(I,ISEC,ISURF)
+        !    ZUASEC(I,ISEC,ISURF) = ZC + 0.5*TASEC(I,ISEC,ISURF)
            CASEC(I,ISEC,ISURF) = ZC 
 cc#endif
          END DO
