@@ -24,7 +24,8 @@ class OVLGroup(om.Group):
     """
 
     def initialize(self):
-        self.options.declare("geom_file", types=str)
+        self.options.declare("geom_file", types=str, default=None)
+        self.options.declare("input_dict", types=dict, default=None)
         self.options.declare("mass_file", default=None)
         self.options.declare("write_grid", types=bool, default=False)
         self.options.declare("write_grid_sol_time", types=bool, default=False)
@@ -40,6 +41,7 @@ class OVLGroup(om.Group):
 
     def setup(self):
         geom_file = self.options["geom_file"]
+        input_dict = self.options["input_dict"]
         mass_file = self.options["mass_file"]
 
         input_param_vals = self.options["input_param_vals"]
@@ -50,7 +52,7 @@ class OVLGroup(om.Group):
         output_body_axis_derivs = self.options["output_body_axis_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
 
-        self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
+        self.ovl = OVLSolver(geo_file=geom_file, input_dict=input_dict, mass_file=mass_file, debug=False)
 
         self.add_subsystem(
             "solver",
@@ -91,6 +93,7 @@ class OVLGroup(om.Group):
 
 
 AIRFOIL_GEOM_VARS = ["xasec", "casec", "tasec", "xuasec", "xlasec", "zuasec", "zlasec"]
+AVL_GEOM_VARS = ["xles","yles","zles","chords"]
 
 
 # helper functions used by the AVL components
@@ -107,15 +110,33 @@ def add_ovl_geom_vars(self, ovl, add_as="inputs", include_airfoil_geom=False):
     surf_data = ovl.get_surface_params()
 
     for surf in surf_data:
+        idx_surf = ovl.get_surface_index(surf)
         for key in surf_data[surf]:
             if key in AIRFOIL_GEOM_VARS:
                 if not include_airfoil_geom:
+                    continue
+            if key in AVL_GEOM_VARS:
+                if ovl.avl.SURF_MESH_L.LSURFMSH[idx_surf]:
                     continue
             geom_key = f"{surf}:{key}"
             if add_as == "inputs":
                 self.add_input(geom_key, val=surf_data[surf][key], tags="geom")
             elif add_as == "outputs":
                 self.add_output(geom_key, val=surf_data[surf][key], tags="geom")
+
+def add_ovl_mesh_vars(self, ovl, add_as="inputs"):
+    # add the geometric parameters as inputs
+    surfs = ovl.unique_surface_names
+
+    for surf in surfs:
+        idx_surf = ovl.get_surface_index(surf)
+        if ovl.avl.SURF_MESH_L.LSURFMSH[idx_surf]:
+            mesh_key = f"{surf}:mesh"
+            mesh = ovl.get_mesh(idx_surf)
+            if add_as == "inputs":
+                self.add_input(mesh_key, val=mesh, tags="geom_mesh")
+            elif add_as == "outputs":
+                self.add_output(mesh_key, val=mesh, tags="geom_mesh")
 
 def add_ovl_mesh_out_as_output(self, ovl):
     surf_data = ovl.get_surface_params()
@@ -241,6 +262,7 @@ class OVLSolverComp(om.ImplicitComponent):
 
         self.control_names = add_ovl_controls_as_inputs(self, self.ovl)
         add_ovl_geom_vars(self, self.ovl, add_as="inputs", include_airfoil_geom=input_airfoil_geom)
+        add_ovl_mesh_vars(self,self.ovl,add_as="inputs")
 
         self.res_slice = (slice(0, self.num_states),)
         self.res_d_slice = (slice(0, self.num_cs), slice(0, self.num_states))
