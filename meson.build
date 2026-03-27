@@ -128,7 +128,7 @@ if ff.get_id() == 'gcc'
 elif ff.get_id() == 'llvm-flang'
 
   ff_args += ['-fno-init-global-zero', '-ffixed-form', '-w']
-  link_args_args += ['-fno-init-global-zero']
+  link_args += ['-fno-init-global-zero']
   
 endif
 
