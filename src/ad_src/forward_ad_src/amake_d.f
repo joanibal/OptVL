@@ -1257,41 +1257,41 @@ C
 C---------- TE control point used only if surface sheds a wake
                 lvnc(idx_vor) = lfwake(isurf)
 C
-Cc#ifdef USE_CPOML
-C...        nodal grid associated with vortex strip (aft-panel nodes)
-C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
-C...        retained in (x,z) plane at this point
-                CALL AKIMA(xlasec(1, isec, isurf), zlasec(1, isec, isurf
-     +                     ), nsl, xpt(ivc+1), zl_l, dsdx)
-                CALL AKIMA(xuasec(1, isec, isurf), zuasec(1, isec, isurf
-     +                     ), nsl, xpt(ivc+1), zu_l, dsdx)
-C
-                CALL AKIMA(xlasec(1, isec+1, isurf), zlasec(1, isec+1, 
-     +                     isurf), nsr, xpt(ivc+1), zl_r, dsdx)
-                CALL AKIMA(xuasec(1, isec+1, isurf), zuasec(1, isec+1, 
-     +                     isurf), nsr, xpt(ivc+1), zu_r, dsdx)
-C
-                xyn1(1, idx_vor) = rle1(1, idx_strip) + xpt(ivc+1)*
-     +            chord1(idx_strip)
-                xyn1(2, idx_vor) = rle1(2, idx_strip)
-                zl = (1.-f1)*zl_l + f1*zl_r
-                zu = (1.-f1)*zu_l + f1*zu_r
-                zlon1(idx_vor) = rle1(3, idx_strip) + zl*chord1(
-     +            idx_strip)
-                zupn1(idx_vor) = rle1(3, idx_strip) + zu*chord1(
-     +            idx_strip)
-C
-                xyn2(1, idx_vor) = rle2(1, idx_strip) + xpt(ivc+1)*
-     +            chord2(idx_strip)
-                xyn2(2, idx_vor) = rle2(2, idx_strip)
-                zl = (1.-f2)*zl_l + f2*zl_r
-                zu = (1.-f2)*zu_l + f2*zu_r
-                zlon2(idx_vor) = rle2(3, idx_strip) + zl*chord2(
-     +            idx_strip)
-                zupn2(idx_vor) = rle2(3, idx_strip) + zu*chord2(
-     +            idx_strip)
-C
-Cc#endif
+! Cc#ifdef USE_CPOML
+! C...        nodal grid associated with vortex strip (aft-panel nodes)
+! C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
+! C...        retained in (x,z) plane at this point
+!                 CALL AKIMA(xlasec(1, isec, isurf), zlasec(1, isec, isurf
+!      +                     ), nsl, xpt(ivc+1), zl_l, dsdx)
+!                 CALL AKIMA(xuasec(1, isec, isurf), zuasec(1, isec, isurf
+!      +                     ), nsl, xpt(ivc+1), zu_l, dsdx)
+! C
+!                 CALL AKIMA(xlasec(1, isec+1, isurf), zlasec(1, isec+1, 
+!      +                     isurf), nsr, xpt(ivc+1), zl_r, dsdx)
+!                 CALL AKIMA(xuasec(1, isec+1, isurf), zuasec(1, isec+1, 
+!      +                     isurf), nsr, xpt(ivc+1), zu_r, dsdx)
+! C
+!                 xyn1(1, idx_vor) = rle1(1, idx_strip) + xpt(ivc+1)*
+!      +            chord1(idx_strip)
+!                 xyn1(2, idx_vor) = rle1(2, idx_strip)
+!                 zl = (1.-f1)*zl_l + f1*zl_r
+!                 zu = (1.-f1)*zu_l + f1*zu_r
+!                 zlon1(idx_vor) = rle1(3, idx_strip) + zl*chord1(
+!      +            idx_strip)
+!                 zupn1(idx_vor) = rle1(3, idx_strip) + zu*chord1(
+!      +            idx_strip)
+! C
+!                 xyn2(1, idx_vor) = rle2(1, idx_strip) + xpt(ivc+1)*
+!      +            chord2(idx_strip)
+!                 xyn2(2, idx_vor) = rle2(2, idx_strip)
+!                 zl = (1.-f2)*zl_l + f2*zl_r
+!                 zu = (1.-f2)*zu_l + f2*zu_r
+!                 zlon2(idx_vor) = rle2(3, idx_strip) + zl*chord2(
+!      +            idx_strip)
+!                 zupn2(idx_vor) = rle2(3, idx_strip) + zu*chord2(
+!      +            idx_strip)
+! C
+! Cc#endif
                 idx_vor = idx_vor + 1
               ENDDO
 C           
@@ -2545,49 +2545,49 @@ C Interpolate cross section on left side
      +        idx_node_yp1+1))/2-rle(1, idx_strip))/chord(idx_strip)
 C
 C
-            CALL AKIMA(xlasec(1, iptl, isurf), zlasec(1, iptl, isurf), 
-     +                 nsl, xptxind1, zl_l, dsdx)
-            CALL AKIMA(xuasec(1, iptl, isurf), zuasec(1, iptl, isurf), 
-     +                 nsl, xptxind1, zu_l, dsdx)
-C Interpolate cross section on right side
-C
-            CALL AKIMA(xlasec(1, iptr, isurf), zlasec(1, iptr, isurf), 
-     +                 nsr, xptxind1, zl_r, dsdx)
-            CALL AKIMA(xuasec(1, iptr, isurf), zuasec(1, iptr, isurf), 
-     +                 nsr, xptxind1, zu_r, dsdx)
-C Compute the left aft node of panel 
-C X-point
-C
-C
-C Y-point
-            xyn1(1, idx_vor) = rle1(1, idx_strip) + xptxind1*chord1(
-     +        idx_strip)
-C
-C Interpolate z from sections to left aft node of panel
-            xyn1(2, idx_vor) = rle1(2, idx_strip)
-C
-            zl = (1.-f1)*zl_l + f1*zl_r
-C Store left aft z-point
-            zu = (1.-f1)*zu_l + f1*zu_r
-C
-            zlon1(idx_vor) = rle1(3, idx_strip) + zl*chord1(idx_strip)
-C Compute the right aft node of panel 
-C X-point
-            zupn1(idx_vor) = rle1(3, idx_strip) + zu*chord1(idx_strip)
-C
-C Y-point
-            xyn2(1, idx_vor) = rle2(1, idx_strip) + xptxind1*chord2(
-     +        idx_strip)
-C
-C Interpolate z from sections to right aft node of panel
-            xyn2(2, idx_vor) = rle2(2, idx_strip)
-            zl = (1.-f2)*zl_l + f2*zl_r
-C Store right aft z-point
-            zu = (1.-f2)*zu_l + f2*zu_r
-C
-            zlon2(idx_vor) = rle2(3, idx_strip) + zl*chord2(idx_strip)
-            zupn2(idx_vor) = rle2(3, idx_strip) + zu*chord2(idx_strip)
-C
+!             CALL AKIMA(xlasec(1, iptl, isurf), zlasec(1, iptl, isurf), 
+!      +                 nsl, xptxind1, zl_l, dsdx)
+!             CALL AKIMA(xuasec(1, iptl, isurf), zuasec(1, iptl, isurf), 
+!      +                 nsl, xptxind1, zu_l, dsdx)
+! C Interpolate cross section on right side
+! C
+!             CALL AKIMA(xlasec(1, iptr, isurf), zlasec(1, iptr, isurf), 
+!      +                 nsr, xptxind1, zl_r, dsdx)
+!             CALL AKIMA(xuasec(1, iptr, isurf), zuasec(1, iptr, isurf), 
+!      +                 nsr, xptxind1, zu_r, dsdx)
+! C Compute the left aft node of panel 
+! C X-point
+! C
+! C
+! C Y-point
+!             xyn1(1, idx_vor) = rle1(1, idx_strip) + xptxind1*chord1(
+!      +        idx_strip)
+! C
+! C Interpolate z from sections to left aft node of panel
+!             xyn1(2, idx_vor) = rle1(2, idx_strip)
+! C
+!             zl = (1.-f1)*zl_l + f1*zl_r
+! C Store left aft z-point
+!             zu = (1.-f1)*zu_l + f1*zu_r
+! C
+!             zlon1(idx_vor) = rle1(3, idx_strip) + zl*chord1(idx_strip)
+! C Compute the right aft node of panel 
+! C X-point
+!             zupn1(idx_vor) = rle1(3, idx_strip) + zu*chord1(idx_strip)
+! C
+! C Y-point
+!             xyn2(1, idx_vor) = rle2(1, idx_strip) + xptxind1*chord2(
+!      +        idx_strip)
+! C
+! C Interpolate z from sections to right aft node of panel
+!             xyn2(2, idx_vor) = rle2(2, idx_strip)
+!             zl = (1.-f2)*zl_l + f2*zl_r
+! C Store right aft z-point
+!             zu = (1.-f2)*zu_l + f2*zu_r
+! C
+!             zlon2(idx_vor) = rle2(3, idx_strip) + zl*chord2(idx_strip)
+!             zupn2(idx_vor) = rle2(3, idx_strip) + zu*chord2(idx_strip)
+! C
             idx_vor = idx_vor + 1
           ENDDO
 C End vortex loop
