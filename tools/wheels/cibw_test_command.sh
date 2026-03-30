@@ -7,51 +7,49 @@ python -c "import platform; print(platform.machine())"
 ls ../optvl
 # llvm-objdump -p ../optvl/libavl.cp312-win_arm64.pyd | findstr "DLL Name"
 
-# # install tesing dependencies
-# pip install --only-binary :all: scipy 
-# pip install psutil "openmdao!=3.38"
+# install tesing dependencies
+pip install --only-binary :all: scipy 
+pip install psutil "openmdao!=3.38"
 
 
-# #HACK: if the tests are not split up the CI runs out of memory...
-# # python -m unittest -v
-# # pip install testflo
-# # testflo -v .
+#HACK: if the tests are not split up the CI runs out of memory...
+# python -m unittest -v
+# pip install testflo
+# testflo -v .
 
 
+# test package built and installed correctly
+python test_import.py
+python -m unittest -v test_import.py
+python -m unittest -v test_io.py
+python -m unittest -v test_input_dict.py
 
+# test mem ussage of pyavl and test framework
+python -m unittest -v test_tear_down.py
 
-# # test package built and installed correctly
-# python test_import.py
-# python -m unittest -v test_import.py
-# python -m unittest -v test_io.py
-# python -m unittest -v test_input_dict.py
+# test basic avl functionality
+python -m unittest -v test_parameters.py
+python -m unittest -v test_analysis.py
+python -m unittest -v test_surf_geom.py
+python -m unittest -v test_stab_derivs.py
+python -m unittest -v test_body_axis_derivs.py
+# test eigenmode analysis
+python -m unittest -v test_eigen_analysis.py
 
-# # test mem ussage of pyavl and test framework
-# python -m unittest -v test_tear_down.py
+# tests for adjoint
+python -m unittest -v test_new_subroutines.py
+#HACK: if the tests are not split up the windows version has
+#      an error loading the shared lib.
+python -m unittest -v test_partial_derivs.TestFunctionPartials
+python -m unittest -v test_partial_derivs.TestResidualPartials
+python -m unittest -v test_consurf_partial_derivs.TestResidualDPartials
+python -m unittest -v test_consurf_partial_derivs.TestConSurfDerivsPartials
+python -m unittest -v test_stab_derivs_partial_derivs.TestResidualUPartials
+python -m unittest -v test_stab_derivs_partial_derivs.TestStabDerivDerivsPartials
 
-# # test basic avl functionality
-# python -m unittest -v test_parameters.py
-# python -m unittest -v test_analysis.py
-# python -m unittest -v test_surf_geom.py
-# python -m unittest -v test_stab_derivs.py
-# python -m unittest -v test_body_axis_derivs.py
-# # test eigenmode analysis
-# python -m unittest -v test_eigen_analysis.py
+python -m unittest -v test_body_axis_derivs_partial_derivs.py
+python -m unittest -v test_total_derivs.py
 
-# # tests for adjoint
-# python -m unittest -v test_new_subroutines.py
-# #HACK: if the tests are not split up the windows version has
-# #      an error loading the shared lib.
-# python -m unittest -v test_partial_derivs.TestFunctionPartials
-# python -m unittest -v test_partial_derivs.TestResidualPartials
-# python -m unittest -v test_consurf_partial_derivs.TestResidualDPartials
-# python -m unittest -v test_consurf_partial_derivs.TestConSurfDerivsPartials
-# python -m unittest -v test_stab_derivs_partial_derivs.TestResidualUPartials
-# python -m unittest -v test_stab_derivs_partial_derivs.TestStabDerivDerivsPartials
-
-# python -m unittest -v test_body_axis_derivs_partial_derivs.py
-# python -m unittest -v test_total_derivs.py
-
-# # test openmdao wrapper and basic optimization results
-# python -m unittest -v test_om_wrapper.py
+# test openmdao wrapper and basic optimization results
+python -m unittest -v test_om_wrapper.py
 
