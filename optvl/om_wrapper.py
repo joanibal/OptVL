@@ -134,19 +134,19 @@ def add_ovl_mesh_vars(self, ovl, add_as="inputs"):
             mesh_key = f"{surf}:mesh"
             mesh = ovl.get_mesh(idx_surf)
             if add_as == "inputs":
-                self.add_input(mesh_key, val=mesh, tags="geom_mesh")
+                self.add_input(mesh_key, val=mesh, units="m", tags="geom_mesh")
             elif add_as == "outputs":
-                self.add_output(mesh_key, val=mesh, tags="geom_mesh")
+                self.add_output(mesh_key, val=mesh, units="m", tags="geom_mesh")
 
-def add_ovl_mesh_out_as_output(self, ovl):
-    surf_data = ovl.get_surface_params()
+# def add_ovl_mesh_out_as_output(self, ovl):
+#     surf_data = ovl.get_surface_params()
 
-    meshes,_ = ovl.get_cp_data()
+#     meshes,_ = ovl.get_cp_data()
 
-    for surf in surf_data:
-        idx_surf = ovl.surface_names.index(surf)
-        out_name = f"{surf}:mesh"
-        self.add_output(out_name, val=meshes[idx_surf], tags="geom_mesh")
+#     for surf in surf_data:
+#         idx_surf = ovl.surface_names.index(surf)
+#         out_name = f"{surf}:mesh"
+#         self.add_output(out_name, val=meshes[idx_surf], tags="geom_mesh")
           
 def add_ovl_conditions_as_inputs(sys, ovl):
     # TODO: add all the condition constraints
@@ -172,11 +172,14 @@ def add_ovl_refs_as_inputs(sys, ovl):
 
 
 def om_input_to_surf_dict(sys, inputs):
-    geom_inputs = sys.list_inputs(tags="geom", val=False, out_stream=None)
+    geom_inputs = sys.list_inputs(tags=["geom"], val=False, out_stream=None)
+    geom_mesh_inputs = sys.list_inputs(tags=["geom_mesh"], val=False, out_stream=None) 
     # convert to a list witout tuples
     geom_inputs = [x[0] for x in geom_inputs]
+    geom_mesh_inputs = [x[0] for x in geom_mesh_inputs]
 
     surf_data = {}
+    surf_mesh_data = {}
     for input_var in inputs:
         if input_var in geom_inputs:
             # split the input name into surface name and parameter name
@@ -190,7 +193,16 @@ def om_input_to_surf_dict(sys, inputs):
                 surf_data[surf][param] = inputs[input_var][0]
             else:
                 surf_data[surf][param] = inputs[input_var]
-    return surf_data
+        elif input_var in geom_mesh_inputs:
+            # split the input name into surface name and parameter name
+            surf, param = input_var.split(":")
+
+            # update the corresponding parameter in the surface data
+            if surf not in surf_mesh_data:
+                surf_mesh_data[surf] = {}
+            # no scalars in meshes
+            surf_mesh_data[surf][param] = inputs[input_var]
+    return surf_data, surf_mesh_data
 
 
 def om_surf_dict_to_input(surf_dict):
@@ -269,10 +281,16 @@ class OVLSolverComp(om.ImplicitComponent):
         self.res_u_slice = (slice(0, self.num_vel), slice(0, self.num_states))
 
     def apply_nonlinear(self, inputs, outputs, residuals):
+        # Set case parameters
         om_set_avl_inputs(self, inputs)
 
-        surf_data = om_input_to_surf_dict(self, inputs)
+        surf_data, surf_mesh_data = om_input_to_surf_dict(self, inputs)
         self.ovl.set_surface_params(surf_data)
+        # set the meshes
+        for surf in surf_mesh_data:
+            if "mesh" in surf_mesh_data[surf].keys():
+                idx_surf = self.ovl.get_surface_index(surf)
+                self.ovl.set_mesh(idx_surf,surf_mesh_data[surf]["mesh"])
 
         gam_arr = outputs["gamma"]
         gam_d_arr = outputs["gamma_d"]
@@ -298,11 +316,17 @@ class OVLSolverComp(om.ImplicitComponent):
 
     def solve_nonlinear(self, inputs, outputs):
         start_time = time.time()
+        # set case params
         om_set_avl_inputs(self, inputs)
 
         # update the surface parameters
-        surf_data = om_input_to_surf_dict(self, inputs)
+        surf_data, surf_mesh_data = om_input_to_surf_dict(self, inputs)
         self.ovl.set_surface_params(surf_data)
+        # set the meshes
+        for surf in surf_mesh_data:
+            if "mesh" in surf_mesh_data[surf].keys():
+                idx_surf = self.ovl.get_surface_index(surf)
+                self.ovl.set_mesh(idx_surf,surf_mesh_data[surf]["mesh"])
 
         # def_dict = self.ovl.get_control_deflections()
         print("executing ovl run")
@@ -335,7 +359,7 @@ class OVLSolverComp(om.ImplicitComponent):
                 if con_key in d_inputs:
                     con_seeds[con_key] = d_inputs[con_key]
 
-            geom_seeds = om_input_to_surf_dict(self, d_inputs)
+            geom_seeds, mesh_seeds = om_input_to_surf_dict(self, d_inputs)
 
             param_seeds = {}
             for param in self.ovl.param_idx_dict:
@@ -347,8 +371,8 @@ class OVLSolverComp(om.ImplicitComponent):
                 if ref in d_inputs:
                     ref_seeds[ref] = d_inputs[ref]
 
-            _, res_seeds, _, _, res_d_seeds, res_u_seeds = self.ovl._execute_jac_vec_prod_fwd(
-                con_seeds=con_seeds, geom_seeds=geom_seeds, param_seeds=param_seeds, ref_seeds=ref_seeds
+            _, res_seeds, _, _, _, res_d_seeds, res_u_seeds = self.ovl._execute_jac_vec_prod_fwd(
+                con_seeds=con_seeds, geom_seeds=geom_seeds, mesh_seeds=mesh_seeds, param_seeds=param_seeds, ref_seeds=ref_seeds
             )
 
             d_residuals["gamma"] += res_seeds
@@ -364,7 +388,7 @@ class OVLSolverComp(om.ImplicitComponent):
 
                 con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = (
                     self.ovl._execute_jac_vec_prod_rev(
-                        res_seeds=res_seeds, res_d_seeds=res_d_seeds, res_u_seeds=res_u_seeds
+                        res_seeds=res_seeds, res_d_seeds=res_d_seeds, res_u_seeds=res_u_seeds,reshape_mesh_seeds = True
                     )
                 )
 
@@ -378,10 +402,13 @@ class OVLSolverComp(om.ImplicitComponent):
                     d_outputs["gamma_u"] += gamma_u_seeds
 
                 d_input_geom = om_surf_dict_to_input(geom_seeds)
+                d_input_mesh = om_surf_dict_to_input(mesh_seeds)
 
                 for d_input in d_inputs:
                     if d_input in d_input_geom:
                         d_inputs[d_input] += d_input_geom[d_input]
+                    elif d_input in d_input_mesh:
+                        d_inputs[d_input] += d_input_mesh[d_input]
                     elif d_input in ["alpha", "beta"]:
                         d_inputs[d_input] += con_seeds[d_input]
                     elif d_input in self.control_names:
@@ -448,6 +475,7 @@ class OVLFuncsComp(om.ExplicitComponent):
 
         self.control_names = add_ovl_controls_as_inputs(self, self.ovl)
         add_ovl_geom_vars(self, self.ovl, add_as="inputs", include_airfoil_geom=input_airfoil_geom)
+        add_ovl_mesh_vars(self, self.ovl, add_as="inputs")
 
         # add the outputs
         for func_key in self.ovl.case_var_to_fort_var:
@@ -477,11 +505,17 @@ class OVLFuncsComp(om.ExplicitComponent):
 
         # TODO: set_constraint does not correctly do derives yet
         start_time = time.time()
+        # set the case variables
         om_set_avl_inputs(self, inputs)
 
         # update the surface parameters
-        surf_data = om_input_to_surf_dict(self, inputs)
+        surf_data, surf_mesh_data = om_input_to_surf_dict(self, inputs)
         self.ovl.set_surface_params(surf_data)
+        # set the meshes
+        for surf in surf_mesh_data:
+            if "mesh" in surf_mesh_data[surf].keys():
+                idx_surf = self.ovl.get_surface_index(surf)
+                self.ovl.set_mesh(idx_surf,surf_mesh_data[surf]["mesh"])
 
         gam_arr = inputs["gamma"]
         gam_d_arr = inputs["gamma_d"]
@@ -560,11 +594,12 @@ class OVLFuncsComp(om.ExplicitComponent):
                 if ref in d_inputs:
                     ref_seeds[ref] = d_inputs[ref]
 
-            geom_seeds = self.om_input_to_surf_dict(self, d_inputs)
+            geom_seeds, mesh_seeds = self.om_input_to_surf_dict(self, d_inputs)
 
             func_seeds, _, csd_seeds, stab_derivs_seeds, body_axis_seeds, _, _ = self.ovl._execute_jac_vec_prod_fwd(
                 con_seeds=con_seeds,
                 geom_seeds=geom_seeds,
+                mesh_seeds=mesh_seeds,
                 gamma_seeds=gamma_seeds,
                 gamma_d_seeds=gamma_d_seeds,
                 gamma_u_seeds=gamma_u_seeds,
@@ -638,6 +673,7 @@ class OVLFuncsComp(om.ExplicitComponent):
                     consurf_derivs_seeds=csd_seeds,
                     stab_derivs_seeds=stab_derivs_seeds,
                     body_axis_derivs_seeds=body_axis_seeds,
+                    reshape_mesh_seeds = True,
                 )
             )
 
@@ -651,10 +687,13 @@ class OVLFuncsComp(om.ExplicitComponent):
                 d_inputs["gamma_u"] += gamma_u_seeds
 
             d_input_geom = om_surf_dict_to_input(geom_seeds)
+            d_input_mesh = om_surf_dict_to_input(mesh_seeds)
 
             for d_input in d_inputs:
                 if d_input in d_input_geom:
                     d_inputs[d_input] += d_input_geom[d_input]
+                elif d_input in d_input_mesh:
+                    d_inputs[d_input] += d_input_mesh[d_input]
                 elif d_input in ["alpha", "beta"] or d_input in self.control_names:
                     d_inputs[d_input] += con_seeds[d_input]
                 elif d_input in param_seeds:
@@ -753,9 +792,10 @@ class OVLMeshReader(om.ExplicitComponent):
 
         avl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
         add_ovl_geom_vars(self, avl, add_as="outputs", include_airfoil_geom=True)
+        add_ovl_mesh_vars(self, avl, add_as="outputs")
 
-        if mesh_output:
-            add_ovl_mesh_out_as_output(self,avl)
+        # if mesh_output:
+        #     add_ovl_mesh_out_as_output(self,avl)
 
 class Differencer(om.ExplicitComponent):
     def setup(self):
