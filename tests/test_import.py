@@ -1,7 +1,10 @@
 # =============================================================================
 # Extension modules
 # =============================================================================
-
+import struct, sys, sysconfig
+print("Pointer size:", struct.calcsize("P") * 8, "bit")  # 64 for both, less useful
+print("Platform tag:", sysconfig.get_platform())          # THIS is the key one
+print("sys.executable:", sys.executable)
 # =============================================================================
 # Standard Python Modules
 # =============================================================================
