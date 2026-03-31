@@ -4204,7 +4204,6 @@ class OVLSolver(object):
         body_axis_derivs_seeds: Optional[Dict[str, float]] = None,
         res_d_seeds: Optional[np.ndarray] = None,
         res_u_seeds: Optional[np.ndarray] = None,
-        reshape_mesh_seeds: Optional[bool] = False,
         print_timings: Optional[bool] = False,
     ) -> Tuple[
         Dict[str, float],
@@ -4225,7 +4224,6 @@ class OVLSolver(object):
             body_axis_derivs_seeds: body axis derivatives AD seeds
             res_d_seeds: dResidual/d(Controls Deflection) AD seeds
             res_u_seeds: dResidual/d(flight condition) AD seeds
-            reshape_mesh_seeds: Reshape the mesh_seeds output to match the shape of the input mesh array
             print_timings: flag to show timing data
 
         Returns:
@@ -4334,20 +4332,7 @@ class OVLSolver(object):
                             self.DVGeo.totalSensitivity(mesh_seeds[surface]["mesh"], point_set_name)
                         )
      
-        if reshape_mesh_seeds:
-            for surface in self.unique_surface_names:
-                idx_surf = self.get_surface_index(surf_name=surface)
-                if self.avl.SURF_MESH_L.LSURFMSH[idx_surf]:
-                    mesh_seed = mesh_seeds[surface]["mesh"]
-                    # nx = self.avl.SURF_GEOM_I.NVC[idx_surf] + 1
-                    # ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
-                    mesh_cur = self.get_mesh(idx_surf)
-                    # copy.deepcopy(coords.reshape((mesh_old.shape[1],mesh_old.shape[0],3)).transpose((1,0,2)))
-                    mesh_seed = np.reshape(mesh_seed,(mesh_cur.shape[1],mesh_cur.shape[0],3))
-                    mesh_seed = np.transpose(mesh_seed,(1,0,2))
-                    mesh_seeds[surface]["mesh"] = mesh_seed
-                    # mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seed.reshape((mesh_cur.shape[1],mesh_cur.shape[0],3)).transpose((1,0,2)))
-                    # mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seed.reshape((nx,ny,3)))
+
 
         self.set_function_ad_seeds(func_seeds, scale=0.0)
         self.set_residual_ad_seeds(res_seeds, scale=0.0)

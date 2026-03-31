@@ -18,6 +18,7 @@ class OVLGroup(om.Group):
         output_dir: the output directory for the files generated
         input_param_vals: flag to turn on the flght parameters (Mach, Velocity, etc.) as inputs
         input_ref_val: flag to turn on the geometric reference values (Sref, Cref, Bref) as inputs
+        input_mesh_3_dim: flag that sets the mesh input shape to be (nx,ny,3) for use with OAS or other OpenMDAO tools that use this mesh format.
         output_stability_derivs: flag to turn on the output of stability derivatives
         output_body_axis_derivs: flag to turn on the output of body axis derivatives
         output_con_surf_derivs: flag to turn on the output of control surface deflections
@@ -34,6 +35,7 @@ class OVLGroup(om.Group):
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
         self.options.declare("input_airfoil_geom", types=bool, default=False)
+        self.options.declare("input_mesh_3_dim", types=bool, default=False)
 
         self.options.declare("output_stability_derivs", types=bool, default=False)
         self.options.declare("output_body_axis_derivs", types=bool, default=False)
@@ -47,6 +49,7 @@ class OVLGroup(om.Group):
         input_param_vals = self.options["input_param_vals"]
         input_ref_vals = self.options["input_ref_vals"]
         input_airfoil_geom = self.options["input_airfoil_geom"]
+        input_mesh_3_dim = self.options["input_mesh_3_dim"]
 
         output_stability_derivs = self.options["output_stability_derivs"]
         output_body_axis_derivs = self.options["output_body_axis_derivs"]
@@ -61,6 +64,7 @@ class OVLGroup(om.Group):
                 input_param_vals=input_param_vals,
                 input_ref_vals=input_ref_vals,
                 input_airfoil_geom=input_airfoil_geom,
+                input_mesh_3_dim=input_mesh_3_dim,
             ),
             promotes=["*"],
         )
@@ -74,6 +78,7 @@ class OVLGroup(om.Group):
                 output_stability_derivs=output_stability_derivs,
                 output_body_axis_derivs=output_body_axis_derivs,
                 output_con_surf_derivs=output_con_surf_derivs,
+                input_mesh_3_dim=input_mesh_3_dim,
             ),
             promotes=["*"],
         )
@@ -124,7 +129,7 @@ def add_ovl_geom_vars(self, ovl, add_as="inputs", include_airfoil_geom=False):
             elif add_as == "outputs":
                 self.add_output(geom_key, val=surf_data[surf][key], tags="geom")
 
-def add_ovl_mesh_vars(self, ovl, add_as="inputs"):
+def add_ovl_mesh_vars(self, ovl, add_as="inputs", input_mesh_3_dim=False):
     # add the geometric parameters as inputs
     surfs = ovl.unique_surface_names
 
@@ -133,6 +138,8 @@ def add_ovl_mesh_vars(self, ovl, add_as="inputs"):
         if ovl.avl.SURF_MESH_L.LSURFMSH[idx_surf]:
             mesh_key = f"{surf}:mesh"
             mesh = ovl.get_mesh(idx_surf)
+            if not input_mesh_3_dim:
+                mesh = mesh.transpose((1,0,2)).reshape((mesh.shape[1]*mesh.shape[0],3))
             if add_as == "inputs":
                 self.add_input(mesh_key, val=mesh, units="m", tags="geom_mesh")
             elif add_as == "outputs":
@@ -249,6 +256,7 @@ class OVLSolverComp(om.ImplicitComponent):
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
         self.options.declare("input_airfoil_geom", types=bool, default=False)
+        self.options.declare("input_mesh_3_dim", types=bool, default=False)
 
     def setup(self):
         self.ovl = self.options["ovl"]
@@ -259,6 +267,7 @@ class OVLSolverComp(om.ImplicitComponent):
         self.num_states = self.ovl.get_mesh_size()
         self.num_cs = self.ovl.get_num_control_surfs()
         self.num_vel = self.ovl.NUMAX
+        self.input_mesh_3_dim = self.options["input_mesh_3_dim"]
 
         self.add_output("gamma", val=np.zeros(self.num_states))
         self.add_output("gamma_d", val=np.zeros((self.num_cs, self.num_states)))
@@ -274,7 +283,7 @@ class OVLSolverComp(om.ImplicitComponent):
 
         self.control_names = add_ovl_controls_as_inputs(self, self.ovl)
         add_ovl_geom_vars(self, self.ovl, add_as="inputs", include_airfoil_geom=input_airfoil_geom)
-        add_ovl_mesh_vars(self,self.ovl,add_as="inputs")
+        add_ovl_mesh_vars(self,self.ovl,add_as="inputs",input_mesh_3_dim=self.input_mesh_3_dim)
 
         self.res_slice = (slice(0, self.num_states),)
         self.res_d_slice = (slice(0, self.num_cs), slice(0, self.num_states))
@@ -321,12 +330,12 @@ class OVLSolverComp(om.ImplicitComponent):
 
         # update the surface parameters
         surf_data, surf_mesh_data = om_input_to_surf_dict(self, inputs)
-        self.ovl.set_surface_params(surf_data)
         # set the meshes
         for surf in surf_mesh_data:
             if "mesh" in surf_mesh_data[surf].keys():
                 idx_surf = self.ovl.get_surface_index(surf)
                 self.ovl.set_mesh(idx_surf,surf_mesh_data[surf]["mesh"])
+        self.ovl.set_surface_params(surf_data)
 
         # def_dict = self.ovl.get_control_deflections()
         print("executing ovl run")
@@ -361,6 +370,12 @@ class OVLSolverComp(om.ImplicitComponent):
 
             geom_seeds, mesh_seeds = om_input_to_surf_dict(self, d_inputs)
 
+            # Reshape mesh seeds
+            if self.input_mesh_3_dim:
+                for surf in mesh_seeds:
+                    if "mesh" in mesh_seeds[surf].keys():
+                        mesh_seeds[surf]["mesh"] = mesh_seeds[surf]["mesh"].transpose((1,0,2)).reshape((mesh_seeds["Wing"]["mesh"].shape[0]*mesh_seeds["Wing"]["mesh"].shape[1],3))
+
             param_seeds = {}
             for param in self.ovl.param_idx_dict:
                 if param in d_inputs:
@@ -388,9 +403,17 @@ class OVLSolverComp(om.ImplicitComponent):
 
                 con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = (
                     self.ovl._execute_jac_vec_prod_rev(
-                        res_seeds=res_seeds, res_d_seeds=res_d_seeds, res_u_seeds=res_u_seeds,reshape_mesh_seeds = True
+                        res_seeds=res_seeds, res_d_seeds=res_d_seeds, res_u_seeds=res_u_seeds
                     )
                 )
+
+                if self.input_mesh_3_dim:
+                    for surface in mesh_seeds:
+                        if "mesh" in mesh_seeds[surface].keys():
+                            idx_surf = self.ovl.get_surface_index(surf_name=surface)
+                            nx = self.ovl.avl.SURF_GEOM_I.NVC[idx_surf] + 1
+                            ny = self.ovl.avl.SURF_GEOM_I.NVS[idx_surf] + 1
+                            mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seeds[surface]["mesh"].reshape((ny,nx,3)).transpose((1,0,2)))
 
                 if "gamma" in d_outputs:
                     d_outputs["gamma"] += gamma_seeds
@@ -451,12 +474,14 @@ class OVLFuncsComp(om.ExplicitComponent):
         self.options.declare("input_param_vals", types=bool, default=False)
         self.options.declare("input_ref_vals", types=bool, default=False)
         self.options.declare("input_airfoil_geom", types=bool, default=False)
+        self.options.declare("input_mesh_3_dim", types=bool, default=False)
 
     def setup(self):
         self.ovl = self.options["ovl"]
         self.num_states = self.ovl.get_mesh_size()
         self.num_cs = self.ovl.get_num_control_surfs()
         self.num_vel = self.ovl.NUMAX
+        self.input_mesh_3_dim = self.options["input_mesh_3_dim"]
         input_param_vals = self.options["input_param_vals"]
         input_ref_vals = self.options["input_ref_vals"]
         input_airfoil_geom = self.options["input_airfoil_geom"]
@@ -475,7 +500,7 @@ class OVLFuncsComp(om.ExplicitComponent):
 
         self.control_names = add_ovl_controls_as_inputs(self, self.ovl)
         add_ovl_geom_vars(self, self.ovl, add_as="inputs", include_airfoil_geom=input_airfoil_geom)
-        add_ovl_mesh_vars(self, self.ovl, add_as="inputs")
+        add_ovl_mesh_vars(self, self.ovl, add_as="inputs",input_mesh_3_dim=self.input_mesh_3_dim)
 
         # add the outputs
         for func_key in self.ovl.case_var_to_fort_var:
@@ -510,12 +535,12 @@ class OVLFuncsComp(om.ExplicitComponent):
 
         # update the surface parameters
         surf_data, surf_mesh_data = om_input_to_surf_dict(self, inputs)
-        self.ovl.set_surface_params(surf_data)
         # set the meshes
         for surf in surf_mesh_data:
             if "mesh" in surf_mesh_data[surf].keys():
                 idx_surf = self.ovl.get_surface_index(surf)
                 self.ovl.set_mesh(idx_surf,surf_mesh_data[surf]["mesh"])
+        self.ovl.set_surface_params(surf_data)
 
         gam_arr = inputs["gamma"]
         gam_d_arr = inputs["gamma_d"]
@@ -596,6 +621,12 @@ class OVLFuncsComp(om.ExplicitComponent):
 
             geom_seeds, mesh_seeds = self.om_input_to_surf_dict(self, d_inputs)
 
+            # Reshape mesh seeds
+            if self.input_mesh_3_dim:
+                for surf in mesh_seeds:
+                    if "mesh" in mesh_seeds[surf].keys():
+                        mesh_seeds[surf]["mesh"] = mesh_seeds[surf]["mesh"].transpose((1,0,2)).reshape((mesh_seeds["Wing"]["mesh"].shape[0]*mesh_seeds["Wing"]["mesh"].shape[1],3))
+
             func_seeds, _, csd_seeds, stab_derivs_seeds, body_axis_seeds, _, _ = self.ovl._execute_jac_vec_prod_fwd(
                 con_seeds=con_seeds,
                 geom_seeds=geom_seeds,
@@ -673,9 +704,16 @@ class OVLFuncsComp(om.ExplicitComponent):
                     consurf_derivs_seeds=csd_seeds,
                     stab_derivs_seeds=stab_derivs_seeds,
                     body_axis_derivs_seeds=body_axis_seeds,
-                    reshape_mesh_seeds = True,
                 )
             )
+
+            if self.input_mesh_3_dim:
+                for surface in mesh_seeds:
+                    if "mesh" in mesh_seeds[surface].keys():
+                        idx_surf = self.ovl.get_surface_index(surf_name=surface)
+                        nx = self.ovl.avl.SURF_GEOM_I.NVC[idx_surf] + 1
+                        ny = self.ovl.avl.SURF_GEOM_I.NVS[idx_surf] + 1
+                        mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seeds[surface]["mesh"].reshape((ny,nx,3)).transpose((1,0,2)))
 
             if "gamma" in d_inputs:
                 d_inputs["gamma"] += gamma_seeds
@@ -792,7 +830,7 @@ class OVLMeshReader(om.ExplicitComponent):
 
         avl = OVLSolver(geo_file=geom_file, mass_file=mass_file, debug=False)
         add_ovl_geom_vars(self, avl, add_as="outputs", include_airfoil_geom=True)
-        add_ovl_mesh_vars(self, avl, add_as="outputs")
+        add_ovl_mesh_vars(self, avl, add_as="outputs",input_mesh_3_dim=True)
 
         # if mesh_output:
         #     add_ovl_mesh_out_as_output(self,avl)
