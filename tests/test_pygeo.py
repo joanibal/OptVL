@@ -23,7 +23,14 @@ try:
     HAS_PYGEO = True
 except ImportError:
     HAS_PYGEO = False
- 
+
+# Add geom_files to path for importing
+base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
+geom_dir = os.path.join(base_dir, "..", "geom_files")
+sys.path.insert(0, geom_dir)
+
+from wing_mesh import mesh  # (nx, ny, 3) numpy array
+
 # ---------------------------------------------------------------------------
 # Path setup — reuse the same mesh used in test_mesh_input.py
 # ---------------------------------------------------------------------------
@@ -31,7 +38,6 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 geom_dir = os.path.join(base_dir, '..', 'geom_files')
 sys.path.insert(0, geom_dir)
  
-from wing_mesh import mesh  # (nx, ny, 3) numpy array
 
 surf = {
     "Wing": {
@@ -270,13 +276,10 @@ class TestFFDIntegration(unittest.TestCase):
 
     def test_totals(self):
 
-        self._make_solver
-        self._make_dvgeo
-
+        self._make_solver()
+        self._make_dvgeo()
 
         # Add some DVs
-
-        # NOTE: Current having trouble with global DVs in tests
         nrefaxpts = self.ovl_solver.DVGeo.addRefAxis("c4", xFraction=0.25, alignIndex="k")
 
         def twist(val, geo):
