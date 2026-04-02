@@ -19,6 +19,7 @@ C                enc:out env:out enc_d:out
       use avl_heap_diff_inc
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       INTEGER ii
       INTEGER isurf
@@ -203,6 +204,7 @@ C
       SUBROUTINE MAKESURF_D(isurf)
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.INC'
       INCLUDE 'AVL_oml.INC'
       INCLUDE 'AVL_ad_seeds.inc'
 C
@@ -1345,6 +1347,7 @@ C
       SUBROUTINE MAKESURF_MESH_D(isurf)
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.INC'
       INCLUDE 'AVL_oml.INC'
       INCLUDE 'AVL_ad_seeds.inc'
 C working variables (AVL original)
@@ -2631,6 +2634,7 @@ C
       SUBROUTINE SDUPL_D(nn, ypt, msg)
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.INC'
       INCLUDE 'AVL_oml.INC'
       INCLUDE 'AVL_ad_seeds.inc'
       CHARACTER*(*) msg
@@ -2931,6 +2935,7 @@ C and uses the real mesh to compute normals if it is
       SUBROUTINE ENCALC_D()
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.INC'
       INCLUDE 'AVL_ad_seeds.inc'
 C
       REAL ep(3), eq(3), es(3), eb(3), ec(3), ecxb(3)
