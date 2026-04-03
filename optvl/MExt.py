@@ -92,15 +92,20 @@ class MExt(object):
         self.__dict__.update(self._module.__dict__)
 
     def __del__(self):
-        # remove module if not in debug mode
         if not self.debug:
             # if the module was imported, remove it from sys.modules
             if hasattr(self, "_pkg"):
                 del sys.modules[self._module.__name__]
                 del sys.modules[self._pkg.__name__]
 
-            # now try to delete the files and directory
-            shutil.rmtree(self._pkgdir)
+            try:
+                # now try to delete the files and directory
+                shutil.rmtree(self._pkgdir)
+            except PermissionError:
+                # On Windows, loaded DLLs are locked and cannot be deleted.
+                # Clean up as much as possible, ignore what's locked.
+                pass
+
             # make sure the original module is loaded -
             # otherwise python crashes on exit
             # if MExt objects have not been explicitly 'del'd,
