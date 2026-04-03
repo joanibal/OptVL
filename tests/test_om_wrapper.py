@@ -357,10 +357,6 @@ class TestOMWrapperMesh(unittest.TestCase):
         prob = self.prob
         cl_star = 0.9
         dcl_dalpha_star = -0.05
-        # prob.model.add_design_var("ovlsolver.Wing:xles")
-        # prob.model.add_design_var("ovlsolver.Wing:yles")
-        # prob.model.add_design_var("ovlsolver.Wing:zles")
-        # prob.model.add_design_var("ovlsolver.Wing:chords")
         # prob.model.add_design_var("ovlsolver.Wing:mesh") # This is a really costly test
         # prob.model.add_design_var("ovlsolver.Wing:aincs") # dCL/dalpha on the first element fails
         prob.model.add_design_var("ovlsolver.Elevator", lower=-10, upper=10)

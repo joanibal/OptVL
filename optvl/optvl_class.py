@@ -3190,10 +3190,6 @@ class OVLSolver(object):
             is also provided in pointSetKwargs, the value specified in customPointSetFamilies
             will be used.
 
-        Examples
-        --------
-        >>> CFDsolver = <SOLVER>(comm=comm, options=CFDoptions)
-        >>> CFDsolver.setDVGeo(DVGeo)
         """
 
         self.DVGeo = DVGeo
