@@ -9,6 +9,7 @@ from optvl import OVLSolver
 import os
 import psutil
 import re
+import platform
 
 # =============================================================================
 # External Python modules
@@ -215,7 +216,13 @@ class TestConstants(unittest.TestCase):
     
     def test_constants(self):
         # read the constants from src
-        constants = parse_constants_file(os.path.join(base_dir, "..", "src", "includes", "ADIMEN.INC"))
+        if platform.machine() in ("ARM64", "aarch64") and platform.system() == "Windows":
+            # Windows ARM64
+            constants = parse_constants_file(os.path.join(base_dir, "..", "src", "includes", "ADIMEN.INC.winArm64"))
+        else:
+            # Everything else
+            constants = parse_constants_file(os.path.join(base_dir, "..", "src", "includes", "ADIMEN.INC"))
+
         for var in constants:
             assert getattr(self.ovl, var) == constants[var]
 

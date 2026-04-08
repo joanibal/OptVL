@@ -59,8 +59,7 @@
 
 
       ! PARAMETER (NVMAX=4000)
-      ! PARAMETER (NVMAX=5000)
-      PARAMETER (NVMAX=4000)
+      PARAMETER (NVMAX=5000)
 
       PARAMETER (NSMAX=500) ! max number of strips
       PARAMETER (NSECMAX=201) ! max number of geometry sections
@@ -69,8 +68,8 @@
       PARAMETER (NBMAX=20)  ! max number of bodies
 
       PARAMETER (NUMAX=6)  ! number of velocity components
-      PARAMETER (NDMAX=25) ! max number of control surfaces
-      PARAMETER (NGMAX=15) ! max number of design variables
+      PARAMETER (NDMAX=15) ! max number of control surfaces
+      PARAMETER (NGMAX=11) ! max number of design variables
 
       PARAMETER (NRMAX=25)  ! max number of run cases
       PARAMETER (NTMAX=503) ! max number of time values
@@ -79,7 +78,7 @@
       ! PARAMETER (NOBMAX=1) ! max number of off body points
       
       PARAMETER (ICONX=11) ! max number of control or design variable declaration lines per section 
-      PARAMETER (IBX=200)  ! max number of airfoil coordinates
+      PARAMETER (IBX=400)  ! max number of airfoil coordinates
       ! PARAMETER (ICONX=20) ! max number of control or design variable declaration lines per section 
       ! PARAMETER (IBX=200)  ! max number of airfoil coordinates
       ! ! PARAMETER (IBX=300)  ! max number of airfoil coordinates

@@ -85,6 +85,17 @@ inc_np = include_directories(incdir_numpy)
 incdir_f2py = incdir_numpy / '..' / '..' / 'f2py' / 'src'
 inc_f2py = include_directories(incdir_f2py)
 
+# set up statically allocated variable sizes
+if host_machine.system() == 'windows' and host_machine.cpu_family() == 'aarch64'
+  cp_cmd = find_program('cmd')
+  custom_target('copy_adimen',
+    output: 'ADIMEN.INC',
+    command: [cp_cmd, '/c', 'copy',
+              meson.source_root() / 'src' / 'includes' / 'ADIMEN.INC.winArm64',
+              meson.source_root() / 'src' / 'includes' / 'ADIMEN.INC'],
+    build_by_default: true,
+  )
+endif
 
 # Fortran warning flags
 
