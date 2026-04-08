@@ -88,9 +88,8 @@ inc_f2py = include_directories(incdir_f2py)
 # set up statically allocated variable sizes
 if host_machine.system() == 'windows' and host_machine.cpu_family() == 'aarch64'
   run_command(
-    'cmd', '/c', 'copy',
-    meson.project_source_root() / 'src' / 'includes' / 'ADIMEN.INC.winArm64',
-    meson.project_source_root() / 'src' / 'includes' / 'ADIMEN.INC',
+    py3, '-c',
+    'import shutil; shutil.copy(r"' + (meson.project_source_root() / 'src' / 'includes' / 'ADIMEN.INC.winArm64') + '", r"' + (meson.project_source_root() / 'src' / 'includes' / 'ADIMEN.INC') + '")',
     check: true,
   )
 endif
