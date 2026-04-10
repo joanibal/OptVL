@@ -187,7 +187,7 @@ class TestFortranLevelAPI(unittest.TestCase):
     def test_get_array(self):
         chords = self.ovl.get_avl_fort_arr("SURF_GEOM_R", "CHORDS")
 
-        self.assertEqual(chords.shape, (100, 301))
+        self.assertEqual(chords.shape, (self.ovl.NFMAX, self.ovl.NSECMAX))
         np.testing.assert_array_equal(chords[0, :5], np.array([0.45, 0.45, 0.4, 0.3, 0.2]))
 
 def parse_constants_file(filepath: str) -> dict[str, int]:
