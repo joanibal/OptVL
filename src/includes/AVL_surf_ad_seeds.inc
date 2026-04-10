@@ -44,7 +44,7 @@ c      real(kind=avl_real) ZUASEC_DIFF
 c      real(kind=avl_real) CASEC_DIFF
       real(kind=avl_real) SASEC_DIFF
 c      real(kind=avl_real) TASEC_DIFF
-c      real(kind=avl_real) CLCDSEC_DIFF
+      real(kind=avl_real) CLCDSEC_DIFF
       real(kind=avl_real) CLCDSRF_DIFF
       real(kind=avl_real) CLAF_DIFF
 c      real(kind=avl_real) XHINGED_DIFF
@@ -71,11 +71,11 @@ c     & XUASEC_DIFF(IBX, NSECMAX, NFMAX),
 c     & ZUASEC_DIFF(IBX, NSECMAX, NFMAX),
      & CHORDS_DIFF(NSECMAX, NFMAX),
      & AINCS_DIFF(NSECMAX, NFMAX),
-     & XASEC_DIFF(50, NSECMAX, NFMAX),
+     & XASEC_DIFF(NASMAX, NSECMAX, NFMAX),
 c     & CASEC_DIFF(IBX, NSECMAX, NFMAX),
-     & SASEC_DIFF(50, NSECMAX, NFMAX),
+     & SASEC_DIFF(NASMAX, NSECMAX, NFMAX),
 c     & TASEC_DIFF(IBX, NSECMAX, NFMAX),
-c     & CLCDSEC_DIFF(6, NSECMAX, NFMAX),
+     & CLCDSEC_DIFF(6, NSECMAX, NFMAX),
      & CLCDSRF_DIFF(6, NFMAX),
      & CLAF_DIFF(NSECMAX, NFMAX)
 c     & XHINGED_DIFF(ICONX, NSECMAX, NFMAX),

@@ -155,6 +155,12 @@ python module libavl ! in
             real*8 :: xb(nb), yb(nb)
             logical :: storecoords
         end subroutine set_body_coordinates
-
+        
+      subroutine get_avl_constants(nvmax_out, nsmax_out, nsecmax_out, nfmax_out, nlmax_out, nbmax_out, numax_out, ndmax_out, ngmax_out, nrmax_out, ntmax_out, nobmax_out, iconx_out,ibx_out, nasmax_out)
+         integer, intent(out) :: nvmax_out, nsmax_out, nsecmax_out
+         integer, intent(out) :: nfmax_out, nlmax_out, nbmax_out, numax_out
+         integer, intent(out) :: ndmax_out, ngmax_out, nrmax_out, ntmax_out
+         integer, intent(out) :: nobmax_out, iconx_out,ibx_out, nasmax_out
+        end subroutine get_avl_constants
     end interface 
 end python module libavl

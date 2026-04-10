@@ -139,14 +139,14 @@ C     up the size information as we make each surface
       ENDDO
       DO ii1=1,NSURF
         DO ii2=1,NSEC(ii1)
-          DO ii3=1,ibx
+          DO ii3=1,NASMAX
             xasec_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
         ENDDO
       ENDDO
       DO ii1=1,NSURF
         DO ii2=1,NSEC(ii1)
-          DO ii3=1,ibx
+          DO ii3=1,NASMAX
             sasec_diff(ii3, ii2, ii1) = 0.D0
           ENDDO
         ENDDO
@@ -1673,14 +1673,14 @@ C
                   ENDDO
                   DO ii1=1,NSURF
                     DO ii2=1,NSEC(ii1)
-                      DO ii3=1,ibx
+                      DO ii3=1,NASMAX
                         xasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
                   DO ii1=1,NSURF
                     DO ii2=1,NSEC(ii1)
-                      DO ii3=1,ibx
+                      DO ii3=1,NASMAX
                         sasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
@@ -1849,14 +1849,14 @@ C
                   ENDDO
                   DO ii1=1,NSURF
                     DO ii2=1,NSEC(ii1)
-                      DO ii3=1,ibx
+                      DO ii3=1,NASMAX
                         xasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
                   DO ii1=1,NSURF
                     DO ii2=1,NSEC(ii1)
-                      DO ii3=1,ibx
+                      DO ii3=1,NASMAX
                         sasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
@@ -1993,14 +1993,14 @@ C
                   ENDDO
                   DO ii1=1,NSURF
                     DO ii2=1,NSEC(ii1)
-                      DO ii3=1,ibx
+                      DO ii3=1,NASMAX
                         xasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO
                   ENDDO
                   DO ii1=1,NSURF
                     DO ii2=1,NSEC(ii1)
-                      DO ii3=1,ibx
+                      DO ii3=1,NASMAX
                         sasec_diff(ii3, ii2, ii1) = 0.D0
                       ENDDO
                     ENDDO

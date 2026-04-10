@@ -709,12 +709,9 @@ c...      lower/upper coordinates (for oml)
           ELSE
             ZF = 0
           ENDIF
-          TH = ATAN(SLP)
-        !   XLASEC(I,ISEC,ISURF) = XF + 0.5*THK*SIN(TH)
-        !   XUASEC(I,ISEC,ISURF) = XF - 0.5*THK*SIN(TH)
-        !   ZLASEC(I,ISEC,ISURF) = ZF - 0.5*THK*COS(TH)
-        !   ZUASEC(I,ISEC,ISURF) = ZF + 0.5*THK*COS(TH)
+        !   TH = ATAN(SLP)
           CASEC(I,ISEC,ISURF) = ZF
+          
 cc#endif
         ENDDO
         
@@ -950,11 +947,9 @@ C------- camberline slopes at specified locations from spline
 cc#ifdef USE_CPOML
 C...       lower/upper coordinates (for oml)
            CALL AKIMA(XIN,YIN,NIN,XASEC(I,ISEC,ISURF),ZC,DUMMY)
-        !    XLASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
-        !    XUASEC(I,ISEC,ISURF) = XASEC(I,ISEC,ISURF)
-        !    ZLASEC(I,ISEC,ISURF) = ZC - 0.5*TASEC(I,ISEC,ISURF)
-        !    ZUASEC(I,ISEC,ISURF) = ZC + 0.5*TASEC(I,ISEC,ISURF)
            CASEC(I,ISEC,ISURF) = ZC 
+           
+
 cc#endif
          END DO
          CALL NRMLIZ (NASEC(ISEC,ISURF),XASEC(1,ISEC,ISURF))

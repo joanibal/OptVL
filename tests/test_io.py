@@ -213,6 +213,7 @@ def parse_constants_file(filepath: str) -> dict[str, int]:
 class TestConstants(unittest.TestCase):
     def setUp(self):
         self.ovl = OVLSolver(geo_file=geom_file, mass_file=mass_file)
+        print('done with setup')
     
     def test_constants(self):
         # read the constants from src

@@ -51,4 +51,6 @@
       ! PARAMETER (NOBMAX=1000) ! max number of off body points
       
       PARAMETER (ICONX=20) ! 
-      PARAMETER (IBX=300)  ! max number of airfoil coordinates
+      PARAMETER (IBX=300)  ! max number of airfoil coordinates in a file
+      
+      PARAMETER (NASMAX=50) ! max number of airfoil data point

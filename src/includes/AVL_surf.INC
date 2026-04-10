@@ -98,10 +98,10 @@ c     & XUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface x-coords
 c     & ZUASEC(IBX, NSECMAX, NFMAX), ! airfoil upper surface z-coords
      & CHORDS(NSECMAX, NFMAX), ! chord length vectorm
      & AINCS(NSECMAX, NFMAX), ! incidence angle vector
-     & XASEC(50, NSECMAX, NFMAX),  ! the x coordinate aifoil section
-     & CASEC(50, NSECMAX, NFMAX),  ! camber line at xasec
-     & SASEC(50, NSECMAX, NFMAX),  ! slope of camber line at xasec
-     & TASEC(50, NSECMAX, NFMAX),   ! thickness at xasec
+     & XASEC(NASMAX, NSECMAX, NFMAX),  ! the x coordinate aifoil section
+     & CASEC(NASMAX, NSECMAX, NFMAX),  ! camber line at xasec
+     & SASEC(NASMAX, NSECMAX, NFMAX),  ! slope of camber line at xasec
+     & TASEC(NASMAX, NSECMAX, NFMAX),   ! thickness at xasec
      & CLCDSEC(6, NSECMAX, NFMAX),
      & CLCDSRF(6, NFMAX),
      & CLAF(NSECMAX, NFMAX),   ! CL alpha (dCL/da) scaling factor

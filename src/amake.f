@@ -48,6 +48,9 @@ C
       INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
       REAL XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
       integer idx_vor, idx_strip
+      REAL XLASECL(NSMAX), XUASECL(NSMAX), ZLASECL(NSMAX), ZUASECL(NSMAX)
+      REAL XLASECR(NSMAX), XUASECR(NSMAX), ZLASECR(NSMAX), ZUASECR(NSMAX)
+      
 C
 C
       IF(NSEC(ISURF).LT.2) THEN
@@ -585,37 +588,46 @@ C...        retained in (x,z) plane at this point
             ! XUASEC
             ! ZLASEC
             ! ZUASEC
+           XLASECL = XASEC(:,ISEC,ISURF)
+           XUASECL = XASEC(:,ISEC,ISURF)
+           ZLASECL = CASEC(:,ISEC,ISURF) - 0.5*TASEC(:,ISEC,ISURF)
+           ZUASECL = CASEC(:,ISEC,ISURF) + 0.5*TASEC(:,ISEC,ISURF)
+           
+           XLASECR = XASEC(:,ISEC,ISURF)
+           XUASECR = XASEC(:,ISEC,ISURF)
+           ZLASECR = CASEC(:,ISEC,ISURF) - 0.5*TASEC(:,ISEC,ISURF)
+           ZUASECR = CASEC(:,ISEC,ISURF) + 0.5*TASEC(:,ISEC,ISURF)
 
 
-!             CALL AKIMA( XLASEC(1,ISEC,ISURF), ZLASEC(1,ISEC,ISURF), NSL,
-!      &                  XPT(IVC+1), ZL_L, DSDX )
-!             CALL AKIMA( XUASEC(1,ISEC,ISURF), ZUASEC(1,ISEC,ISURF), NSL,
-!      &                  XPT(IVC+1), ZU_L, DSDX )
-! C
-!             CALL AKIMA( XLASEC(1,ISEC+1,ISURF), ZLASEC(1,ISEC+1,ISURF),
-!      &                  NSR, XPT(IVC+1), ZL_R, DSDX )
-!             CALL AKIMA( XUASEC(1,ISEC+1,ISURF), ZUASEC(1,ISEC+1,ISURF),
-!      &                  NSR, XPT(IVC+1), ZU_R, DSDX )
-! C
-!             XYN1(1,idx_vor) = RLE1(1,idx_strip) + 
-!      &                        XPT(IVC+1)*CHORD1(idx_strip)
-!             XYN1(2,idx_vor) = RLE1(2,idx_strip)
+            CALL AKIMA( XLASECL, ZLASECL, NSL,
+     &                  XPT(IVC+1), ZL_L, DSDX )
+            CALL AKIMA( XUASECL, ZUASECL, NSL,
+     &                  XPT(IVC+1), ZU_L, DSDX )
+C
+            CALL AKIMA( XLASECR, ZLASECR,
+     &                  NSR, XPT(IVC+1), ZL_R, DSDX )
+            CALL AKIMA( XUASECR, ZUASECR,
+     &                  NSR, XPT(IVC+1), ZU_R, DSDX )
+C
+            XYN1(1,idx_vor) = RLE1(1,idx_strip) + 
+     &                        XPT(IVC+1)*CHORD1(idx_strip)
+            XYN1(2,idx_vor) = RLE1(2,idx_strip)
             
-!             ZL =  (1.-F1)*ZL_L + F1 *ZL_R
-!             ZU =  (1.-F1)*ZU_L + F1 *ZU_R
+            ZL =  (1.-F1)*ZL_L + F1 *ZL_R
+            ZU =  (1.-F1)*ZU_L + F1 *ZU_R
             
-!             ZLON1(idx_vor)  = RLE1(3,idx_strip) + ZL*CHORD1(idx_strip)
-!             ZUPN1(idx_vor)  = RLE1(3,idx_strip) + ZU*CHORD1(idx_strip)
-! C
-!             XYN2(1,idx_vor) = RLE2(1,idx_strip) + 
-!      &                        XPT(IVC+1)*CHORD2(idx_strip)
-!             XYN2(2,idx_vor) = RLE2(2,idx_strip)
+            ZLON1(idx_vor)  = RLE1(3,idx_strip) + ZL*CHORD1(idx_strip)
+            ZUPN1(idx_vor)  = RLE1(3,idx_strip) + ZU*CHORD1(idx_strip)
+C
+            XYN2(1,idx_vor) = RLE2(1,idx_strip) + 
+     &                        XPT(IVC+1)*CHORD2(idx_strip)
+            XYN2(2,idx_vor) = RLE2(2,idx_strip)
             
-!             ZL =  (1.-F2)*ZL_L + F2 *ZL_R
-!             ZU =  (1.-F2)*ZU_L + F2 *ZU_R
+            ZL =  (1.-F2)*ZL_L + F2 *ZL_R
+            ZU =  (1.-F2)*ZU_L + F2 *ZU_R
           
-!             ZLON2(idx_vor)  = RLE2(3,idx_strip) + ZL*CHORD2(idx_strip)
-!             ZUPN2(idx_vor)  = RLE2(3,idx_strip) + ZU*CHORD2(idx_strip)
+            ZLON2(idx_vor)  = RLE2(3,idx_strip) + ZL*CHORD2(idx_strip)
+            ZUPN2(idx_vor)  = RLE2(3,idx_strip) + ZU*CHORD2(idx_strip)
 C
 cc#endif
             idx_vor = idx_vor + 1
@@ -681,6 +693,9 @@ c--------------------------------------------------------------
      &     CHSINR_G(NGMAX),CHCOSR_G(NGMAX),
      &     XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
       INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
+      REAL XLASECL(NSMAX), XUASECL(NSMAX), ZLASECL(NSMAX), ZUASECL(NSMAX)
+      REAL XLASECR(NSMAX), XUASECR(NSMAX), ZLASECR(NSMAX), ZUASECR(NSMAX)
+      
       
       ! working variables (OptVL additions)
       real m1, m2, m3, f1, f2, fc, dc1, dc2, dc, a1, a2, a3, xptxind1,
@@ -1346,50 +1361,62 @@ c--------------------------------------------------------------
         !  &           - RLE2(1,idx_strip))/CHORD2(idx_strip) 
 
 !           ! Interpolate cross section on left side
-!           CALL AKIMA( XLASEC(1,iptl,isurf), ZLASEC(1,iptl,isurf),
-!      &                NSL,xptxind1, ZL_L, DSDX )
-!           CALL AKIMA( XUASEC(1,iptl,isurf), ZUASEC(1,iptl,isurf),
-!      &                NSL,xptxind1, ZU_L, DSDX )
 
-!           ! Interpolate cross section on right side
-!           CALL AKIMA(XLASEC(1,iptr,isurf),
-!      &               ZLASEC(1,iptr,isurf),NSR, xptxind1, ZL_R, DSDX)
+           XLASECL = XASEC(:,iptl,ISURF)
+           XUASECL = XASEC(:,iptl,ISURF)
+           ZLASECL = CASEC(:,iptl,ISURF) - 0.5*TASEC(:,iptl,ISURF)
+           ZUASECL = CASEC(:,iptl,ISURF) + 0.5*TASEC(:,iptl,ISURF)
+           
+           XLASECR = XASEC(:,iptr,ISURF)
+           XUASECR = XASEC(:,iptr,ISURF)
+           ZLASECR = CASEC(:,iptr,ISURF) - 0.5*TASEC(:,iptr,ISURF)
+           ZUASECR = CASEC(:,iptr,ISURF) + 0.5*TASEC(:,iptr,ISURF)
+
+
+          CALL AKIMA( XLASECL, ZLASECL,
+     &                NSL,xptxind1, ZL_L, DSDX )
+          CALL AKIMA( XUASECL, ZUASECL,
+     &                NSL,xptxind1, ZU_L, DSDX )
+
+          ! Interpolate cross section on right side
+          CALL AKIMA(XLASECR,
+     &               ZLASECR,NSR, xptxind1, ZL_R, DSDX)
                           
-!           CALL AKIMA(XUASEC(1,iptr,isurf),
-!      &               ZUASEC(1,iptr,isurf),NSR, xptxind1, ZU_R, DSDX)
+          CALL AKIMA(XUASECR,
+     &               ZUASECR,NSR, xptxind1, ZU_R, DSDX)
 
 
-!           ! Compute the left aft node of panel 
-!           ! X-point
-!           XYN1(1,idx_vor) = RLE1(1,idx_strip) + 
-!      &                      xptxind1*CHORD1(idx_strip)
+          ! Compute the left aft node of panel 
+          ! X-point
+          XYN1(1,idx_vor) = RLE1(1,idx_strip) + 
+     &                      xptxind1*CHORD1(idx_strip)
 
-!           ! Y-point
-!           XYN1(2,idx_vor) = RLE1(2,idx_strip)
+          ! Y-point
+          XYN1(2,idx_vor) = RLE1(2,idx_strip)
 
-!           ! Interpolate z from sections to left aft node of panel
-!           ZL =  (1.-f1)*ZL_L + f1 *ZL_R
-!           ZU =  (1.-f1)*ZU_L + f1 *ZU_R
+          ! Interpolate z from sections to left aft node of panel
+          ZL =  (1.-f1)*ZL_L + f1 *ZL_R
+          ZU =  (1.-f1)*ZU_L + f1 *ZU_R
 
-!           ! Store left aft z-point
-!           ZLON1(idx_vor)  = RLE1(3,idx_strip) + ZL*CHORD1(idx_strip)
-!           ZUPN1(idx_vor)  = RLE1(3,idx_strip) + ZU*CHORD1(idx_strip)
+          ! Store left aft z-point
+          ZLON1(idx_vor)  = RLE1(3,idx_strip) + ZL*CHORD1(idx_strip)
+          ZUPN1(idx_vor)  = RLE1(3,idx_strip) + ZU*CHORD1(idx_strip)
 
-!           ! Compute the right aft node of panel 
-!           ! X-point
-!           XYN2(1,idx_vor) = RLE2(1,idx_strip) + 
-!      &                      xptxind1*CHORD2(idx_strip)
+          ! Compute the right aft node of panel 
+          ! X-point
+          XYN2(1,idx_vor) = RLE2(1,idx_strip) + 
+     &                      xptxind1*CHORD2(idx_strip)
 
-!           ! Y-point
-!           XYN2(2,idx_vor) = RLE2(2,idx_strip)
+          ! Y-point
+          XYN2(2,idx_vor) = RLE2(2,idx_strip)
                 
-!           ! Interpolate z from sections to right aft node of panel
-!           ZL =  (1.-f2)*ZL_L + f2 *ZL_R
-!           ZU =  (1.-f2)*ZU_L + f2 *ZU_R
+          ! Interpolate z from sections to right aft node of panel
+          ZL =  (1.-f2)*ZL_L + f2 *ZL_R
+          ZU =  (1.-f2)*ZU_L + f2 *ZU_R
 
-!           ! Store right aft z-point
-!           ZLON2(idx_vor)  = RLE2(3,idx_strip) + ZL*CHORD2(idx_strip)
-!           ZUPN2(idx_vor)  = RLE2(3,idx_strip) + ZU*CHORD2(idx_strip)
+          ! Store right aft z-point
+          ZLON2(idx_vor)  = RLE2(3,idx_strip) + ZL*CHORD2(idx_strip)
+          ZUPN2(idx_vor)  = RLE2(3,idx_strip) + ZU*CHORD2(idx_strip)
       
 
           idx_vor = idx_vor + 1
