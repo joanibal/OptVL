@@ -6,6 +6,8 @@ module avl_heap_inc_diff
 ! Heap array include file for large AVL AIC arrays
 
   INTEGER, PARAMETER :: NVX=5000   ! must match nvmax in ADIMEN.INC)
+  ! Explicit init ensures .data section placement (reliable with -fno-init-global-zero)
+  LOGICAL :: heap_diff_allocated = .FALSE.
 
 ! All non-constant variables are declared as threadprivate for OpenMP
  ! warning! hardcoding precision!

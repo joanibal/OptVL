@@ -8,14 +8,17 @@ subroutine avlheap_init(n)
   integer :: n
 
 ! Allocate AIC variable storage
+! Use heap_allocated flag instead of allocated() to avoid false positives
+! when Fortran allocatable descriptors contain garbage with -fno-init-global-zero
 
-  if (.not. allocated(AICN)) then
+  if (.not. heap_allocated) then
     allocate(AICN(n,n))
     allocate(AICN_LU(n,n))
     allocate(WC_GAM(3,n,n))
     allocate(WV_GAM(3,n,n))
+    heap_allocated = .TRUE.
   endif
-  
+
   NAIC = n
 end subroutine avlheap_init
 
@@ -28,13 +31,14 @@ subroutine avlheap_clean()
 
 ! Deallocate heap storage for AIC's 
 
-  if (allocated(AICN)) then
+  if (heap_allocated) then
     deallocate(AICN)
     deallocate(AICN_LU)
     deallocate(WC_GAM)
     deallocate(WV_GAM)
+    heap_allocated = .FALSE.
   endif
-  
+
   NAIC = -1
 
 end subroutine avlheap_clean
