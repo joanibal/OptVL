@@ -37,6 +37,7 @@ class OVLGroup(om.Group):
         self.options.declare("input_airfoil_geom", types=bool, default=False)
         self.options.declare("input_mesh_dim", types=int, default=1)
 
+        self.options.declare("output_case_strip_vars", types=bool, default=False)
         self.options.declare("output_stability_derivs", types=bool, default=False)
         self.options.declare("output_body_axis_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
@@ -51,6 +52,7 @@ class OVLGroup(om.Group):
         input_airfoil_geom = self.options["input_airfoil_geom"]
         input_mesh_dim = self.options["input_mesh_dim"]
 
+        output_case_strip_vars = self.options["output_case_strip_vars"]
         output_stability_derivs = self.options["output_stability_derivs"]
         output_body_axis_derivs = self.options["output_body_axis_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
@@ -75,6 +77,7 @@ class OVLGroup(om.Group):
                 input_param_vals=input_param_vals,
                 input_ref_vals=input_ref_vals,
                 input_airfoil_geom=input_airfoil_geom,
+                output_case_strip_vars=output_case_strip_vars,
                 output_stability_derivs=output_stability_derivs,
                 output_body_axis_derivs=output_body_axis_derivs,
                 output_con_surf_derivs=output_con_surf_derivs,
@@ -389,11 +392,14 @@ class OVLSolverComp(om.ImplicitComponent):
                     if "mesh" in mesh_seeds[surface].keys():
                         idx_surf = self.ovl.get_surface_index(surf_name=surface)
                         if self.input_mesh_dim == 1:
-                            mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seeds[surface]["mesh"].flatten())
+                            nx = self.ovl.avl.SURF_GEOM_I.NVC[idx_surf] + 1
+                            ny = self.ovl.avl.SURF_GEOM_I.NVS[idx_surf] + 1
+                            mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seeds[surface]["mesh"].reshape((nx*ny,3)))
                         elif self.input_mesh_dim == 3:
                             nx = self.ovl.avl.SURF_GEOM_I.NVC[idx_surf] + 1
                             ny = self.ovl.avl.SURF_GEOM_I.NVS[idx_surf] + 1
-                            mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seeds[surface]["mesh"].reshape((ny,nx,3)).transpose((1,0,2)))
+                            mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seeds[surface]["mesh"].transpose((1,0,2)).reshape((nx*ny,3)))
+                            # mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seeds[surface]["mesh"].reshape((ny,nx,3)).transpose((1,0,2)))
 
             param_seeds = {}
             for param in self.ovl.param_idx_dict:
@@ -405,7 +411,7 @@ class OVLSolverComp(om.ImplicitComponent):
                 if ref in d_inputs:
                     ref_seeds[ref] = d_inputs[ref]
 
-            _, res_seeds, _, _, _, res_d_seeds, res_u_seeds = self.ovl._execute_jac_vec_prod_fwd(
+            _,_, res_seeds, _, _, _, res_d_seeds, res_u_seeds = self.ovl._execute_jac_vec_prod_fwd(
                 con_seeds=con_seeds, geom_seeds=geom_seeds, mesh_seeds=mesh_seeds, param_seeds=param_seeds, ref_seeds=ref_seeds
             )
 
@@ -490,6 +496,7 @@ class OVLFuncsComp(om.ExplicitComponent):
 
     def initialize(self):
         self.options.declare("ovl", types=OVLSolver, recordable=False)
+        self.options.declare("output_case_strip_vars", types=bool, default=False)
         self.options.declare("output_stability_derivs", types=bool, default=False)
         self.options.declare("output_body_axis_derivs", types=bool, default=False)
         self.options.declare("output_con_surf_derivs", types=bool, default=False)
@@ -527,6 +534,16 @@ class OVLFuncsComp(om.ExplicitComponent):
         # add the outputs
         for func_key in self.ovl.case_var_to_fort_var:
             self.add_output(func_key)
+
+        if self.options["output_case_strip_vars"]:
+            for func_key in self.ovl.case_strip_var_to_fort_var:
+                if func_key in ["CF strip", "Cm strip"]: #skip it for now
+                    continue
+                for surface in self.ovl.unique_surface_names:
+                    idx_surf = self.ovl.get_surface_index(surf_name=surface)
+                    num_strips = self.ovl.get_surface_num_strips(idx_surf)
+                    surf_func_name = f"{surface}:{func_key}"
+                    self.add_output(surf_func_name,shape=(num_strips,))
 
         if self.options["output_con_surf_derivs"]:
             for func_key in self.ovl.case_derivs_to_fort_var:
@@ -591,6 +608,15 @@ class OVLFuncsComp(om.ExplicitComponent):
             # print(f' {func_key} {run_data[func_key]}')
             outputs[func_key] = run_data[func_key]
         # print(f" CD {run_data['CD']} CL {run_data['CL']}")
+
+        if self.options["output_case_strip_vars"]:
+            strip_data = self.ovl.get_strip_forces()
+            for func_key in self.ovl.case_strip_var_to_fort_var:
+                if func_key in ["CF strip", "Cm strip"]: #skip it for now
+                    continue
+                for surface in self.ovl.unique_surface_names:
+                    surf_func_name = f"{surface}:{func_key}"
+                    outputs[surf_func_name] = strip_data[surface][func_key]
 
         if self.options["output_con_surf_derivs"]:
             consurf_derivs_seeds = self.ovl.get_control_stab_derivs()
@@ -660,7 +686,7 @@ class OVLFuncsComp(om.ExplicitComponent):
                             ny = self.ovl.avl.SURF_GEOM_I.NVS[idx_surf] + 1
                             mesh_seeds[surface]["mesh"] = copy.deepcopy(mesh_seeds[surface]["mesh"].reshape((ny,nx,3)).transpose((1,0,2)))
 
-            func_seeds, _, csd_seeds, stab_derivs_seeds, body_axis_seeds, _, _ = self.ovl._execute_jac_vec_prod_fwd(
+            func_seeds,strip_func_seeds, _, csd_seeds, stab_derivs_seeds, body_axis_seeds, _, _ = self.ovl._execute_jac_vec_prod_fwd(
                 con_seeds=con_seeds,
                 geom_seeds=geom_seeds,
                 mesh_seeds=mesh_seeds,
@@ -673,6 +699,11 @@ class OVLFuncsComp(om.ExplicitComponent):
 
             for func_key in func_seeds:
                 d_outputs[func_key] += func_seeds[func_key]
+
+            for surf in strip_func_seeds:
+                for strip_func_key in strip_func_seeds[surf]:
+                    out_name = f"{surf}:{strip_func_key}"
+                    d_outputs[out_name] += strip_func_seeds[surf][strip_func_key]
 
             for func_key in csd_seeds:
                 for con_name in csd_seeds[func_key]:
@@ -699,6 +730,17 @@ class OVLFuncsComp(om.ExplicitComponent):
                     func_seeds[func_key] = d_outputs[func_key]
                     if np.abs(func_seeds[func_key]) > 0.0:
                         print(f"  running rev mode derivs for {func_key}")
+
+            strip_func_seeds = {}
+            for surf in self.ovl.unique_surface_names:
+                for strip_func_key in self.ovl.case_strip_var_to_fort_var:
+                    out_name = f"{surf}:{strip_func_key}"
+                    if out_name in d_outputs:
+                        if surf not in strip_func_seeds.keys():
+                            strip_func_seeds[surf] = {}
+                        strip_func_seeds[surf][strip_func_key] = d_outputs[out_name]
+                        if np.any(np.abs(strip_func_seeds[surf][strip_func_key]) > 0.0):
+                            print(f"  running rev mode derivs for {surf}:{strip_func_key}")
 
             csd_seeds = {}
             con_names = self.ovl.get_control_names()
@@ -734,6 +776,7 @@ class OVLFuncsComp(om.ExplicitComponent):
             con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds = (
                 self.ovl._execute_jac_vec_prod_rev(
                     func_seeds=func_seeds,
+                    strip_func_seeds=strip_func_seeds,
                     consurf_derivs_seeds=csd_seeds,
                     stab_derivs_seeds=stab_derivs_seeds,
                     body_axis_derivs_seeds=body_axis_seeds,

@@ -194,6 +194,49 @@ class OVLSolver(object):
         #TODO: add CF_LSRF(3,NFMAX), CM_LSRF(3,NFMAX)
     }
 
+    case_strip_var_to_fort_var = {
+            # geometric quantities
+            "X LE": ["STRP_R", "RLE", (slice(None), 0)],  # control point leading edge coordinates
+            "Y LE": ["STRP_R", "RLE", (slice(None), 1)],  # control point leading edge coordinates
+            "Z LE": ["STRP_R", "RLE", (slice(None), 2)],  # control point leading edge coordinates
+            "chord": ["STRP_R", "CHORD"],
+            "width": ["STRP_R", "WSTRIP"],
+            "twist": ["STRP_R", "AINC"],
+
+            # strip contributions to total lift and drag from strip integration
+            "CL": ["STRP_R", "CLSTRP"],
+            "CD": ["STRP_R", "CDSTRP"],
+            "CDv" : ["STRP_R","CDV_LSTRP"],  # strip viscous drag in stability axes
+            "downwash" : ["STRP_R","DWWAKE"],
+            
+            
+            # strip contributions to non-dimensionalized forces
+            "CX": ["STRP_R", "CFSTRP", (slice(None), 0)],
+            "CY": ["STRP_R", "CFSTRP", (slice(None), 1)],
+            "CZ": ["STRP_R", "CFSTRP", (slice(None), 2)],
+            
+            # strip contributions to total moments (body frame)
+            "Cl": ["STRP_R", "CMSTRP", (slice(None), 0)], # previously CR
+            "Cm": ["STRP_R", "CMSTRP", (slice(None), 1)], # previously CM
+            "Cn": ["STRP_R", "CMSTRP", (slice(None), 2)], # previously CN
+            
+            
+            # forces non-dimentionalized by strip quantities
+            "CL strip" : ["STRP_R", "CL_LSTRP"],
+            "CD strip" : ["STRP_R", "CD_LSTRP"],
+            "CF strip" : ["STRP_R", "CF_LSTRP"], # forces in 3 directions
+            "Cm strip" : ["STRP_R", "CM_LSTRP"], # moments in 3 directions
+
+            # additional forces and moments
+            "CL perp" : ["STRP_R", "CLT_LSTRP"], # strip CL referenced to Vperp,
+            "Cm c/4" : ["STRP_R","CMC4_LSTRP"],  # strip pitching moment about c/4 and
+            "Cm LE" : ["STRP_R","CMLE_LSTRP"],  # strip pitching moment about LE vector
+            "spanloading" : ["STRP_R","CNC"],   # strip spanloading 
+            
+            # TODO: add
+            #  & CF_LSTRP(3,NSMAX),   CM_LSTRP(3,NSMAX),    ! strip forces in body axes referenced to strip area and 1/4 chord
+    }
+
     body_geom_to_fort_var = {
         "scale": ["BODY_GEOM_R", "XYZSCAL_B"],
         "translate": ["BODY_GEOM_R", "XYZTRAN_B"],
@@ -2175,6 +2218,12 @@ class OVLSolver(object):
         idx_srp_end = np.sum(num_strips[: idx_surf + 1])
 
         return idx_srp_beg, idx_srp_end
+    
+    def get_surface_num_strips(self, idx_surf: int):
+        # num_strips = np.trim_zeros(self.get_avl_fort_arr("SURF_I", "NJ"))
+        num_strips = np.trim_zeros(self.get_avl_fort_arr("SURF_I", "NJ",slicer=idx_surf))
+
+        return num_strips
 
     # region --- modal analysis api
     def execute_eigen_mode_calc(self):
@@ -3588,7 +3637,7 @@ class OVLSolver(object):
 
         return mesh_seeds
 
-    def set_mesh_ad_seeds(self, mesh_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
+    def set_mesh_ad_seeds(self, mesh_seeds: Dict[str, Dict[str, float]], mode: str = "AD", scale=1.0) -> None:
         for surf_key in mesh_seeds:
             for mesh_key in mesh_seeds[surf_key]:
                 blk, var, slicer = self.surf_mesh_to_fort_var[surf_key][mesh_key]
@@ -3722,6 +3771,49 @@ class OVLSolver(object):
             var += self.ad_suffix
             val = func_seeds[_var] * scale
             self.set_avl_fort_arr(blk, var, val)
+
+    def get_strip_function_ad_seeds(self):
+        strip_func_seeds = {}
+        for surf_key in self.surface_names:
+            strip_func_seeds[surf_key] = {}
+            idx_surf = self.get_surface_index(surf_key)
+            idx_srp_beg, idx_srp_end = self._get_surface_strip_indices(idx_surf)
+            for _var in self.case_strip_var_to_fort_var:
+                vardata = self.case_strip_var_to_fort_var[_var]
+                if len(vardata) == 2:
+                    blk = vardata[0]
+                    var = vardata[1]
+                    slicer = None
+                elif len(vardata) == 3:
+                    blk = vardata[0]
+                    var = vardata[1]
+                    slicer = vardata[2]
+                blk += self.ad_suffix
+                var += self.ad_suffix
+                val = self.get_avl_fort_arr(blk, var, slicer)
+                strip_func_seeds[surf_key][_var] = copy.deepcopy(val[idx_srp_beg:idx_srp_end])
+
+        return strip_func_seeds
+
+    def set_strip_function_ad_seeds(self, strip_func_seeds: Dict[str, Dict[str, float]], scale=1.0):
+        for surf_key in strip_func_seeds:
+            idx_surf = self.get_surface_index(surf_key)
+            idx_srp_beg, idx_srp_end = self._get_surface_strip_indices(idx_surf)
+            for _var in strip_func_seeds[surf_key]:
+                vardata = self.case_strip_var_to_fort_var[_var]
+                if len(vardata) == 2:
+                    blk = vardata[0]
+                    var = vardata[1]
+                    slicer = slice(idx_srp_beg,idx_srp_end)
+                elif len(vardata) == 3:
+                    blk = vardata[0]
+                    var = vardata[1]
+                    slicer = vardata[2]
+                    slicer = (slice(idx_srp_beg,idx_srp_end),slicer[1])
+                blk += self.ad_suffix
+                var += self.ad_suffix
+                val = strip_func_seeds[surf_key][_var] * scale
+                self.set_avl_fort_arr(blk, var, val,slicer)
 
     def get_consurf_derivs_ad_seeds(self):
         cs_deriv_seeds = {}
@@ -4028,6 +4120,7 @@ class OVLSolver(object):
 
             # extract derivatives seeds and set the output dict of functions
             func_seeds = self.get_function_ad_seeds()
+            strip_func_seeds = self.get_strip_function_ad_seeds()
             res_seeds = self.get_residual_ad_seeds()
             consurf_derivs_seeds = self.get_consurf_derivs_ad_seeds()
             stab_derivs_seeds = self.get_stab_derivs_ad_seeds()
@@ -4095,6 +4188,7 @@ class OVLSolver(object):
             self.avl.aero()
 
             coef_data_peturb = self.get_total_forces()
+            strip_forces_peturb = self.get_strip_forces()
             consurf_derivs_petrub = self.get_control_stab_derivs()
             stab_deriv_petrub = self.get_stab_derivs()
             body_axis_deriv_petrub = self.get_body_axis_derivs()
@@ -4148,6 +4242,7 @@ class OVLSolver(object):
             self.avl.aero()
 
             coef_data = self.get_total_forces()
+            strip_forces = self.get_strip_forces()
             consurf_derivs = self.get_control_stab_derivs()
             stab_deriv = self.get_stab_derivs()
             body_axis_deriv = self.get_body_axis_derivs()
@@ -4159,6 +4254,14 @@ class OVLSolver(object):
             func_seeds = {}
             for func_key in coef_data:
                 func_seeds[func_key] = (coef_data_peturb[func_key] - coef_data[func_key]) / step
+
+            strip_func_seeds = {}
+            for surface in self.surface_names:
+                strip_func_seeds[surface] = {}
+                for strip_func_key in strip_forces[surface]:
+                    if strip_func_key not in self.case_strip_var_to_fort_var:
+                        continue
+                    strip_func_seeds[surface][strip_func_key] = (strip_forces_peturb[surface][strip_func_key] - strip_forces[surface][strip_func_key]) / step
 
             consurf_derivs_seeds = {}
             for deriv_func in consurf_derivs:
@@ -4183,6 +4286,7 @@ class OVLSolver(object):
         # TODO-clean: the way these arrays are returned is a bit of a mess
         return (
             func_seeds,
+            strip_func_seeds,
             res_seeds,
             consurf_derivs_seeds,
             stab_derivs_seeds,
@@ -4194,6 +4298,7 @@ class OVLSolver(object):
     def _execute_jac_vec_prod_rev(
         self,
         func_seeds: Optional[Dict[str, float]] = None,
+        strip_func_seeds: Optional[Dict[str, Dict[str, any]]] = None,
         res_seeds: Optional[np.ndarray] = None,
         consurf_derivs_seeds: Optional[Dict[str, float]] = None,
         stab_derivs_seeds: Optional[Dict[str, float]] = None,
@@ -4242,6 +4347,9 @@ class OVLSolver(object):
         if func_seeds is None:
             func_seeds = {}
 
+        if strip_func_seeds is None:
+            strip_func_seeds = {}
+
         if res_seeds is None:
             res_seeds = np.zeros(mesh_size)
 
@@ -4264,6 +4372,7 @@ class OVLSolver(object):
         # self.clear_ad_seeds()
         time_last = time.time()
         self.set_function_ad_seeds(func_seeds)
+        self.set_strip_function_ad_seeds(strip_func_seeds)
         self.set_residual_ad_seeds(res_seeds)
         self.set_residual_d_ad_seeds(res_d_seeds)
         self.set_residual_u_ad_seeds(res_u_seeds)
@@ -4331,6 +4440,7 @@ class OVLSolver(object):
 
 
         self.set_function_ad_seeds(func_seeds, scale=0.0)
+        self.set_strip_function_ad_seeds(strip_func_seeds, scale=0.0)
         self.set_residual_ad_seeds(res_seeds, scale=0.0)
         self.set_residual_d_ad_seeds(res_d_seeds, scale=0.0)
         self.set_residual_u_ad_seeds(res_u_seeds, scale=0.0)
@@ -4349,6 +4459,7 @@ class OVLSolver(object):
     def execute_run_sensitivities(
         self,
         funcs: List[str],
+        strip_funcs: Optional[List[str]] = None,
         stab_derivs: Optional[List[str]] = None,
         body_axis_derivs: Optional[List[str]] = None,
         consurf_derivs: Optional[List[str]] = None,
@@ -4410,6 +4521,50 @@ class OVLSolver(object):
             # sens[func].update(mesh_seeds)
             sens[func].update(param_seeds)
             sens[func].update(ref_seeds)
+
+        if strip_funcs is not None:
+            for surf in strip_funcs:
+                sens[surf] = {}
+                for func in strip_funcs[surf]:
+
+                    sens[surf][func] = {}
+                    # get the RHS of the adjoint equation (pFpU)
+                    # TODO: remove seeds if it doesn't effect accuracy
+                    # self.clear_ad_seeds()
+                    time_last = time.time()
+                    _, _, _, _, pfpU, _, _, _, _ = self._execute_jac_vec_prod_rev(strip_func_seeds={surf:{func: 1.0}})
+                    if print_timings:
+                        print(f"Time to get RHS: {time.time() - time_last}")
+                        time_last = time.time()
+
+                    # self.clear_ad_seeds()
+                    # u solver adjoint equation with RHS
+                    self.set_gamma_ad_seeds(-1 * pfpU)
+                    solve_gamma_u_adj = False
+                    solve_gamma_d_adj = False
+                    self.avl.solve_adjoint(solve_gamma_u_adj, solve_gamma_d_adj)
+                    if print_timings:
+                        print(f"Time to solve adjoint: {time.time() - time_last}")
+                        time_last = time.time()
+                    # get the resulting adjoint vector (dfunc/dRes) from fortran
+                    dfdR = self.get_residual_ad_seeds()
+                    # self.clear_ad_seeds()
+                    con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                        strip_func_seeds={surf:{func: 1.0}}, res_seeds=dfdR
+                    )
+                    if print_timings:
+                        print(f"Time to combine derivs: {time.time() - time_last}")
+                        time_last = time.time()
+
+                    sens[surf][func].update(con_seeds)
+                    # I don't know if it's worth combining geom_seeds and mesh_seeds into one just to make this one part less nasty
+                    for key in geom_seeds:
+                        sens[surf][func][key] = geom_seeds[key] | mesh_seeds[key] | dvgeo_seeds[key]
+                    # sens[func].update(geom_seeds)
+                    # sens[func].update(mesh_seeds)
+                    sens[surf][func].update(param_seeds)
+                    sens[surf][func].update(ref_seeds)
+
 
         if consurf_derivs is not None:
             if print_timings:

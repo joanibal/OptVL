@@ -14,12 +14,14 @@ C                cytot_be crtot_be cmtot_be cntot_be cdtot_rx cltot_rx
 C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
 C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
 C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
-C                rr
+C                rr cdstrp clstrp cfstrp cmstrp cf_lstrp cd_lstrp
+C                cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp
+C                cnc dwwake
 C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
 C                sref cref bref xyzref mach cdref rle chord rle1
-C                chord1 rle2 chord2 wstrip ensy ensz xsref ysref
-C                zsref rv1 rv2 rv rc gam gam_u gam_d src src_u
-C                vv vv_u vv_d wv wv_u wv_d
+C                chord1 rle2 chord2 wstrip ess ensy ensz xsref
+C                ysref zsref rv1 rv2 rv rc gam gam_u gam_d src
+C                src_u vv vv_u vv_d wv wv_u wv_d
 C   RW status of diff variables: alfa:in vinf:in vinf_a:in vinf_b:in
 C                wrot:in sref:in cref:in bref:in xyzref:in mach:in
 C                cdref:in clff:out cyff:out cdff:out spanef:out
@@ -40,9 +42,13 @@ C                crtot_ry:out cmtot_ry:out cntot_ry:out cdtot_rz:out
 C                cltot_rz:out cytot_rz:out crtot_rz:out cmtot_rz:out
 C                cntot_rz:out xnp:out sm:out bb:out rr:out rle:in
 C                chord:in rle1:in chord1:in rle2:in chord2:in wstrip:in
-C                ensy:in ensz:in xsref:in ysref:in zsref:in rv1:in
-C                rv2:in rv:in rc:in gam:in gam_u:in gam_d:in src:in
-C                src_u:in vv:in vv_u:in vv_d:in wv:in wv_u:in wv_d:in
+C                ess:in ensy:in ensz:in xsref:in ysref:in zsref:in
+C                cdstrp:out clstrp:out cfstrp:out cmstrp:out cf_lstrp:out
+C                cd_lstrp:out cl_lstrp:out cdv_lstrp:out clt_lstrp:out
+C                cmc4_lstrp:out cmle_lstrp:out cnc:out dwwake:out
+C                rv1:in rv2:in rv:in rc:in gam:in gam_u:in gam_d:in
+C                src:in src_u:in vv:in vv_u:in vv_d:in wv:in wv_u:in
+C                wv_d:in
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -333,10 +339,13 @@ C  Differentiation of sfforc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: cdtot cytot cltot cdtot_a cltot_a
 C                cdtot_u cytot_u cltot_u cdtot_d cytot_d cltot_d
 C                cftot cftot_u cftot_d cmtot cmtot_u cmtot_d cdvtot
+C                cdstrp clstrp cfstrp cmstrp cf_lstrp cd_lstrp
+C                cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp
+C                cnc
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref rle chord rle1 chord1 rle2 chord2 wstrip
-C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_u
-C                gam_d vv vv_u vv_d wv wv_u wv_d
+C                ess ensy ensz xsref ysref zsref rv1 rv2 rv gam
+C                gam_u gam_d vv vv_u vv_d wv wv_u wv_d
 C AERO
 C
 C
@@ -354,6 +363,7 @@ C
       REAL vrot(3), vrot_u(3), wrot_u(3)
       REAL vrot_diff(3), vrot_u_diff(3), wrot_u_diff(3)
       REAL vperp(3)
+      REAL vperp_diff(3)
       REAL g(3), r(3), rh(3), mh(3)
       REAL g_diff(3), r_diff(3)
       REAL f(3), f_u(3, 6), f_d(3, ndmax), f_g(3, ngmax)
@@ -469,12 +479,19 @@ C---- indices for forming cross-products
       REAL vsq
       REAL vsqi
       REAL vspan
+      REAL vspan_diff
       REAL vpsq
+      REAL vpsq_diff
       REAL vpsqi
+      REAL vpsqi_diff
       REAL delx
+      REAL delx_diff
       REAL dely
+      REAL dely_diff
       REAL delz
+      REAL delz_diff
       REAL dmag
+      REAL dmag_diff
       INTEGER is
       INTEGER jj
       REAL dcm
@@ -487,8 +504,12 @@ C---- indices for forming cross-products
       REAL arg1_diff
       REAL temp
       INTEGER ii1
-      REAL temp0
-      REAL(kind=8) temp1
+      REAL(kind=8) temp0
+      REAL temp1
+      REAL temp2
+      REAL temp3
+      REAL temp4
+      REAL temp5
       INTEGER ii2
       INTEGER ii3
       DATA icrs /2, 3, 1/
@@ -583,7 +604,30 @@ C
         ENDDO
       ENDDO
       DO ii1=1,NSTRIP
+        DO ii2=1,3
+          cf_lstrp_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,NSTRIP
+        cd_lstrp_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        cl_lstrp_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
         cdv_lstrp_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        clt_lstrp_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        cmc4_lstrp_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        cmle_lstrp_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        cnc_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,numax
         cmz_u_diff(ii1) = 0.D0
@@ -667,6 +711,9 @@ C
       ENDDO
       DO ii1=1,3
         rc4_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,3
+        vperp_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,numax
         veffmag_u_diff(ii1) = 0.D0
@@ -829,6 +876,7 @@ C
         cmx = 0.
         cmy = 0.
         cmz = 0.
+        cnc_diff(j) = 0.D0
         cnc(j) = 0.
 C
         DO n=1,numax
@@ -1129,7 +1177,10 @@ C-------- moments referred to strip c/4 pt., normalized by strip chord and area
           cmz = cmz + temp
 C
 C-------- accumulate strip spanloading = c*CN
-          cnc(j) = cnc(j) + cr*(ensy(j)*dcfy+ensz(j)*dcfz)
+          temp0 = ensy(j)*dcfy + ensz(j)*dcfz
+          cnc_diff(j) = cnc_diff(j) + temp0*cr_diff + cr*(dcfy*ensy_diff
+     +      (j)+ensy(j)*dcfy_diff+dcfz*ensz_diff(j)+ensz(j)*dcfz_diff)
+          cnc(j) = cnc(j) + cr*temp0
 C
 C-------- freestream and rotation derivatives
           DO n=1,numax
@@ -1464,7 +1515,11 @@ Ccc            write(22,*) I,ILEG,DCFY,DCFZ,(DCFZ*R(2) - DCFY*R(3))/CR
 Ccc            write(23,*) I,ddcmx
 C
 C---------- accumulate strip spanloading = c*CN
-              cnc(j) = cnc(j) + cr*(ensy(j)*dcfy+ensz(j)*dcfz)
+              temp0 = ensy(j)*dcfy + ensz(j)*dcfz
+              cnc_diff(j) = cnc_diff(j) + temp0*cr_diff + cr*(dcfy*
+     +          ensy_diff(j)+ensy(j)*dcfy_diff+dcfz*ensz_diff(j)+ensz(j)
+     +          *dcfz_diff)
+              cnc(j) = cnc(j) + cr*temp0
 C
 C---------- freestream and rotation derivatives
               DO n=1,numax
@@ -1749,29 +1804,29 @@ C
 C
           DO n=1,numax
             temp = veff_u(1, n)*veffmag + veff(1)*veffmag_u(n)
-            temp0 = veff(1)*clv_u(n)
+            temp1 = veff(1)*clv_u(n)
             dcvfx_u_diff = cdv*(veffmag*veff_u_diff(1, n)+veff_u(1, n)*
      +        veffmag_diff+veffmag_u(n)*veff_diff(1)+veff(1)*
-     +        veffmag_u_diff(n)) + temp*cdv_diff + temp0*(cdv_clv*
+     +        veffmag_u_diff(n)) + temp*cdv_diff + temp1*(cdv_clv*
      +        veffmag_diff+veffmag*cdv_clv_diff) + veffmag*cdv_clv*(
      +        clv_u(n)*veff_diff(1)+veff(1)*clv_u_diff(n))
-            dcvfx_u = temp*cdv + veffmag*cdv_clv*temp0
-            temp0 = veff_u(2, n)*veffmag + veff(2)*veffmag_u(n)
+            dcvfx_u = temp*cdv + veffmag*cdv_clv*temp1
+            temp1 = veff_u(2, n)*veffmag + veff(2)*veffmag_u(n)
             temp = veff(2)*clv_u(n)
             dcvfy_u_diff = cdv*(veffmag*veff_u_diff(2, n)+veff_u(2, n)*
      +        veffmag_diff+veffmag_u(n)*veff_diff(2)+veff(2)*
-     +        veffmag_u_diff(n)) + temp0*cdv_diff + temp*(cdv_clv*
+     +        veffmag_u_diff(n)) + temp1*cdv_diff + temp*(cdv_clv*
      +        veffmag_diff+veffmag*cdv_clv_diff) + veffmag*cdv_clv*(
      +        clv_u(n)*veff_diff(2)+veff(2)*clv_u_diff(n))
-            dcvfy_u = temp0*cdv + veffmag*cdv_clv*temp
-            temp0 = veff_u(3, n)*veffmag + veff(3)*veffmag_u(n)
+            dcvfy_u = temp1*cdv + veffmag*cdv_clv*temp
+            temp1 = veff_u(3, n)*veffmag + veff(3)*veffmag_u(n)
             temp = veff(3)*clv_u(n)
             dcvfz_u_diff = cdv*(veffmag*veff_u_diff(3, n)+veff_u(3, n)*
      +        veffmag_diff+veffmag_u(n)*veff_diff(3)+veff(3)*
-     +        veffmag_u_diff(n)) + temp0*cdv_diff + temp*(cdv_clv*
+     +        veffmag_u_diff(n)) + temp1*cdv_diff + temp*(cdv_clv*
      +        veffmag_diff+veffmag*cdv_clv_diff) + veffmag*cdv_clv*(
      +        clv_u(n)*veff_diff(3)+veff(3)*clv_u_diff(n))
-            dcvfz_u = temp0*cdv + veffmag*cdv_clv*temp
+            dcvfz_u = temp1*cdv + veffmag*cdv_clv*temp
 C           
             cfx_u_diff(n) = cfx_u_diff(n) + dcvfx_u_diff
             cfx_u(n) = cfx_u(n) + dcvfx_u
@@ -1789,21 +1844,21 @@ C
           ENDDO
 C
           DO n=1,ncontrol
-            temp0 = veff(1)*clv_d(n)
-            dcvfx_d_diff = temp0*(cdv_clv*veffmag_diff+veffmag*
+            temp1 = veff(1)*clv_d(n)
+            dcvfx_d_diff = temp1*(cdv_clv*veffmag_diff+veffmag*
      +        cdv_clv_diff) + veffmag*cdv_clv*(clv_d(n)*veff_diff(1)+
      +        veff(1)*clv_d_diff(n))
-            dcvfx_d = veffmag*cdv_clv*temp0
-            temp0 = veff(2)*clv_d(n)
-            dcvfy_d_diff = temp0*(cdv_clv*veffmag_diff+veffmag*
+            dcvfx_d = veffmag*cdv_clv*temp1
+            temp1 = veff(2)*clv_d(n)
+            dcvfy_d_diff = temp1*(cdv_clv*veffmag_diff+veffmag*
      +        cdv_clv_diff) + veffmag*cdv_clv*(clv_d(n)*veff_diff(2)+
      +        veff(2)*clv_d_diff(n))
-            dcvfy_d = veffmag*cdv_clv*temp0
-            temp0 = veff(3)*clv_d(n)
-            dcvfz_d_diff = temp0*(cdv_clv*veffmag_diff+veffmag*
+            dcvfy_d = veffmag*cdv_clv*temp1
+            temp1 = veff(3)*clv_d(n)
+            dcvfz_d_diff = temp1*(cdv_clv*veffmag_diff+veffmag*
      +        cdv_clv_diff) + veffmag*cdv_clv*(clv_d(n)*veff_diff(3)+
      +        veff(3)*clv_d_diff(n))
-            dcvfz_d = veffmag*cdv_clv*temp0
+            dcvfz_d = veffmag*cdv_clv*temp1
 C
             cfx_d_diff(n) = cfx_d_diff(n) + dcvfx_d_diff
             cfx_d(n) = cfx_d(n) + dcvfx_d
@@ -1850,8 +1905,11 @@ C     CDV_LSTRP       ! strip viscous drag in wind axes
 C
 C...Store strip X,Y,Z body axes forces and moments 
 C   referred to c/4 and strip area and chord
+        cf_lstrp_diff(1, j) = cfx_diff
         cf_lstrp(1, j) = cfx
+        cf_lstrp_diff(2, j) = cfy_diff
         cf_lstrp(2, j) = cfy
+        cf_lstrp_diff(3, j) = cfz_diff
         cf_lstrp(3, j) = cfz
         cm_lstrp(1, j) = cmx
         cm_lstrp(2, j) = cmy
@@ -1936,53 +1994,53 @@ C------ vector from chord c/4 reference point to case reference point XYZREF
         r(3) = rc4(3) - xyzref(3)
 C... Strip moments in body axes about the case moment reference point XYZREF 
 C    normalized by strip area and chord
-        temp0 = (cfz*r(2)-cfy*r(3))/cr
+        temp1 = (cfz*r(2)-cfy*r(3))/cr
         cmstrp_diff(1, j) = cmx_diff + (r(2)*cfz_diff+cfz*r_diff(2)-r(3)
-     +    *cfy_diff-cfy*r_diff(3)-temp0*cr_diff)/cr
-        cmstrp(1, j) = cmx + temp0
-        temp0 = (cfx*r(3)-cfz*r(1))/cr
+     +    *cfy_diff-cfy*r_diff(3)-temp1*cr_diff)/cr
+        cmstrp(1, j) = cmx + temp1
+        temp1 = (cfx*r(3)-cfz*r(1))/cr
         cmstrp_diff(2, j) = cmy_diff + (r(3)*cfx_diff+cfx*r_diff(3)-r(1)
-     +    *cfz_diff-cfz*r_diff(1)-temp0*cr_diff)/cr
-        cmstrp(2, j) = cmy + temp0
-        temp0 = (cfy*r(1)-cfx*r(2))/cr
+     +    *cfz_diff-cfz*r_diff(1)-temp1*cr_diff)/cr
+        cmstrp(2, j) = cmy + temp1
+        temp1 = (cfy*r(1)-cfx*r(2))/cr
         cmstrp_diff(3, j) = cmz_diff + (r(1)*cfy_diff+cfy*r_diff(1)-r(2)
-     +    *cfx_diff-cfx*r_diff(2)-temp0*cr_diff)/cr
-        cmstrp(3, j) = cmz + temp0
+     +    *cfx_diff-cfx*r_diff(2)-temp1*cr_diff)/cr
+        cmstrp(3, j) = cmz + temp1
 C
         DO n=1,numax
-          temp0 = (cfz_u(n)*r(2)-cfy_u(n)*r(3))/cr
+          temp1 = (cfz_u(n)*r(2)-cfy_u(n)*r(3))/cr
           cmst_u_diff(1, j, n) = cmx_u_diff(n) + (r(2)*cfz_u_diff(n)+
      +      cfz_u(n)*r_diff(2)-r(3)*cfy_u_diff(n)-cfy_u(n)*r_diff(3)-
-     +      temp0*cr_diff)/cr
-          cmst_u(1, j, n) = cmx_u(n) + temp0
-          temp0 = (cfx_u(n)*r(3)-cfz_u(n)*r(1))/cr
+     +      temp1*cr_diff)/cr
+          cmst_u(1, j, n) = cmx_u(n) + temp1
+          temp1 = (cfx_u(n)*r(3)-cfz_u(n)*r(1))/cr
           cmst_u_diff(2, j, n) = cmy_u_diff(n) + (r(3)*cfx_u_diff(n)+
      +      cfx_u(n)*r_diff(3)-r(1)*cfz_u_diff(n)-cfz_u(n)*r_diff(1)-
-     +      temp0*cr_diff)/cr
-          cmst_u(2, j, n) = cmy_u(n) + temp0
-          temp0 = (cfy_u(n)*r(1)-cfx_u(n)*r(2))/cr
+     +      temp1*cr_diff)/cr
+          cmst_u(2, j, n) = cmy_u(n) + temp1
+          temp1 = (cfy_u(n)*r(1)-cfx_u(n)*r(2))/cr
           cmst_u_diff(3, j, n) = cmz_u_diff(n) + (r(1)*cfy_u_diff(n)+
      +      cfy_u(n)*r_diff(1)-r(2)*cfx_u_diff(n)-cfx_u(n)*r_diff(2)-
-     +      temp0*cr_diff)/cr
-          cmst_u(3, j, n) = cmz_u(n) + temp0
+     +      temp1*cr_diff)/cr
+          cmst_u(3, j, n) = cmz_u(n) + temp1
         ENDDO
 C
         DO n=1,ncontrol
-          temp0 = (cfz_d(n)*r(2)-cfy_d(n)*r(3))/cr
+          temp1 = (cfz_d(n)*r(2)-cfy_d(n)*r(3))/cr
           cmst_d_diff(1, j, n) = cmx_d_diff(n) + (r(2)*cfz_d_diff(n)+
      +      cfz_d(n)*r_diff(2)-r(3)*cfy_d_diff(n)-cfy_d(n)*r_diff(3)-
-     +      temp0*cr_diff)/cr
-          cmst_d(1, j, n) = cmx_d(n) + temp0
-          temp0 = (cfx_d(n)*r(3)-cfz_d(n)*r(1))/cr
+     +      temp1*cr_diff)/cr
+          cmst_d(1, j, n) = cmx_d(n) + temp1
+          temp1 = (cfx_d(n)*r(3)-cfz_d(n)*r(1))/cr
           cmst_d_diff(2, j, n) = cmy_d_diff(n) + (r(3)*cfx_d_diff(n)+
      +      cfx_d(n)*r_diff(3)-r(1)*cfz_d_diff(n)-cfz_d(n)*r_diff(1)-
-     +      temp0*cr_diff)/cr
-          cmst_d(2, j, n) = cmy_d(n) + temp0
-          temp0 = (cfy_d(n)*r(1)-cfx_d(n)*r(2))/cr
+     +      temp1*cr_diff)/cr
+          cmst_d(2, j, n) = cmy_d(n) + temp1
+          temp1 = (cfy_d(n)*r(1)-cfx_d(n)*r(2))/cr
           cmst_d_diff(3, j, n) = cmz_d_diff(n) + (r(1)*cfy_d_diff(n)+
      +      cfy_d(n)*r_diff(1)-r(2)*cfx_d_diff(n)-cfx_d(n)*r_diff(2)-
-     +      temp0*cr_diff)/cr
-          cmst_d(3, j, n) = cmz_d(n) + temp0
+     +      temp1*cr_diff)/cr
+          cmst_d(3, j, n) = cmz_d(n) + temp1
         ENDDO
 C
         DO n=1,ndesign
@@ -1992,8 +2050,16 @@ C
         ENDDO
 C
 C...Components of X,Y,Z forces in local strip axes 
+        cl_lstrp_diff(j) = cfx*ulift_diff(1) + ulift(1)*cfx_diff + cfy*
+     +    ulift_diff(2) + ulift(2)*cfy_diff + cfz*ulift_diff(3) + ulift(
+     +    3)*cfz_diff
         cl_lstrp(j) = ulift(1)*cfx + ulift(2)*cfy + ulift(3)*cfz
+        cd_lstrp_diff(j) = cfx*udrag_diff(1) + udrag(1)*cfx_diff + cfy*
+     +    udrag_diff(2) + udrag(2)*cfy_diff + cfz*udrag_diff(3) + udrag(
+     +    3)*cfz_diff
         cd_lstrp(j) = udrag(1)*cfx + udrag(2)*cfy + udrag(3)*cfz
+        cmc4_lstrp_diff(j) = cmy*ensz_diff(j) + ensz(j)*cmy_diff - cmz*
+     +    ensy_diff(j) - ensy(j)*cmz_diff
         cmc4_lstrp(j) = ensz(j)*cmy - ensy(j)*cmz
 C
 C...Axial/normal forces and lift/drag in plane normal to dihedral of strip
@@ -2032,19 +2098,34 @@ C
         END IF
 C
 C------ spanwise and perpendicular velocity components
+        vspan_diff = ess(1, j)*veff_diff(1) + veff(1)*ess_diff(1, j) + 
+     +    ess(2, j)*veff_diff(2) + veff(2)*ess_diff(2, j) + ess(3, j)*
+     +    veff_diff(3) + veff(3)*ess_diff(3, j)
         vspan = veff(1)*ess(1, j) + veff(2)*ess(2, j) + veff(3)*ess(3, j
      +    )
+        vperp_diff(1) = veff_diff(1) - vspan*ess_diff(1, j) - ess(1, j)*
+     +    vspan_diff
         vperp(1) = veff(1) - ess(1, j)*vspan
+        vperp_diff(2) = veff_diff(2) - vspan*ess_diff(2, j) - ess(2, j)*
+     +    vspan_diff
         vperp(2) = veff(2) - ess(2, j)*vspan
+        vperp_diff(3) = veff_diff(3) - vspan*ess_diff(3, j) - ess(3, j)*
+     +    vspan_diff
         vperp(3) = veff(3) - ess(3, j)*vspan
 C
+        vpsq_diff = 2*vperp(1)*vperp_diff(1) + 2*vperp(2)*vperp_diff(2) 
+     +    + 2*vperp(3)*vperp_diff(3)
         vpsq = vperp(1)**2 + vperp(2)**2 + vperp(3)**2
         IF (vpsq .EQ. 0.0) THEN
           vpsqi = 1.0
+          vpsqi_diff = 0.D0
         ELSE
+          vpsqi_diff = -(vpsq_diff/vpsq**2)
           vpsqi = 1.0/vpsq
         END IF
 Ccc     CLT_LSTRP(J) = CN_LSTRP(J) * VPSQI
+        clt_lstrp_diff(j) = vpsqi*cl_lstrp_diff(j) + cl_lstrp(j)*
+     +    vpsqi_diff
         clt_lstrp(j) = cl_lstrp(j)*vpsqi
         cla_lstrp(j) = cl_lstrp(j)*vsqi
 C
@@ -2055,21 +2136,51 @@ C--- Moment about strip LE midpoint in direction of LE segment
         r(2) = rc4(2) - rle(2, j)
         r_diff(3) = rc4_diff(3) - rle_diff(3, j)
         r(3) = rc4(3) - rle(3, j)
+        delx_diff = rle2_diff(1, j) - rle1_diff(1, j)
         delx = rle2(1, j) - rle1(1, j)
+        dely_diff = rle2_diff(2, j) - rle1_diff(2, j)
         dely = rle2(2, j) - rle1(2, j)
+        delz_diff = rle2_diff(3, j) - rle1_diff(3, j)
         delz = rle2(3, j) - rle1(3, j)
 C
         IF (imags(lssurf(j)) .LT. 0) THEN
+          delx_diff = -delx_diff
           delx = -delx
+          dely_diff = -dely_diff
           dely = -dely
+          delz_diff = -delz_diff
           delz = -delz
         END IF
+        arg1_diff = 2*delx*delx_diff + 2*dely*dely_diff + 2*delz*
+     +    delz_diff
         arg1 = delx**2 + dely**2 + delz**2
-        dmag = SQRT(arg1)
+        temp1 = SQRT(arg1)
+        IF (arg1 .EQ. 0.D0) THEN
+          dmag_diff = 0.D0
+        ELSE
+          dmag_diff = arg1_diff/(2.0*temp1)
+        END IF
+        dmag = temp1
+        cmle_lstrp_diff(j) = 0.D0
         cmle_lstrp(j) = 0.0
-        IF (dmag .NE. 0.0) cmle_lstrp(j) = delx/dmag*(cmx+(cfz*r(2)-cfy*
-     +      r(3))/cr) + dely/dmag*(cmy+(cfx*r(3)-cfz*r(1))/cr) + delz/
-     +      dmag*(cmz+(cfy*r(1)-cfx*r(2))/cr)
+        IF (dmag .NE. 0.0) THEN
+          temp1 = delx/dmag
+          temp = (cfz*r(2)-cfy*r(3))/cr
+          temp2 = dely/dmag
+          temp3 = (cfx*r(3)-cfz*r(1))/cr
+          temp4 = delz/dmag
+          temp5 = (cfy*r(1)-cfx*r(2))/cr
+          cmle_lstrp_diff(j) = temp1*(cmx_diff+(r(2)*cfz_diff+cfz*r_diff
+     +      (2)-r(3)*cfy_diff-cfy*r_diff(3)-temp*cr_diff)/cr) + (cmx+
+     +      temp)*(delx_diff-temp1*dmag_diff)/dmag + temp2*(cmy_diff+(r(
+     +      3)*cfx_diff+cfx*r_diff(3)-r(1)*cfz_diff-cfz*r_diff(1)-temp3*
+     +      cr_diff)/cr) + (cmy+temp3)*(dely_diff-temp2*dmag_diff)/dmag 
+     +      + temp4*(cmz_diff+(r(1)*cfy_diff+cfy*r_diff(1)-r(2)*cfx_diff
+     +      -cfx*r_diff(2)-temp5*cr_diff)/cr) + (cmz+temp5)*(delz_diff-
+     +      temp4*dmag_diff)/dmag
+          cmle_lstrp(j) = (cmx+temp)*temp1 + (cmy+temp3)*temp2 + (cmz+
+     +      temp5)*temp4
+        END IF
       ENDDO
       cdtot_diff = 0.D0
       cytot_diff = 0.D0
@@ -2298,145 +2409,145 @@ C
           enave(3) = enave(3) + sr*ensz(j)
 C
 C--- Surface lift and drag referenced to case SREF, CREF, BREF 
-          temp1 = sr/sref
-          cdsurf_diff(is) = cdsurf_diff(is) + temp1*cdstrp_diff(j) + 
-     +      cdstrp(j)*(sr_diff-temp1*sref_diff)/sref
-          cdsurf(is) = cdsurf(is) + cdstrp(j)*temp1
-          temp1 = sr/sref
-          cysurf_diff(is) = cysurf_diff(is) + temp1*cystrp_diff(j) + 
-     +      cystrp(j)*(sr_diff-temp1*sref_diff)/sref
-          cysurf(is) = cysurf(is) + cystrp(j)*temp1
-          temp1 = sr/sref
-          clsurf_diff(is) = clsurf_diff(is) + temp1*clstrp_diff(j) + 
-     +      clstrp(j)*(sr_diff-temp1*sref_diff)/sref
-          clsurf(is) = clsurf(is) + clstrp(j)*temp1
+          temp0 = sr/sref
+          cdsurf_diff(is) = cdsurf_diff(is) + temp0*cdstrp_diff(j) + 
+     +      cdstrp(j)*(sr_diff-temp0*sref_diff)/sref
+          cdsurf(is) = cdsurf(is) + cdstrp(j)*temp0
+          temp0 = sr/sref
+          cysurf_diff(is) = cysurf_diff(is) + temp0*cystrp_diff(j) + 
+     +      cystrp(j)*(sr_diff-temp0*sref_diff)/sref
+          cysurf(is) = cysurf(is) + cystrp(j)*temp0
+          temp0 = sr/sref
+          clsurf_diff(is) = clsurf_diff(is) + temp0*clstrp_diff(j) + 
+     +      clstrp(j)*(sr_diff-temp0*sref_diff)/sref
+          clsurf(is) = clsurf(is) + clstrp(j)*temp0
 C--- Surface body axes forces referenced to case SREF, CREF, BREF
-          temp1 = sr/sref
-          cfsurf_diff(1, is) = cfsurf_diff(1, is) + temp1*cfstrp_diff(1
-     +      , j) + cfstrp(1, j)*(sr_diff-temp1*sref_diff)/sref
-          cfsurf(1, is) = cfsurf(1, is) + cfstrp(1, j)*temp1
-          temp1 = sr/sref
-          cfsurf_diff(2, is) = cfsurf_diff(2, is) + temp1*cfstrp_diff(2
-     +      , j) + cfstrp(2, j)*(sr_diff-temp1*sref_diff)/sref
-          cfsurf(2, is) = cfsurf(2, is) + cfstrp(2, j)*temp1
-          temp1 = sr/sref
-          cfsurf_diff(3, is) = cfsurf_diff(3, is) + temp1*cfstrp_diff(3
-     +      , j) + cfstrp(3, j)*(sr_diff-temp1*sref_diff)/sref
-          cfsurf(3, is) = cfsurf(3, is) + cfstrp(3, j)*temp1
+          temp0 = sr/sref
+          cfsurf_diff(1, is) = cfsurf_diff(1, is) + temp0*cfstrp_diff(1
+     +      , j) + cfstrp(1, j)*(sr_diff-temp0*sref_diff)/sref
+          cfsurf(1, is) = cfsurf(1, is) + cfstrp(1, j)*temp0
+          temp0 = sr/sref
+          cfsurf_diff(2, is) = cfsurf_diff(2, is) + temp0*cfstrp_diff(2
+     +      , j) + cfstrp(2, j)*(sr_diff-temp0*sref_diff)/sref
+          cfsurf(2, is) = cfsurf(2, is) + cfstrp(2, j)*temp0
+          temp0 = sr/sref
+          cfsurf_diff(3, is) = cfsurf_diff(3, is) + temp0*cfstrp_diff(3
+     +      , j) + cfstrp(3, j)*(sr_diff-temp0*sref_diff)/sref
+          cfsurf(3, is) = cfsurf(3, is) + cfstrp(3, j)*temp0
 C--- Surface body axes moments referenced to case SREF, CREF, BREF about XYZREF
-          temp1 = cmstrp(1, j)*sr*cr/(sref*bref)
+          temp0 = cmstrp(1, j)*sr*cr/(sref*bref)
           cmsurf_diff(1, is) = cmsurf_diff(1, is) + (sr*cr*cmstrp_diff(1
-     +      , j)+cmstrp(1, j)*(cr*sr_diff+sr*cr_diff)-temp1*(bref*
+     +      , j)+cmstrp(1, j)*(cr*sr_diff+sr*cr_diff)-temp0*(bref*
      +      sref_diff+sref*bref_diff))/(sref*bref)
-          cmsurf(1, is) = cmsurf(1, is) + temp1
-          temp1 = cmstrp(2, j)*sr*cr/(sref*cref)
+          cmsurf(1, is) = cmsurf(1, is) + temp0
+          temp0 = cmstrp(2, j)*sr*cr/(sref*cref)
           cmsurf_diff(2, is) = cmsurf_diff(2, is) + (sr*cr*cmstrp_diff(2
-     +      , j)+cmstrp(2, j)*(cr*sr_diff+sr*cr_diff)-temp1*(cref*
+     +      , j)+cmstrp(2, j)*(cr*sr_diff+sr*cr_diff)-temp0*(cref*
      +      sref_diff+sref*cref_diff))/(sref*cref)
-          cmsurf(2, is) = cmsurf(2, is) + temp1
-          temp1 = cmstrp(3, j)*sr*cr/(sref*bref)
+          cmsurf(2, is) = cmsurf(2, is) + temp0
+          temp0 = cmstrp(3, j)*sr*cr/(sref*bref)
           cmsurf_diff(3, is) = cmsurf_diff(3, is) + (sr*cr*cmstrp_diff(3
-     +      , j)+cmstrp(3, j)*(cr*sr_diff+sr*cr_diff)-temp1*(bref*
+     +      , j)+cmstrp(3, j)*(cr*sr_diff+sr*cr_diff)-temp0*(bref*
      +      sref_diff+sref*bref_diff))/(sref*bref)
-          cmsurf(3, is) = cmsurf(3, is) + temp1
+          cmsurf(3, is) = cmsurf(3, is) + temp0
 C
 C--- Bug fix, HHY/S.Allmaras 
 C--- Surface viscous drag referenced to case SREF, CREF, BREF
-          temp1 = sr/sref
-          cdvsurf_diff(is) = cdvsurf_diff(is) + temp1*cdv_lstrp_diff(j) 
-     +      + cdv_lstrp(j)*(sr_diff-temp1*sref_diff)/sref
-          cdvsurf(is) = cdvsurf(is) + cdv_lstrp(j)*temp1
+          temp0 = sr/sref
+          cdvsurf_diff(is) = cdvsurf_diff(is) + temp0*cdv_lstrp_diff(j) 
+     +      + cdv_lstrp(j)*(sr_diff-temp0*sref_diff)/sref
+          cdvsurf(is) = cdvsurf(is) + cdv_lstrp(j)*temp0
 C
-          temp1 = sr/sref
-          cds_a_diff(is) = cds_a_diff(is) + temp1*cdst_a_diff(j) + 
-     +      cdst_a(j)*(sr_diff-temp1*sref_diff)/sref
-          cds_a(is) = cds_a(is) + cdst_a(j)*temp1
+          temp0 = sr/sref
+          cds_a_diff(is) = cds_a_diff(is) + temp0*cdst_a_diff(j) + 
+     +      cdst_a(j)*(sr_diff-temp0*sref_diff)/sref
+          cds_a(is) = cds_a(is) + cdst_a(j)*temp0
           cys_a(is) = cys_a(is) + cyst_a(j)*sr/sref
-          temp1 = sr/sref
-          cls_a_diff(is) = cls_a_diff(is) + temp1*clst_a_diff(j) + 
-     +      clst_a(j)*(sr_diff-temp1*sref_diff)/sref
-          cls_a(is) = cls_a(is) + clst_a(j)*temp1
+          temp0 = sr/sref
+          cls_a_diff(is) = cls_a_diff(is) + temp0*clst_a_diff(j) + 
+     +      clst_a(j)*(sr_diff-temp0*sref_diff)/sref
+          cls_a(is) = cls_a(is) + clst_a(j)*temp0
 C
           DO n=1,numax
-            temp1 = sr/sref
-            cds_u_diff(is, n) = cds_u_diff(is, n) + temp1*cdst_u_diff(j
-     +        , n) + cdst_u(j, n)*(sr_diff-temp1*sref_diff)/sref
-            cds_u(is, n) = cds_u(is, n) + cdst_u(j, n)*temp1
-            temp1 = sr/sref
-            cys_u_diff(is, n) = cys_u_diff(is, n) + temp1*cyst_u_diff(j
-     +        , n) + cyst_u(j, n)*(sr_diff-temp1*sref_diff)/sref
-            cys_u(is, n) = cys_u(is, n) + cyst_u(j, n)*temp1
-            temp1 = sr/sref
-            cls_u_diff(is, n) = cls_u_diff(is, n) + temp1*clst_u_diff(j
-     +        , n) + clst_u(j, n)*(sr_diff-temp1*sref_diff)/sref
-            cls_u(is, n) = cls_u(is, n) + clst_u(j, n)*temp1
+            temp0 = sr/sref
+            cds_u_diff(is, n) = cds_u_diff(is, n) + temp0*cdst_u_diff(j
+     +        , n) + cdst_u(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cds_u(is, n) = cds_u(is, n) + cdst_u(j, n)*temp0
+            temp0 = sr/sref
+            cys_u_diff(is, n) = cys_u_diff(is, n) + temp0*cyst_u_diff(j
+     +        , n) + cyst_u(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cys_u(is, n) = cys_u(is, n) + cyst_u(j, n)*temp0
+            temp0 = sr/sref
+            cls_u_diff(is, n) = cls_u_diff(is, n) + temp0*clst_u_diff(j
+     +        , n) + clst_u(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cls_u(is, n) = cls_u(is, n) + clst_u(j, n)*temp0
 C
             DO l=1,3
-              temp1 = sr/sref
-              cfs_u_diff(l, is, n) = cfs_u_diff(l, is, n) + temp1*
-     +          cfst_u_diff(l, j, n) + cfst_u(l, j, n)*(sr_diff-temp1*
+              temp0 = sr/sref
+              cfs_u_diff(l, is, n) = cfs_u_diff(l, is, n) + temp0*
+     +          cfst_u_diff(l, j, n) + cfst_u(l, j, n)*(sr_diff-temp0*
      +          sref_diff)/sref
-              cfs_u(l, is, n) = cfs_u(l, is, n) + cfst_u(l, j, n)*temp1
+              cfs_u(l, is, n) = cfs_u(l, is, n) + cfst_u(l, j, n)*temp0
             ENDDO
-            temp1 = cmst_u(1, j, n)*sr*cr/(sref*bref)
+            temp0 = cmst_u(1, j, n)*sr*cr/(sref*bref)
             cms_u_diff(1, is, n) = cms_u_diff(1, is, n) + (sr*cr*
      +        cmst_u_diff(1, j, n)+cmst_u(1, j, n)*(cr*sr_diff+sr*
-     +        cr_diff)-temp1*(bref*sref_diff+sref*bref_diff))/(sref*bref
+     +        cr_diff)-temp0*(bref*sref_diff+sref*bref_diff))/(sref*bref
      +        )
-            cms_u(1, is, n) = cms_u(1, is, n) + temp1
-            temp1 = cmst_u(2, j, n)*sr*cr/(sref*cref)
+            cms_u(1, is, n) = cms_u(1, is, n) + temp0
+            temp0 = cmst_u(2, j, n)*sr*cr/(sref*cref)
             cms_u_diff(2, is, n) = cms_u_diff(2, is, n) + (sr*cr*
      +        cmst_u_diff(2, j, n)+cmst_u(2, j, n)*(cr*sr_diff+sr*
-     +        cr_diff)-temp1*(cref*sref_diff+sref*cref_diff))/(sref*cref
+     +        cr_diff)-temp0*(cref*sref_diff+sref*cref_diff))/(sref*cref
      +        )
-            cms_u(2, is, n) = cms_u(2, is, n) + temp1
-            temp1 = cmst_u(3, j, n)*sr*cr/(sref*bref)
+            cms_u(2, is, n) = cms_u(2, is, n) + temp0
+            temp0 = cmst_u(3, j, n)*sr*cr/(sref*bref)
             cms_u_diff(3, is, n) = cms_u_diff(3, is, n) + (sr*cr*
      +        cmst_u_diff(3, j, n)+cmst_u(3, j, n)*(cr*sr_diff+sr*
-     +        cr_diff)-temp1*(bref*sref_diff+sref*bref_diff))/(sref*bref
+     +        cr_diff)-temp0*(bref*sref_diff+sref*bref_diff))/(sref*bref
      +        )
-            cms_u(3, is, n) = cms_u(3, is, n) + temp1
+            cms_u(3, is, n) = cms_u(3, is, n) + temp0
           ENDDO
 C
           DO n=1,ncontrol
-            temp1 = sr/sref
-            cds_d_diff(is, n) = cds_d_diff(is, n) + temp1*cdst_d_diff(j
-     +        , n) + cdst_d(j, n)*(sr_diff-temp1*sref_diff)/sref
-            cds_d(is, n) = cds_d(is, n) + cdst_d(j, n)*temp1
-            temp1 = sr/sref
-            cys_d_diff(is, n) = cys_d_diff(is, n) + temp1*cyst_d_diff(j
-     +        , n) + cyst_d(j, n)*(sr_diff-temp1*sref_diff)/sref
-            cys_d(is, n) = cys_d(is, n) + cyst_d(j, n)*temp1
-            temp1 = sr/sref
-            cls_d_diff(is, n) = cls_d_diff(is, n) + temp1*clst_d_diff(j
-     +        , n) + clst_d(j, n)*(sr_diff-temp1*sref_diff)/sref
-            cls_d(is, n) = cls_d(is, n) + clst_d(j, n)*temp1
+            temp0 = sr/sref
+            cds_d_diff(is, n) = cds_d_diff(is, n) + temp0*cdst_d_diff(j
+     +        , n) + cdst_d(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cds_d(is, n) = cds_d(is, n) + cdst_d(j, n)*temp0
+            temp0 = sr/sref
+            cys_d_diff(is, n) = cys_d_diff(is, n) + temp0*cyst_d_diff(j
+     +        , n) + cyst_d(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cys_d(is, n) = cys_d(is, n) + cyst_d(j, n)*temp0
+            temp0 = sr/sref
+            cls_d_diff(is, n) = cls_d_diff(is, n) + temp0*clst_d_diff(j
+     +        , n) + clst_d(j, n)*(sr_diff-temp0*sref_diff)/sref
+            cls_d(is, n) = cls_d(is, n) + clst_d(j, n)*temp0
 C
             DO l=1,3
-              temp1 = sr/sref
-              cfs_d_diff(l, is, n) = cfs_d_diff(l, is, n) + temp1*
-     +          cfst_d_diff(l, j, n) + cfst_d(l, j, n)*(sr_diff-temp1*
+              temp0 = sr/sref
+              cfs_d_diff(l, is, n) = cfs_d_diff(l, is, n) + temp0*
+     +          cfst_d_diff(l, j, n) + cfst_d(l, j, n)*(sr_diff-temp0*
      +          sref_diff)/sref
-              cfs_d(l, is, n) = cfs_d(l, is, n) + cfst_d(l, j, n)*temp1
+              cfs_d(l, is, n) = cfs_d(l, is, n) + cfst_d(l, j, n)*temp0
             ENDDO
-            temp1 = cmst_d(1, j, n)*sr*cr/(sref*bref)
+            temp0 = cmst_d(1, j, n)*sr*cr/(sref*bref)
             cms_d_diff(1, is, n) = cms_d_diff(1, is, n) + (sr*cr*
      +        cmst_d_diff(1, j, n)+cmst_d(1, j, n)*(cr*sr_diff+sr*
-     +        cr_diff)-temp1*(bref*sref_diff+sref*bref_diff))/(sref*bref
+     +        cr_diff)-temp0*(bref*sref_diff+sref*bref_diff))/(sref*bref
      +        )
-            cms_d(1, is, n) = cms_d(1, is, n) + temp1
-            temp1 = cmst_d(2, j, n)*sr*cr/(sref*cref)
+            cms_d(1, is, n) = cms_d(1, is, n) + temp0
+            temp0 = cmst_d(2, j, n)*sr*cr/(sref*cref)
             cms_d_diff(2, is, n) = cms_d_diff(2, is, n) + (sr*cr*
      +        cmst_d_diff(2, j, n)+cmst_d(2, j, n)*(cr*sr_diff+sr*
-     +        cr_diff)-temp1*(cref*sref_diff+sref*cref_diff))/(sref*cref
+     +        cr_diff)-temp0*(cref*sref_diff+sref*cref_diff))/(sref*cref
      +        )
-            cms_d(2, is, n) = cms_d(2, is, n) + temp1
-            temp1 = cmst_d(3, j, n)*sr*cr/(sref*bref)
+            cms_d(2, is, n) = cms_d(2, is, n) + temp0
+            temp0 = cmst_d(3, j, n)*sr*cr/(sref*bref)
             cms_d_diff(3, is, n) = cms_d_diff(3, is, n) + (sr*cr*
      +        cmst_d_diff(3, j, n)+cmst_d(3, j, n)*(cr*sr_diff+sr*
-     +        cr_diff)-temp1*(bref*sref_diff+sref*bref_diff))/(sref*bref
+     +        cr_diff)-temp0*(bref*sref_diff+sref*bref_diff))/(sref*bref
      +        )
-            cms_d(3, is, n) = cms_d(3, is, n) + temp1
+            cms_d(3, is, n) = cms_d(3, is, n) + temp0
           ENDDO
 C
           DO n=1,ndesign
