@@ -135,7 +135,7 @@ if ff.get_id() == 'gcc'
   ff_args += ['-std=legacy']
 elif ff.get_id() == 'llvm-flang'
 
-  ff_args += ['-fno-init-global-zero', '-ffixed-form', '-w']
+  ff_args += ['-fno-repack-arrays', '-fno-init-global-zero', '-ffixed-form', '-w']
   link_args += ['-fno-init-global-zero']
   
 endif
