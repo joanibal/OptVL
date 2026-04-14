@@ -476,19 +476,19 @@ class TestGeom(unittest.TestCase):
         self.ovl_solver_1 = OVLSolver(input_dict=input_dict1)
         self.ovl_solver_2 = OVLSolver(input_dict=input_dict2)
         self.ovl_solver_3 = OVLSolver(input_dict=input_dict3)
-        # self.ovl_solver_4 = OVLSolver(input_dict=input_dict4)
+        self.ovl_solver_4 = OVLSolver(input_dict=input_dict4)
         # self.ovl_solver_5 = OVLSolver(input_dict=input_dict5)
 
         # Solvers loaded with inputs files (case 4 and 5 use the same file)
         self.ovl_solver_f1 = OVLSolver(geo_file=geom_file1)
         self.ovl_solver_f2 = OVLSolver(geo_file=geom_file2)
         self.ovl_solver_f3 = OVLSolver(geo_file=geom_file3)
-        # self.ovl_solver_f4 = OVLSolver(geo_file=geom_file4)
+        self.ovl_solver_f4 = OVLSolver(geo_file=geom_file4)
 
         # self.solvers = [self.ovl_solver_1, self.ovl_solver_2, self.ovl_solver_3, self.ovl_solver_4, self.ovl_solver_5]
         # self.solvers_f = [self.ovl_solver_f1, self.ovl_solver_f2, self.ovl_solver_f3, self.ovl_solver_f4]
-        self.solvers = [self.ovl_solver_1, self.ovl_solver_2, self.ovl_solver_3]
-        self.solvers_f = [self.ovl_solver_f1, self.ovl_solver_f2, self.ovl_solver_f3]
+        self.solvers = [self.ovl_solver_1, self.ovl_solver_2, self.ovl_solver_3, self.ovl_solver_4]
+        self.solvers_f = [self.ovl_solver_f1, self.ovl_solver_f2, self.ovl_solver_f3, self.ovl_solver_f4]
 
     def test_surface_params(self):
         # Check surface params from the input dictionary match up with the reference values
