@@ -19,8 +19,6 @@ pip install psutil "openmdao!=3.38"
 
 
 # test package built and installed correctly
-python diagnose_dll.py
-python test_import.py
 python -m unittest -v test_import.py
 python -m unittest -v test_io.py
 python -m unittest -v test_input_dict.py

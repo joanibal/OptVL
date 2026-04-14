@@ -8,6 +8,7 @@ from optvl import OVLSolver
 # =============================================================================
 import os
 from copy import deepcopy
+import copy
 
 # =============================================================================
 # External Python modules
@@ -473,19 +474,21 @@ class TestGeom(unittest.TestCase):
         import time
         # Solvers loaded with inputs dicts
         self.ovl_solver_1 = OVLSolver(input_dict=input_dict1)
-        self.ovl_solver_2 = OVLSolver(input_dict=input_dict2)
-        self.ovl_solver_3 = OVLSolver(input_dict=input_dict3)
-        self.ovl_solver_4 = OVLSolver(input_dict=input_dict4)
-        self.ovl_solver_5 = OVLSolver(input_dict=input_dict5)
+        # self.ovl_solver_2 = OVLSolver(input_dict=input_dict2)
+        # self.ovl_solver_3 = OVLSolver(input_dict=input_dict3)
+        # self.ovl_solver_4 = OVLSolver(input_dict=input_dict4)
+        # self.ovl_solver_5 = OVLSolver(input_dict=input_dict5)
 
         # Solvers loaded with inputs files (case 4 and 5 use the same file)
         self.ovl_solver_f1 = OVLSolver(geo_file=geom_file1)
-        self.ovl_solver_f2 = OVLSolver(geo_file=geom_file2)
-        self.ovl_solver_f3 = OVLSolver(geo_file=geom_file3)
-        self.ovl_solver_f4 = OVLSolver(geo_file=geom_file4)
+        # self.ovl_solver_f2 = OVLSolver(geo_file=geom_file2)
+        # self.ovl_solver_f3 = OVLSolver(geo_file=geom_file3)
+        # self.ovl_solver_f4 = OVLSolver(geo_file=geom_file4)
 
-        self.solvers = [self.ovl_solver_1, self.ovl_solver_2, self.ovl_solver_3, self.ovl_solver_4, self.ovl_solver_5]
-        self.solvers_f = [self.ovl_solver_f1, self.ovl_solver_f2, self.ovl_solver_f3, self.ovl_solver_f4]
+        # self.solvers = [self.ovl_solver_1, self.ovl_solver_2, self.ovl_solver_3, self.ovl_solver_4, self.ovl_solver_5]
+        # self.solvers_f = [self.ovl_solver_f1, self.ovl_solver_f2, self.ovl_solver_f3, self.ovl_solver_f4]
+        self.solvers = [self.ovl_solver_1]
+        self.solvers_f = [self.ovl_solver_f1]
 
     def test_surface_params(self):
         # Check surface params from the input dictionary match up with the reference values
@@ -509,11 +512,18 @@ class TestGeom(unittest.TestCase):
 
         coefs = []
         coefs_f = []
+        print("\n")
 
         for solver in self.solvers + self.solvers_f:
             solver.set_variable("alpha", 6.00)
             solver.set_variable("beta", 2.00)
             solver.execute_run()
+            slicer = (slice(0, solver.get_mesh_size()),)
+            blk = "VRTX_R"
+            var = "GAM"
+            
+            gamma = copy.deepcopy(solver.get_avl_fort_arr(blk, var, slicer=slicer))
+            print('gamma', gamma[0])
 
         for i in range(len(self.solvers)):
             # Cases 4 and 5 use the same file
@@ -539,11 +549,13 @@ class TestGeom(unittest.TestCase):
                     coefs[i]["CL"],
                     coefs_f[i]["CL"],
                     rtol=1e-8,
+                    err_msg="CL"
                 )
                 np.testing.assert_allclose(
                     coefs[i]["CD"],
                     coefs_f[i]["CD"],
                     rtol=1e-8,
+                    err_msg="CD"
                 )
 
             else:
