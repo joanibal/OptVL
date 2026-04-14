@@ -52,8 +52,5 @@
       
       PARAMETER (ICONX=11) ! max number of control or design variable declaration lines per section 
       PARAMETER (IBX=300)  ! max number of airfoil coordinates
-      ! PARAMETER (ICONX=20) ! max number of control or design variable declaration lines per section 
-      ! PARAMETER (IBX=200)  ! max number of airfoil coordinates
-      ! ! PARAMETER (IBX=300)  ! max number of airfoil coordinates
 
       PARAMETER (NASMAX=50) ! max number of airfoil data point
