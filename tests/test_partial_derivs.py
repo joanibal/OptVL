@@ -16,6 +16,7 @@ import unittest
 import numpy as np
 
 
+
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
 geom_dir = os.path.join(base_dir, '..', 'geom_files')
 
@@ -215,7 +216,7 @@ class TestFunctionPartials(unittest.TestCase):
         self.ovl_solver.clear_ad_seeds_fast()
 
         for func_key in self.ovl_solver.case_var_to_fort_var:
-            gamma_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})[3]
+            gamma_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})[4]
 
             rev_sum = np.sum(gamma_seeds_rev * gamma_seeds_fwd)
             fwd_sum = np.sum(func_seeds_fwd[func_key])
@@ -262,7 +263,7 @@ class TestFunctionPartials(unittest.TestCase):
             self.ovl_solver.clear_ad_seeds_fast()
 
             for func_key in self.ovl_solver.case_var_to_fort_var:
-                param_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})[6]
+                param_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})[7]
                 # print(f"{func_key} wrt {param_key}", "fwd ", func_seeds_fwd[func_key], "rev", param_seeds_rev[param_key])
                 tol = 1e-14
 
@@ -316,7 +317,7 @@ class TestFunctionPartials(unittest.TestCase):
             self.ovl_solver.clear_ad_seeds_fast()
 
             for func_key in self.ovl_solver.case_var_to_fort_var:
-                ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})[7]
+                ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(func_seeds={func_key: 1.0})[8]
 
                 # print(f"{func_key} wrt {ref_key}", "fwd ", func_seeds_fwd[func_key], "rev", ref_seeds_rev[ref_key])
                 tol = 1e-14
@@ -465,7 +466,7 @@ class TestResidualPartials(unittest.TestCase):
     def test_rev_param(self):
         num_res = self.ovl_solver.get_mesh_size()
         res_seeds_rev = np.random.rand(num_res)
-        param_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)[6]
+        param_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)[7]
 
         self.ovl_solver.clear_ad_seeds_fast()
 
@@ -498,7 +499,7 @@ class TestResidualPartials(unittest.TestCase):
     def test_rev_ref(self):
         num_res = self.ovl_solver.get_mesh_size()
         res_seeds_rev = np.random.rand(num_res)
-        ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)[7]
+        ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(res_seeds=res_seeds_rev)[8]
 
         self.ovl_solver.clear_ad_seeds_fast()
 

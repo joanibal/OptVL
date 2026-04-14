@@ -196,7 +196,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
             # for var_key in bd_d_fwd[deriv_func]:
             bd_d_rev = {deriv_func: 1.0}
 
-            gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(body_axis_derivs_seeds=bd_d_rev)[5]
+            gamma_u_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(body_axis_derivs_seeds=bd_d_rev)[6]
 
             rev_sum = np.sum(gamma_u_seeds_rev * gamma_u_seeds_fwd)
 
@@ -247,7 +247,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
         for deriv_func, var_dict in self.ovl_solver.case_body_derivs_to_fort_var.items():
             body_axis_deriv_seeds_rev[deriv_func] = np.random.rand(1)[0]
 
-        ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(body_axis_derivs_seeds=body_axis_deriv_seeds_rev)[7]
+        ref_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(body_axis_derivs_seeds=body_axis_deriv_seeds_rev)[8]
 
         self.ovl_solver.clear_ad_seeds_fast()
 
