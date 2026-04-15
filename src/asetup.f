@@ -198,7 +198,9 @@ C$AD II-LOOP
             ! write(*,*) i,j, 'AICN(i,j)', AICN(i,j)
          enddo 
         ENDDO
+       write(*,*) 'AICN(1,1)', AICN(1,1)
        CALL LUDCMP(NVOR,NVOR,AICN_LU,IAPIV,WORK)
+       write(*,*) 'AICN_LU(1,1)', AICN_LU(1,1)
 C
        LAIC = .TRUE.
       END ! factor_AIC
