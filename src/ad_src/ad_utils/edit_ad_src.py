@@ -40,7 +40,7 @@ hand_made_include =  "      INCLUDE 'AVL.INC'\n"\
 hand_made_heap_mod = "      use avl_heap_diff_inc\n"
 heap_mod =           "      use avl_heap_inc\n"
 fake_include =       "      INCLUDE 'AVL_tapenade_fake.inc'\n"
-fake_include_diff =       "      INCLUDE 'AVL_tapenade_fake_diff.inc'\n"
+fake_include_diff =  "      INCLUDE 'AVL_tapenade_fake_diff.inc'\n"
 
 # fmt: on
 
@@ -85,8 +85,8 @@ if __name__ == "__main__":
             # only loop over nvor vortices
             'ii1=1,nvmax': 'ii1=1,nvor',
             'ii2=1,nvmax': 'ii2=1,nvor',
-            f'ii1=1,{nvmax}': 'ii1=1,nvor',
-            f'ii2=1,{nvmax}': 'ii2=1,nvor',
+           f'ii1=1,{nvmax}': 'ii1=1,nvor',
+           f'ii2=1,{nvmax}': 'ii2=1,nvor',
             'ii1=1,ncdim': 'ii1=1,nc',
             'ii2=1,ncdim': 'ii2=1,nc',
             
@@ -101,9 +101,6 @@ if __name__ == "__main__":
             # only loop over the strips we have
             'ii1=1,nsmax': 'ii1=1,NSTRIP',
             'ii2=1,nsmax': 'ii2=1,NSTRIP',
-            
-            
-            
             
         }
         ad_commented_lines = {
@@ -157,7 +154,7 @@ if __name__ == "__main__":
                             # check to see if the next line is the fake include
                             if fake_diff_include.strip() in lines[i+1]:
                                 fid_mod.write(heap_mod)
-                                fid_mod.write(hand_made_heap_mod)                                
+                                fid_mod.write(hand_made_heap_mod)
                                 fid_mod.write(hand_made_include)
                                 i += 2
                                 continue
