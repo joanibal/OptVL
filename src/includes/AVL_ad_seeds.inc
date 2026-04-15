@@ -241,6 +241,7 @@ C
       real(kind=avl_real) RLE2_DIFF
       real(kind=avl_real) CHORD2_DIFF
       real(kind=avl_real) WSTRIP_DIFF
+      real(kind=avl_real) CLCD_DIFF
       real(kind=avl_real) ESS_DIFF
       real(kind=avl_real) ENSY_DIFF
       real(kind=avl_real) ENSZ_DIFF
@@ -275,6 +276,7 @@ C
      & RLE2_DIFF(3,NSMAX),
      & CHORD2_DIFF(NSMAX),
      & WSTRIP_DIFF(NSMAX),
+     & CLCD_DIFF(6,NSMAX),
      & ESS_DIFF(3,NSMAX),
      & ENSY_DIFF(NSMAX),
      & ENSZ_DIFF(NSMAX),

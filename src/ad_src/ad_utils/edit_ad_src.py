@@ -37,6 +37,8 @@ args = parser.parse_args()
 # fmt: off
 hand_made_include =  "      INCLUDE 'AVL.INC'\n"\
                      "      INCLUDE 'AVL_ad_seeds.inc'\n"
+hand_made_surf_include =  "      INCLUDE 'AVL_surf.INC'\n"\
+                          "      INCLUDE 'AVL_surf_ad_seeds.inc'\n"
 hand_made_heap_mod = "      use avl_heap_diff_inc\n"
 heap_mod =           "      use avl_heap_inc\n"
 fake_include =       "      INCLUDE 'AVL_tapenade_fake.inc'\n"
@@ -55,10 +57,12 @@ if __name__ == "__main__":
             # Specify file extension
             file_ext = "_b.f"
             tapenade_include = "INCLUDE 'AVL_b.inc'"
+            tapenade_surf_include = "INCLUDE 'AVL_surf_b.inc'"
             fake_diff_include = "INCLUDE 'AVL_tapenade_fake_b.inc'"
         elif args.mode == "forward":
             # Specify file extension
             tapenade_include = "INCLUDE 'AVL_d.inc'"
+            tapenade_surf_include = "INCLUDE 'AVL_surf_d.inc'"
             fake_diff_include = "INCLUDE 'AVL_tapenade_fake_d.inc'"
             file_ext = "_d.f"
             
@@ -161,6 +165,10 @@ if __name__ == "__main__":
                             else: 
                                 # Insert the hand-written include file
                                 fid_mod.write(hand_made_include)
+                                
+                        elif tapenade_surf_include in line:
+                            # check to see if the next line is the fake include
+                            fid_mod.write(hand_made_surf_include)
 
                         elif "REAL*(" in line:
                             # This syntax is not supported by our compiler

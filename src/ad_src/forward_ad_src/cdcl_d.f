@@ -3,7 +3,7 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of cdcl in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: cd_cl cd
-C   with respect to varying inputs: cl
+C   with respect to varying inputs: cl cdclpol
 C***********************************************************************
 C    Module:  cdcl.f
 C 
@@ -24,8 +24,8 @@ C    along with this program; if not, write to the Free Software
 C    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 C***********************************************************************
 C
-      SUBROUTINE CDCL_D(cdclpol, cl, cl_diff, cd, cd_diff, cd_cl, 
-     +                  cd_cl_diff)
+      SUBROUTINE CDCL_D(cdclpol, cdclpol_diff, cl, cl_diff, cd, cd_diff
+     +                  , cd_cl, cd_cl_diff)
 C-------------------------------------------------------------------------
 C    Returns cd as a function of cl, or drag polar.
 C
@@ -59,16 +59,26 @@ C      cdclpol(5)   cl (clpos) at point before the positive stall drag rise
 C      cdclpol(6)   cd (cdpos) at clpos
 C-------------------------------------------------------------------------
       REAL cdclpol(6)
+      REAL cdclpol_diff(6)
       REAL clmin
+      REAL clmin_diff
       REAL cdmin
+      REAL cdmin_diff
       REAL cl0
+      REAL cl0_diff
       REAL cd0
+      REAL cd0_diff
       REAL clmax
+      REAL clmax_diff
       REAL cdmax
+      REAL cdmax_diff
       REAL cdx1
+      REAL cdx1_diff
       REAL cdx2
+      REAL cdx2_diff
       REAL clfac
       REAL temp
+      REAL temp0
       REAL clinc
       REAL cd_cl
       REAL cd_cl_diff
@@ -87,11 +97,17 @@ C
       cd_cl = 0.0
 C
 C---- unpack the cd,cl parameters for the polar
+      clmin_diff = cdclpol_diff(1)
       clmin = cdclpol(1)
+      cdmin_diff = cdclpol_diff(2)
       cdmin = cdclpol(2)
+      cl0_diff = cdclpol_diff(3)
       cl0 = cdclpol(3)
+      cd0_diff = cdclpol_diff(4)
       cd0 = cdclpol(4)
+      clmax_diff = cdclpol_diff(5)
       clmax = cdclpol(5)
+      cdmax_diff = cdclpol_diff(6)
       cdmax = cdclpol(6)
       IF (clmax .LE. cl0 .OR. cl0 .LE. clmin) THEN
         WRITE(*, *) '* CDCL: input CL data out of order'
@@ -101,45 +117,73 @@ C---- unpack the cd,cl parameters for the polar
       ELSE
 C
 C---- matching parameters that make the slopes smooth at the stall joins
-        cdx1 = 2.0*(cdmin-cd0)*(clmin-cl0)/(clmin-cl0)**2
-        cdx2 = 2.0*(cdmax-cd0)*(clmax-cl0)/(clmax-cl0)**2
+        temp = (cdmin-cd0)/(clmin-cl0)
+        cdx1_diff = 2.0*(cdmin_diff-cd0_diff-temp*(clmin_diff-cl0_diff))
+     +    /(clmin-cl0)
+        cdx1 = 2.0*temp
+        temp = (cdmax-cd0)/(clmax-cl0)
+        cdx2_diff = 2.0*(cdmax_diff-cd0_diff-temp*(clmax_diff-cl0_diff))
+     +    /(clmax-cl0)
+        cdx2 = 2.0*temp
         clfac = 1.0/clinc
 C
         IF (cl .LT. clmin) THEN
 C------ negative stall region
 C-      slope matches lower side, quadratic drag rise
           temp = cdinc*(clfac*clfac)
-          cd_diff = (temp*2*(cl-clmin)-cdx1/(clmin-cl0))*cl_diff
-          cd = cdmin + temp*((cl-clmin)*(cl-clmin)) + cdx1*(1.0-(cl-cl0)
-     +      /(clmin-cl0))
-          cd_cl_diff = clfac**2*cdinc*2.0*cl_diff
-          cd_cl = cdinc*clfac**2*(cl-clmin)*2.0 - cdx1/(clmin-cl0)
+          temp0 = (cl-cl0)/(clmin-cl0)
+          cd_diff = cdmin_diff + temp*2*(cl-clmin)*(cl_diff-clmin_diff) 
+     +      + (1.0-temp0)*cdx1_diff - cdx1*(cl_diff-cl0_diff-temp0*(
+     +      clmin_diff-cl0_diff))/(clmin-cl0)
+          cd = cdmin + temp*((cl-clmin)*(cl-clmin)) + cdx1*(1.0-temp0)
+          temp0 = cdx1/(clmin-cl0)
+          cd_cl_diff = clfac**2*cdinc*2.0*(cl_diff-clmin_diff) - (
+     +      cdx1_diff-temp0*(clmin_diff-cl0_diff))/(clmin-cl0)
+          cd_cl = cdinc*2.0*(cl-clmin)*(clfac*clfac) - temp0
 C
         ELSE IF (cl .LT. cl0) THEN
 C------ lower quadratic
 C-      slope matches negative stall, and has zero slope at min drag point
-          cd_diff = (cdmin-cd0)*2*(cl-cl0)*cl_diff/(clmin-cl0)**2
-          cd = cd0 + (cdmin-cd0)*(cl-cl0)**2/(clmin-cl0)**2
-          cd_cl_diff = (cdmin-cd0)*2.0*cl_diff/(clmin-cl0)**2
-          cd_cl = (cdmin-cd0)*(cl-cl0)*2.0/(clmin-cl0)**2
+          temp0 = (cdmin-cd0)*((cl-cl0)*(cl-cl0))/((clmin-cl0)*(clmin-
+     +      cl0))
+          cd_diff = cd0_diff + ((cl-cl0)**2*(cdmin_diff-cd0_diff)+(cdmin
+     +      -cd0)*2*(cl-cl0)*(cl_diff-cl0_diff)-temp0*2*(clmin-cl0)*(
+     +      clmin_diff-cl0_diff))/(clmin-cl0)**2
+          cd = cd0 + temp0
+          temp0 = (cdmin-cd0)*(cl-cl0)/((clmin-cl0)*(clmin-cl0))
+          cd_cl_diff = 2.0*((cl-cl0)*(cdmin_diff-cd0_diff)+(cdmin-cd0)*(
+     +      cl_diff-cl0_diff)-temp0*2*(clmin-cl0)*(clmin_diff-cl0_diff))
+     +      /(clmin-cl0)**2
+          cd_cl = 2.0*temp0
 C
         ELSE IF (cl .LT. clmax) THEN
 C------ upper quadratic
 C-      slope matches positive stall, and has zero slope at min drag point
-          cd_diff = (cdmax-cd0)*2*(cl-cl0)*cl_diff/(clmax-cl0)**2
-          cd = cd0 + (cdmax-cd0)*(cl-cl0)**2/(clmax-cl0)**2
-          cd_cl_diff = (cdmax-cd0)*2.0*cl_diff/(clmax-cl0)**2
-          cd_cl = (cdmax-cd0)*(cl-cl0)*2.0/(clmax-cl0)**2
+          temp0 = (cdmax-cd0)*((cl-cl0)*(cl-cl0))/((clmax-cl0)*(clmax-
+     +      cl0))
+          cd_diff = cd0_diff + ((cl-cl0)**2*(cdmax_diff-cd0_diff)+(cdmax
+     +      -cd0)*2*(cl-cl0)*(cl_diff-cl0_diff)-temp0*2*(clmax-cl0)*(
+     +      clmax_diff-cl0_diff))/(clmax-cl0)**2
+          cd = cd0 + temp0
+          temp0 = (cdmax-cd0)*(cl-cl0)/((clmax-cl0)*(clmax-cl0))
+          cd_cl_diff = 2.0*((cl-cl0)*(cdmax_diff-cd0_diff)+(cdmax-cd0)*(
+     +      cl_diff-cl0_diff)-temp0*2*(clmax-cl0)*(clmax_diff-cl0_diff))
+     +      /(clmax-cl0)**2
+          cd_cl = 2.0*temp0
 C
         ELSE
 C------ positive stall region
 C-      slope matches upper side, quadratic drag rise
-          temp = cdinc*(clfac*clfac)
-          cd_diff = (temp*2*(cl-clmax)+cdx2/(clmax-cl0))*cl_diff
-          cd = cdmax + temp*((cl-clmax)*(cl-clmax)) - cdx2*(1.0-(cl-cl0)
-     +      /(clmax-cl0))
-          cd_cl_diff = clfac**2*cdinc*2.0*cl_diff
-          cd_cl = cdinc*clfac**2*(cl-clmax)*2.0 + cdx2/(clmax-cl0)
+          temp0 = cdinc*(clfac*clfac)
+          temp = (cl-cl0)/(clmax-cl0)
+          cd_diff = cdmax_diff + temp0*2*(cl-clmax)*(cl_diff-clmax_diff)
+     +      - (1.0-temp)*cdx2_diff + cdx2*(cl_diff-cl0_diff-temp*(
+     +      clmax_diff-cl0_diff))/(clmax-cl0)
+          cd = cdmax + temp0*((cl-clmax)*(cl-clmax)) - cdx2*(1.0-temp)
+          temp0 = cdx2/(clmax-cl0)
+          cd_cl_diff = clfac**2*cdinc*2.0*(cl_diff-clmax_diff) + (
+     +      cdx2_diff-temp0*(clmax_diff-cl0_diff))/(clmax-cl0)
+          cd_cl = cdinc*2.0*(cl-clmax)*(clfac*clfac) + temp0
         END IF
 C
         RETURN

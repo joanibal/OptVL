@@ -17,9 +17,9 @@ C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
 C                rr
 C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
 C                sref cref bref xyzref mach cdref rle chord rle1
-C                chord1 rle2 chord2 wstrip ensy ensz xsref ysref
-C                zsref rv1 rv2 rv rc gam gam_u gam_d src src_u
-C                vv vv_u vv_d wv wv_u wv_d
+C                chord1 rle2 chord2 wstrip clcd ensy ensz xsref
+C                ysref zsref rv1 rv2 rv rc gam gam_u gam_d src
+C                src_u vv vv_u vv_d wv wv_u wv_d
 C   RW status of diff variables: alfa:in vinf:in vinf_a:in vinf_b:in
 C                wrot:in sref:in cref:in bref:in xyzref:in mach:in
 C                cdref:in clff:out cyff:out cdff:out spanef:out
@@ -40,9 +40,10 @@ C                crtot_ry:out cmtot_ry:out cntot_ry:out cdtot_rz:out
 C                cltot_rz:out cytot_rz:out crtot_rz:out cmtot_rz:out
 C                cntot_rz:out xnp:out sm:out bb:out rr:out rle:in
 C                chord:in rle1:in chord1:in rle2:in chord2:in wstrip:in
-C                ensy:in ensz:in xsref:in ysref:in zsref:in rv1:in
-C                rv2:in rv:in rc:in gam:in gam_u:in gam_d:in src:in
-C                src_u:in vv:in vv_u:in vv_d:in wv:in wv_u:in wv_d:in
+C                clcd:in ensy:in ensz:in xsref:in ysref:in zsref:in
+C                rv1:in rv2:in rv:in rc:in gam:in gam_u:in gam_d:in
+C                src:in src_u:in vv:in vv_u:in vv_d:in wv:in wv_u:in
+C                wv_d:in
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -335,8 +336,8 @@ C                cdtot_u cytot_u cltot_u cdtot_d cytot_d cltot_d
 C                cftot cftot_u cftot_d cmtot cmtot_u cmtot_d cdvtot
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref rle chord rle1 chord1 rle2 chord2 wstrip
-C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_u
-C                gam_d vv vv_u vv_d wv wv_u wv_d
+C                clcd ensy ensz xsref ysref zsref rv1 rv2 rv gam
+C                gam_u gam_d vv vv_u vv_d wv wv_u wv_d
 C AERO
 C
 C
@@ -1710,8 +1711,8 @@ C
           ENDDO
 C
 C--- Get CD from CLCD function using strip CL as parameter
-          CALL CDCL_D(clcd(1, j), clv, clv_diff, cdv, cdv_diff, cdv_clv
-     +                , cdv_clv_diff)
+          CALL CDCL_D(clcd(1, j), clcd_diff(1, j), clv, clv_diff, cdv, 
+     +                cdv_diff, cdv_clv, cdv_clv_diff)
 C
 C--- Strip viscous force contribution (per unit strip area)
           dcvfx_diff = veffmag*cdv*veff_diff(1) + veff(1)*(cdv*
