@@ -150,6 +150,12 @@ C$AD II-LOOP
      &               + WC_GAM(2,I,J)*ENC(2,I)
      &               + WC_GAM(3,I,J)*ENC(3,I)
            LVNC(I) = .TRUE.
+            IF (AICN(I,J) .NE. AICN(I,J)) THEN
+              WRITE(*,*) 'NaN at AICN index ', I,J
+              write(*,*) '    WC_GAM', WC_GAM(1,I,J), WC_GAM(2,I,J), 
+     &          WC_GAM(1,I,J)
+              write(*,*) '    ENC', ENC(1,I), ENC(2,I), ENC(1,I)
+            endif
          ENDDO
        ENDDO
 
@@ -204,11 +210,11 @@ C$AD II-LOOP
        DO i = 1, NVOR
         DO j = 1, NVOR
           IF (AICN_LU(I,J) .NE. AICN_LU(I,J)) THEN
-              WRITE(*,*) 'NaN at index ', I,J
+              WRITE(*,*) 'NaN at AICN_LU index ', I,J
           END IF
         enddo 
           IF (AICN_LU(I,I) .EQ. 0.0) THEN
-              WRITE(*,*) '0 at index ', I
+              WRITE(*,*) '0 at AICN_LU index ', I
           END IF
         enddo
         write(*,*) 'done with after factorization checks'
