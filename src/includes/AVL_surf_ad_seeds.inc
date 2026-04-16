@@ -21,7 +21,7 @@ C    must be precended by 'AVL_surf.INC'
      & XASEC_DIFF(NASMAX, NSECMAX, NFMAX),
      & SASEC_DIFF(NASMAX, NSECMAX, NFMAX),
      & CLCDSEC_DIFF(6, NSECMAX, NFMAX),
-     & CLCDSRF_DIFF(6, NSECMAX, NFMAX),
+     & CLCDSRF_DIFF(6, NFMAX),
      & CLAF_DIFF(NSECMAX, NFMAX)
 C
       real(kind=avl_real) MSHBLK_DIFF
