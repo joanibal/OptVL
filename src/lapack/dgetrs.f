@@ -125,7 +125,7 @@
 *
 *     .. Scalar Arguments ..
       CHARACTER          TRANS
-      INTEGER            INFO, LDA, LDB, N, NRHS
+      INTEGER            INFO, LDA, LDB, N, NRHS, I 
 *     ..
 *     .. Array Arguments ..
       INTEGER            IPIV( * )
@@ -202,6 +202,15 @@
 
          CALL DTRSM( 'Left', 'Upper', 'No transpose', 'Non-unit', N,
      $               NRHS, ONE, A, LDA, B, LDB )
+         DO 10 I = 1, N
+          IF (A(I,I) .NE. A(I,I)) THEN
+              WRITE(*,*) 'NaN at index ', I
+          END IF
+          IF (A(I,I) .EQ. 0.0) THEN
+              WRITE(*,*) '0 at index ', I
+          END IF
+   10   CONTINUE
+   
          write(*,*) '2 B(1,1)', B(1,1)
 
       ELSE

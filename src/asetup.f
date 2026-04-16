@@ -201,6 +201,17 @@ C$AD II-LOOP
        write(*,*) 'AICN(1,1)', AICN(1,1)
        CALL LUDCMP(NVOR,NVOR,AICN_LU,IAPIV,WORK)
        write(*,*) 'AICN_LU(1,1)', AICN_LU(1,1)
+       DO i = 1, NVOR
+        DO j = 1, NVOR
+          IF (AICN_LU(I,J) .NE. AICN_LU(I,J)) THEN
+              WRITE(*,*) 'NaN at index ', I,J
+          END IF
+        enddo 
+          IF (AICN_LU(I,I) .EQ. 0.0) THEN
+              WRITE(*,*) '0 at index ', I
+          END IF
+        enddo
+        write(*,*) 'done with after factorization checks'
 C
        LAIC = .TRUE.
       END ! factor_AIC
