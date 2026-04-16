@@ -155,6 +155,7 @@
 *
 *     Test the input parameters.
 *
+      write(*,*) 'running lapack'
       INFO = 0
       NOTRAN = LSAME( TRANS, 'N' )
       IF( .NOT.NOTRAN .AND. .NOT.LSAME( TRANS, 'T' ) .AND. .NOT.
@@ -189,14 +190,20 @@
 *
 *        Solve L*X = B, overwriting B with X.
 *
+         write(*,*) '0 B(1,1)', B(1,1)
+
          CALL DTRSM( 'Left', 'Lower', 'No transpose', 'Unit', N,
      $               NRHS,
      $               ONE, A, LDA, B, LDB )
 *
 *        Solve U*X = B, overwriting B with X.
 *
+         write(*,*) '1 B(1,1)', B(1,1)
+
          CALL DTRSM( 'Left', 'Upper', 'No transpose', 'Non-unit', N,
      $               NRHS, ONE, A, LDA, B, LDB )
+         write(*,*) '2 B(1,1)', B(1,1)
+
       ELSE
 *
 *        Solve A**T * X = B.
