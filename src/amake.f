@@ -2140,12 +2140,12 @@ C
             write(*,*) 'DXT', DXT
             write(*,*) 'DYT', DYT
             write(*,*) 'DZT', DZT
-            write(*) 'DXLE', RV2(1,I), RV1(1,I)
-            write(*) 'DYLE', RV2(2,I), RV1(2,I)
-            write(*) 'DZLE', RV2(3,I), RV1(3,I)
-            write(*) 'DXTE', RV2(1,I), RV1(1,I)
-            write(*) 'DYTE', RV2(2,I), RV1(2,I)
-            write(*) 'DZTE', RV2(3,I), RV1(3,I)
+            write(*,*) 'DXLE', RV2(1,I), RV1(1,I)
+            write(*,*) 'DYLE', RV2(2,I), RV1(2,I)
+            write(*,*) 'DZLE', RV2(3,I), RV1(3,I)
+            write(*,*) 'DXTE', RV2(1,I), RV1(1,I)
+            write(*,*) 'DYTE', RV2(2,I), RV1(2,I)
+            write(*,*) 'DZTE', RV2(3,I), RV1(3,I)
         endif 
         ! Treffz plane normals
         ENSY(J) = -DZT/SQRT(DYT*DYT + DZT*DZT)
