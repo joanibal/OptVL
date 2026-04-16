@@ -441,13 +441,22 @@ C---- Set vortex strengths
       DO I = 1, NVOR
         DO IU = 1, 6
           GAM_U(I,IU) = GAM_U_0(I,IU)
-
+          
+          if (I == 1) then 
+            write(*,*) IU, 'GAM_U_0', GAM_U(I,IU)
+          endif
           DO N = 1, NCONTROL
             GAM_U(I,IU) = GAM_U(I,IU) + GAM_U_D(I,IU,N)*DELCON(N)
           ENDDO
+          if (I == 1) then 
+            write(*,*) IU, 'GAM_U + controls', GAM_U(I,IU)
+          endif
           DO N = 1, NDESIGN
             GAM_U(I,IU) = GAM_U(I,IU) + GAM_U_G(I,IU,N)*DELDES(N)
           ENDDO
+          if (I == 1) then 
+            write(*,*) IU, 'GAM_U + design', GAM_U(I,IU)
+          endif
         ENDDO
 
         DO N = 1, NCONTROL
