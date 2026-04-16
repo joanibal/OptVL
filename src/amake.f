@@ -2245,6 +2245,9 @@ C
      &     (ES(2)*ES(3)*(1-COSC))*ec_msh(2) + 
      &    ((ES(2)**2)*(1-COSC) + COSC)*ec_msh(3)
 
+          if (I==3) write(*,*) '3 RCMSH', RCMSH(:,I)
+          if (I==3) write(*,*) '3 RVMSH', RVMSH(:,I)
+          if (I==3) write(*,*) '3 ec_msh', ec_msh
           else
           EC(1) =  COSC
           EC(2) = -SINC*ES(2)
@@ -2351,6 +2354,10 @@ C
 C...Normal vector is perpendicular to camberline vector and to the bound leg
           CALL CROSS(EC,EB,ECXB)
           EMAG = SQRT(ECXB(1)**2 + ECXB(2)**2 + ECXB(3)**2)
+          if (I==3) write(*,*) '3 ES', ES
+          if (I==3) write(*,*) '3 EC', EC
+          if (I==3) write(*,*) '3 EB', EB
+          if (I==3) write(*,*) '3 ECXB', ECXB
           IF(EMAG.NE.0.0) THEN
             ENV(1,I) = ECXB(1)/EMAG
             ENV(2,I) = ECXB(2)/EMAG
