@@ -794,11 +794,11 @@ C---- initialize state
       WROT(2) = 0.
       WROT(3) = 0.
 C
-      DO N = 1, NCONTROL
+      DO N = 1, NDMAX
         DELCON(N) = 0.0
       ENDDO
 C
-      DO N = 1, NDESIGN
+      DO N = 1, NGMAX
         DELDES(N) = 0.0
       ENDDO
       LSOL = .FALSE.
