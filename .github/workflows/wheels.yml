@@ -17,6 +17,7 @@ jobs:
     name: ${{ matrix.python[0] }}-${{ matrix.buildplat[1] }} ${{ matrix.buildplat[2] }}
     runs-on: ${{ matrix.buildplat[0] }}
     strategy:
+      fail-fast: false  # This ensures all matrix jobs run to completion
       matrix:
         buildplat:
         # Not supported for now
