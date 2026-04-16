@@ -2135,7 +2135,18 @@ C
         ESS(1,J) =  DXT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
         ESS(2,J) =  DYT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
         ESS(3,J) =  DZT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
-
+        
+        if (I==3) then 
+            write(*,*) 'DXT', DXT
+            write(*,*) 'DYT', DYT
+            write(*,*) 'DZT', DZT
+            write(*) 'DXLE', RV2(1,I), RV1(1,I)
+            write(*) 'DYLE', RV2(2,I), RV1(2,I)
+            write(*) 'DZLE', RV2(3,I), RV1(3,I)
+            write(*) 'DXTE', RV2(1,I), RV1(1,I)
+            write(*) 'DYTE', RV2(2,I), RV1(2,I)
+            write(*) 'DZTE', RV2(3,I), RV1(3,I)
+        endif 
         ! Treffz plane normals
         ENSY(J) = -DZT/SQRT(DYT*DYT + DZT*DZT)
         ENSZ(J) =  DYT/SQRT(DYT*DYT + DZT*DZT)
@@ -2355,9 +2366,6 @@ C...Normal vector is perpendicular to camberline vector and to the bound leg
           CALL CROSS(EC,EB,ECXB)
           EMAG = SQRT(ECXB(1)**2 + ECXB(2)**2 + ECXB(3)**2)
           if (I==3) write(*,*) '3 ES', ES
-          if (I==3) write(*,*) '3 EC', EC
-          if (I==3) write(*,*) '3 EB', EB
-          if (I==3) write(*,*) '3 ECXB', ECXB
           IF(EMAG.NE.0.0) THEN
             ENV(1,I) = ECXB(1)/EMAG
             ENV(2,I) = ECXB(2)/EMAG
