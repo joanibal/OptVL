@@ -9,6 +9,7 @@ C    must be precended by 'AVL_surf.INC'
       real(kind=avl_real) XASEC_DIFF
       real(kind=avl_real) SASEC_DIFF
       real(kind=avl_real) CLCDSEC_DIFF
+      real(kind=avl_real) CLCDSRF_DIFF
       real(kind=avl_real) CLAF_DIFF
       COMMON /SURF_GEOM_R_DIFF/
      & XYZSCAL_DIFF(3, NFMAX),
@@ -20,6 +21,7 @@ C    must be precended by 'AVL_surf.INC'
      & XASEC_DIFF(NASMAX, NSECMAX, NFMAX),
      & SASEC_DIFF(NASMAX, NSECMAX, NFMAX),
      & CLCDSEC_DIFF(6, NSECMAX, NFMAX),
+     & CLCDSRF_DIFF(6, NSECMAX, NFMAX),
      & CLAF_DIFF(NSECMAX, NFMAX)
 C
       real(kind=avl_real) MSHBLK_DIFF
