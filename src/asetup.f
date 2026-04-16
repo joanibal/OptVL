@@ -253,8 +253,10 @@ C--------- just clear r.h.s.
            ENDDO
           ENDIF
         ENDDO
-
+        If (IU == 1) write(*,*) 'pre BS', GAM_U_0(1,IU)
         CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
+        If (IU == 1) write(*,*) 'post BS', GAM_U_0(1,IU)
+
         DO N = 1, NCONTROL
           CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
         ENDDO
@@ -448,15 +450,9 @@ C---- Set vortex strengths
           DO N = 1, NCONTROL
             GAM_U(I,IU) = GAM_U(I,IU) + GAM_U_D(I,IU,N)*DELCON(N)
           ENDDO
-          if (I == 1) then 
-            write(*,*) IU, 'GAM_U + controls', GAM_U(I,IU)
-          endif
           DO N = 1, NDESIGN
             GAM_U(I,IU) = GAM_U(I,IU) + GAM_U_G(I,IU,N)*DELDES(N)
           ENDDO
-          if (I == 1) then 
-            write(*,*) IU, 'GAM_U + design', GAM_U(I,IU)
-          endif
         ENDDO
 
         DO N = 1, NCONTROL
