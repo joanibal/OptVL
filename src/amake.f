@@ -539,6 +539,7 @@ C-------- go over vortices in this strip
             ! NVOR = NVOR + 1
             ! change all NVOR indices into idx_vor
             ! change all NSTRIP indices into idx_strip
+            write(*,*) 'idx_vor', idx_vor
 C
             RV1(1,idx_vor) = RLE1(1,idx_strip)
      &                        + XVR(IVC)*CHORD1(idx_strip)
