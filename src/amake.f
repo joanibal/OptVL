@@ -1873,6 +1873,9 @@ C
         WSTRIP(JJI) =  WSTRIP(JJ)
         TANLE(JJI)  = -TANLE(JJ)
         AINC (JJI)  =  AINC(JJ)
+        
+        
+        
 C
 cc#ifdef USE_CPOML
         AINC1(JJI) = AINC2(JJ)
@@ -1940,6 +1943,11 @@ C
           LVCOMP(III) = LNCOMP(NNI)
           LVALBE(III) = LVALBE(II)
           LVNC(III) = LVNC(II)
+          
+          write(*,*) 'iii, ii', iii, ii
+          write(*,*) 'RV1(2,iii)', RV1(2,iii), -RV2(2,II), YOFF
+          write(*,*) 'RV2(2,iii)', RV2(2,iii), -RV1(2,II), YOFF
+          
           ! Duplicate mesh data if we are using a mesh
           if (lsurfmsh(NN)) then
             RV1MSH(1,III) = RV2MSH(1,II)
