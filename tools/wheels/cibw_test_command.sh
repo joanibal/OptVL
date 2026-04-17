@@ -5,7 +5,6 @@ PROJECT_DIR="$1"
 cd $PROJECT_DIR/tests
 python -c "import platform; print(platform.machine())"
 ls ../optvl
-# llvm-objdump -p ../optvl/libavl.cp312-win_arm64.pyd | findstr "DLL Name"
 
 # install tesing dependencies
 pip install --only-binary :all: scipy 

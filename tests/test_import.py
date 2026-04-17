@@ -17,11 +17,6 @@ class TestImport(unittest.TestCase):
         from optvl import OVLSolver
 
         ovl_solver1 = OVLSolver(geo_file=geom_file)
-        print("============= ovl solver 1 ================")
-        print('attr of avl', dir(ovl_solver1.avl))
-        print('attr of SURF_GEOM_R_DIFF', dir(ovl_solver1.avl.SURF_GEOM_R_DIFF))
-        print(ovl_solver1.get_avl_fort_arr("SURF_GEOM_R_DIFF", "CLCDSRF_DIFF"))
-
         ovl_solver2 = OVLSolver(geo_file=geom_file)
 
         assert ovl_solver1.avl is not ovl_solver2.avl

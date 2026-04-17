@@ -510,7 +510,6 @@ class TestGeom(unittest.TestCase):
 
         coefs = []
         coefs_f = []
-        print("\n")
 
         for solver in self.solvers + self.solvers_f:
             solver.set_variable("alpha", 6.00)
