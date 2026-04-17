@@ -150,12 +150,6 @@ C$AD II-LOOP
      &               + WC_GAM(2,I,J)*ENC(2,I)
      &               + WC_GAM(3,I,J)*ENC(3,I)
            LVNC(I) = .TRUE.
-            IF (AICN(I,J) .NE. AICN(I,J)) THEN
-              WRITE(*,*) 'NaN at AICN index ', I,J
-              write(*,*) '    WC_GAM', WC_GAM(1,I,J), WC_GAM(2,I,J), 
-     &          WC_GAM(1,I,J)
-              write(*,*) '    ENC', ENC(1,I), ENC(2,I), ENC(1,I)
-            endif
          ENDDO
        ENDDO
 
@@ -207,17 +201,6 @@ C$AD II-LOOP
        write(*,*) 'AICN(1,1)', AICN(1,1)
        CALL LUDCMP(NVOR,NVOR,AICN_LU,IAPIV,WORK)
        write(*,*) 'AICN_LU(1,1)', AICN_LU(1,1)
-       DO i = 1, NVOR
-        DO j = 1, NVOR
-          IF (AICN_LU(I,J) .NE. AICN_LU(I,J)) THEN
-              WRITE(*,*) 'NaN at AICN_LU index ', I,J
-          END IF
-        enddo 
-          IF (AICN_LU(I,I) .EQ. 0.0) THEN
-              WRITE(*,*) '0 at AICN_LU index ', I
-          END IF
-        enddo
-        write(*,*) 'done with after factorization checks'
 C
        LAIC = .TRUE.
       END ! factor_AIC
@@ -270,10 +253,8 @@ C--------- just clear r.h.s.
            ENDDO
           ENDIF
         ENDDO
-        If (IU == 1) write(*,*) 'pre BS', GAM_U_0(1,IU)
-        CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
-        If (IU == 1) write(*,*) 'post BS', GAM_U_0(1,IU)
 
+        CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_0(1,IU))
         DO N = 1, NCONTROL
           CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_D(1,IU,N))
         ENDDO
@@ -460,10 +441,7 @@ C---- Set vortex strengths
       DO I = 1, NVOR
         DO IU = 1, 6
           GAM_U(I,IU) = GAM_U_0(I,IU)
-          
-          if (I == 1) then 
-            write(*,*) IU, 'GAM_U_0', GAM_U(I,IU)
-          endif
+
           DO N = 1, NCONTROL
             GAM_U(I,IU) = GAM_U(I,IU) + GAM_U_D(I,IU,N)*DELCON(N)
           ENDDO

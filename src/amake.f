@@ -285,18 +285,6 @@ C---- go over section intervals
      &              + XYZTRAN(2,ISURF)
         XYZLER(3) = XYZSCAL(3,ISURF)*XYZLES(3,ISEC+1,ISURF) 
      &              + XYZTRAN(3,ISURF)
-     
-      write(*,*) ISURF, ISEC
-      write(*,*) ' XYZLEl(2)', XYZLEl(2)
-      write(*,*) ' XYZLER(2)', XYZLER(2)
-      write(*,*) ' XYZLES(2,ISEC,ISURF)', XYZLES(2,ISEC,ISURF)   
-      write(*,*) ' XYZLES(2,ISEC+1,ISURF)', XYZLES(2,ISEC+1,ISURF)   
-      write(*,*) ' XYZSCAL(2,ISURF)', XYZSCAL(2, ISURF)
-      write(*,*) ' XYZTRAN(2,ISURF)', XYZTRAN(2,ISURF)
-      
-!      IS the isssue here someshow 
-!      - print the XYZ values to confirm
-!      - is it not being set properly in the input dict level if it is not given??
 C
         WIDTH = SQRT(  (XYZLER(2)-XYZLEL(2))**2
      &               + (XYZLER(3)-XYZLEL(3))**2 )
@@ -383,14 +371,6 @@ C
           RLE2(2,idx_strip) = (1.0-F2)*XYZLEL(2) + F2*XYZLER(2)
           RLE2(3,idx_strip) = (1.0-F2)*XYZLEL(3) + F2*XYZLER(3)
           CHORD2(idx_strip) = (1.0-F2)*CHORDL    + F2*CHORDR
-          if (idx_strip < 3) then 
-            write(*,*) 'RLE1(2,idx_strip)', RLE1(2,idx_strip)
-            write(*,*) 'RLE2(2,idx_strip)', RLE2(2,idx_strip)
-            write(*,*) 'F1', F1
-            write(*,*) 'F2', F2
-            write(*,*) 'XYZLEL(2)', XYZLEL(2)
-            write(*,*) 'XYZLER(2)', XYZLER(2)
-          endif  
 C
           RLE(1,idx_strip)  = (1.0-FC)*XYZLEL(1) + FC*XYZLER(1)
           RLE(2,idx_strip)  = (1.0-FC)*XYZLEL(2) + FC*XYZLER(2)
@@ -535,14 +515,10 @@ C-------- set chordwise spacing fraction arrays
 c
 C-------- go over vortices in this strip
           idx_vor = IJFRST(idx_strip)
-          write(*,*) 'idx_strip', idx_strip
-          write(*,*) 'NVC(ISURF)', NVC(ISURF)
-          write(*,*) 'IJFRST(idx_strip)', IJFRST(idx_strip)
           DO 1505 IVC = 1, NVC(ISURF)
             ! NVOR = NVOR + 1
             ! change all NVOR indices into idx_vor
             ! change all NSTRIP indices into idx_strip
-            write(*,*) 'idx_vor', idx_vor
 C
             RV1(1,idx_vor) = RLE1(1,idx_strip)
      &                        + XVR(IVC)*CHORD1(idx_strip)
@@ -553,11 +529,6 @@ C
      &                       + XVR(IVC)*CHORD2(idx_strip)
             RV2(2,idx_vor) = RLE2(2,idx_strip)
             RV2(3,idx_vor) = RLE2(3,idx_strip)
-            if (idx_vor == 3) then 
-                  write(*,*) idx_vor, idx_strip
-                  write(*,*) 'RV1(2,idx_strip)', RV1(2,idx_strip)
-                  write(*,*) 'RV2(2,idx_strip)', RV2(2,idx_strip)
-            endif
 C
             RV(1,idx_vor) = RLE(1,idx_strip) + XVR(IVC)*CHORDC
             RV(2,idx_vor) = RLE(2,idx_strip)
@@ -656,10 +627,8 @@ C
 C
 cc#endif
             idx_vor = idx_vor + 1
-            write(*,*) 'idx_vor done: RV1(2,3)', idx_vor, RV1(2,3)
  1505     CONTINUE
 C           
-        write(*,*) 'idx_strip done: RV1(2,3)', idx_strip, RV1(2,3)
         idx_strip = idx_strip + 1
  150    CONTINUE
 C
@@ -686,7 +655,6 @@ C     add number of strips to the global count
 C     add number of of votrices
       NVOR = NVOR + NK(ISURF)*NJ(ISURF) 
 C
-      write(*,*) 'MAKESURF done', idx_strip, RV1(2,3)
       RETURN
       END ! MAKESURF
 
@@ -1844,7 +1812,6 @@ cc#ifdef USE_CPOML
 cc#endif
 C
       YOFF = 2.0*Ypt
-      write(*,*) 'YOFF,Ypt', YOFF, Ypt
 C
 C--- Create image strips, to maintain the same sense of positive GAMMA
 C    these have the 1 and 2 strip edges reversed (i.e. root is edge 2, 
@@ -1876,9 +1843,6 @@ C
         WSTRIP(JJI) =  WSTRIP(JJ)
         TANLE(JJI)  = -TANLE(JJ)
         AINC (JJI)  =  AINC(JJ)
-        
-        
-        
 C
 cc#ifdef USE_CPOML
         AINC1(JJI) = AINC2(JJ)
@@ -1946,11 +1910,6 @@ C
           LVCOMP(III) = LNCOMP(NNI)
           LVALBE(III) = LVALBE(II)
           LVNC(III) = LVNC(II)
-          
-          write(*,*) 'iii, ii', iii, ii
-          write(*,*) 'RV1(2,iii)', RV1(2,iii), -RV2(2,II), YOFF
-          write(*,*) 'RV2(2,iii)', RV2(2,iii), -RV1(2,II), YOFF
-          
           ! Duplicate mesh data if we are using a mesh
           if (lsurfmsh(NN)) then
             RV1MSH(1,III) = RV2MSH(1,II)
@@ -2105,7 +2064,6 @@ C
 C
 C...Calculate the normal vector at control points and bound vortex midpoints
 C
-      write(*,*) 'start encalc: RV1(2,3)', idx_strip, RV1(2,3)
       DO 10 J = 1, NSTRIP
 
         ! Since we cannot seperate the encalc routine for direct mesh assignment we have to make it a branch here
@@ -2179,18 +2137,7 @@ C
         ESS(1,J) =  DXT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
         ESS(2,J) =  DYT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
         ESS(3,J) =  DZT/SQRT(DXT*DXT + DYT*DYT + DZT*DZT)
-        
-        if (I==3) then 
-            write(*,*) 'DXT', DXT
-            write(*,*) 'DYT', DYT
-            write(*,*) 'DZT', DZT
-            write(*,*) 'DXLE', RV2(1,I), RV1(1,I)
-            write(*,*) 'DYLE', RV2(2,I), RV1(2,I)
-            write(*,*) 'DZLE', RV2(3,I), RV1(3,I)
-            write(*,*) 'DXTE', RV2(1,I), RV1(1,I)
-            write(*,*) 'DYTE', RV2(2,I), RV1(2,I)
-            write(*,*) 'DZTE', RV2(3,I), RV1(3,I)
-        endif 
+
         ! Treffz plane normals
         ENSY(J) = -DZT/SQRT(DYT*DYT + DZT*DZT)
         ENSZ(J) =  DYT/SQRT(DYT*DYT + DZT*DZT)
@@ -2300,9 +2247,6 @@ C
      &     (ES(2)*ES(3)*(1-COSC))*ec_msh(2) + 
      &    ((ES(2)**2)*(1-COSC) + COSC)*ec_msh(3)
 
-          if (I==3) write(*,*) '3 RCMSH', RCMSH(:,I)
-          if (I==3) write(*,*) '3 RVMSH', RVMSH(:,I)
-          if (I==3) write(*,*) '3 ec_msh', ec_msh
           else
           EC(1) =  COSC
           EC(2) = -SINC*ES(2)
@@ -2409,7 +2353,6 @@ C
 C...Normal vector is perpendicular to camberline vector and to the bound leg
           CALL CROSS(EC,EB,ECXB)
           EMAG = SQRT(ECXB(1)**2 + ECXB(2)**2 + ECXB(3)**2)
-          if (I==3) write(*,*) '3 ES', ES
           IF(EMAG.NE.0.0) THEN
             ENV(1,I) = ECXB(1)/EMAG
             ENV(2,I) = ECXB(2)/EMAG
