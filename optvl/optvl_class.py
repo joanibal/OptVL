@@ -1532,11 +1532,11 @@ class OVLSolver(object):
         # set the contraint value so that the set value is used in analysis
         self.set_avl_fort_arr("CASE_R", "CONVAL", val, (self.conval_idx_dict[var],))
 
-    def get_variable(self, var: str):
-        """set a variable for the run case (equivalent to setting a variable in AVL's OPER menu)
+    def get_variable(self, var: str, inRadians: bool = False):
+        """Get a variable for the run case (equivalent to reading a variable in AVL's OPER menu)
         Args:
-            var: variable to be constrained ["alpha"", "beta"", "roll rate", "pitch rate", "yaw rate"] or any control surface.
-            val: target value of `con_var`
+            var: variable to retrieve ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"] or any control surface.
+            inRadians: if True, return alpha and beta in radians instead of degrees. Roll, pitch, and yaw rates are always dimensionless.
         """
         avl_variables = {
             "alpha": ("CASE_R", "ALFA"),
@@ -1558,6 +1558,10 @@ class OVLSolver(object):
             "pitch rate": 2 / cref,
             "yaw rate": 2 / bref,
         }
+
+        if inRadians:
+            vars_factors["alpha"] = 1.0
+            vars_factors["beta"] = 1.0
 
         # Check that the variable is valid
         if var in avl_variables:
