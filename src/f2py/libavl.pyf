@@ -7,8 +7,8 @@ python module libavl ! in
 
         subroutine avl ! in :libavl:avl.f
             include '../includes/AVL.INC'
-            include '../includes/AVL_surf_ad_seeds.INC'
             include '../includes/AVL_surf.INC'
+            include '../includes/AVL_surf_ad_seeds.inc'
             include '../includes/AVL_oml.INC'
             include '../includes/AVL_ad_seeds.inc'
         

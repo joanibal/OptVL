@@ -36,10 +36,10 @@ jobs:
         # - [macos-15-intel, macosx, x86_64, openblas, "10.14"]
         
         # DEBUGGING: switch to just one python for debugging
-        # python: [["cp312", "3.12"]]
+        python: [["cp312", "3.12"]]
         
         
-        python: [["cp310", "3.10"], ["cp311", "3.11"], ["cp312", "3.12"], ["cp313", "3.13"], ["cp314", "3.14"]]
+        # python: [["cp310", "3.10"], ["cp311", "3.11"], ["cp312", "3.12"], ["cp313", "3.13"], ["cp314", "3.14"]]
         exclude:
           - buildplat: [windows-11-arm, win, ARM64, "", ""]
             python: ["cp310", "3.10"]
