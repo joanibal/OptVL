@@ -1842,6 +1842,7 @@ cc#ifdef USE_CPOML
 cc#endif
 C
       YOFF = 2.0*Ypt
+      write(*,*) 'YOFF,Ypt', YOFF, Ypt
 C
 C--- Create image strips, to maintain the same sense of positive GAMMA
 C    these have the 1 and 2 strip edges reversed (i.e. root is edge 2, 
