@@ -1780,6 +1780,8 @@ C-----------------------------------
       INCLUDE 'AVL_oml.INC'
       CHARACTER*(*) MSG
       integer idx_vor
+      REAL :: Ypt
+      integer :: NN
 C
 C     
       NNI = NN + 1

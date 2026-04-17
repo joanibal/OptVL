@@ -71,13 +71,13 @@ python module libavl ! in
 
         subroutine sdupl(nn,ypt,msg) ! in :libavl:amake.f
             integer :: nn
-            real :: ypt
+            real*8 :: ypt
             character*(*) msg
         end subroutine sdupl
 
         subroutine bdupl(nn,ypt,msg) ! in :libavl:amake.f
             integer :: nn
-            real :: ypt
+            real*8 :: ypt
             character*(*) msg
         end subroutine bdupl
         
