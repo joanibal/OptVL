@@ -144,7 +144,7 @@ def check_vals(
         )
 
 
-def run_comparison(ovl, ref_data_cases, **kwargs):
+def run_comparison(ovl, ref_data_cases, print_val=False, **kwargs):
     for ref_data in [ref_data_cases[0]]:
         set_inputs(ovl, ref_data)
 
@@ -214,7 +214,7 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
         
         
         for idx_surf, surf in enumerate(strip_data):
-            print(f"-------- {surf} --------")
+            if print_val: print(f"-------- {surf} --------")
             for key in strip_data[surf]:
             
                 
@@ -237,7 +237,7 @@ def run_comparison(ovl, ref_data_cases, **kwargs):
 
                 
                 avl_val = ref_data["outputs"]["strip_forces"][surf][avl_key]
-                print(key, avl_key, strip_data[surf][key][:3], avl_val[:3])
+                if print_val: print(key, avl_key, strip_data[surf][key][:3], avl_val[:3])
                 check_vals(strip_data[surf][key], avl_val, key, **kwargs)
 
         

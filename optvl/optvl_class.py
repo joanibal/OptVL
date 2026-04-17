@@ -221,22 +221,6 @@ class OVLSolver(object):
 
     ad_suffix = "_DIFF"
 
-    # Primary array limits: These also need to updated in the Fortran layer if changed
-    NVMAX = 5000  # number of horseshoe vortices
-    NSMAX = 500  # number of chord strips
-    NSECMAX = 301 # nuber of geometry sections
-    NFMAX = 100  # number of surfaces
-    NLMAX = 502  # number of source/doublet line nodes
-    NBMAX = 20  # number of bodies
-    NUMAX = 6  # number of freestream parameters (V,Omega)
-    NDMAX = 30  # number of control deflection parameters
-    NGMAX = 21  # number of design variables
-    NRMAX = 25  # number of stored run cases
-    NTMAX = 503  # number of stored time levels
-    NOBMAX=1 # max number of off body points
-    ICONX = 20  #
-    IBX = 200 # max number of airfoil coordinates
-
 
     def __init__(
         self,
@@ -275,7 +259,6 @@ class OVLSolver(object):
         if platform.system() == "Windows":
             # HACK
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.pyd"))[0]
-            print("avl_lib_so_file", avl_lib_so_file)
             if len(avl_lib_so_file) == 0:
                 # print the contents of the module dir
                 print("module_dir", module_dir)
@@ -286,6 +269,7 @@ class OVLSolver(object):
 
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
+        
 
         self.avl = MExt.MExt("libavl", module_name, "optvl", lib_so_file=avl_lib_so_file, debug=debug)._module
 
@@ -296,6 +280,8 @@ class OVLSolver(object):
 
         if timing:
             self.set_avl_fort_arr("CASE_L", "LTIMING", True)
+        
+        self.__set_avl_size_info()
 
         if geo_file is not None:
             try:
@@ -418,6 +404,27 @@ class OVLSolver(object):
         if timing:
             print(f"AVL init took {time.time() - start_time} seconds")
 
+    def __set_avl_size_info(self):
+        # Primary array limits: These also need to updated in the Fortran layer if changed
+        # its ugly, but it works 
+        
+        output = self.avl.get_avl_constants()   
+        self.NVMAX = output[0]  # number of horseshoe vortices
+        self.NSMAX = output[1]  # number of chord strips
+        self.NSECMAX = output[2] # nuber of geometry sections
+        self.NFMAX = output[3]  # number of surfaces
+        self.NLMAX = output[4]  # number of source/doublet line nodes
+        self.NBMAX = output[5]  # number of bodies
+        self.NUMAX = output[6]  # number of freestream parameters (V,Omega)
+        self.NDMAX = output[7]  # number of control deflection parameters
+        self.NGMAX = output[8]  # number of design variables
+        self.NRMAX = output[9]  # number of stored run cases
+        self.NTMAX = output[10]  # number of stored time levels
+        self.NOBMAX = output[11] # max number of off body points
+        self.ICONX = output[12]  #
+        self.IBX = output[13] # max number of airfoil coordinates in a file
+        self.NASMAX = output[14] # max airfoil point for representation
+        
     def _init_map_data(self):
         """Used in the __init__ method to allocate the slice data for the surfaces"""
         self.surf_geom_to_fort_var = {}
@@ -612,10 +619,6 @@ class OVLSolver(object):
             "sasec": ["SURF_GEOM_R", "SASEC", sasec_slices],
             "casec": ["SURF_GEOM_R", "CASEC", casec_slices],
             "tasec": ["SURF_GEOM_R", "TASEC", tasec_slices],
-            "xuasec": ["SURF_GEOM_R", "XUASEC", xuasec_slices],
-            "xlasec": ["SURF_GEOM_R", "XLASEC", xlasec_slices],
-            "zuasec": ["SURF_GEOM_R", "ZUASEC", zuasec_slices],
-            "zlasec": ["SURF_GEOM_R", "ZLASEC", zlasec_slices],
         }
 
     def load_input_dict(self, input_dict: dict, pre_check: bool = True, post_check: bool = False):
@@ -913,7 +916,7 @@ class OVLSolver(object):
                     )
 
                 xfminmax_arr = surf_dict.get("xfminmax", np.tile([0.0, 1.0], (num_secs, 1)))
-                num_pts = min(50, self.IBX)
+                num_pts = min(self.NASMAX, self.IBX)
 
                 # setup for manually specifying coordinates
                 if "xasec" in surf_dict.keys():
@@ -936,9 +939,6 @@ class OVLSolver(object):
                     # Manually Specify Coordiantes (no camberline verification, only use if you know what you're doing)
                     if "xasec" in surf_dict.keys():
                         self.set_avl_fort_arr("SURF_GEOM_I", "NASEC", nasec_list[j], slicer=(idx_surf, j))
-
-                        # TODO-JLA: a user should not have to spcify XLASEC, XUASEC, ZLASEC, ZUASEC
-                        # since these can be calculated from the other inputs
 
                         for key in self.surf_section_geom_to_fort_var[surf_name]:
                             avl_vars_secs = self.surf_section_geom_to_fort_var[surf_name][key]
@@ -990,11 +990,6 @@ class OVLSolver(object):
                         self.set_avl_fort_arr("SURF_GEOM_R", "XASEC", np.array([0.0, 1.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "SASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "TASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-
-                        self.set_avl_fort_arr("SURF_GEOM_R", "XLASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-                        self.set_avl_fort_arr("SURF_GEOM_R", "XUASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-                        self.set_avl_fort_arr("SURF_GEOM_R", "ZLASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-                        self.set_avl_fort_arr("SURF_GEOM_R", "ZUASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "CASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
 
                 # --- setup control variables for each section ---
@@ -1295,18 +1290,6 @@ class OVLSolver(object):
         self.set_avl_fort_arr("SURF_GEOM_R", "SASEC", slopes, slicer=(isurf, isec, slice(0, nasec)))
         self.set_avl_fort_arr("SURF_GEOM_R", "TASEC", thickness, slicer=(isurf, isec, slice(0, nasec)))
 
-        self.set_avl_fort_arr(
-            "SURF_GEOM_R", "XLASEC", xf + 0.5 * thickness * np.sin(theta), slicer=(isurf, isec, slice(0, nasec))
-        )
-        self.set_avl_fort_arr(
-            "SURF_GEOM_R", "XUASEC", xf - 0.5 * thickness * np.sin(theta), slicer=(isurf, isec, slice(0, nasec))
-        )
-        self.set_avl_fort_arr(
-            "SURF_GEOM_R", "ZLASEC", zf - 0.5 * thickness * np.cos(theta), slicer=(isurf, isec, slice(0, nasec))
-        )
-        self.set_avl_fort_arr(
-            "SURF_GEOM_R", "ZUASEC", zf + 0.5 * thickness * np.cos(theta), slicer=(isurf, isec, slice(0, nasec))
-        )
         self.set_avl_fort_arr("SURF_GEOM_R", "CASEC", zf, slicer=(isurf, isec, slice(0, nasec)))
 
     def set_section_coordinates(
@@ -3753,7 +3736,7 @@ class OVLSolver(object):
         num_sec_max = self.get_avl_fort_arr("SURF_GEOM_R", "AINCS").shape[-1]
         num_sec = np.max(self.get_avl_fort_arr("SURF_GEOM_I", "NSEC"))
 
-        num_airfoil_pts_max = self.get_avl_fort_arr("SURF_GEOM_R", "XLASEC").shape[-1]
+        num_airfoil_pts_max = self.get_avl_fort_arr("SURF_GEOM_R", "CASEC").shape[-1]
         num_airfoil_pts = np.max(self.get_avl_fort_arr("SURF_GEOM_I", "NASEC"))
 
         mesh_size_max = 4*num_vor_max

@@ -8,6 +8,7 @@ from optvl import OVLSolver
 # =============================================================================
 import os
 from copy import deepcopy
+import copy
 
 # =============================================================================
 # External Python modules
@@ -539,11 +540,13 @@ class TestGeom(unittest.TestCase):
                     coefs[i]["CL"],
                     coefs_f[i]["CL"],
                     rtol=1e-8,
+                    err_msg="CL"
                 )
                 np.testing.assert_allclose(
                     coefs[i]["CD"],
                     coefs_f[i]["CD"],
                     rtol=1e-8,
+                    err_msg="CD"
                 )
 
             else:

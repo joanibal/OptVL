@@ -794,11 +794,11 @@ C---- initialize state
       WROT(2) = 0.
       WROT(3) = 0.
 C
-      DO N = 1, NCONTROL
+      DO N = 1, NDMAX
         DELCON(N) = 0.0
       ENDDO
 C
-      DO N = 1, NDESIGN
+      DO N = 1, NGMAX
         DELDES(N) = 0.0
       ENDDO
       LSOL = .FALSE.
@@ -1336,3 +1336,29 @@ C
       RETURN
       END
 
+      subroutine get_avl_constants( NVMAX_out, NSMAX_out, NSECMAX_out,
+     &            NFMAX_out, NLMAX_out, NBMAX_out, NUMAX_out,
+     &            NDMAX_out, NGMAX_out, NRMAX_out, NTMAX_out,
+     &            NOBMAX_out, ICONX_out,IBX_out, NASMAX_out)
+         INCLUDE 'AVL.INC'
+         integer :: NVMAX_out, NSMAX_out, NSECMAX_out
+         integer :: NFMAX_out, NLMAX_out, NBMAX_out, NUMAX_out
+         integer :: NDMAX_out, NGMAX_out, NRMAX_out, NTMAX_out
+         integer :: NOBMAX_out, ICONX_out, IBX_out, NASMAX_out
+      
+          NVMAX_out = NVMAX
+          NSMAX_out = NSMAX
+          NSECMAX_out = NSECMAX
+          NFMAX_out = NFMAX
+          NLMAX_out = NLMAX
+          NBMAX_out = NBMAX
+          NUMAX_out = NUMAX
+          NDMAX_out = NDMAX
+          NGMAX_out = NGMAX
+          NRMAX_out = NRMAX
+          NTMAX_out = NTMAX
+          NOBMAX_out = NOBMAX
+          ICONX_out = ICONX
+          IBX_out = IBX
+          NASMAX_out = NASMAX
+      end subroutine get_avl_constants

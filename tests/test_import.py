@@ -1,15 +1,7 @@
-# =============================================================================
-# Extension modules
-# =============================================================================
-
-# =============================================================================
 # Standard Python Modules
-# =============================================================================
 import os
 
-# =============================================================================
 # External Python modules
-# =============================================================================
 import unittest
 
 base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to current folder
@@ -25,7 +17,6 @@ class TestImport(unittest.TestCase):
         from optvl import OVLSolver
 
         ovl_solver1 = OVLSolver(geo_file=geom_file)
-
         ovl_solver2 = OVLSolver(geo_file=geom_file)
 
         assert ovl_solver1.avl is not ovl_solver2.avl

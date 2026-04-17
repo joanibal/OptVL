@@ -4,10 +4,15 @@ python module libavl ! in
     interface  ! in :libavl
         ! block data 
         ! end block data 
-        ! ! TODO: import from AVL.INC directly to avoid duplication
 
         subroutine avl ! in :libavl:avl.f
+            ! makesure you get that capitalization right!
+            ! certain platforms/compilers will be case sensitive 
+            ! linux/gfortran for example
             include '../includes/AVL.INC'
+            include '../includes/AVL_surf.INC'
+            include '../includes/AVL_surf_ad_seeds.inc'
+            include '../includes/AVL_oml.INC'
             include '../includes/AVL_ad_seeds.inc'
         
             ! parameters from 
@@ -68,13 +73,13 @@ python module libavl ! in
 
         subroutine sdupl(nn,ypt,msg) ! in :libavl:amake.f
             integer :: nn
-            real :: ypt
+            real*8 :: ypt
             character*(*) msg
         end subroutine sdupl
 
         subroutine bdupl(nn,ypt,msg) ! in :libavl:amake.f
             integer :: nn
-            real :: ypt
+            real*8 :: ypt
             character*(*) msg
         end subroutine bdupl
         
@@ -152,6 +157,12 @@ python module libavl ! in
             real*8 :: xb(nb), yb(nb)
             logical :: storecoords
         end subroutine set_body_coordinates
-
+        
+      subroutine get_avl_constants(nvmax_out, nsmax_out, nsecmax_out, nfmax_out, nlmax_out, nbmax_out, numax_out, ndmax_out, ngmax_out, nrmax_out, ntmax_out, nobmax_out, iconx_out,ibx_out, nasmax_out)
+         integer, intent(out) :: nvmax_out, nsmax_out, nsecmax_out
+         integer, intent(out) :: nfmax_out, nlmax_out, nbmax_out, numax_out
+         integer, intent(out) :: ndmax_out, ngmax_out, nrmax_out, ntmax_out
+         integer, intent(out) :: nobmax_out, iconx_out,ibx_out, nasmax_out
+        end subroutine get_avl_constants
     end interface 
 end python module libavl

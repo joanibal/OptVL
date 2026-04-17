@@ -18,6 +18,11 @@ dev_make_install/optvl
 
 tests/test_om_wrapper*_out
 examples/run_opt_om*_out
+examples/*.avl
+examples/*.ps
+examples/*.png
+examples/*.eig
+examples/opt_output_sweep/
 # ==============================================================================
 # Github python gitignore template
 # ==============================================================================
@@ -52,7 +57,6 @@ MANIFEST
 src/ad_src/forward_tmp/
 src/ad_src/reverse_tmp/
 src/ad_src/preprocessed_files/
-src/includes/AVL.INC
 examples/*.html
 examples/*.db
 examples/reports

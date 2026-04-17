@@ -37,10 +37,12 @@ args = parser.parse_args()
 # fmt: off
 hand_made_include =  "      INCLUDE 'AVL.INC'\n"\
                      "      INCLUDE 'AVL_ad_seeds.inc'\n"
+hand_made_surf_include =  "      INCLUDE 'AVL_surf.INC'\n"\
+                          "      INCLUDE 'AVL_surf_ad_seeds.inc'\n"
 hand_made_heap_mod = "      use avl_heap_diff_inc\n"
 heap_mod =           "      use avl_heap_inc\n"
 fake_include =       "      INCLUDE 'AVL_tapenade_fake.inc'\n"
-fake_include_diff =       "      INCLUDE 'AVL_tapenade_fake_diff.inc'\n"
+fake_include_diff =  "      INCLUDE 'AVL_tapenade_fake_diff.inc'\n"
 
 # fmt: on
 
@@ -55,10 +57,12 @@ if __name__ == "__main__":
             # Specify file extension
             file_ext = "_b.f"
             tapenade_include = "INCLUDE 'AVL_b.inc'"
+            tapenade_surf_include = "INCLUDE 'AVL_surf_b.inc'"
             fake_diff_include = "INCLUDE 'AVL_tapenade_fake_b.inc'"
         elif args.mode == "forward":
             # Specify file extension
             tapenade_include = "INCLUDE 'AVL_d.inc'"
+            tapenade_surf_include = "INCLUDE 'AVL_surf_d.inc'"
             fake_diff_include = "INCLUDE 'AVL_tapenade_fake_d.inc'"
             file_ext = "_d.f"
             
@@ -85,8 +89,8 @@ if __name__ == "__main__":
             # only loop over nvor vortices
             'ii1=1,nvmax': 'ii1=1,nvor',
             'ii2=1,nvmax': 'ii2=1,nvor',
-            f'ii1=1,{nvmax}': 'ii1=1,nvor',
-            f'ii2=1,{nvmax}': 'ii2=1,nvor',
+           f'ii1=1,{nvmax}': 'ii1=1,nvor',
+           f'ii2=1,{nvmax}': 'ii2=1,nvor',
             'ii1=1,ncdim': 'ii1=1,nc',
             'ii2=1,ncdim': 'ii2=1,nc',
             
@@ -101,9 +105,6 @@ if __name__ == "__main__":
             # only loop over the strips we have
             'ii1=1,nsmax': 'ii1=1,NSTRIP',
             'ii2=1,nsmax': 'ii2=1,NSTRIP',
-            
-            
-            
             
         }
         ad_commented_lines = {
@@ -157,13 +158,17 @@ if __name__ == "__main__":
                             # check to see if the next line is the fake include
                             if fake_diff_include.strip() in lines[i+1]:
                                 fid_mod.write(heap_mod)
-                                fid_mod.write(hand_made_heap_mod)                                
+                                fid_mod.write(hand_made_heap_mod)
                                 fid_mod.write(hand_made_include)
                                 i += 2
                                 continue
                             else: 
                                 # Insert the hand-written include file
                                 fid_mod.write(hand_made_include)
+                                
+                        elif tapenade_surf_include in line:
+                            # check to see if the next line is the fake include
+                            fid_mod.write(hand_made_surf_include)
 
                         elif "REAL*(" in line:
                             # This syntax is not supported by our compiler

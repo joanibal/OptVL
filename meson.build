@@ -2,13 +2,12 @@ project(
   'optvl',
   'c',
   # don't forget to change the value in pyproject.toml
-  version: '2.4.0',
+  version: '2.5.0',
   license: 'GPL-3.0',
   meson_version: '>= 0.64.0',
   default_options: [
     'buildtype=debugoptimized',
     'c_std=c99',
-    'fortran_std=legacy',
   ],
 )
 
@@ -86,6 +85,14 @@ inc_np = include_directories(incdir_numpy)
 incdir_f2py = incdir_numpy / '..' / '..' / 'f2py' / 'src'
 inc_f2py = include_directories(incdir_f2py)
 
+# set up statically allocated variable sizes
+if host_machine.system() == 'windows' and host_machine.cpu_family() == 'aarch64'
+  run_command(
+    py3, '-c',
+    'import shutil; shutil.copy(r"' + (meson.project_source_root() / 'src' / 'includes' / 'ADIMEN.INC.winArm64') + '", r"' + (meson.project_source_root() / 'src' / 'includes' / 'ADIMEN.INC') + '")',
+    check: true,
+  )
+endif
 
 # Fortran warning flags
 
@@ -111,12 +118,27 @@ ff_args = ff.get_supported_arguments(
 
 ff_args += [
   '-ffixed-line-length-80', 
-  '-std=legacy',
   '-fdefault-real-8',
   '-fdefault-double-8',
-  '-fPIC',
   '-O2'
 ]
+
+if host_machine.system() != 'windows'
+  ff_args += ['-fPIC']
+endif
+
+# --- add flags for fortran standard ---
+if ff.get_id() == 'gcc'
+  # -std=legacy is not supported by all Fortran compilers, but very useful with
+  # gfortran since it avoids a ton of warnings that we don't care about.
+  # Needs fixing in Meson, see https://github.com/mesonbuild/meson/issues/11633.
+  ff_args += ['-std=legacy']
+elif ff.get_id() == 'llvm-flang'
+
+  ff_args += ['-fno-init-global-zero', '-ffixed-form', '-w']
+  link_args += ['-fno-init-global-zero']
+  
+endif
 
 numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
 
@@ -178,5 +200,6 @@ py3.extension_module('libavl',
     link_language: 'fortran'
                    
 )
+
 
 install_subdir('optvl', install_dir: py3.get_install_dir())

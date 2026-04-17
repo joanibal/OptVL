@@ -1,12 +1,10 @@
-
       SUBROUTINE SECONDS(TSEC)
       REAL*8 TSEC
 C
-C...SECNDS is a real*4 function that returns seconds.
-C   The value is modified by subtracting the supplied argument.
-C   It acts as in the VMS FORTRAN Manual.
+C...Returns elapsed wall-clock time in seconds
+C   Replacement for non-standard SECNDS intrinsic
 C
-      REAL*4 SECNDS, TIME
-      TIME = 0.0
-      TSEC = SECNDS(TIME)
+      INTEGER COUNT, COUNT_RATE
+      CALL SYSTEM_CLOCK(COUNT, COUNT_RATE)
+      TSEC = DBLE(COUNT) / DBLE(COUNT_RATE)
       END

@@ -24,6 +24,8 @@ C     Sets up all stuff for surface ISURF,
 C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_oml.INC'
 C
 C
       REAL XYZLEL(3), XYZLER(3)
@@ -46,6 +48,11 @@ C
       INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
       REAL XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
       integer idx_vor, idx_strip
+      REAL XLASECL(NASMAX), XUASECL(NASMAX)
+      REAL ZLASECL(NASMAX), ZUASECL(NASMAX)
+      REAL XLASECR(NASMAX), XUASECR(NASMAX)
+      REAL ZLASECR(NASMAX), ZUASECR(NASMAX)
+      
 C
 C
       IF(NSEC(ISURF).LT.2) THEN
@@ -577,14 +584,25 @@ cc#ifdef USE_CPOML
 C...        nodal grid associated with vortex strip (aft-panel nodes)
 C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
 C...        retained in (x,z) plane at this point
-            CALL AKIMA( XLASEC(1,ISEC,ISURF), ZLASEC(1,ISEC,ISURF), NSL,
+           XLASECL = XASEC(:,ISEC,ISURF)
+           XUASECL = XASEC(:,ISEC,ISURF)
+           ZLASECL = CASEC(:,ISEC,ISURF) - 0.5*TASEC(:,ISEC,ISURF)
+           ZUASECL = CASEC(:,ISEC,ISURF) + 0.5*TASEC(:,ISEC,ISURF)
+           
+           XLASECR = XASEC(:,ISEC,ISURF)
+           XUASECR = XASEC(:,ISEC,ISURF)
+           ZLASECR = CASEC(:,ISEC,ISURF) - 0.5*TASEC(:,ISEC,ISURF)
+           ZUASECR = CASEC(:,ISEC,ISURF) + 0.5*TASEC(:,ISEC,ISURF)
+
+
+            CALL AKIMA( XLASECL, ZLASECL, NSL,
      &                  XPT(IVC+1), ZL_L, DSDX )
-            CALL AKIMA( XUASEC(1,ISEC,ISURF), ZUASEC(1,ISEC,ISURF), NSL,
+            CALL AKIMA( XUASECL, ZUASECL, NSL,
      &                  XPT(IVC+1), ZU_L, DSDX )
 C
-            CALL AKIMA( XLASEC(1,ISEC+1,ISURF), ZLASEC(1,ISEC+1,ISURF),
+            CALL AKIMA( XLASECR, ZLASECR,
      &                  NSR, XPT(IVC+1), ZL_R, DSDX )
-            CALL AKIMA( XUASEC(1,ISEC+1,ISURF), ZUASEC(1,ISEC+1,ISURF),
+            CALL AKIMA( XUASECR, ZUASECR,
      &                  NSR, XPT(IVC+1), ZU_R, DSDX )
 C
             XYN1(1,idx_vor) = RLE1(1,idx_strip) + 
@@ -642,6 +660,7 @@ C
 
       integer function flatidx(idx_x, idx_y, idx_surf)
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       ! store MFRST and  NVC in the common block
       integer idx_x, idx_y, idx_surf
       flatidx = idx_x + (idx_y - 1) * (NVC(idx_surf)+1)
@@ -655,6 +674,8 @@ C     using info from configuration input
 C     and the given mesh coordinate array.
 c--------------------------------------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_oml.INC'
       ! input/output
       integer isurf
 
@@ -668,6 +689,10 @@ c--------------------------------------------------------------
      &     CHSINR_G(NGMAX),CHCOSR_G(NGMAX),
      &     XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
       INTEGER ISCONL(NDMAX), ISCONR(NDMAX)
+      REAL XLASECL(NASMAX), XUASECL(NASMAX)
+      REAL ZLASECL(NASMAX), ZUASECL(NASMAX)
+      REAL XLASECR(NASMAX), XUASECR(NASMAX)
+      REAL ZLASECR(NASMAX), ZUASECR(NASMAX)
       
       ! working variables (OptVL additions)
       real m1, m2, m3, f1, f2, fc, dc1, dc2, dc, a1, a2, a3, xptxind1,
@@ -1332,18 +1357,30 @@ c--------------------------------------------------------------
         !   xptxind2 = (mesh_surf(1,idx_node_yp1+1)
         !  &           - RLE2(1,idx_strip))/CHORD2(idx_strip) 
 
-          ! Interpolate cross section on left side
-          CALL AKIMA( XLASEC(1,iptl,isurf), ZLASEC(1,iptl,isurf),
+!           ! Interpolate cross section on left side
+
+           XLASECL = XASEC(:,iptl,ISURF)
+           XUASECL = XASEC(:,iptl,ISURF)
+           ZLASECL = CASEC(:,iptl,ISURF) - 0.5*TASEC(:,iptl,ISURF)
+           ZUASECL = CASEC(:,iptl,ISURF) + 0.5*TASEC(:,iptl,ISURF)
+           
+           XLASECR = XASEC(:,iptr,ISURF)
+           XUASECR = XASEC(:,iptr,ISURF)
+           ZLASECR = CASEC(:,iptr,ISURF) - 0.5*TASEC(:,iptr,ISURF)
+           ZUASECR = CASEC(:,iptr,ISURF) + 0.5*TASEC(:,iptr,ISURF)
+
+
+          CALL AKIMA( XLASECL, ZLASECL,
      &                NSL,xptxind1, ZL_L, DSDX )
-          CALL AKIMA( XUASEC(1,iptl,isurf), ZUASEC(1,iptl,isurf),
+          CALL AKIMA( XUASECL, ZUASECL,
      &                NSL,xptxind1, ZU_L, DSDX )
 
           ! Interpolate cross section on right side
-          CALL AKIMA(XLASEC(1,iptr,isurf),
-     &               ZLASEC(1,iptr,isurf),NSR, xptxind1, ZL_R, DSDX)
+          CALL AKIMA(XLASECR,
+     &               ZLASECR,NSR, xptxind1, ZL_R, DSDX)
                           
-          CALL AKIMA(XUASEC(1,iptr,isurf),
-     &               ZUASEC(1,iptr,isurf),NSR, xptxind1, ZU_R, DSDX)
+          CALL AKIMA(XUASECR,
+     &               ZUASECR,NSR, xptxind1, ZU_R, DSDX)
 
 
           ! Compute the left aft node of panel 
@@ -1417,6 +1454,7 @@ c     arrays on the next execution.
 c--------------------------------------------------------------
       use avl_heap_inc
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       integer ii
       
       NSTRIP = 0
@@ -1476,6 +1514,7 @@ C     Sets up all stuff for body IBODY,
 C     using info from configuration input file.
 C--------------------------------------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
 C
 C      REAL XBOD(IBX), YBOD(IBX), TBOD(IBX)
 C
@@ -1574,6 +1613,7 @@ c--------------------------------------------------------------
 c     Updates all bodies, using the stored data.
 c--------------------------------------------------------------
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       integer IBODY, NBOD, NBLDS
       character*120 upname
 
@@ -1615,6 +1655,7 @@ c--------------------------------------------------------------
 c     Sets the airfoil coodinate data for the given section and surface
 c--------------------------------------------------------------
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
 c      input
       integer isec, isurf, n, nin
       real x(n), y(n)
@@ -1658,10 +1699,10 @@ c--------------------------------------------------------------
      &               SASEC(i,isec,isurf))
           call AKIMA(xin,tin,nin,XASEC(i,isec,isurf),
      &               TASEC(i,isec,isurf),dummy)
-          XLASEC(i,isec,isurf) = XASEC(i,isec,isurf)
-          XUASEC(i,isec,isurf) = XASEC(i,isec,isurf)
-          ZLASEC(i,isec,isurf) = zc - 0.5*TASEC(i,isec,isurf)
-          ZUASEC(i,isec,isurf) = zc + 0.5*TASEC(i,isec,isurf)
+      !     XLASEC(i,isec,isurf) = XASEC(i,isec,isurf)
+      !     XUASEC(i,isec,isurf) = XASEC(i,isec,isurf)
+      !     ZLASEC(i,isec,isurf) = zc - 0.5*TASEC(i,isec,isurf)
+      !     ZUASEC(i,isec,isurf) = zc + 0.5*TASEC(i,isec,isurf)
           CASEC(i,isec,isurf) = zc
 
         end do
@@ -1674,6 +1715,7 @@ c--------------------------------------------------------------
 c     Sets the body oml coodinate data for the given section and surface
 c--------------------------------------------------------------
       include 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       integer ibod, nb, nin
       real xb(nb), yb(nb)
       logical storecoords
@@ -1702,8 +1744,12 @@ C     Adds image of surface NN,
 C     reflected about y=Ypt.
 C-----------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_oml.INC'
       CHARACTER*(*) MSG
       integer idx_vor
+      REAL :: Ypt
+      integer :: NN
 C
 C     
       NNI = NN + 1
@@ -1923,6 +1969,7 @@ C     Adds image of surface NN,
 C     reflected about y=Ypt.
 C-----------------------------------
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
       CHARACTER*(*) MSG
 C
       NNI = NBODY + 1
@@ -2009,6 +2056,7 @@ C
 C...COMMENTS   
 C
       INCLUDE 'AVL.INC'
+      INCLUDE 'AVL_surf.INC'
 C
       REAL EP(3), EQ(3), ES(3), EB(3), EC(3), ECXB(3)
       REAL EC_G(3,NDMAX), ECXB_G(3)
