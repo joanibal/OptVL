@@ -487,8 +487,6 @@ class TestGeom(unittest.TestCase):
 
         self.solvers = [self.ovl_solver_1, self.ovl_solver_2, self.ovl_solver_3, self.ovl_solver_4, self.ovl_solver_5]
         self.solvers_f = [self.ovl_solver_f1, self.ovl_solver_f2, self.ovl_solver_f3, self.ovl_solver_f4]
-        # self.solvers = [self.ovl_solver_1, self.ovl_solver_2, self.ovl_solver_3, self.ovl_solver_4]
-        # self.solvers_f = [self.ovl_solver_f1, self.ovl_solver_f2, self.ovl_solver_f3, self.ovl_solver_f4]
 
     def test_surface_params(self):
         # Check surface params from the input dictionary match up with the reference values
@@ -514,29 +512,10 @@ class TestGeom(unittest.TestCase):
         coefs_f = []
         print("\n")
 
-        print('doing sovlers with input dicts')
-        for solver in self.solvers :
+        for solver in self.solvers + self.solvers_f:
             solver.set_variable("alpha", 6.00)
             solver.set_variable("beta", 2.00)
             solver.execute_run()
-            slicer = (slice(0, solver.get_mesh_size()),)
-            blk = "VRTX_R"
-            var = "GAM"
-            
-            gamma = copy.deepcopy(solver.get_avl_fort_arr(blk, var, slicer=slicer))
-            print('gamma', gamma[0])
-
-        print('doing sovlers with files')
-        for solver in self.solvers_f :
-            solver.set_variable("alpha", 6.00)
-            solver.set_variable("beta", 2.00)
-            solver.execute_run()
-            slicer = (slice(0, solver.get_mesh_size()),)
-            blk = "VRTX_R"
-            var = "GAM"
-            
-            gamma = copy.deepcopy(solver.get_avl_fort_arr(blk, var, slicer=slicer))
-            print('gamma', gamma[0])
 
         for i in range(len(self.solvers)):
             # Cases 4 and 5 use the same file

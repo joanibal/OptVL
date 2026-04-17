@@ -255,6 +255,8 @@ class TestFunctionPartials(unittest.TestCase):
                     )
 
     def test_rev_param(self):
+        print('attr of avl', dir(self.ovl_solver.avl))
+        
         for param_key in self.ovl_solver.param_idx_dict:
             self.ovl_solver.clear_ad_seeds_fast()
 

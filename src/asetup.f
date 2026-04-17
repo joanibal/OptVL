@@ -198,9 +198,7 @@ C$AD II-LOOP
             ! write(*,*) i,j, 'AICN(i,j)', AICN(i,j)
          enddo 
         ENDDO
-       write(*,*) 'AICN(1,1)', AICN(1,1)
        CALL LUDCMP(NVOR,NVOR,AICN_LU,IAPIV,WORK)
-       write(*,*) 'AICN_LU(1,1)', AICN_LU(1,1)
 C
        LAIC = .TRUE.
       END ! factor_AIC
@@ -474,14 +472,6 @@ C---- Set vortex strengths
      &         + GAM_U(I,4)*WROT(1)
      &         + GAM_U(I,5)*WROT(2)
      &         + GAM_U(I,6)*WROT(3)
-        if (I== 1) then 
-          write(*,*) 'term 1', GAM_U(I,1), VINF(1)
-          write(*,*) 'term 2', GAM_U(I,2), VINF(2)
-          write(*,*) 'term 3', GAM_U(I,3), VINF(3)
-          write(*,*) 'term 4', GAM_U(I,4), WROT(1)
-          write(*,*) 'term 5', GAM_U(I,5), WROT(2)
-          write(*,*) 'term 6', GAM_U(I,6), WROT(3)
-        end if 
 
 c        DO N = 1, NCONTROL
 c          GAM(I) = GAM(I) + GAM_D(I,N)*DELCON(N)
