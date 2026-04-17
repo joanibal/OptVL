@@ -285,6 +285,18 @@ C---- go over section intervals
      &              + XYZTRAN(2,ISURF)
         XYZLER(3) = XYZSCAL(3,ISURF)*XYZLES(3,ISEC+1,ISURF) 
      &              + XYZTRAN(3,ISURF)
+     
+      write(*,*) ISURF, ISEC
+      write(*,*) ' XYZLEl(2)', XYZLEl(2)
+      write(*,*) ' XYZLER(2)', XYZLER(2)
+      write(*,*) ' XYZLES(2,ISEC,ISURF)', XYZLES(2,ISEC,ISURF)   
+      write(*,*) ' XYZLES(2,ISEC+1,ISURF)', XYZLES(2,ISEC+1,ISURF)   
+      write(*,*) ' XYZSCAL(2,ISURF)', XYZSCAL(2, ISURF)
+      write(*,*) ' XYZTRAN(2,ISURF)', XYZTRAN(2,ISURF)
+      
+!      IS the isssue here someshow 
+!      - print the XYZ values to confirm
+!      - is it not being set properly in the input dict level if it is not given??
 C
         WIDTH = SQRT(  (XYZLER(2)-XYZLEL(2))**2
      &               + (XYZLER(3)-XYZLEL(3))**2 )
