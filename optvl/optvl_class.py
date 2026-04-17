@@ -1055,6 +1055,7 @@ class OVLSolver(object):
                     self.avl.makesurf_mesh(idx_surf + 1) #+1 for Fortran indexing
                 else:
                     self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
+                    print(f' ------ finsished surface {idx_surf+1} --------')
 
                 if "yduplicate" in surf_dict.keys():
                     self.avl.sdupl(idx_surf + 1, surf_dict["yduplicate"], "YDUP")

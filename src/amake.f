@@ -535,6 +535,9 @@ C-------- set chordwise spacing fraction arrays
 c
 C-------- go over vortices in this strip
           idx_vor = IJFRST(idx_strip)
+          write(*,*) 'idx_strip', idx_strip
+          write(*,*) 'NVC(ISURF)', NVC(ISURF)
+          write(*,*) 'IJFRST(idx_strip)', IJFRST(idx_strip)
           DO 1505 IVC = 1, NVC(ISURF)
             ! NVOR = NVOR + 1
             ! change all NVOR indices into idx_vor
@@ -653,8 +656,10 @@ C
 C
 cc#endif
             idx_vor = idx_vor + 1
+            write(*,*) 'idx_vor done: RV1(2,3)', idx_vor, RV1(2,3)
  1505     CONTINUE
 C           
+        write(*,*) 'idx_strip done: RV1(2,3)', idx_strip, RV1(2,3)
         idx_strip = idx_strip + 1
  150    CONTINUE
 C
@@ -681,6 +686,7 @@ C     add number of strips to the global count
 C     add number of of votrices
       NVOR = NVOR + NK(ISURF)*NJ(ISURF) 
 C
+      write(*,*) 'MAKESURF done', idx_strip, RV1(2,3)
       RETURN
       END ! MAKESURF
 
@@ -2088,6 +2094,7 @@ C
 C
 C...Calculate the normal vector at control points and bound vortex midpoints
 C
+      write(*,*) 'start encalc: RV1(2,3)', idx_strip, RV1(2,3)
       DO 10 J = 1, NSTRIP
 
         ! Since we cannot seperate the encalc routine for direct mesh assignment we have to make it a branch here
