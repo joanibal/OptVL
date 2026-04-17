@@ -383,6 +383,14 @@ C
           RLE2(2,idx_strip) = (1.0-F2)*XYZLEL(2) + F2*XYZLER(2)
           RLE2(3,idx_strip) = (1.0-F2)*XYZLEL(3) + F2*XYZLER(3)
           CHORD2(idx_strip) = (1.0-F2)*CHORDL    + F2*CHORDR
+          if (RLE2(2,idx_strip) .ne. RLE2(2,idx_strip)) then 
+            write(*,*) 'NAN detected at ', idx_strip
+            write(*,*) 'RLE2(2,idx_strip)', RLE2(2,idx_strip)
+            write(*,*) 'F1', F1
+            write(*,*) 'F2', F2
+            write(*,*) 'XYZLEL(2)', XYZLEL(2)
+            write(*,*) 'XYZLER(2)', XYZLER(2)
+          endif  
 C
           RLE(1,idx_strip)  = (1.0-FC)*XYZLEL(1) + FC*XYZLER(1)
           RLE(2,idx_strip)  = (1.0-FC)*XYZLEL(2) + FC*XYZLER(2)
