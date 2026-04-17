@@ -940,9 +940,6 @@ class OVLSolver(object):
                     if "xasec" in surf_dict.keys():
                         self.set_avl_fort_arr("SURF_GEOM_I", "NASEC", nasec_list[j], slicer=(idx_surf, j))
 
-                        # TODO-JLA: a user should not have to spcify XLASEC, XUASEC, ZLASEC, ZUASEC
-                        # since these can be calculated from the other inputs
-
                         for key in self.surf_section_geom_to_fort_var[surf_name]:
                             avl_vars_secs = self.surf_section_geom_to_fort_var[surf_name][key]
                             avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
@@ -993,7 +990,6 @@ class OVLSolver(object):
                         self.set_avl_fort_arr("SURF_GEOM_R", "XASEC", np.array([0.0, 1.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "SASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "TASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-
                         self.set_avl_fort_arr("SURF_GEOM_R", "CASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
 
                 # --- setup control variables for each section ---
