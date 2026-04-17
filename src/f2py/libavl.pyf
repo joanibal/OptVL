@@ -6,6 +6,9 @@ python module libavl ! in
         ! end block data 
 
         subroutine avl ! in :libavl:avl.f
+            ! makesure you get that capitalization right!
+            ! certain platforms/compilers will be case sensitive 
+            ! linux/gfortran for example
             include '../includes/AVL.INC'
             include '../includes/AVL_surf.INC'
             include '../includes/AVL_surf_ad_seeds.inc'
