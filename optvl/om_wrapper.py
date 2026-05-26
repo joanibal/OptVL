@@ -62,7 +62,7 @@ class OVLGroup(om.Group):
         output_body_axis_derivs = self.options["output_body_axis_derivs"]
         output_con_surf_derivs = self.options["output_con_surf_derivs"]
 
-        self.ovl = OVLSolver(geo_file=geom_file, input_dict=input_dict, mass_file=mass_file, debug=True)
+        self.ovl = OVLSolver(geo_file=geom_file, input_dict=input_dict, mass_file=mass_file, debug=False)
 
         self.add_subsystem(
             "solver",
