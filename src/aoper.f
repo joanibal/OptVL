@@ -2354,3 +2354,45 @@ C------ don't bother if this control variable is undefined
       endif
       
       end !subroutine solve_adjoint
+
+      subroutine solve_direct(solve_stab_deriv_drt, solve_con_surf_drt)
+      ! solves the direct equation with the jacobian to compute dx/du
+      use avl_heap_inc
+      use avl_heap_diff_inc
+      include "AVL.INC"
+      include "AVL_ad_seeds.inc"
+      integer i 
+      logical :: solve_stab_deriv_drt, solve_con_surf_drt
+      
+      CALL SETUP
+      IF(.NOT.LAIC) THEN
+            call factor_AIC
+      ENDIF
+      
+      ! assume we have run the other routines to put dr/dx is in gam_diff
+      do i =1,NVOR
+            GAM_diff(i) = RES_diff(i)
+      enddo
+
+      CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_diff)
+      
+      if (solve_con_surf_drt) then 
+      DO IC = 1, NCONTROL
+            do i =1,NVOR
+                  GAM_D_diff(i,IC) = RES_D_diff(i,IC)
+            enddo
+            CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_D_diff(:,IC))
+      enddo
+      endif 
+
+      if (solve_stab_deriv_drt) then 
+      DO IU = 1,6
+            do i =1,NVOR
+                  GAM_U_diff(i,IU) = RES_U_diff(i,IU)
+            enddo
+            
+            CALL BAKSUB(NVOR,NVOR,AICN_LU,IAPIV,GAM_U_diff(:,IU))
+      enddo
+      endif
+      
+      end !subroutine solve_adjoint

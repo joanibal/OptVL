@@ -117,6 +117,10 @@ python module libavl ! in
         subroutine solve_adjoint(solve_stab_deriv_adj, solve_con_surf_adj)
             logical :: solve_stab_deriv_adj, solve_con_surf_adj
         end subroutine solve_adjoint
+
+        subroutine solve_direct(solve_stab_deriv_drt, solve_con_surf_drt)
+            logical :: solve_stab_deriv_drt, solve_con_surf_drt
+        end subroutine solve_direct
         
         subroutine cpoml(save_file)
             logical :: save_file
