@@ -28,9 +28,9 @@ C                cytot_be crtot_be cmtot_be cntot_be cdtot_rx cltot_rx
 C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
 C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
 C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
-C                rr rle chord rle1 chord1 rle2 chord2 wstrip ensy
-C                ensz xsref ysref zsref rv1 rv2 rv rc gam gam_u
-C                gam_d src src_u vv vv_u vv_d wv wv_u wv_d
+C                rr rle chord rle1 chord1 rle2 chord2 wstrip clcd
+C                ensy ensz xsref ysref zsref rv1 rv2 rv rc gam
+C                gam_u gam_d src src_u vv vv_u vv_d wv wv_u wv_d
 C   RW status of diff variables: alfa:out vinf:out vinf_a:out vinf_b:out
 C                wrot:out sref:out cref:out bref:out xyzref:out
 C                mach:out cdref:out clff:in-zero cyff:in-zero cdff:in-zero
@@ -56,11 +56,11 @@ C                cntot_ry:in-zero cdtot_rz:in-zero cltot_rz:in-zero
 C                cytot_rz:in-zero crtot_rz:in-zero cmtot_rz:in-zero
 C                cntot_rz:in-zero xnp:in-out sm:in-out bb:in-out
 C                rr:in-out rle:out chord:out rle1:out chord1:out
-C                rle2:out chord2:out wstrip:out ensy:out ensz:out
-C                xsref:out ysref:out zsref:out rv1:out rv2:out
-C                rv:out rc:out gam:out gam_u:out gam_d:out src:out
-C                src_u:out vv:out vv_u:out vv_d:out wv:out wv_u:out
-C                wv_d:out
+C                rle2:out chord2:out wstrip:out clcd:out ensy:out
+C                ensz:out xsref:out ysref:out zsref:out rv1:out
+C                rv2:out rv:out rc:out gam:out gam_u:out gam_d:out
+C                src:out src_u:out vv:out vv_u:out vv_d:out wv:out
+C                wv_u:out wv_d:out
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -435,8 +435,8 @@ C                rv1 rv2 gam
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref cdtot_d cytot_d cltot_d cftot cftot_d cmtot
 C                cmtot_d rle chord rle1 chord1 rle2 chord2 wstrip
-C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_u
-C                gam_d vv vv_u vv_d wv wv_u wv_d
+C                clcd ensy ensz xsref ysref zsref rv1 rv2 rv gam
+C                gam_u gam_d vv vv_u vv_d wv wv_u wv_d
 C AERO
 C
 C
@@ -2005,6 +2005,11 @@ C
         chord2_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,NSTRIP
+        DO ii2=1,6
+          clcd_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,NSTRIP
         ensy_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,NSTRIP
@@ -3296,8 +3301,8 @@ C$BWD-OF II-LOOP
      +      veff(2)*dcvfy_diff + veffmag*veff(1)*dcvfx_diff
           veff_diff(2) = veff_diff(2) + veffmag*cdv*dcvfy_diff
           veff_diff(1) = veff_diff(1) + veffmag*cdv*dcvfx_diff
-          CALL CDCL_B(clcd(1, j), clv, clv_diff, cdv, cdv_diff, cdv_clv
-     +                , cdv_clv_diff)
+          CALL CDCL_B(clcd(1, j), clcd_diff(1, j), clv, clv_diff, cdv, 
+     +                cdv_diff, cdv_clv, cdv_clv_diff)
           CALL POPREAL8ARRAY(cfy_d, ndmax)
           CALL POPREAL8ARRAY(cfz_d, ndmax)
           CALL POPREAL8ARRAY(cfx_d, ndmax)

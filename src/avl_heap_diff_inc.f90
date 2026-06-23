@@ -20,6 +20,9 @@ module avl_heap_diff_inc
 
   REAL(8), DIMENSION(:,:,:), ALLOCATABLE :: WV_GAM_DIFF
 !!  !$omp threadprivate(WV_GAM)
+  
+  ! Explicit init ensures .data section placement (reliable with -fno-init-global-zero)
+  LOGICAL :: heap_diff_allocated = .FALSE.
 
 
 end module avl_heap_diff_inc

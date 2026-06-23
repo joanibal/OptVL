@@ -9,11 +9,15 @@ subroutine avlheap_diff_init(n)
 
 ! Allocate AIC variable storage
  
-  if (.not. allocated(AICN_DIFF)) then
+! Use heap_diff_allocated flag instead of allocated() to avoid false positives
+! when Fortran allocatable descriptors contain garbage with -fno-init-global-zero
+
+  if (.not. heap_diff_allocated) then
     allocate(AICN_DIFF(n,n))
     allocate(AICN_LU_DIFF(n,n))
     allocate(WC_GAM_DIFF(3,n,n))
     allocate(WV_GAM_DIFF(3,n,n))
+    heap_diff_allocated = .TRUE.
   endif
 end subroutine avlheap_diff_init
 
@@ -26,11 +30,12 @@ subroutine avlheap_diff_clean()
 
 ! Deallocate heap storage for AIC's 
 
-  if (allocated(AICN_DIFF)) then
+  if (heap_diff_allocated) then
     deallocate(AICN_DIFF)
     deallocate(AICN_LU_DIFF)
     deallocate(WC_GAM_DIFF)
     deallocate(WV_GAM_DIFF)
+    heap_diff_allocated = .FALSE.
   endif
 
 end subroutine avlheap_diff_clean

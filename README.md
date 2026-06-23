@@ -57,7 +57,7 @@ print(
     f'CL:{force_data["CL"]:10.6f}   CD:{force_data["CD"]:10.6f}   Cm:{force_data["Cm"]:10.6f}'
 )
 
-# lets look at the cp countours
+# let's look at the cp contours
 ovl.plot_cp()
 ```
 The plotting calls in this example use matplotlib to produce visualizations like this 

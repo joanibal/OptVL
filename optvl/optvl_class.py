@@ -221,22 +221,6 @@ class OVLSolver(object):
 
     ad_suffix = "_DIFF"
 
-    # Primary array limits: These also need to updated in the Fortran layer if changed
-    NVMAX = 5000  # number of horseshoe vortices
-    NSMAX = 500  # number of chord strips
-    NSECMAX = 301 # nuber of geometry sections
-    NFMAX = 100  # number of surfaces
-    NLMAX = 502  # number of source/doublet line nodes
-    NBMAX = 20  # number of bodies
-    NUMAX = 6  # number of freestream parameters (V,Omega)
-    NDMAX = 30  # number of control deflection parameters
-    NGMAX = 21  # number of design variables
-    NRMAX = 25  # number of stored run cases
-    NTMAX = 503  # number of stored time levels
-    NOBMAX=1 # max number of off body points
-    ICONX = 20  #
-    IBX = 200 # max number of airfoil coordinates
-
 
     def __init__(
         self,
@@ -246,7 +230,7 @@ class OVLSolver(object):
         debug: Optional[bool] = False,
         timing: Optional[bool] = False,
     ):
-        """Initalize the python and fortran libary from the given objects
+        """Initialize the python and fortran library from the given objects
 
         Args:
             geo_file: AVL geometry file
@@ -275,7 +259,6 @@ class OVLSolver(object):
         if platform.system() == "Windows":
             # HACK
             avl_lib_so_file = glob.glob(os.path.join(module_dir, "libavl*.pyd"))[0]
-            print("avl_lib_so_file", avl_lib_so_file)
             if len(avl_lib_so_file) == 0:
                 # print the contents of the module dir
                 print("module_dir", module_dir)
@@ -286,6 +269,7 @@ class OVLSolver(object):
 
         # # get just the file name
         avl_lib_so_file = os.path.basename(avl_lib_so_file)
+        
 
         self.avl = MExt.MExt("libavl", module_name, "optvl", lib_so_file=avl_lib_so_file, debug=debug)._module
 
@@ -296,6 +280,8 @@ class OVLSolver(object):
 
         if timing:
             self.set_avl_fort_arr("CASE_L", "LTIMING", True)
+        
+        self.__set_avl_size_info()
 
         if geo_file is not None:
             try:
@@ -422,6 +408,27 @@ class OVLSolver(object):
         if timing:
             print(f"AVL init took {time.time() - start_time} seconds")
 
+    def __set_avl_size_info(self):
+        # Primary array limits: These also need to updated in the Fortran layer if changed
+        # its ugly, but it works 
+        
+        output = self.avl.get_avl_constants()   
+        self.NVMAX = output[0]  # number of horseshoe vortices
+        self.NSMAX = output[1]  # number of chord strips
+        self.NSECMAX = output[2] # nuber of geometry sections
+        self.NFMAX = output[3]  # number of surfaces
+        self.NLMAX = output[4]  # number of source/doublet line nodes
+        self.NBMAX = output[5]  # number of bodies
+        self.NUMAX = output[6]  # number of freestream parameters (V,Omega)
+        self.NDMAX = output[7]  # number of control deflection parameters
+        self.NGMAX = output[8]  # number of design variables
+        self.NRMAX = output[9]  # number of stored run cases
+        self.NTMAX = output[10]  # number of stored time levels
+        self.NOBMAX = output[11] # max number of off body points
+        self.ICONX = output[12]  #
+        self.IBX = output[13] # max number of airfoil coordinates in a file
+        self.NASMAX = output[14] # max airfoil point for representation
+        
     def _init_map_data(self):
         """Used in the __init__ method to allocate the slice data for the surfaces"""
         self.surf_geom_to_fort_var = {}
@@ -464,8 +471,8 @@ class OVLSolver(object):
 
     def _setup_surface_maps(self, surf_name: str, idx_surf: int, num_sec: int):
         """Used by the init_map_data and load_input_dict functions to generate which slices of the Fortran array for a
-        given geometry, panneling, control surface, or design variable correspond to the given surface. This data is
-        stored the surf_geom_to_fort_var dictionary.
+        given geometry, paneling, control surface, or design variable correspond to the given surface. This data is
+        stored in the surf_geom_to_fort_var dictionary.
 
         Args:
             surf_name: The name of the surface
@@ -559,7 +566,7 @@ class OVLSolver(object):
 
     def _setup_body_maps(self, body_name: str, idx_body: int):
         """Used by the init_map_data and load_input_dict functions to generate which slices of the Fortran array for a
-        given geometry or discretization variable correspond to the given body. This data is stored the
+        given geometry or discretization variable correspond to the given body. This data is stored in the
         body_param_to_fort_var dictionary.
 
         Args:
@@ -579,7 +586,7 @@ class OVLSolver(object):
 
     def _setup_section_maps(self, surf_name: str, idx_surf: int, num_sec: int, nasec_arr: np.ndarray):
         """Used by the init_map_data and load_input_dict functions to generate which slices of the Fortran array for a
-        given section geometry variable correspond to the given surface and section. This data is stored the
+        given section geometry variable correspond to the given surface and section. This data is stored in the
         surf_section_geom_to_fort_var dictionary.
 
         Args:
@@ -616,10 +623,6 @@ class OVLSolver(object):
             "sasec": ["SURF_GEOM_R", "SASEC", sasec_slices],
             "casec": ["SURF_GEOM_R", "CASEC", casec_slices],
             "tasec": ["SURF_GEOM_R", "TASEC", tasec_slices],
-            "xuasec": ["SURF_GEOM_R", "XUASEC", xuasec_slices],
-            "xlasec": ["SURF_GEOM_R", "XLASEC", xlasec_slices],
-            "zuasec": ["SURF_GEOM_R", "ZUASEC", zuasec_slices],
-            "zlasec": ["SURF_GEOM_R", "ZLASEC", zlasec_slices],
         }
 
     def load_input_dict(self, input_dict: dict, pre_check: bool = True, post_check: bool = False):
@@ -629,7 +632,7 @@ class OVLSolver(object):
         Args:
             input_dict: input dictionary in optvl format
             pre_check: perform additional verification of the user's input dictionary before loading into AVL
-            post_check: verify certain inputs values are correctly reflected in the Fortran layer
+            post_check: verify certain input values are correctly reflected in the Fortran layer
         """
 
         # Initialize Variables and Counters
@@ -920,7 +923,7 @@ class OVLSolver(object):
                     )
 
                 xfminmax_arr = surf_dict.get("xfminmax", np.tile([0.0, 1.0], (num_secs, 1)))
-                num_pts = min(50, self.IBX)
+                num_pts = min(self.NASMAX, self.IBX)
 
                 # setup for manually specifying coordinates
                 if "xasec" in surf_dict.keys():
@@ -943,9 +946,6 @@ class OVLSolver(object):
                     # Manually Specify Coordiantes (no camberline verification, only use if you know what you're doing)
                     if "xasec" in surf_dict.keys():
                         self.set_avl_fort_arr("SURF_GEOM_I", "NASEC", nasec_list[j], slicer=(idx_surf, j))
-
-                        # TODO-JLA: a user should not have to spcify XLASEC, XUASEC, ZLASEC, ZUASEC
-                        # since these can be calculated from the other inputs
 
                         for key in self.surf_section_geom_to_fort_var[surf_name]:
                             avl_vars_secs = self.surf_section_geom_to_fort_var[surf_name][key]
@@ -997,11 +997,6 @@ class OVLSolver(object):
                         self.set_avl_fort_arr("SURF_GEOM_R", "XASEC", np.array([0.0, 1.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "SASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "TASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-
-                        self.set_avl_fort_arr("SURF_GEOM_R", "XLASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-                        self.set_avl_fort_arr("SURF_GEOM_R", "XUASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-                        self.set_avl_fort_arr("SURF_GEOM_R", "ZLASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
-                        self.set_avl_fort_arr("SURF_GEOM_R", "ZUASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
                         self.set_avl_fort_arr("SURF_GEOM_R", "CASEC", np.array([0.0, 0.0]), slicer=slicer_airfoil_flat)
 
                 # --- setup control variables for each section ---
@@ -1186,7 +1181,7 @@ class OVLSolver(object):
         Args:
             idx_surf (int): the surface to apply the mesh to
             mesh (np.ndarray): XYZ mesh array (nx,ny,3)
-            flatten (bool): Should OptVL flatten the mesh when placing vorticies and control points
+            flatten (bool): Should OptVL flatten the mesh when placing vortices and control points
             update_nvs (bool): Should OptVL update the number of spanwise elements for the given mesh
             update_nvc (bool): Should OptVL update the number of chordwise elements for the given mesh
         """
@@ -1222,7 +1217,6 @@ class OVLSolver(object):
 
     def get_mesh(self, idx_surf: int, concat_dup_mesh: bool = False):
         """Returns the current set mesh coordinates from AVL as a numpy array.
-        Note this is intended for 
 
         Args:
             idx_surf (int): the surface to get the mesh for
@@ -1274,7 +1268,7 @@ class OVLSolver(object):
             isec: section number to set the airfoil mesh
             isurf: surface number to set the airfoil mesh
             nasec: number of points to evaluate the interpolated camber line and thickness curves at
-            naca: 4-digit naca specificaion as a string
+            naca: 4-digit naca specification as a string
             xfminmax: length 2 array with the min and max x/c to slice the airfoil
         """
 
@@ -1304,18 +1298,6 @@ class OVLSolver(object):
         self.set_avl_fort_arr("SURF_GEOM_R", "SASEC", slopes, slicer=(isurf, isec, slice(0, nasec)))
         self.set_avl_fort_arr("SURF_GEOM_R", "TASEC", thickness, slicer=(isurf, isec, slice(0, nasec)))
 
-        self.set_avl_fort_arr(
-            "SURF_GEOM_R", "XLASEC", xf + 0.5 * thickness * np.sin(theta), slicer=(isurf, isec, slice(0, nasec))
-        )
-        self.set_avl_fort_arr(
-            "SURF_GEOM_R", "XUASEC", xf - 0.5 * thickness * np.sin(theta), slicer=(isurf, isec, slice(0, nasec))
-        )
-        self.set_avl_fort_arr(
-            "SURF_GEOM_R", "ZLASEC", zf - 0.5 * thickness * np.cos(theta), slicer=(isurf, isec, slice(0, nasec))
-        )
-        self.set_avl_fort_arr(
-            "SURF_GEOM_R", "ZUASEC", zf + 0.5 * thickness * np.cos(theta), slicer=(isurf, isec, slice(0, nasec))
-        )
         self.set_avl_fort_arr("SURF_GEOM_R", "CASEC", zf, slicer=(isurf, isec, slice(0, nasec)))
 
     def set_section_coordinates(
@@ -1337,7 +1319,7 @@ class OVLSolver(object):
             isurf: surface number to set the airfoil mesh
             nasec: number of points to evaluate the interpolated camber line and thickness curves at
             x: airfoil x-coordinate array
-            y: airfoil y-coodinate array
+            y: airfoil y-coordinate array
             xfminmax: length 2 array with the min and max x/c to slice the airfoil
             storecoords: store the raw input coordinates in common block
         """
@@ -1361,10 +1343,10 @@ class OVLSolver(object):
 
 
         Args:
-            ibod: body number to set the outer mold line too
+            ibod: body number to set the outer mold line to
             nasec: number of points to evaluate the interpolated camber line and thickness curves at
             x: oml x-coordinate array
-            y: oml y-coodinate array
+            y: oml y-coordinate array
             xfminmax: length 2 array with the min and max x/c to slice the oml
             storecoords: store the raw input coordinates in common block
         """
@@ -1504,16 +1486,17 @@ class OVLSolver(object):
         """Run the analysis (equivalent to the AVL command `x` in the OPER menu)
 
         Args:
-            tol: the tolerace of the Newton solver used for triming the aircraft
+            tol: the tolerance of the Newton solver used for trimming the aircraft
         """
         self.set_avl_fort_arr("CASE_R", "EXEC_TOL", tol)
         self.avl.oper()
 
     def set_variable(self, var: str, val: float):
-        """set a variable for the run case (equivalent to setting a variable in AVL's OPER menu)
+        """Set a variable for the run case (equivalent to setting a variable in AVL's OPER menu)
+
         Args:
-            var: variable to be constrained ["alpha"", "beta"", "roll rate", "pitch rate", "yaw rate"] or any control surface.
-            val: target value of `con_var`
+            var: variable to be set ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"] or any control surface.
+            val: target value of `var`
         """
         avl_variables = {
             "alpha": ("CASE_R", "ALFA"),
@@ -1558,11 +1541,12 @@ class OVLSolver(object):
         # set the contraint value so that the set value is used in analysis
         self.set_avl_fort_arr("CASE_R", "CONVAL", val, (self.conval_idx_dict[var],))
 
-    def get_variable(self, var: str):
-        """set a variable for the run case (equivalent to setting a variable in AVL's OPER menu)
+    def get_variable(self, var: str, inRadians: bool = False):
+        """Get a variable for the run case (equivalent to reading a variable in AVL's OPER menu)
+
         Args:
-            var: variable to be constrained ["alpha"", "beta"", "roll rate", "pitch rate", "yaw rate"] or any control surface.
-            val: target value of `con_var`
+            var: variable to retrieve ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"] or any control surface.
+            inRadians: if True, return alpha and beta in radians instead of degrees. Roll, pitch, and yaw rates are always dimensionless.
         """
         avl_variables = {
             "alpha": ("CASE_R", "ALFA"),
@@ -1585,6 +1569,10 @@ class OVLSolver(object):
             "yaw rate": 2 / bref,
         }
 
+        if inRadians:
+            vars_factors["alpha"] = 1.0
+            vars_factors["beta"] = 1.0
+
         # Check that the variable is valid
         if var in avl_variables:
             # save the name of the avl_var
@@ -1605,9 +1593,9 @@ class OVLSolver(object):
         """Set the constraints on the analysis case (equivalent to setting a constraint in AVL's OPER menu)
 
         Args:
-            var: variable to be constrained ["alpha"", "beta"", "roll rate", "pitch rate", "yaw rate"] or any control surface.
+            var: variable to be constrained ["alpha", "beta", "roll rate", "pitch rate", "yaw rate"] or any control surface.
             val: target value of `con_var`
-            con_var: variable output that needs to be constrained. It could be any value for `var` plus ["CL", "CY", "Cl", "Cm", "Cn"]. If None, than `var` is also the `con_var`
+            con_var: variable output that needs to be constrained. It could be any value for `var` plus ["CL", "CY", "Cl", "Cm", "Cn"]. If None, then `var` is also the `con_var`
 
         """
         avl_variables = {
@@ -1661,7 +1649,7 @@ class OVLSolver(object):
         self.avl.conset(avl_var, f"{avl_con_var} {val} \n")
 
     def set_trim_condition(self, variable: str, val: float):
-        """Set a variable of the trim condition (analogus to the AVL's C1 command from the OPER menu)
+        """Set a variable of the trim condition (analogous to the AVL's C1 command from the OPER menu)
 
         Args:
             variable: variable to be set. Options are ["bankAng", "CL", "velocity", "mass", "dens", "G", "X cg","Y cg","Z cg"]
@@ -1692,7 +1680,7 @@ class OVLSolver(object):
         """Get the aerodynamic data for the last run case and return it as a dictionary.
 
         Returns:
-            Dict[str, float]: Dictionary of aerodynamic data. The keys the aerodyanmic coefficients.
+            Dict[str, float]: Dictionary of aerodynamic data. The keys are the aerodynamic coefficients.
         """
 
         total_data = {}
@@ -1707,10 +1695,10 @@ class OVLSolver(object):
         return total_data
 
     def get_body_forces(self) -> Dict[str, float]:
-        """Get the aerodynamic data for the last run case and return it as a dictionary.
+        """Get the aerodynamic force data for each body from the last run case.
 
         Returns:
-            Dict[str, float]: Dictionary of aerodynamic data. The keys the aerodyanmic coefficients.
+            Dict[str, float]: Dictionary of aerodynamic data. The keys are the aerodynamic coefficients.
         """
 
         body_data = {}
@@ -1734,7 +1722,7 @@ class OVLSolver(object):
         for the current analysis run
 
         Returns:
-            stab_deriv_dict: The dictionary of control surface derivatives, d{force coefficent}/d{control surface}.
+            stab_deriv_dict: The dictionary of control surface derivatives, d{force coefficient}/d{control surface}.
         """
 
         deriv_data = {}
@@ -1751,7 +1739,7 @@ class OVLSolver(object):
         return deriv_data
 
     def get_stab_derivs(self) -> Dict[str, float]:
-        """gets the stability derivates after an analysis run
+        """Gets the stability derivatives after an analysis run
 
         Returns:
             stab_deriv_dict: Dictionary of stability derivatives.
@@ -1765,10 +1753,10 @@ class OVLSolver(object):
         return deriv_data
 
     def get_body_axis_derivs(self) -> Dict[str, float]:
-        """gets the body-axis derivates after an analysis run
+        """Gets the body-axis derivatives after an analysis run
 
         Returns:
-            body_deriv_dict: Dictionary of stability derivatives.
+            body_deriv_dict: Dictionary of body-axis derivatives.
         """
         deriv_data = {}
 
@@ -1799,11 +1787,11 @@ class OVLSolver(object):
         return ref_data
 
     def get_avl_fort_arr(self, common_block: str, variable: str, slicer: Optional[slice] = None) -> np.ndarray:
-        """Get data from the Fortran level common block data structure. see AVL.INC for all availible variables
+        """Get data from the Fortran level common block data structure. See AVL.INC for all available variables
 
         Args:
             common_block: Name of the common block of the variable like `CASE_R`
-            variable: Name of the variable to retrive
+            variable: Name of the variable to retrieve
             slicer: slice applied to the common block variable to return a subset of the data. i.e. (100) or slice(2, 5)
 
         Returns:
@@ -1832,11 +1820,11 @@ class OVLSolver(object):
         return val
 
     def set_avl_fort_arr(self, common_block: str, variable: str, val: float, slicer: Optional[slice] = None) -> None:
-        """Set data from the Fortran level common block data structure. see AVL.INC for all availible variables
+        """Set data from the Fortran level common block data structure. See AVL.INC for all available variables
 
         Args:
             common_block: Name of the common block of the variable like `CASE_R`
-            variable: Name of the variable to retrive
+            variable: Name of the variable to retrieve
             val: value to set, which can be a numpy array
             slicer: slice applied to the common block variable to return a subset of the data. i.e. (100) or slice(2, 5)
 
@@ -1879,7 +1867,7 @@ class OVLSolver(object):
         return
 
     def get_surface_forces(self) -> Dict[str, Dict[str, float]]:
-        """Returns the force data from each surface (including mirriored surfaces)
+        """Returns the force data from each surface (including mirrored surfaces)
 
         Returns:
             surf_data_dict: a dictionary of surface data where the first key is the surface and the second is the force coefficient
@@ -1907,7 +1895,7 @@ class OVLSolver(object):
 
     def get_parameter(self, param_key: str) -> float:
         """
-        Analogous to ruinont Modify parameters for the OPER menu to view parameters.
+        Analogous to the Modify parameters (M) command from the OPER menu in AVL, but for reading parameters.
 
         Args:
             param_key: the name of the parameter to return
@@ -1996,7 +1984,7 @@ class OVLSolver(object):
         return def_dict
 
     def get_control_deflection(self, con_surf) -> Dict[str, float]:
-        """get the deflections of the control surfaces
+        """Get the deflection of the specified control surface
 
         Returns:
             val: deflection of control surface
@@ -2011,10 +1999,11 @@ class OVLSolver(object):
         return val
 
     def set_control_deflection(self, con_surf, val) -> Dict[str, float]:
-        """set the deflections of the control surfaces
+        """Set the deflection of a control surface
 
-        args:
-            con_surf : Name or D value (D1, D2, etc.) of the control surface
+        Args:
+            con_surf: Name or D value (D1, D2, etc.) of the control surface
+            val: deflection value to set
         """
         con_surf_names = list(self.con_surf_to_dindex.keys())
         con_surf_dindex = list(self.dindex_to_con_surf.keys())
@@ -2031,9 +2020,9 @@ class OVLSolver(object):
         self.set_avl_fort_arr("CASE_R", "DELCON", val, slicer=(idx_con_surf,))
 
     def set_control_deflections(self, def_dict: Dict[str, float]):
-        """get the deflections of all the control surfaces
+        """Set the deflections of all the control surfaces
 
-        args:
+        Args:
             def_dict: dictionary of control surfaces as the keys and deflections as the values
         """
         control_surfaces = self.get_control_names()
@@ -2046,7 +2035,7 @@ class OVLSolver(object):
         """Get the hinge moments from the fortran layer and return them as a dictionary
 
         Returns:
-            hinge_moments: array of control surface moments. The order the control surfaces are declared are the indices,
+            hinge_moments: dictionary of control surface hinge moments keyed by control surface name
         """
         hinge_moments = {}
 
@@ -2199,7 +2188,7 @@ class OVLSolver(object):
         return eig_vals
 
     def get_eigenvectors(self) -> np.ndarray:
-        """After running an eigenmode calculation, this function will return the eigenvalues in the order used by AVL
+        """After running an eigenmode calculation, this function will return the eigenvectors in the order used by AVL
 
         Returns:
             eig_vec: 2D array of eigen vectors
@@ -2225,13 +2214,13 @@ class OVLSolver(object):
         return Asys
 
     def get_system_matrices(self, in_body_axis=False) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """returns the A,B, and R system matrices used in amode.f
-        
-        args:
+        """Returns the A, B, and R system matrices used in amode.f
+
+        Args:
             in_body_axis: apply the sign changes to the matrix to put it in the body axis
-        
+
         Returns:
-            Asys: 2D array representing the system matrix for the eigen value analysis
+            Asys: 2D array representing the system matrix for the eigenvalue analysis
             Bsys: 2D array representing the system matrix for control surfaces
             Rsys: 1D array representing the RHS of the dynamics equation
         """
@@ -2310,10 +2299,10 @@ class OVLSolver(object):
         return control_names
 
     def get_design_var_names(self) -> List[str]:
-        """Get the names of the design_var surfaces
+        """Get the names of the design variables
 
         Returns:
-            design_var_names: list of design_var surface names
+            design_var_names: list of design variable names
         """
         fort_names = self.get_avl_fort_arr("CASE_C", "GNAME")
         design_var_names = self._fort_char_array_to_str_list(fort_names)
@@ -2323,7 +2312,7 @@ class OVLSolver(object):
         """Get the surface names from the geometry
 
         Args:
-            remove_dublicated: remove the surface that were created by duplication about symmetry planes
+            remove_dublicated: remove the surfaces that were created by duplication about symmetry planes
 
         Returns:
             surf_names: list of surface names
@@ -2347,7 +2336,7 @@ class OVLSolver(object):
         """Get the body names from the geometry
 
         Args:
-            remove_dublicated: remove the body that were created by duplication about symmetry planes
+            remove_dublicated: remove the bodies that were created by duplication about symmetry planes
 
         Returns:
             body_names: list of body names
@@ -2394,12 +2383,12 @@ class OVLSolver(object):
         return param
 
     def __get_des_var_param(self, surf_name: str, idx_sec: int, param: str) -> np.ndarray:
-        """Returns the parameters that define the control surface. Can also get design variables (AVL).
+        """Returns the parameters that define a design variable.
 
         Args:
-            surf_name: the name of the surface containing the control surface
-            idx_sec: the section index of the control surface data
-            param: control surface parameter to get
+            surf_name: the name of the surface containing the design variable
+            idx_sec: the section index of the design variable data
+            param: design variable parameter to get
 
         Returns:
             parm: parameter value
@@ -2490,12 +2479,12 @@ class OVLSolver(object):
         return copy.deepcopy(param)  # return the value of the array, but not a reference to avoid sideffects
 
     def set_surface_param(self, surf_name: str, param: str, val: float, update_geom: bool = True):
-        """Set a parameter of a specified surface. Supports setting params related to geometry and panelling.
+        """Set a parameter of a specified surface. Supports setting params related to geometry and paneling.
         Section geometry can be directly set here but this is not recommended. Use set_section_coordinates instead.
 
         Args:
             surf_name: the surface containing the parameter
-            param: the surface parameter to return. Could be either geometric or paneling
+            param: the surface parameter to set. Could be either geometric or paneling
             val: value to set
             update_geom: flag to update the geometry after setting
         """
@@ -2565,7 +2554,7 @@ class OVLSolver(object):
         include_des_vars: bool = False,
         include_airfoils: bool = False,
     ) -> Dict[str, Dict[str, Any]]:
-        """Get all the surface level parameters for each suface
+        """Get all the surface level parameters for each surface
 
         Args:
             include_geom: flag to include geometry data in the output. The data is ["scale", "translate", "angle", "xles", "yles", "zles", "chords", "aincs", "clcdsec", "claf"]
@@ -2574,7 +2563,7 @@ class OVLSolver(object):
             include_con_surf:  flag to include control surface and design variable data in the output. This is data like the hinge vector and gain.
             include_airfoils:  flag to include airfoil file data in the output
 
-        Return:
+        Returns:
             surf_data: Nested dictionary where the 1st key is the surface name and the 2nd key is the parameter.
         """
         surf_data = {}
@@ -2712,7 +2701,7 @@ class OVLSolver(object):
 
 
         Returns:
-            val: the val of parameter of the body
+            val: the value of the parameter of the body
         """
 
         body_names = self.get_body_names()
@@ -2746,7 +2735,7 @@ class OVLSolver(object):
 
         Args:
             body_name: the body containing the parameter
-            param: the surface parameter to return. Could be either geometric or paneling
+            param: the body parameter to set. Could be either geometric or paneling
             val: value to set
             update_geom: flag to update the geometry after setting
         """
@@ -2828,7 +2817,7 @@ class OVLSolver(object):
         return body_data
 
     def set_body_params(self, body_data: Dict[str, Dict[str, Any]]):
-        """Set the give body data of the current geometry.
+        """Set the given body data of the current geometry.
 
         Args:
             body_data: Nested dictionary where the 1st key is the body name and the 2nd key is the parameter.
@@ -3237,12 +3226,11 @@ class OVLSolver(object):
 
     # region --- Utility functions
     def get_num_surfaces(self) -> int:
-        """Returns the number of surface including duplicated
+        """Returns the number of surfaces including duplicated surfaces
 
         Returns:
             val: number of surfaces
         """
-        """Get the number of surfaces in the geometry"""
         return self.get_avl_fort_arr("CASE_I", "NSURF")
 
     def get_surface_index(self, surf_name: str) -> int:
@@ -3278,7 +3266,7 @@ class OVLSolver(object):
             surf_name: name of the surface
 
         Returns:
-            nsec: numer of sections
+            nsec: number of sections
         """
         idx_surf = self.get_surface_index(surf_name)
         slice_idx_surf = (idx_surf,)
@@ -3308,7 +3296,7 @@ class OVLSolver(object):
         return int(self.get_avl_fort_arr("CASE_I", "NVOR"))
 
     def get_mesh_data(self) -> Dict[str, int]:
-        """Get the number of vortices in the mesh
+        """Get mesh size data (bodies, surfaces, strips, vortices, and variables)
 
         Returns:
             mesh_data : dict
@@ -3326,8 +3314,8 @@ class OVLSolver(object):
         return mesh_data
 
     def _str_to_fort_str(self, py_string, num_max_char):
-        """Setting arrays of strings in Fortran can be kinda nasty. This
-        takes a strings and returns the char array.
+        """Setting arrays of strings in Fortran is complex. This
+        takes a string and returns the char array.
         """
 
         arr = np.zeros((), dtype=f"|S{num_max_char}")
@@ -3341,8 +3329,8 @@ class OVLSolver(object):
         return arr
 
     def _str_to_fort_char_array(self, py_string, num_max_char):
-        """Setting arrays of strings in Fortran can be kinda nasty. This
-        takes a strings and returns the char array.
+        """Setting arrays of strings in Fortran is complex. This
+        takes a string and returns the char array.
         """
 
         arr = np.zeros(1, dtype=f"|S{num_max_char}")
@@ -3356,8 +3344,8 @@ class OVLSolver(object):
         return arr
 
     def _str_list_to_fort_char_array(self, strList, num_max_char):
-        """Setting arrays of strings in Fortran can be kinda nasty. This
-        takes a list of strings and returns the array.
+        """Setting arrays of strings in Fortran is complex. This
+        takes a list of strings and returns the char array.
         """
 
         arr = np.zeros((len(strList), num_max_char), dtype="str")
@@ -3838,7 +3826,7 @@ class OVLSolver(object):
         num_sec_max = self.get_avl_fort_arr("SURF_GEOM_R", "AINCS").shape[-1]
         num_sec = np.max(self.get_avl_fort_arr("SURF_GEOM_I", "NSEC"))
 
-        num_airfoil_pts_max = self.get_avl_fort_arr("SURF_GEOM_R", "XLASEC").shape[-1]
+        num_airfoil_pts_max = self.get_avl_fort_arr("SURF_GEOM_R", "CASEC").shape[-1]
         num_airfoil_pts = np.max(self.get_avl_fort_arr("SURF_GEOM_I", "NASEC"))
 
         mesh_size_max = 4*num_vor_max
@@ -3938,7 +3926,7 @@ class OVLSolver(object):
             step: Step size to use for the FD mode
 
         Returns:
-            func_seeds: force coifficent AD seeds
+            func_seeds: force coefficient AD seeds
             res_seeds:  residual AD seeds
             consurf_derivs_seeds: Control surface derivatives AD seeds
             stab_derivs_seeds: Stability derivatives AD seeds
@@ -4360,7 +4348,7 @@ class OVLSolver(object):
             funcs: force coefficients to compute the sensitivities with respect to
             stab_derivs: stability derivatives to compute the sensitivities with respect to
             body_axis_derivs: body axis derivatives to compute the sensitivities with respect to
-            consurf_derivs: control surface derivates to compute the sensitivities with respect to
+            consurf_derivs: control surface derivatives to compute the sensitivities with respect to
             print_timings: flag to print timing information
 
         Returns:
@@ -4791,7 +4779,7 @@ class OVLSolver(object):
         """Generate a matplotlib plot of geometry
 
         Args:
-            axes: Matplotlib axis object to add the plots too. If none are given, the axes will be generated.
+            axes: Matplotlib axis object to add the plots to. If none are given, the axes will be generated.
             body_color: Color to use for plotting body geometry (default: 'magenta')
         """
 
@@ -5002,12 +4990,12 @@ class OVLSolver(object):
         By default the flat version of the mesh that satisfies AVL's VLM assumptions is plotted.
         This is either the mesh that comes as a result of AVL's standard geometry specification system
         or the custom user assigned mesh after it has undergone the transformation needed to flatten it to
-        satify the VLM assumptions. There is also an option to overlay the directly assigned mesh. This will
+        satisfy the VLM assumptions. There is also an option to overlay the directly assigned mesh. This will
         plot user assigned mesh as is with no modifications.
 
         Args:
-            axes: Matplotlib axis object to add the plots too. If none are given, the axes will be generated.
-            plot_avl_mesh: If True the AVL flattenned mesh is plotted on the axis
+            axes: Matplotlib axis object to add the plots to. If none are given, the axes will be generated.
+            plot_avl_mesh: If True the AVL flattened mesh is plotted on the axis
             plot_direct_mesh: If True the user assigned mesh will be plotted as is
         """
 

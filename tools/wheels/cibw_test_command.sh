@@ -3,9 +3,12 @@ set -xe
 PROJECT_DIR="$1"
 
 cd $PROJECT_DIR/tests
+python -c "import platform; print(platform.machine())"
+ls ../optvl
 
 # install tesing dependencies
-pip install "scipy<=1.16" psutil "openmdao!=3.38"
+pip install --only-binary :all: scipy 
+pip install psutil "openmdao!=3.38"
 
 
 #HACK: if the tests are not split up the CI runs out of memory...
@@ -15,7 +18,6 @@ pip install "scipy<=1.16" psutil "openmdao!=3.38"
 
 
 # test package built and installed correctly
-python test_import.py
 python -m unittest -v test_import.py
 python -m unittest -v test_io.py
 python -m unittest -v test_input_dict.py

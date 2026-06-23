@@ -67,11 +67,13 @@ class MExt(object):
             if not os.path.exists(target_path) and os.path.exists(source_path):
                 # print("Creating symlink from {} to {}".format(source_path, target_path))
                 os.symlink(source_path, target_path)
+        elif platform.system() == "Windows":
+            libs_dir_name = f"{pip_name}.libs"
+            source_path = os.path.join(spec.submodule_search_locations[0], "..", libs_dir_name)
+            if os.path.exists(source_path):
+                os.add_dll_directory(os.path.abspath(source_path))
         else:
-            # raise NotImplementedError("platform not supported")
-            print(tmpdir)
-            srcpath = os.path.join(spec.submodule_search_locations[0], "libavl.cp39-win_amd64.dll.a")
-            pass
+            raise RuntimeError("Platform not recognized")
         
         # add the directory containing the new package to the search path
         sys.path.insert(0, tmpdir)
@@ -90,15 +92,20 @@ class MExt(object):
         self.__dict__.update(self._module.__dict__)
 
     def __del__(self):
-        # remove module if not in debug mode
         if not self.debug:
             # if the module was imported, remove it from sys.modules
             if hasattr(self, "_pkg"):
                 del sys.modules[self._module.__name__]
                 del sys.modules[self._pkg.__name__]
 
-            # now try to delete the files and directory
-            shutil.rmtree(self._pkgdir)
+            try:
+                # now try to delete the files and directory
+                shutil.rmtree(self._pkgdir)
+            except PermissionError:
+                # On Windows, loaded DLLs are locked and cannot be deleted.
+                # Clean up as much as possible, ignore what's locked.
+                pass
+
             # make sure the original module is loaded -
             # otherwise python crashes on exit
             # if MExt objects have not been explicitly 'del'd,
