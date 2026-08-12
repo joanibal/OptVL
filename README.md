@@ -6,12 +6,16 @@
 [Documentation](https://joanibal.github.io/OptVL/)
 [OptVL for AVL users](https://joanibal.github.io/OptVL/optvl_api)
 
-OptVL is a modified version of Mark Drela and Harold Youngren's famous AVL code with a python-wrapper and AD derivative routines for gradient-based optimization.
+OptVL is a modified version of Mark Drela and Harold Youngren's famous AVL code with a python-wrapper and derivative routines (AD + analytic) for gradient-based optimization.
 Its key features are
-- Python wrapper to easily conduct large parameter sweeps from an existing AVL geometry file or include a vortex lattice method in a larger model.
+- Python wrapper and source modifications to easily conduct large parameter sweeps from an existing AVL geometry file or include a vortex lattice method in a larger model.
 - Total derivatives of total forces, control surface derivatives, and stability derivatives with respect to geometric and aerodynamic variables for use with gradient-based optimization.
 - Post-processing directly through Python or Paraview and Tecplot for flexibility. 
-
+- Specify and run AVL with a geometry specified via a python dictionary rather than a geometry file
+- Set the AVL geometry via a mesh of points rather than through the geometry engine
+- Easy pip based installation
+    - installing AVL can be a pain. Precompiled binaries are old and macOS binaries require XQaurtz.
+    
 # Installation
 The best way to install OptVL is through pip
 ```
