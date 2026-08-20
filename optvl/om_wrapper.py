@@ -97,8 +97,8 @@ class OVLGroup(om.Group):
             )
 
 
-AIRFOIL_GEOM_VARS = ["xasec", "casec", "tasec", "xuasec", "xlasec", "zuasec", "zlasec"]
 AVL_GEOM_VARS = ["xles","yles","zles","chords"]
+AIRFOIL_GEOM_VARS = ["xasec", "casec", "tasec"]
 
 
 # helper functions used by the AVL components
