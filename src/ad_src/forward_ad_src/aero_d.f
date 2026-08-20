@@ -19,7 +19,7 @@ C                cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp
 C                cnc dwwake
 C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
 C                sref cref bref xyzref mach cdref rle chord rle1
-C                chord1 rle2 chord2 wstrip ess ensy ensz xsref
+C                chord1 rle2 chord2 wstrip clcd ess ensy ensz xsref
 C                ysref zsref rv1 rv2 rv rc gam gam_u gam_d src
 C                src_u vv vv_u vv_d wv wv_u wv_d
 C   RW status of diff variables: alfa:in vinf:in vinf_a:in vinf_b:in
@@ -42,10 +42,7 @@ C                crtot_ry:out cmtot_ry:out cntot_ry:out cdtot_rz:out
 C                cltot_rz:out cytot_rz:out crtot_rz:out cmtot_rz:out
 C                cntot_rz:out xnp:out sm:out bb:out rr:out rle:in
 C                chord:in rle1:in chord1:in rle2:in chord2:in wstrip:in
-C                ess:in ensy:in ensz:in xsref:in ysref:in zsref:in
-C                cdstrp:out clstrp:out cfstrp:out cmstrp:out cf_lstrp:out
-C                cd_lstrp:out cl_lstrp:out cdv_lstrp:out clt_lstrp:out
-C                cmc4_lstrp:out cmle_lstrp:out cnc:out dwwake:out
+C                clcd:in ess:in ensy:in ensz:in xsref:in ysref:in zsref:in
 C                rv1:in rv2:in rv:in rc:in gam:in gam_u:in gam_d:in
 C                src:in src_u:in vv:in vv_u:in vv_d:in wv:in wv_u:in
 C                wv_d:in
@@ -344,8 +341,8 @@ C                cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp
 C                cnc
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref rle chord rle1 chord1 rle2 chord2 wstrip
-C                ess ensy ensz xsref ysref zsref rv1 rv2 rv gam
-C                gam_u gam_d vv vv_u vv_d wv wv_u wv_d
+C                ensy ensz xsref ysref zsref rv1 rv2 rv gam gam_u
+C                gam_d vv vv_u vv_d wv wv_u wv_d
 C AERO
 C
 C
@@ -1765,8 +1762,8 @@ C
           ENDDO
 C
 C--- Get CD from CLCD function using strip CL as parameter
-          CALL CDCL_D(clcd(1, j), clv, clv_diff, cdv, cdv_diff, cdv_clv
-     +                , cdv_clv_diff)
+          CALL CDCL_D(clcd(1, j), clcd_diff(1, j), clv, clv_diff, cdv, 
+     +                cdv_diff, cdv_clv, cdv_clv_diff)
 C
 C--- Strip viscous force contribution (per unit strip area)
           dcvfx_diff = veffmag*cdv*veff_diff(1) + veff(1)*(cdv*

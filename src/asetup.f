@@ -520,34 +520,34 @@ C---------------------------------------------------------
 C
       DO I = 1, NVOR
         DO K = 1, 3
-          VC(K,I) = 0.0
+          ! VC(K,I) = 0.0
           VV(K,I) = 0.0
 C--- h.v. velocity at control points and vortex midpoints
           DO J = 1, NVOR
-            VC(K,I) = VC(K,I) + WC_GAM(K,I,J)*GAM(J)
+            ! VC(K,I) = VC(K,I) + WC_GAM(K,I,J)*GAM(J)
             VV(K,I) = VV(K,I) + WV_GAM(K,I,J)*GAM(J)
           ENDDO
           DO N = 1, NUMAX
-            VC_U(K,I,N) = 0.0
+            ! VC_U(K,I,N) = 0.0
             VV_U(K,I,N) = 0.0
             DO J = 1, NVOR
-              VC_U(K,I,N) = VC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
+              ! VC_U(K,I,N) = VC_U(K,I,N) + WC_GAM(K,I,J)*GAM_U(J,N)
               VV_U(K,I,N) = VV_U(K,I,N) + WV_GAM(K,I,J)*GAM_U(J,N)
             ENDDO
           ENDDO
           DO N = 1, NCONTROL
-            VC_D(K,I,N) = 0.0
+            ! VC_D(K,I,N) = 0.0
             VV_D(K,I,N) = 0.0
             DO J = 1, NVOR
-              VC_D(K,I,N) = VC_D(K,I,N) + WC_GAM(K,I,J)*GAM_D(J,N)
+              ! VC_D(K,I,N) = VC_D(K,I,N) + WC_GAM(K,I,J)*GAM_D(J,N)
               VV_D(K,I,N) = VV_D(K,I,N) + WV_GAM(K,I,J)*GAM_D(J,N)
             ENDDO
           ENDDO
           DO N = 1, NDESIGN
-            VC_G(K,I,N) = 0.0
+            ! VC_G(K,I,N) = 0.0
             VV_G(K,I,N) = 0.0
             DO J = 1, NVOR
-              VC_G(K,I,N) = VC_G(K,I,N) + WC_GAM(K,I,J)*GAM_G(J,N)
+              ! VC_G(K,I,N) = VC_G(K,I,N) + WC_GAM(K,I,J)*GAM_G(J,N)
               VV_G(K,I,N) = VV_G(K,I,N) + WV_GAM(K,I,J)*GAM_G(J,N)
             ENDDO
           ENDDO
@@ -565,18 +565,18 @@ C--- velocity contribution from body sources and doublets
      &               + WVSRD_U(K,I,5)*WROT(2)
      &               + WVSRD_U(K,I,6)*WROT(3)
 C--- total velocity at control points and vortex midpoints
-          WC(K,I) = VC(K,I) + WCSRD(K,I)
+          ! WC(K,I) = VC(K,I) + WCSRD(K,I)
           WV(K,I) = VV(K,I) + WVSRD(K,I)
           DO N = 1, NUMAX
-            WC_U(K,I,N) = VC_U(K,I,N) + WCSRD_U(K,I,N)
+            ! WC_U(K,I,N) = VC_U(K,I,N) + WCSRD_U(K,I,N)
             WV_U(K,I,N) = VV_U(K,I,N) + WVSRD_U(K,I,N)
           ENDDO
           DO N = 1, NDMAX
-            WC_D(K,I,N) = VC_D(K,I,N)
+            ! WC_D(K,I,N) = VC_D(K,I,N)
             WV_D(K,I,N) = VV_D(K,I,N)
           ENDDO
           DO N = 1, NGMAX
-            WC_G(K,I,N) = VC_G(K,I,N)
+            ! WC_G(K,I,N) = VC_G(K,I,N)
             WV_G(K,I,N) = VV_G(K,I,N)
           ENDDO
 C

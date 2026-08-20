@@ -3,57 +3,39 @@ C  Tapenade 3.16 (develop) - 15 Jan 2021 14:26
 C
 C  Differentiation of update_surfaces in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rle chord rle1 chord1 rle2
-C                chord2 wstrip ess ensy ensz xsref ysref zsref
+C                chord2 wstrip clcd ess ensy ensz xsref ysref zsref
 C                rv1 rv2 rv rc rs dxv chordv enc env enc_d
 C   with respect to varying inputs: xyzscal xyztran addinc xyzles
-C                chords aincs xasec sasec claf mshblk
-C   RW status of diff variables: xyzscal:in xyztran:in addinc:in
-C                xyzles:in chords:in aincs:in xasec:in sasec:in
-C                claf:in mshblk:in rle:out chord:out rle1:out chord1:out
-C                rle2:out chord2:out wstrip:out ess:out ensy:out
-C                ensz:out xsref:out ysref:out zsref:out rv1:out
-C                rv2:out rv:out rc:out rs:out dxv:out chordv:out
-C                enc:out env:out enc_d:out
+C                chords aincs xasec sasec clcdsec claf mshblk
+C   RW status of diff variables: rle:out chord:out rle1:out chord1:out
+C                rle2:out chord2:out wstrip:out clcd:out ess:out
+C                ensy:out ensz:out xsref:out ysref:out zsref:out
+C                rv1:out rv2:out rv:out rc:out rs:out dxv:out chordv:out
+C                enc:out env:out enc_d:out xyzscal:in xyztran:in
+C                addinc:in xyzles:in chords:in aincs:in xasec:in
+C                sasec:in clcdsec:in claf:in mshblk:in
       SUBROUTINE UPDATE_SURFACES_D()
       use avl_heap_inc
       use avl_heap_diff_inc
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.inc'
       INTEGER ii
       INTEGER isurf
       EXTERNAL AVLHEAP_CLEAN
       EXTERNAL AVLHEAP_DIFF_CLEAN
       EXTERNAL AVLHEAP_INIT
       EXTERNAL AVLHEAP_DIFF_INIT
-      INTEGER ii3
       INTEGER ii2
       INTEGER ii1
+      INTEGER ii3
       nstrip = 0
       nvor = 0
       isurf = 1
       nsurfdupl = 0
       DO ii=1,nsurf
         IF (ldupl(ii)) nsurfdupl = nsurfdupl + 1
-      ENDDO
-      DO ii1=1,nvor
-        DO ii2=1,3
-          rv1msh_diff(ii2, ii1) = 0.D0
-        ENDDO
-      ENDDO
-      DO ii1=1,nvor
-        DO ii2=1,3
-          rv2msh_diff(ii2, ii1) = 0.D0
-        ENDDO
-      ENDDO
-      DO ii1=1,nvor
-        DO ii2=1,3
-          rvmsh_diff(ii2, ii1) = 0.D0
-        ENDDO
-      ENDDO
-      DO ii1=1,nvor
-        DO ii2=1,3
-          rcmsh_diff(ii2, ii1) = 0.D0
-        ENDDO
       ENDDO
       DO ii1=1,NSTRIP
         DO ii2=1,3
@@ -81,6 +63,11 @@ C                enc:out env:out enc_d:out
       ENDDO
       DO ii1=1,NSTRIP
         wstrip_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        DO ii2=1,6
+          clcd_diff(ii2, ii1) = 0.D0
+        ENDDO
       ENDDO
       DO ii1=1,NSTRIP
         ainc_diff(ii1) = 0.D0
@@ -139,6 +126,26 @@ C                enc:out env:out enc_d:out
           ENDDO
         ENDDO
       ENDDO
+      DO ii1=1,nvor
+        DO ii2=1,3
+          rv1msh_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
+        DO ii2=1,3
+          rv2msh_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
+        DO ii2=1,3
+          rvmsh_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,nvor
+        DO ii2=1,3
+          rcmsh_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
 C     the iterations of this loop are not independent because we count
 C     up the size information as we make each surface
       DO ii=1,nsurf-nsurfdupl
@@ -173,12 +180,13 @@ C
 
 C  Differentiation of makesurf in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: rle chord rle1 chord1 rle2
-C                chord2 wstrip ainc ainc_g rv1 rv2 rv rc rs dxv
-C                chordv slopev slopec dcontrol vhinge
-C   with respect to varying inputs: xyzscal xyztran addinc xyzles
-C                chords aincs xasec sasec claf rle chord rle1 chord1
-C                rle2 chord2 wstrip ainc ainc_g rv1 rv2 rv rc rs
+C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
 C                dxv chordv slopev slopec dcontrol vhinge
+C   with respect to varying inputs: rle chord rle1 chord1 rle2
+C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
+C                dxv chordv slopev slopec dcontrol vhinge xyzscal
+C                xyztran addinc xyzles chords aincs xasec sasec
+C                clcdsec claf
 C***********************************************************************
 C    Module:  amake.f
 C 
@@ -202,6 +210,9 @@ C
       SUBROUTINE MAKESURF_D(isurf)
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.inc'
+      INCLUDE 'AVL_oml.INC'
 C
 C
       REAL xyzlel(3), xyzler(3)
@@ -231,6 +242,10 @@ C
       REAL xled(ndmax), xted(ndmax), gainda(ndmax)
       REAL xled_diff(ndmax), xted_diff(ndmax), gainda_diff(ndmax)
       INTEGER idx_vor, idx_strip
+      REAL xlasecl(nasmax), xuasecl(nasmax)
+      REAL zlasecl(nasmax), zuasecl(nasmax)
+      REAL xlasecr(nasmax), xuasecr(nasmax)
+      REAL zlasecr(nasmax), zuasecr(nasmax)
       INTEGER isec
       REAL dy
       REAL dy_diff
@@ -362,7 +377,6 @@ C
       REAL result1
       REAL result1_diff
       REAL temp
-      INTEGER ii1
       REAL temp0
       INTEGER isurf
 C
@@ -409,9 +423,7 @@ C
 C-----------------------------------------------------------------
 C---- Arc length positions of sections in wing trace in y-z plane
         yzlen(1) = 0.
-        DO ii1=1,ksmax
-          yzlen_diff(ii1) = 0.D0
-        ENDDO
+        yzlen_diff = 0.D0
         DO isec=2,nsec(isurf)
           dy_diff = xyzles_diff(2, isec, isurf) - xyzles_diff(2, isec-1
      +      , isurf)
@@ -447,15 +459,11 @@ C----- set spanwise spacing using spacing parameters for each section interval
           ELSE
 C
             nvs(isurf) = 0
-            DO ii1=1,ksmax
-              ypt_diff(ii1) = 0.D0
-            ENDDO
+            ypt_diff = 0.D0
             ypt_diff(1) = yzlen_diff(1)
             ypt(1) = yzlen(1)
             iptloc(1) = 1
-            DO ii1=1,ksmax
-              ycp_diff(ii1) = 0.D0
-            ENDDO
+            ycp_diff = 0.D0
 C
             DO isec=1,nsec(isurf)-1
               dyzlen_diff = yzlen_diff(isec+1) - yzlen_diff(isec)
@@ -509,14 +517,10 @@ C
           ELSE
             CALL SPACER(nspace, sspace(isurf), fspace)
 C
-            DO ii1=1,ksmax
-              ypt_diff(ii1) = 0.D0
-            ENDDO
+            ypt_diff = 0.D0
             ypt_diff(1) = yzlen_diff(1)
             ypt(1) = yzlen(1)
-            DO ii1=1,ksmax
-              ycp_diff(ii1) = 0.D0
-            ENDDO
+            ycp_diff = 0.D0
             DO ivs=1,nvs(isurf)
               ycp_diff(ivs) = yzlen_diff(1) + fspace(2*ivs)*(yzlen_diff(
      +          nsec(isurf))-yzlen_diff(1))
@@ -647,36 +651,16 @@ C
      +          ndesign
           STOP
         ELSE
-          DO ii1=1,3
-            xyzler_diff(ii1) = 0.D0
-          ENDDO
-          DO ii1=1,kcmax
-            xcp_diff(ii1) = 0.D0
-          ENDDO
-          DO ii1=1,ngmax
-            chcosl_g_diff(ii1) = 0.D0
-          ENDDO
-          DO ii1=1,ngmax
-            chsinr_g_diff(ii1) = 0.D0
-          ENDDO
-          DO ii1=1,ndmax
-            xted_diff(ii1) = 0.D0
-          ENDDO
-          DO ii1=1,ndmax
-            xled_diff(ii1) = 0.D0
-          ENDDO
-          DO ii1=1,ngmax
-            chsinl_g_diff(ii1) = 0.D0
-          ENDDO
-          DO ii1=1,ndmax
-            gainda_diff(ii1) = 0.D0
-          ENDDO
-          DO ii1=1,ngmax
-            chcosr_g_diff(ii1) = 0.D0
-          ENDDO
-          DO ii1=1,3
-            xyzlel_diff(ii1) = 0.D0
-          ENDDO
+          xyzler_diff = 0.D0
+          xcp_diff = 0.D0
+          chcosl_g_diff = 0.D0
+          chsinr_g_diff = 0.D0
+          xted_diff = 0.D0
+          xled_diff = 0.D0
+          chsinl_g_diff = 0.D0
+          gainda_diff = 0.D0
+          chcosr_g_diff = 0.D0
+          xyzlel_diff = 0.D0
 C
 C---- go over section intervals
           DO isec=1,nsec(isurf)-1
@@ -1070,6 +1054,9 @@ C
 C
 C--- Interpolate CD-CL polar defining data from input sections to strips
               DO l=1,6
+                clcd_diff(l, idx_strip) = (1.0-fc)*clcdsec_diff(l, isec
+     +            , isurf) - (clcdsec(l, isec, isurf)-clcdsec(l, isec+1
+     +            , isurf))*fc_diff + fc*clcdsec_diff(l, isec+1, isurf)
                 clcd(l, idx_strip) = (1.0-fc)*clcdsec(l, isec, isurf) + 
      +            fc*clcdsec(l, isec+1, isurf)
               ENDDO
@@ -1173,16 +1160,12 @@ C
      +            fc*chordr*(sloper_diff-temp*chordc_diff)/chordc
                 slopec(idx_vor) = temp0*(chordl*slopel) + fc*chordr*temp
 C
-                DO ii1=1,kcmax
-                  xvr_diff(ii1) = 0.D0
-                ENDDO
+                xvr_diff = 0.D0
                 CALL AKIMA_D(xasec(1, isec, isurf), xasec_diff(1, isec, 
      +                       isurf), sasec(1, isec, isurf), sasec_diff(1
      +                       , isec, isurf), nsl, xvr(ivc), xvr_diff(ivc
      +                       ), slopel, slopel_diff, dsdx)
-                DO ii1=1,kcmax
-                  xvr_diff(ii1) = 0.D0
-                ENDDO
+                xvr_diff = 0.D0
                 CALL AKIMA_D(xasec(1, isec+1, isurf), xasec_diff(1, isec
      +                       +1, isurf), sasec(1, isec+1, isurf), 
      +                       sasec_diff(1, isec+1, isurf), nsr, xvr(ivc)
@@ -1258,15 +1241,29 @@ Cc#ifdef USE_CPOML
 C...        nodal grid associated with vortex strip (aft-panel nodes)
 C...        NOTE: airfoil in plane of wing, but not rotated perpendicular to dihedral;
 C...        retained in (x,z) plane at this point
-                CALL AKIMA(xlasec(1, isec, isurf), zlasec(1, isec, isurf
-     +                     ), nsl, xpt(ivc+1), zl_l, dsdx)
-                CALL AKIMA(xuasec(1, isec, isurf), zuasec(1, isec, isurf
-     +                     ), nsl, xpt(ivc+1), zu_l, dsdx)
+                xlasecl = xasec(:, isec, isurf)
+                xuasecl = xasec(:, isec, isurf)
+                zlasecl = casec(:, isec, isurf) - 0.5*tasec(:, isec, 
+     +            isurf)
+                zuasecl = casec(:, isec, isurf) + 0.5*tasec(:, isec, 
+     +            isurf)
+                xlasecr = xasec(:, isec, isurf)
+                xuasecr = xasec(:, isec, isurf)
+                zlasecr = casec(:, isec, isurf) - 0.5*tasec(:, isec, 
+     +            isurf)
+                zuasecr = casec(:, isec, isurf) + 0.5*tasec(:, isec, 
+     +            isurf)
 C
-                CALL AKIMA(xlasec(1, isec+1, isurf), zlasec(1, isec+1, 
-     +                     isurf), nsr, xpt(ivc+1), zl_r, dsdx)
-                CALL AKIMA(xuasec(1, isec+1, isurf), zuasec(1, isec+1, 
-     +                     isurf), nsr, xpt(ivc+1), zu_r, dsdx)
+C
+                CALL AKIMA(xlasecl, zlasecl, nsl, xpt(ivc+1), zl_l, dsdx
+     +                    )
+                CALL AKIMA(xuasecl, zuasecl, nsl, xpt(ivc+1), zu_l, dsdx
+     +                    )
+C
+                CALL AKIMA(xlasecr, zlasecr, nsr, xpt(ivc+1), zl_r, dsdx
+     +                    )
+                CALL AKIMA(xuasecr, zuasecr, nsr, xpt(ivc+1), zu_r, dsdx
+     +                    )
 C
                 xyn1(1, idx_vor) = rle1(1, idx_strip) + xpt(ivc+1)*
      +            chord1(idx_strip)
@@ -1329,19 +1326,22 @@ C
       END
 
 C  Differentiation of makesurf_mesh in forward (tangent) mode (with options i4 dr8 r8):
-C   variations   of useful results: rv1msh rv2msh rvmsh rcmsh rle
-C                chord rle1 chord1 rle2 chord2 wstrip ainc ainc_g
-C                rv1 rv2 rv rc rs dxv chordv slopev slopec dcontrol
-C                vhinge
-C   with respect to varying inputs: xyzscal xyztran addinc aincs
-C                xasec sasec claf mshblk rv1msh rv2msh rvmsh rcmsh
-C                rle chord rle1 chord1 rle2 chord2 wstrip ainc
-C                ainc_g rv1 rv2 rv rc rs dxv chordv slopev slopec
-C                dcontrol vhinge
+C   variations   of useful results: rle chord rle1 chord1 rle2
+C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
+C                dxv chordv slopev slopec dcontrol vhinge rv1msh
+C                rv2msh rvmsh rcmsh
+C   with respect to varying inputs: rle chord rle1 chord1 rle2
+C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
+C                dxv chordv slopev slopec dcontrol vhinge xyzscal
+C                xyztran addinc aincs xasec sasec clcdsec claf
+C                mshblk rv1msh rv2msh rvmsh rcmsh
 C
       SUBROUTINE MAKESURF_MESH_D(isurf)
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.inc'
+      INCLUDE 'AVL_oml.INC'
 C working variables (AVL original)
       INTEGER isurf
       INTEGER kcmax
@@ -1358,8 +1358,12 @@ C working variables (AVL original)
       REAL chsinl_g_diff(ngmax), chcosl_g_diff(ngmax), chsinr_g_diff(
      +     ngmax), chcosr_g_diff(ngmax), xled_diff(ndmax), xted_diff(
      +     ndmax)
-C working variables (OptVL additions)
       INTEGER isconl(ndmax), isconr(ndmax)
+      REAL xlasecl(nasmax), xuasecl(nasmax)
+      REAL zlasecl(nasmax), zuasecl(nasmax)
+      REAL xlasecr(nasmax), xuasecr(nasmax)
+C working variables (OptVL additions)
+      REAL zlasecr(nasmax), zuasecr(nasmax)
       REAL m1, m2, m3, f1, f2, fc, dc1, dc2, dc, a1, a2, a3, xptxind1, 
      +     xptxind2
       REAL m2_diff, m3_diff, dc1_diff, dc2_diff, a1_diff, a2_diff, 
@@ -1982,6 +1986,9 @@ C
 C Interpolate CD-CL polar defining data from input to strips
 C
           DO idx_coef=1,6
+            clcd_diff(idx_coef, idx_strip) = (1.0-fc)*clcdsec_diff(
+     +        idx_coef, iptl, isurf) + fc*clcdsec_diff(idx_coef, iptr, 
+     +        isurf)
             clcd(idx_coef, idx_strip) = (1.0-fc)*clcdsec(idx_coef, iptl
      +        , isurf) + fc*clcdsec(idx_coef, iptr, isurf)
           ENDDO
@@ -2535,21 +2542,28 @@ C
 C
 C   xptxind2 = (mesh_surf(1,idx_node_yp1+1)
 C  &           - RLE2(1,idx_strip))/CHORD2(idx_strip) 
-C Interpolate cross section on left side
             xptxind1 = ((mesh_surf(1, idx_node+1)+mesh_surf(1, 
      +        idx_node_yp1+1))/2-rle(1, idx_strip))/chord(idx_strip)
 C
 C
-            CALL AKIMA(xlasec(1, iptl, isurf), zlasec(1, iptl, isurf), 
-     +                 nsl, xptxind1, zl_l, dsdx)
-            CALL AKIMA(xuasec(1, iptl, isurf), zuasec(1, iptl, isurf), 
-     +                 nsl, xptxind1, zu_l, dsdx)
+C           ! Interpolate cross section on left side
+C
+            xlasecl = xasec(:, iptl, isurf)
+            xuasecl = xasec(:, iptl, isurf)
+            zlasecl = casec(:, iptl, isurf) - 0.5*tasec(:, iptl, isurf)
+            zuasecl = casec(:, iptl, isurf) + 0.5*tasec(:, iptl, isurf)
+            xlasecr = xasec(:, iptr, isurf)
+            xuasecr = xasec(:, iptr, isurf)
+            zlasecr = casec(:, iptr, isurf) - 0.5*tasec(:, iptr, isurf)
+            zuasecr = casec(:, iptr, isurf) + 0.5*tasec(:, iptr, isurf)
+C
+C
+            CALL AKIMA(xlasecl, zlasecl, nsl, xptxind1, zl_l, dsdx)
+            CALL AKIMA(xuasecl, zuasecl, nsl, xptxind1, zu_l, dsdx)
 C Interpolate cross section on right side
 C
-            CALL AKIMA(xlasec(1, iptr, isurf), zlasec(1, iptr, isurf), 
-     +                 nsr, xptxind1, zl_r, dsdx)
-            CALL AKIMA(xuasec(1, iptr, isurf), zuasec(1, iptr, isurf), 
-     +                 nsr, xptxind1, zu_r, dsdx)
+            CALL AKIMA(xlasecr, zlasecr, nsr, xptxind1, zl_r, dsdx)
+            CALL AKIMA(xuasecr, zuasecr, nsr, xptxind1, zu_r, dsdx)
 C Compute the left aft node of panel 
 C X-point
 C
@@ -2614,18 +2628,21 @@ C add number of of votrices to the global count
       END
 
 C  Differentiation of sdupl in forward (tangent) mode (with options i4 dr8 r8):
-C   variations   of useful results: rv1msh rv2msh rvmsh rcmsh rle
-C                chord rle1 chord1 rle2 chord2 wstrip ainc ainc_g
-C                rv1 rv2 rv rc dxv chordv slopev slopec dcontrol
-C                vhinge
-C   with respect to varying inputs: rv1msh rv2msh rvmsh rcmsh rle
-C                chord rle1 chord1 rle2 chord2 wstrip ainc ainc_g
-C                rv1 rv2 rv rc dxv chordv slopev slopec dcontrol
-C                vhinge
+C   variations   of useful results: rle chord rle1 chord1 rle2
+C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc dxv
+C                chordv slopev slopec dcontrol vhinge rv1msh rv2msh
+C                rvmsh rcmsh
+C   with respect to varying inputs: rle chord rle1 chord1 rle2
+C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc dxv
+C                chordv slopev slopec dcontrol vhinge rv1msh rv2msh
+C                rvmsh rcmsh
 C
       SUBROUTINE SDUPL_D(nn, ypt, msg)
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.inc'
+      INCLUDE 'AVL_oml.INC'
       CHARACTER*(*) msg
       INTEGER idx_vor
       INTEGER nni
@@ -2789,6 +2806,7 @@ C--- The defined section for image strip is flagged with (-)
 C
             nvstrp(jji) = nvc(nni)
             DO l=1,6
+              clcd_diff(l, jji) = clcd_diff(l, jj)
               clcd(l, jji) = clcd(l, jj)
             ENDDO
             lviscstrp(jji) = lviscstrp(jj)
@@ -2912,8 +2930,8 @@ C
 C  Differentiation of encalc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: ess ensy ensz xsref ysref zsref
 C                enc env enc_d
-C   with respect to varying inputs: rv1msh rv2msh rvmsh rcmsh ainc
-C                ainc_g rv1 rv2 rv slopev slopec dcontrol vhinge
+C   with respect to varying inputs: ainc ainc_g rv1 rv2 rv slopev
+C                slopec dcontrol vhinge rv1msh rv2msh rvmsh rcmsh
 C BDUPL
 C
 C
@@ -2924,6 +2942,8 @@ C and uses the real mesh to compute normals if it is
       SUBROUTINE ENCALC_D()
       INCLUDE 'AVL.INC'
       INCLUDE 'AVL_ad_seeds.inc'
+      INCLUDE 'AVL_surf.INC'
+      INCLUDE 'AVL_surf_ad_seeds.inc'
 C
       REAL ep(3), eq(3), es(3), eb(3), ec(3), ecxb(3)
       REAL ep_diff(3), eq_diff(3), es_diff(3), eb_diff(3), ec_diff(3), 

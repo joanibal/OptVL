@@ -30,7 +30,7 @@ C                cytot_be crtot_be cmtot_be cntot_be cdtot_rx cltot_rx
 C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
 C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
 C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
-C                rr rle chord rle1 chord1 rle2 chord2 wstrip ess
+C                rr rle chord rle1 chord1 rle2 chord2 wstrip clcd ess
 C                ensy ensz xsref ysref zsref cdstrp clstrp cfstrp
 C                cmstrp cf_lstrp cd_lstrp cl_lstrp cdv_lstrp clt_lstrp
 C                cmc4_lstrp cmle_lstrp cnc dwwake rv1 rv2 rv rc
@@ -61,7 +61,7 @@ C                cntot_ry:in-zero cdtot_rz:in-zero cltot_rz:in-zero
 C                cytot_rz:in-zero crtot_rz:in-zero cmtot_rz:in-zero
 C                cntot_rz:in-zero xnp:in-out sm:in-out bb:in-out
 C                rr:in-out rle:out chord:out rle1:out chord1:out
-C                rle2:out chord2:out wstrip:out ess:out ensy:out
+C                rle2:out chord2:out wstrip:out clcd:out ess:out ensy:out
 C                ensz:out xsref:out ysref:out zsref:out cdstrp:in-out
 C                clstrp:in-out cfstrp:in-out cmstrp:in-out cf_lstrp:in-out
 C                cd_lstrp:in-out cl_lstrp:in-out cdv_lstrp:in-out
@@ -445,7 +445,7 @@ C                cnc rv1 rv2 gam
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref cdtot_d cytot_d cltot_d cftot cftot_d cmtot
 C                cmtot_d rle chord rle1 chord1 rle2 chord2 wstrip
-C                ess ensy ensz xsref ysref zsref cdstrp clstrp
+C                clcd ess ensy ensz xsref ysref zsref cdstrp clstrp
 C                cfstrp cmstrp cf_lstrp cd_lstrp cl_lstrp cdv_lstrp
 C                clt_lstrp cmc4_lstrp cmle_lstrp cnc rv1 rv2 rv
 C                gam gam_u gam_d vv vv_u vv_d wv wv_u wv_d
@@ -2016,6 +2016,11 @@ C
         chord2_diff(ii1) = 0.D0
       ENDDO
       DO ii1=1,NSTRIP
+        DO ii2=1,6
+          clcd_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,NSTRIP
         DO ii2=1,3
           ess_diff(ii2, ii1) = 0.D0
         ENDDO
@@ -3487,8 +3492,8 @@ C$BWD-OF II-LOOP
      +      veff(2)*dcvfy_diff + veffmag*veff(1)*dcvfx_diff
           veff_diff(2) = veff_diff(2) + veffmag*cdv*dcvfy_diff
           veff_diff(1) = veff_diff(1) + veffmag*cdv*dcvfx_diff
-          CALL CDCL_B(clcd(1, j), clv, clv_diff, cdv, cdv_diff, cdv_clv
-     +                , cdv_clv_diff)
+          CALL CDCL_B(clcd(1, j), clcd_diff(1, j), clv, clv_diff, cdv, 
+     +                cdv_diff, cdv_clv, cdv_clv_diff)
           CALL POPREAL8ARRAY(cfy_d, ndmax)
           CALL POPREAL8ARRAY(cfz_d, ndmax)
           CALL POPREAL8ARRAY(cfx_d, ndmax)
