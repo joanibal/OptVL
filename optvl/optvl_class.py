@@ -396,10 +396,11 @@ class OVLSolver(object):
                 deriv_key = self._get_deriv_key(var, func)
                 self.case_body_derivs_to_fort_var[deriv_key] = ["CASE_R", f"{func_to_prefix[func]}TOT_U_BA", idx_var]
 
-        # In the case where we used a file then we have to initialize these before _init_map_data so ad seeds work correctly
+        # In the case where we used a file then we have to initialize these before _init_map_data so ad seeds work correclty
         if not input_dict:
             self.mesh_idx_first = np.zeros(self.get_num_surfaces(),dtype=np.int32)
             self.y_offsets = np.zeros(self.get_num_surfaces(),dtype=np.float64)
+            self.point_sets = {}
 
         #  the case parameters are stored in a 1d array,
         # these indices correspond to the position of each parameter in that arra
@@ -407,6 +408,9 @@ class OVLSolver(object):
 
         # set the default solver tolerance
         self.set_avl_fort_arr("CASE_R", "EXEC_TOL", 2e-5)
+
+        # init the DVGeo variable
+        self.DVGeo = None
 
         if timing:
             print(f"AVL init took {time.time() - start_time} seconds")
@@ -798,6 +802,9 @@ class OVLSolver(object):
         # a duplicated mesh as its normally only passed as a dummy argument into the SDUPL subroutine and not stored in the fortran layer.
         self.y_offsets = np.zeros(self.get_num_surfaces(),dtype=np.float64)
 
+        # Class dictionary to store the point set names if a DVGeo object is used
+        self.point_sets = {}
+
         # Load surfaces
         if num_surfs > 0:
             surf_names = list(input_dict["surfaces"].keys())
@@ -1061,8 +1068,10 @@ class OVLSolver(object):
                          surf_dict["flatten mesh"] = True
                     self.set_mesh(idx_surf, surf_dict["mesh"],flatten=surf_dict["flatten mesh"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
                     self.avl.makesurf_mesh(idx_surf + 1) #+1 for Fortran indexing
+                    self.point_sets[idx_surf] = "optvl_%s_coords" % surf_name # store the pointset name for DVGeo later
                 else:
                     self.avl.makesurf(idx_surf + 1) # +1 to convert to 1 based indexing
+                    self.point_sets[idx_surf] = None # No pointset available if no mesh
 
                 if "yduplicate" in surf_dict.keys():
                     self.avl.sdupl(idx_surf + 1, surf_dict["yduplicate"], "YDUP")
@@ -3146,6 +3155,82 @@ class OVLSolver(object):
                 fid.write("#surface   gain\n")
                 fid.write(f" {design_var_names[idx_des_var - 1]} ")
                 fid.write(f" {data['gaing'][idx_sec][idx_local_des_var]}\n")
+    
+    # region --- pyGeo API
+    def set_DVGeo(self, DVGeo, pointSetKwargs=None, customPointSetFamilies=None):
+        """
+        Set the DVGeometry object that will manipulate 'geometry' in
+        this object. Note that <SOLVER> does not **strictly** need a
+        DVGeometry object, but if optimization with geometric
+        changes is desired, then it is required.
+
+        Parameters
+        ----------
+        DVGeo : A DVGeometry object.
+            Object responsible for manipulating the geometry.
+
+        pointSetKwargs : dict
+            Keyword arguments to be passed to the DVGeo addPointSet call.
+            Useful for DVGeometryMulti, specifying FFD projection tolerances, etc.
+            These arguments are used for all point sets added by this solver.
+
+        customPointSetFamilies : dict of dicts
+            This argument is used to split up the surface points added to the DVGeo by the solver into potentially
+            multiple subsets. The keys of the dictionary will be used to determine what families should be
+            added to the dvgeo object as separate point sets. The values of each key is another dictionary, which can be empty.
+            If desired, the inner dictionaries can contain custom kwargs for the addPointSet call for each surface family,
+            specified by the keys of the top level dictionary.
+            The surface families need to be all part of the designSurfaceFamily.
+            Useful for DVGeometryMulti, specifying FFD projection tolerances, etc.
+            If this is provided together with pointSetKwargs, the regular pointSetKwargs
+            will be appended to each component's dictionary. If the same argument
+            is also provided in pointSetKwargs, the value specified in customPointSetFamilies
+            will be used.
+
+        """
+
+        self.DVGeo = DVGeo
+
+        # save the common kwargs dict. default is empty
+        if pointSetKwargs is None:
+            self.pointSetKwargs = {}
+        else:
+            self.pointSetKwargs = pointSetKwargs
+
+        # save if we have customPointSetFamilies. this default is not mutable so we can just set it as is.
+        self.customPointSetFamilies = customPointSetFamilies
+
+    def update_DVGeo(self):
+        """If DVGeo is present this function will embed all the meshes into it if needed and then perform an update
+        of the pointset and set the meshes back into AVL.
+        """
+        # Check if we have an DVGeo object to deal with:
+        if self.DVGeo is not None:
+            # Loop over all surfaces
+            for surface in self.unique_surface_names:
+                # Get the pointset name
+                idx_surf = self.get_surface_index(surf_name=surface)
+                if idx_surf in self.point_sets.keys():
+                    point_set_name = self.point_sets[idx_surf]
+                else:
+                    continue # This surface doesn't have a mesh, skip it
+
+                # Embed the points if they haven't been already
+                if point_set_name not in self.DVGeo.points:
+                    mesh = self.get_mesh(idx_surf)
+                    coords0 = mesh.transpose((1,0,2)).reshape((mesh.shape[0]*mesh.shape[1],3))
+                    self.DVGeo.addPointSet(coords0, point_set_name, **self.pointSetKwargs)
+                    # print(f"Embedeed point set {point_set_name}!")
+        
+                # Check if our point-set is up to date and update the mesh accordingly
+                if not self.DVGeo.pointSetUpToDate(point_set_name):
+                    coords = self.DVGeo.update(point_set_name)
+                    mesh_old = self.get_mesh(idx_surf)
+                    mesh_new = copy.deepcopy(coords.reshape((mesh_old.shape[1],mesh_old.shape[0],3)).transpose((1,0,2)))
+                    self.set_mesh(idx_surf,mesh_new)
+
+            # Now update all of our surfaces in AVL
+            self.avl.update_surfaces()
 
     # region --- Utility functions
     def get_num_surfaces(self) -> int:
@@ -3885,6 +3970,7 @@ class OVLSolver(object):
         con_seeds: Optional[Dict[str, float]] = None,
         geom_seeds: Optional[Dict[str, Dict[str, any]]] = None,
         mesh_seeds: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
+        dvgeo_seeds: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
         param_seeds: Optional[Dict[str, float]] = None,
         ref_seeds: Optional[Dict[str, float]] = None,
         gamma_seeds: Optional[np.ndarray] = None,
@@ -3899,6 +3985,7 @@ class OVLSolver(object):
             con_seeds: Case constraint AD seeds
             geom_seeds: Geometric AD seeds in the same format as the geometric data
             mesh_seeds: Mesh geometry AD seeds in the same format as the mesh data
+            dvgeo_seeds: DVGeo DV seeds for a given surface and then design variable
             param_seeds: Case parameter AD seeds
             ref_seeds: Reference condition AD seeds
             gamma_seeds: Circulation AD seeds
@@ -3957,6 +4044,10 @@ class OVLSolver(object):
             self.deep_update(ref_seeds_full, ref_seeds)
         
         # The arrays can be set to zero if they don't exsist
+
+        if self.DVGeo is None:
+            dvgeo_seeds = {}
+
         if gamma_seeds is None:
             gamma_seeds = np.zeros(mesh_size)
 
@@ -3977,16 +4068,40 @@ class OVLSolver(object):
             body_seeds = np.zeros((self.NLMAX, 3))
             self.set_avl_fort_arr("VRTX_R_DIFF", "RL_DIFF", body_seeds)
             
-            # set derivative seeds
+            # self.clear_ad_seeds()
             self.set_variable_ad_seeds(con_seeds_full)
             self.set_geom_ad_seeds(geom_seeds_full)
-            self.set_mesh_ad_seeds(mesh_seeds_full)
             self.set_gamma_ad_seeds(gamma_seeds)
             self.set_gamma_d_ad_seeds(gamma_d_seeds)
             self.set_gamma_u_ad_seeds(gamma_u_seeds)
             self.set_parameter_ad_seeds(param_seeds_full)
             self.set_reference_ad_seeds(ref_seeds_full)
-            
+
+            # Since DVGeo seeds operate entirely within the python layer we set them here
+            if self.DVGeo is not None and dvgeo_seeds is not None:
+                # Loop over all surfaces
+                for surface in self.unique_surface_names:
+                    # Get the pointset name
+                    idx_surf = self.get_surface_index(surf_name=surface)
+                    if idx_surf in self.point_sets.keys():
+                        point_set_name = self.point_sets[idx_surf]
+                    else:
+                        continue # This surface doesn't have a pointset, skip it
+
+                    # If no mesh seed was provided for the surface we will need to start it at zero
+                    if surface not in mesh_seeds_full.keys():
+                        nx = self.avl.SURF_GEOM_I.NVC[idx_surf] + 1
+                        ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
+                        mesh_seeds_full[surface] = {}
+                        mesh_seeds_full[surface]["mesh"] = np.zeros((nx*ny,3))
+
+                    # Loop over the design variables and accumulate the sensitivity product into the mesh_seeds_full
+                    mesh_seeds_full[surface]["mesh"] += self.DVGeo.totalSensitivityProd(dvgeo_seeds[surface], point_set_name).reshape(
+                        mesh_seeds_full[surface]["mesh"].shape
+                    )
+
+            self.set_mesh_ad_seeds(mesh_seeds_full)
+
             self.avl.update_surfaces_d()
             self.avl.get_res_d()
             self.avl.velsum_d()
@@ -4025,6 +4140,37 @@ class OVLSolver(object):
             self.set_parameter_ad_seeds(param_seeds_full, mode="FD", scale=step)
             self.set_reference_ad_seeds(ref_seeds_full, mode="FD", scale=step)
 
+
+            # Since DVGeo operates entirely within the python layer we have have to do this
+            if self.DVGeo is not None and dvgeo_seeds is not None:
+                # Loop over all surfaces
+                for surface in self.unique_surface_names:
+                    # Get the pointset name
+                    idx_surf = self.get_surface_index(surf_name=surface)
+                    if idx_surf in self.point_sets.keys():
+                        point_set_name = self.point_sets[idx_surf]
+                    else:
+                        continue # This surface doesn't have a pointset, skip it
+
+                    # Apply the FD step to the DV seeds
+                    for dv in dvgeo_seeds[surface].keys():
+                        # current design var values
+                        currentDV = self.DVGeo.getValues()[dv]
+
+                        # Set the updated DVs
+                        self.DVGeo.setDesignVars({dv: currentDV + dvgeo_seeds[surface][dv]*step})
+
+                    # get mesh size
+                    nx = self.avl.SURF_GEOM_I.NVC[idx_surf] + 1
+                    ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
+
+                    # Compute the perturbed mesh values
+                    coords = self.DVGeo.update(point_set_name)
+                    mesh_pertub = copy.deepcopy(coords.reshape((ny,nx,3)).transpose((1,0,2)))
+
+                    self.set_mesh(idx_surf,mesh_pertub)
+
+
             # propogate the seeds through without resolving
             self.avl.update_surfaces()
             self.avl.get_res()
@@ -4048,6 +4194,36 @@ class OVLSolver(object):
             self.set_gamma_u_ad_seeds(gamma_u_seeds, mode="FD", scale=-1 * step)
             self.set_parameter_ad_seeds(param_seeds_full, mode="FD", scale=-1 * step)
             self.set_reference_ad_seeds(ref_seeds_full, mode="FD", scale=-1 * step)
+
+            # Set the mesh seeds back
+            if self.DVGeo is not None and dvgeo_seeds is not None:
+                # Loop over all surfaces
+                for surface in self.unique_surface_names:
+                    # Get the pointset name
+                    idx_surf = self.get_surface_index(surf_name=surface)
+                    if idx_surf in self.point_sets.keys():
+                        point_set_name = self.point_sets[idx_surf]
+                    else:
+                        continue # This surface doesn't have a pointset, skip it
+
+                    # Restore the orignal dvgeo seeds
+                    for dv in dvgeo_seeds[surface].keys():
+                        # current design var values
+                        currentDV = self.DVGeo.getValues()[dv]
+
+                        # Set the updated DVs
+                        self.DVGeo.setDesignVars({dv: currentDV - dvgeo_seeds[surface][dv]*step})
+
+                    # get mesh size
+                    nx = self.avl.SURF_GEOM_I.NVC[idx_surf] + 1
+                    ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
+
+                    # Compute the original mesh values
+                    coords = self.DVGeo.update(point_set_name)
+                    mesh_orig = copy.deepcopy(coords.reshape((ny,nx,3)).transpose((1,0,2)))
+
+                    self.set_mesh(idx_surf,mesh_orig)
+
 
             self.avl.update_surfaces()
             self.avl.get_res()
@@ -4213,6 +4389,30 @@ class OVLSolver(object):
             print(f"    Time to extract seeds: {time.time() - time_last}")
             time_last = time.time()
 
+        # Create dv_geo seeds a empty dict of surface keys
+        dvgeo_seeds = {}
+        for surf_key in self.unique_surface_names:
+            dvgeo_seeds[surf_key] = {}
+
+        # If a DVGeo is present then propagate the mesh seeds all the way back to the DVs
+        if self.DVGeo is not None and self.DVGeo.getNDV() > 0:
+            # Loop over all surfaces
+            for surface in self.unique_surface_names:
+                # Get the pointset name
+                idx_surf = self.get_surface_index(surf_name=surface)
+                if idx_surf in self.point_sets.keys():
+                    point_set_name = self.point_sets[idx_surf]
+                else:
+                    continue # This surface doesn't have a mesh, skip it
+                dvgeo_seeds[surface] = {}
+
+                # Get the sensitivities
+                dvgeo_seeds[surface].update(
+                            self.DVGeo.totalSensitivity(mesh_seeds[surface]["mesh"], point_set_name)
+                        )
+     
+
+
         self.set_function_ad_seeds(func_seeds, scale=0.0)
         self.set_residual_ad_seeds(res_seeds, scale=0.0)
         self.set_residual_d_ad_seeds(res_d_seeds, scale=0.0)
@@ -4227,7 +4427,7 @@ class OVLSolver(object):
         if print_timings:
             print(f"   Total Time: {time.time() - time_start}")
 
-        return con_seeds, geom_seeds, mesh_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
+        return con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
 
     def execute_run_sensitivities_direct(
         self,
@@ -4442,7 +4642,7 @@ class OVLSolver(object):
             time_last = time.time()
             
             # get the RHS of the adjoint equation (pFpU)
-            _, _, _, pfpU, _, _, _, _ = self._execute_jac_vec_prod_rev(func_seeds={func: 1.0})
+            _, _, _, _, pfpU, _, _, _, _ = self._execute_jac_vec_prod_rev(func_seeds={func: 1.0})
             if print_timings:
                 print(f"Time to get RHS: {time.time() - time_last}")
                 time_last = time.time()
@@ -4458,7 +4658,7 @@ class OVLSolver(object):
             # get the resulting adjoint vector (dfunc/dRes) from fortran
             dfdR = self.get_residual_ad_seeds()
             # self.clear_ad_seeds()
-            con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+            con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                 func_seeds={func: 1.0}, res_seeds=dfdR
             )
             if print_timings:
@@ -4468,7 +4668,7 @@ class OVLSolver(object):
             sens[func].update(con_seeds)
             # I don't know if it's worth combining geom_seeds and mesh_seeds into one just to make this one part less nasty
             for key in geom_seeds:
-                sens[func][key] = geom_seeds[key] | mesh_seeds[key]
+                sens[func][key] = geom_seeds[key] | mesh_seeds[key] | dvgeo_seeds[key]
             # sens[func].update(geom_seeds)
             # sens[func].update(mesh_seeds)
             sens[func].update(param_seeds)
@@ -4485,7 +4685,7 @@ class OVLSolver(object):
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
-                _, _, _, pfpU, pf_pU_d, _, _, _ = self._execute_jac_vec_prod_rev(consurf_derivs_seeds={func_key: 1.0})
+                _, _, _, _, pfpU, pf_pU_d, _, _, _ = self._execute_jac_vec_prod_rev(consurf_derivs_seeds={func_key: 1.0})
                 if print_timings:
                     print(f"Time to get RHS: {time.time() - time_last}")
                     time_last = time.time()
@@ -4505,7 +4705,7 @@ class OVLSolver(object):
                 dfdR = self.get_residual_ad_seeds()
                 dfdR_d = self.get_residual_d_ad_seeds()
                 # self.clear_ad_seeds()
-                con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                     consurf_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_d_seeds=dfdR_d
                 )
                 if print_timings:
@@ -4514,7 +4714,7 @@ class OVLSolver(object):
 
                 sens[func_key].update(con_seeds)
                 for key in geom_seeds:
-                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key]
+                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key] | dvgeo_seeds[key]
                 # sens[func_key].update(geom_seeds)
                 # sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
@@ -4531,7 +4731,7 @@ class OVLSolver(object):
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
-                _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(stab_derivs_seeds={func_key: 1.0})
+                _, _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(stab_derivs_seeds={func_key: 1.0})
                 if print_timings:
                     print(f"Time to get RHS: {time.time() - time_last}")
                     time_last = time.time()
@@ -4551,7 +4751,7 @@ class OVLSolver(object):
                 dfdR = self.get_residual_ad_seeds()
                 dfdR_u = self.get_residual_u_ad_seeds()
                 # self.clear_ad_seeds()
-                con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                     stab_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_u_seeds=dfdR_u
                 )
 
@@ -4560,8 +4760,10 @@ class OVLSolver(object):
                     time_last = time.time()
 
                 sens[func_key].update(con_seeds)
-                for surf_key in geom_seeds:
-                    sens[func_key][surf_key] = geom_seeds[surf_key] | mesh_seeds[surf_key]
+                for key in geom_seeds:
+                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key] | dvgeo_seeds[key]
+                # sens[func_key].update(geom_seeds)
+                # sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
                 # sd_deriv_seeds[func_key] = 0.0
@@ -4577,7 +4779,7 @@ class OVLSolver(object):
 
                 # get the RHS of the adjoint equation (pFpU)
                 # TODO: remove seeds if it doesn't effect accuracy
-                _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(body_axis_derivs_seeds={func_key: 1.0})
+                _, _, _, _, pfpU, _, pf_pU_u, _, _ = self._execute_jac_vec_prod_rev(body_axis_derivs_seeds={func_key: 1.0})
                 if print_timings:
                     print(f"Time to get RHS: {time.time() - time_last}")
                     time_last = time.time()
@@ -4597,7 +4799,7 @@ class OVLSolver(object):
                 dfdR = self.get_residual_ad_seeds()
                 dfdR_u = self.get_residual_u_ad_seeds()
                 # self.clear_ad_seeds()
-                con_seeds, geom_seeds, mesh_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
+                con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, _, _, _, param_seeds, ref_seeds = self._execute_jac_vec_prod_rev(
                     body_axis_derivs_seeds={func_key: 1.0}, res_seeds=dfdR, res_u_seeds=dfdR_u
                 )
 
@@ -4606,8 +4808,10 @@ class OVLSolver(object):
                     time_last = time.time()
 
                 sens[func_key].update(con_seeds)
-                for surf_key in geom_seeds:
-                    sens[func_key][surf_key] = geom_seeds[surf_key] | mesh_seeds[surf_key]
+                for key in geom_seeds:
+                    sens[func_key][key] = geom_seeds[key] | mesh_seeds[key] | dvgeo_seeds[key]
+                # sens[func_key].update(geom_seeds)
+                # sens[func_key].update(mesh_seeds)
                 sens[func_key].update(param_seeds)
                 sens[func_key].update(ref_seeds)
 
