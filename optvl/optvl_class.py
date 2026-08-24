@@ -330,7 +330,6 @@ class OVLSolver(object):
         }
 
         # control surfaces added in __init__
-        # TODO: the keys of this dict aren't used
         self.con_var_list = [
             "alpha",
             "beta",

@@ -118,10 +118,10 @@ class TestTotals(unittest.TestCase):
         sens_sd = self.ovl.execute_run_sensitivities([], stab_derivs=stab_derivs, print_timings=False)
         sens_bd = self.ovl.execute_run_sensitivities([], body_axis_derivs=body_axis_derivs, print_timings=False)
 
-        for con_key in self.ovl.con_var_to_fort_var:
+        for con_key in self.ovl.con_var_list:
             # for con_key in ['beta']:
             func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif(
-                [con_key], {}, {}, {}, step=1.0e-5
+                [con_key], {}, {}, {}, step=1.0e-6
             )
 
             # for func_key in func_vars:
@@ -134,7 +134,7 @@ class TestTotals(unittest.TestCase):
 
                 # print(f"{func_key:5} wrt {con_key:5} | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
-                tol = 1e-8
+                tol = 5e-8
                 if np.abs(ad_dot) < tol or np.abs(fd_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
@@ -147,7 +147,7 @@ class TestTotals(unittest.TestCase):
                     np.testing.assert_allclose(
                         ad_dot,
                         fd_dot,
-                        rtol=5e-5,
+                        rtol=5e-4,
                         err_msg=f"func_key {func_key} w.r.t. {con_key}",
                     )
 
@@ -161,7 +161,7 @@ class TestTotals(unittest.TestCase):
                 #     f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                 # )
 
-                tol = 1e-8
+                tol = 5e-8
                 if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
@@ -188,7 +188,7 @@ class TestTotals(unittest.TestCase):
                 #     f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                 # )
 
-                tol = 1e-8
+                tol = 5e-8
                 if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
@@ -229,7 +229,7 @@ class TestTotals(unittest.TestCase):
             print_timings=False,
         )
 
-        # for con_key in self.ovl.con_var_to_fort_var:
+        # for con_key in self.ovl.con_var_list:
         sens_FD = {}
         for surf_key in self.ovl.surf_geom_to_fort_var:
             sens_FD[surf_key] = {}

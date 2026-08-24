@@ -39,7 +39,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
         print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
 
     def test_fwd_aero_constraint(self):
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[4]
 
             bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-6)[4]
@@ -64,7 +64,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
         self.ovl_solver.clear_ad_seeds_fast()
 
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             body_axis_deriv_seeds_fwd= self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[4]
 
             body_axis_deriv_sum = 0.0
