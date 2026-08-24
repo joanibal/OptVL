@@ -37,7 +37,8 @@ python -m unittest -v test_eigen_analysis.py
 # tests for adjoint
 python -m unittest -v test_new_subroutines.py
 #HACK: if the tests are not split up the windows version has
-#      an error loading the shared lib.
+#      an error loading the shared lib. 
+#      I have not been about to reproduce this on my local windows machine
 python -m unittest -v test_partial_derivs.TestFunctionPartials
 python -m unittest -v test_partial_derivs.TestResidualPartials
 python -m unittest -v test_consurf_partial_derivs.TestResidualDPartials
@@ -49,5 +50,9 @@ python -m unittest -v test_body_axis_derivs_partial_derivs.py
 python -m unittest -v test_total_derivs.py
 
 # test openmdao wrapper and basic optimization results
-python -m unittest -v test_om_wrapper.py
+#HACK: if the tests are not split up the windows version has
+#      an error loading the shared lib. 
+#      I have not been about to reproduce this on my local windows machine
+python -m unittest -v test_om_wrapper.TestOMWrapper
+python -m unittest -v test_om_wrapper.TestOMWrapperMesh
 
