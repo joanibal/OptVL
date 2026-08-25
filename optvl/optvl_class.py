@@ -4549,7 +4549,6 @@ class OVLSolver(object):
 
         for dv_type in seeds:
             for dv_seed in seeds[dv_type]:
-                print(f'processing {dv_seed}')
                 
                 time_last = time.time()
                 # compute dR/dX

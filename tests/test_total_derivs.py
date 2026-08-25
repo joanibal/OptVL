@@ -498,29 +498,26 @@ class TestDirectVsAdjoint(unittest.TestCase):
         stab_derivs = ["dCL/dalpha"]
         # body_axis_derivs = self.ovl.case_body_derivs_to_fort_var
         funcs = ["CL", "CD", "Cm"]
-        # funcs = ["CL"]
         con_dvs = ["alpha"]
         ref_dvs = ["Sref"]
         param_dvs = ["Mach"]
-        # geom_dvs = [("Wing", "xles"), ("Wing", "chords")]
         geom_dvs = [("Wing", "scale"),("Wing", "chords")]
+        
         sens_adjoint = self.ovl.execute_run_sensitivities(funcs, stab_derivs=stab_derivs )
         
-        func = "CL"
-        # sens_adjoint[func][dv]
         sens_direct = self.ovl.execute_run_sensitivities_direct(geom_dvs=geom_dvs, con_dvs=con_dvs, ref_dvs=ref_dvs, param_dvs=param_dvs,  add_stab_derivs=True)
-        import pprint
-        pprint.pprint(sens_adjoint)
-        pprint.pprint(sens_direct)
         
-        for func in funcs:
+        for func in funcs + stab_derivs:
             for dv in geom_dvs:
-                print(f"Adjoint d{func}/d{[dv[0]]} {[dv[1]]} {sens_adjoint[func][dv[0]][dv[1]]}")
-                print(f"Direct  d{func}/d{[dv[0]]} {[dv[1]]} {sens_direct[func][dv[0]][dv[1]]}")
+                # print(f"Adjoint d{func}/d{[dv[0]]} {[dv[1]]} {sens_adjoint[func][dv[0]][dv[1]]}")
+                # print(f"Direct  d{func}/d{[dv[0]]} {[dv[1]]} {sens_direct[func][dv[0]][dv[1]]}")
+                np.testing.assert_allclose(sens_direct[func][dv[0]][dv[1]], sens_adjoint[func][dv[0]][dv[1]], 1e-15, 1e-15)
+                
             
             for dv in con_dvs + ref_dvs + param_dvs:
-                print(f"Adjoint d{func}/d{dv} {sens_adjoint[func][dv]}")
-                print(f"Direct  d{func}/d{dv} {sens_direct[func][dv]}")
+                # print(f"Adjoint d{func}/d{dv} {sens_adjoint[func][dv]}")
+                # print(f"Direct  d{func}/d{dv} {sens_direct[func][dv]}")
+                np.testing.assert_allclose(sens_direct[func][dv], sens_adjoint[func][dv], 1e-15, 1e-15)
             
 
 if __name__ == "__main__":
