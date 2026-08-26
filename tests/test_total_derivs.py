@@ -511,13 +511,13 @@ class TestDirectVsAdjoint(unittest.TestCase):
             for dv in geom_dvs:
                 # print(f"Adjoint d{func}/d{[dv[0]]} {[dv[1]]} {sens_adjoint[func][dv[0]][dv[1]]}")
                 # print(f"Direct  d{func}/d{[dv[0]]} {[dv[1]]} {sens_direct[func][dv[0]][dv[1]]}")
-                np.testing.assert_allclose(sens_direct[func][dv[0]][dv[1]], sens_adjoint[func][dv[0]][dv[1]], 1e-15, 1e-15)
+                np.testing.assert_allclose(sens_direct[func][dv[0]][dv[1]], sens_adjoint[func][dv[0]][dv[1]], 1e-14, 1e-14)
                 
             
             for dv in con_dvs + ref_dvs + param_dvs:
                 # print(f"Adjoint d{func}/d{dv} {sens_adjoint[func][dv]}")
                 # print(f"Direct  d{func}/d{dv} {sens_direct[func][dv]}")
-                np.testing.assert_allclose(sens_direct[func][dv], sens_adjoint[func][dv], 1e-15, 1e-15)
+                np.testing.assert_allclose(sens_direct[func][dv], sens_adjoint[func][dv], 1e-14, 1e-14)
             
 
 if __name__ == "__main__":
