@@ -39,7 +39,7 @@ class TestFunctionPartials(unittest.TestCase):
         print(f"{self.id():80} Memory usage: {mb_memory:.2f} MB")
 
     def test_fwd_aero_constraint(self):
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             func_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})[0]
 
             func_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
@@ -66,7 +66,7 @@ class TestFunctionPartials(unittest.TestCase):
                     )
 
     def test_rev_aero_constraint(self):
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             self.ovl_solver.clear_ad_seeds_fast()
 
             func_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})[0]
@@ -353,7 +353,7 @@ class TestResidualPartials(unittest.TestCase):
         print(f"{self.id():80} Memory usage: {mb_memory:.2f} MB")
 
     def test_fwd_aero_constraint(self):
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, geom_seeds={}, mode="FD", step=1e-8
             )[1]
@@ -370,7 +370,7 @@ class TestResidualPartials(unittest.TestCase):
 
         self.ovl_solver.clear_ad_seeds_fast()
 
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[1]
 
             # do dot product

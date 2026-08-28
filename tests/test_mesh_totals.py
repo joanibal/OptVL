@@ -122,10 +122,10 @@ class TestTotals(unittest.TestCase):
         sens_sd = self.ovl_solver.execute_run_sensitivities([], stab_derivs=stab_derivs, print_timings=False)
         sens_bd = self.ovl_solver.execute_run_sensitivities([], body_axis_derivs=body_axis_derivs, print_timings=False)
 
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             # for con_key in ['beta']:
             func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif(
-                [con_key], {}, {}, {}, {}, step=1.0e-5
+                [con_key], {}, {}, {}, {}, step=1.0e-6
             )
 
             # for func_key in func_vars:
@@ -233,7 +233,7 @@ class TestTotals(unittest.TestCase):
             print_timings=False,
         )
 
-        # for con_key in self.ovl_solver.con_var_to_fort_var:
+        # for con_key in self.ovl_solver.con_var_list:
         sens_FD = {}
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             sens_FD[surf_key] = {}

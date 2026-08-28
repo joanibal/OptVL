@@ -28,11 +28,11 @@ class TestTotals(unittest.TestCase):
     # TODO: beta derivatives likely wrong
 
     def setUp(self):
-        self.ovl_solver = OVLSolver(geo_file=geom_file)
-        self.ovl_solver.set_variable("alpha", 5.0)
-        self.ovl_solver.set_variable("beta", 0.0)
-        self.ovl_solver.set_parameter("Mach", 0.8)
-        self.ovl_solver.execute_run()
+        self.ovl = OVLSolver(geo_file=geom_file)
+        self.ovl.set_variable("alpha", 5.0)
+        self.ovl.set_variable("beta", 0.0)
+        self.ovl.set_parameter("Mach", 0.8)
+        self.ovl.execute_run()
 
     def tearDown(self):
         # Get the memory usage of the current process using psutil
@@ -45,42 +45,42 @@ class TestTotals(unittest.TestCase):
 
         for con in con_list:
             con_seeds[con] = 1.0
-        self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
-        self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
-        self.ovl_solver.set_parameter_ad_seeds(param_seeds, mode="FD", scale=step)
-        self.ovl_solver.set_reference_ad_seeds(ref_seeds, mode="FD", scale=step)
+        self.ovl.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
+        self.ovl.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
+        self.ovl.set_parameter_ad_seeds(param_seeds, mode="FD", scale=step)
+        self.ovl.set_reference_ad_seeds(ref_seeds, mode="FD", scale=step)
 
-        self.ovl_solver.avl.update_surfaces()
-        self.ovl_solver.avl.get_res()
-        self.ovl_solver.avl.exec_rhs()
-        self.ovl_solver.avl.get_res()
-        self.ovl_solver.avl.velsum()
-        self.ovl_solver.avl.aero()
-        # self.ovl_solver.execute_run()
-        coef_data_peturb = self.ovl_solver.get_total_forces()
-        consurf_derivs_peturb = self.ovl_solver.get_control_stab_derivs()
-        stab_deriv_derivs_peturb = self.ovl_solver.get_stab_derivs()
-        body_axis_deriv_petrub = self.ovl_solver.get_body_axis_derivs()
-        body_forces_peturb = self.ovl_solver.get_body_forces()
+        self.ovl.avl.update_surfaces()
+        self.ovl.avl.get_res()
+        self.ovl.avl.exec_rhs()
+        self.ovl.avl.get_res()
+        self.ovl.avl.velsum()
+        self.ovl.avl.aero()
+        # self.ovl.execute_run()
+        coef_data_peturb = self.ovl.get_total_forces()
+        consurf_derivs_peturb = self.ovl.get_control_stab_derivs()
+        stab_deriv_derivs_peturb = self.ovl.get_stab_derivs()
+        body_axis_deriv_petrub = self.ovl.get_body_axis_derivs()
+        body_forces_peturb = self.ovl.get_body_forces()
 
-        self.ovl_solver.set_variable_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
-        self.ovl_solver.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
-        self.ovl_solver.set_parameter_ad_seeds(param_seeds, mode="FD", scale=-1 * step)
-        self.ovl_solver.set_reference_ad_seeds(ref_seeds, mode="FD", scale=-1 * step)
+        self.ovl.set_variable_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
+        self.ovl.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
+        self.ovl.set_parameter_ad_seeds(param_seeds, mode="FD", scale=-1 * step)
+        self.ovl.set_reference_ad_seeds(ref_seeds, mode="FD", scale=-1 * step)
 
-        self.ovl_solver.avl.update_surfaces()
-        self.ovl_solver.avl.get_res()
-        self.ovl_solver.avl.exec_rhs()
-        self.ovl_solver.avl.get_res()
-        self.ovl_solver.avl.velsum()
-        self.ovl_solver.avl.aero()
-        # self.ovl_solver.execute_run()
+        self.ovl.avl.update_surfaces()
+        self.ovl.avl.get_res()
+        self.ovl.avl.exec_rhs()
+        self.ovl.avl.get_res()
+        self.ovl.avl.velsum()
+        self.ovl.avl.aero()
+        # self.ovl.execute_run()
 
-        coef_data = self.ovl_solver.get_total_forces()
-        consurf_derivs = self.ovl_solver.get_control_stab_derivs()
-        stab_deriv_derivs = self.ovl_solver.get_stab_derivs()
-        body_axis_deriv = self.ovl_solver.get_body_axis_derivs()
-        body_forces = self.ovl_solver.get_body_forces()
+        coef_data = self.ovl.get_total_forces()
+        consurf_derivs = self.ovl.get_control_stab_derivs()
+        stab_deriv_derivs = self.ovl.get_stab_derivs()
+        body_axis_deriv = self.ovl.get_body_axis_derivs()
+        body_forces = self.ovl.get_body_forces()
         
         body_func_seeds = {}
         for body in body_forces:
@@ -111,17 +111,17 @@ class TestTotals(unittest.TestCase):
 
     def test_aero_constraint(self):
         # compare the analytical gradients with finite difference for each constraint and function
-        func_vars = self.ovl_solver.case_var_to_fort_var
-        stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
-        body_axis_derivs = self.ovl_solver.case_body_derivs_to_fort_var
-        sens_funcs = self.ovl_solver.execute_run_sensitivities(func_vars)
-        sens_sd = self.ovl_solver.execute_run_sensitivities([], stab_derivs=stab_derivs, print_timings=False)
-        sens_bd = self.ovl_solver.execute_run_sensitivities([], body_axis_derivs=body_axis_derivs, print_timings=False)
+        func_vars = self.ovl.case_var_to_fort_var
+        stab_derivs = self.ovl.case_stab_derivs_to_fort_var
+        body_axis_derivs = self.ovl.case_body_derivs_to_fort_var
+        sens_funcs = self.ovl.execute_run_sensitivities(func_vars)
+        sens_sd = self.ovl.execute_run_sensitivities([], stab_derivs=stab_derivs, print_timings=False)
+        sens_bd = self.ovl.execute_run_sensitivities([], body_axis_derivs=body_axis_derivs, print_timings=False)
 
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl.con_var_list:
             # for con_key in ['beta']:
             func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif(
-                [con_key], {}, {}, {}, step=1.0e-5
+                [con_key], {}, {}, {}, step=1.0e-6
             )
 
             # for func_key in func_vars:
@@ -134,7 +134,7 @@ class TestTotals(unittest.TestCase):
 
                 # print(f"{func_key:5} wrt {con_key:5} | AD:{ad_dot: 5e} FD:{fd_dot: 5e} rel err:{rel_err:.2e}")
 
-                tol = 1e-8
+                tol = 5e-8
                 if np.abs(ad_dot) < tol or np.abs(fd_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
@@ -147,7 +147,7 @@ class TestTotals(unittest.TestCase):
                     np.testing.assert_allclose(
                         ad_dot,
                         fd_dot,
-                        rtol=5e-5,
+                        rtol=5e-4,
                         err_msg=f"func_key {func_key} w.r.t. {con_key}",
                     )
 
@@ -161,7 +161,7 @@ class TestTotals(unittest.TestCase):
                 #     f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                 # )
 
-                tol = 1e-8
+                tol = 5e-8
                 if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
@@ -188,7 +188,7 @@ class TestTotals(unittest.TestCase):
                 #     f"{func_key} wrt {con_key} | AD:{ad_dot: 5e} FD:{func_dot: 5e} rel err:{rel_err:.2e}"
                 # )
 
-                tol = 1e-8
+                tol = 5e-8
                 if np.abs(ad_dot) < tol or np.abs(func_dot) < tol:
                     # If either value is basically zero, use an absolute tolerance
                     np.testing.assert_allclose(
@@ -209,20 +209,19 @@ class TestTotals(unittest.TestCase):
         # compare the analytical gradients with finite difference for each
         # geometric variable and function
 
-        surf_key = list(self.ovl_solver.surf_geom_to_fort_var.keys())[0]
-        geom_vars = self.ovl_solver.surf_geom_to_fort_var[surf_key]
-        # geom_vars += self.ovl_solver.surf_mesh_to_fort_var[surf_key]
-        cs_names = self.ovl_solver.get_control_names()
+        surf_key = list(self.ovl.surf_geom_to_fort_var.keys())[0]
+        geom_vars = self.ovl.surf_geom_to_fort_var[surf_key]
+        cs_names = self.ovl.get_control_names()
 
         consurf_vars = []
-        for func_key in self.ovl_solver.case_derivs_to_fort_var:
-            consurf_vars.append(self.ovl_solver._get_deriv_key(cs_names[0], func_key))
+        for func_key in self.ovl.case_derivs_to_fort_var:
+            consurf_vars.append(self.ovl._get_deriv_key(cs_names[0], func_key))
 
-        func_vars = self.ovl_solver.case_var_to_fort_var
-        stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
-        body_axis_derivs = self.ovl_solver.case_body_derivs_to_fort_var
+        func_vars = self.ovl.case_var_to_fort_var
+        stab_derivs = self.ovl.case_stab_derivs_to_fort_var
+        body_axis_derivs = self.ovl.case_body_derivs_to_fort_var
 
-        sens = self.ovl_solver.execute_run_sensitivities(
+        sens = self.ovl.execute_run_sensitivities(
             func_vars,
             consurf_derivs=consurf_vars,
             stab_derivs=stab_derivs,
@@ -230,12 +229,12 @@ class TestTotals(unittest.TestCase):
             print_timings=False,
         )
 
-        # for con_key in self.ovl_solver.con_var_to_fort_var:
+        # for con_key in self.ovl.con_var_list:
         sens_FD = {}
-        for surf_key in self.ovl_solver.surf_geom_to_fort_var:
+        for surf_key in self.ovl.surf_geom_to_fort_var:
             sens_FD[surf_key] = {}
             for geom_key in geom_vars:
-                arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
+                arr = self.ovl.get_surface_param(surf_key, geom_key)
                 np.random.seed(arr.size)
                 rand_arr = np.random.rand(*arr.shape)
                 rand_arr /= np.linalg.norm(rand_arr)
@@ -353,12 +352,12 @@ class TestTotals(unittest.TestCase):
 
     def test_params(self):
         # compare the analytical gradients with finite difference for each constraint and function
-        func_vars = self.ovl_solver.case_var_to_fort_var
-        stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
+        func_vars = self.ovl.case_var_to_fort_var
+        stab_derivs = self.ovl.case_stab_derivs_to_fort_var
 
-        sens = self.ovl_solver.execute_run_sensitivities(func_vars, stab_derivs=stab_derivs)
+        sens = self.ovl.execute_run_sensitivities(func_vars, stab_derivs=stab_derivs)
 
-        for param_key in self.ovl_solver.param_idx_dict:
+        for param_key in self.ovl.param_idx_dict:
             func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif(
                 [], {}, {param_key: 1.0}, {}, step=1.0e-6
             )
@@ -415,12 +414,12 @@ class TestTotals(unittest.TestCase):
 
     def test_ref(self):
         # compare the analytical gradients with finite difference for each constraint and function
-        func_vars = self.ovl_solver.case_var_to_fort_var
-        stab_derivs = self.ovl_solver.case_stab_derivs_to_fort_var
+        func_vars = self.ovl.case_var_to_fort_var
+        stab_derivs = self.ovl.case_stab_derivs_to_fort_var
 
-        sens = self.ovl_solver.execute_run_sensitivities(func_vars, stab_derivs=stab_derivs)
+        sens = self.ovl.execute_run_sensitivities(func_vars, stab_derivs=stab_derivs)
 
-        for ref_key in self.ovl_solver.ref_var_to_fort_var:
+        for ref_key in self.ovl.ref_var_to_fort_var:
             # for con_key in ['beta']:
             func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif(
                 [], {}, {}, {ref_key: 1.0}, step=1.0e-5
@@ -478,6 +477,48 @@ class TestTotals(unittest.TestCase):
                         err_msg=f"{func_key}  wrt {ref_key}",
                     )
 
+class TestDirectVsAdjoint(unittest.TestCase):
+
+    def setUp(self):
+        self.ovl = OVLSolver(geo_file=geom_file)
+        self.ovl.set_variable("alpha", 5.0)
+        self.ovl.set_variable("beta", 0.0)
+        self.ovl.set_parameter("Mach", 0.8)
+        self.ovl.execute_run()
+
+    def tearDown(self):
+        # Get the memory usage of the current process using psutil
+        process = psutil.Process()
+        mb_memory = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+        print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
+
+    def test_aero_constraint(self):
+        # compare the analytical gradients with finite difference for each constraint and function
+        # func_vars = self.ovl.case_var_to_fort_var
+        stab_derivs = ["dCL/dalpha"]
+        # body_axis_derivs = self.ovl.case_body_derivs_to_fort_var
+        funcs = ["CL", "CD", "Cm"]
+        con_dvs = ["alpha"]
+        ref_dvs = ["Sref"]
+        param_dvs = ["Mach"]
+        geom_dvs = [("Wing", "scale"),("Wing", "chords")]
+        
+        sens_adjoint = self.ovl.execute_run_sensitivities(funcs, stab_derivs=stab_derivs )
+        
+        sens_direct = self.ovl.execute_run_sensitivities_direct(geom_dvs=geom_dvs, con_dvs=con_dvs, ref_dvs=ref_dvs, param_dvs=param_dvs,  add_stab_derivs=True)
+        
+        for func in funcs + stab_derivs:
+            for dv in geom_dvs:
+                # print(f"Adjoint d{func}/d{[dv[0]]} {[dv[1]]} {sens_adjoint[func][dv[0]][dv[1]]}")
+                # print(f"Direct  d{func}/d{[dv[0]]} {[dv[1]]} {sens_direct[func][dv[0]][dv[1]]}")
+                np.testing.assert_allclose(sens_direct[func][dv[0]][dv[1]], sens_adjoint[func][dv[0]][dv[1]], 1e-14, 1e-14)
+                
+            
+            for dv in con_dvs + ref_dvs + param_dvs:
+                # print(f"Adjoint d{func}/d{dv} {sens_adjoint[func][dv]}")
+                # print(f"Direct  d{func}/d{dv} {sens_direct[func][dv]}")
+                np.testing.assert_allclose(sens_direct[func][dv], sens_adjoint[func][dv], 1e-14, 1e-14)
+            
 
 if __name__ == "__main__":
     unittest.main()

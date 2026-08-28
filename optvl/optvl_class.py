@@ -216,6 +216,11 @@ class OVLSolver(object):
         "XYZref":  ["CASE_R","XYZREF0"],
         "CDp":   ["CASE_R", "CDREF0"],
     }
+    
+    viz_aifoil_data_list = [
+        "casec",
+        "tasec"
+    ]
 
     # fmt: on
 
@@ -325,11 +330,13 @@ class OVLSolver(object):
         }
 
         # control surfaces added in __init__
-        # TODO: the keys of this dict aren't used
-        self.con_var_to_fort_var = {
-            "alpha": ["CASE_R", "ALFA"],
-            "beta": ["CASE_R", "BETA"],
-        }
+        self.con_var_list = [
+            "alpha",
+            "beta",
+            "roll rate",
+            "pitch rate",
+            "yaw rate",
+        ]
 
         control_names = self.get_control_names()
         self.dindex_to_con_surf = OrderedDict()
@@ -342,7 +349,7 @@ class OVLSolver(object):
         idx_control_start = np.max([x for x in self.conval_idx_dict.values()]) + 1
         for idx_c_var, c_name in enumerate(control_names):
             self.conval_idx_dict[c_name] = idx_control_start + idx_c_var
-            self.con_var_to_fort_var[c_name] = ["CASE_R", "DELCON"]
+            self.con_var_list.append(c_name)
 
         var_to_suffix = {
             "alpha": "AL",
@@ -949,6 +956,7 @@ class OVLSolver(object):
 
                         for key in self.surf_section_geom_to_fort_var[surf_name]:
                             avl_vars_secs = self.surf_section_geom_to_fort_var[surf_name][key]
+                            
                             avl_vars = (avl_vars_secs[0], avl_vars_secs[1], avl_vars_secs[2][j])
 
                             if key not in surf_dict:
@@ -3416,11 +3424,39 @@ class OVLSolver(object):
     # ---------------------------
     # --- Derivative routines ---
     # ---------------------------
+    
+    # --- utils ---
+    def zero_seed_dict(self, seed_dict: Dict) -> Dict:
+        for key, value in seed_dict.items():
+            seed_dict[key] = self._zero_value(value)
+        return seed_dict
+
+    def _zero_value(self, value):
+        if isinstance(value, dict):
+            for k, v in value.items():
+                value[k] = self._zero_value(v)
+            return value
+        elif isinstance(value, list):
+            return [self._zero_value(v) for v in value]
+        elif isinstance(value, np.ndarray):
+            value[...] = 0
+            return value
+        else:
+            return 0
+    
+    def deep_update(self, d, other):
+        for k, v in other.items():
+            if isinstance(v, dict) and isinstance(d.get(k), dict):
+                self.deep_update(d[k], v)
+            else:
+                d[k] = v
+        return d
+    
 
     # --- input ad seeds ---
     def get_variable_ad_seeds(self) -> Dict[str, float]:
         var_seeds = {}
-        for con in self.con_var_to_fort_var:
+        for con in self.con_var_list:
             idx_con = self.conval_idx_dict[con]
             blk = "CASE_R" + self.ad_suffix
             var = "CONVAL" + self.ad_suffix
@@ -3450,7 +3486,7 @@ class OVLSolver(object):
                 self.set_avl_fort_arr(blk, var, val, slicer=slicer)
 
             elif mode == "FD":
-                # # reverse lookup in the con_var_to_fort_var dict
+                # # reverse lookup in the con_var_list dict
                 if con in self.con_surf_to_dindex:
                     val = self.get_control_deflection(con)
                 else:
@@ -3544,23 +3580,56 @@ class OVLSolver(object):
                 var += self.ad_suffix
 
                 geom_seeds[surf_key][geom_key] = copy.deepcopy(self.get_avl_fort_arr(blk, var, slicer=slicer))
+                
+            for geom_key in self.surf_section_geom_to_fort_var[surf_key]:
+                if geom_key in self.viz_aifoil_data_list:
+                    continue
+                
+                blk, var, sec_slicers = self.surf_section_geom_to_fort_var[surf_key][geom_key]
+                blk += self.ad_suffix
+                var += self.ad_suffix
+                
+                geom_seeds[surf_key][geom_key] = []
+                for sec_slice in (sec_slicers):
+                    geom_seeds[surf_key][geom_key].append(copy.deepcopy(self.get_avl_fort_arr(blk, var, slicer=sec_slice)))
 
         return geom_seeds
 
     def set_geom_ad_seeds(self, geom_seeds: Dict[str, float], mode: str = "AD", scale=1.0) -> None:
         for surf_key in geom_seeds:
             for geom_key in geom_seeds[surf_key]:
-                blk, var, slicer = self.surf_geom_to_fort_var[surf_key][geom_key]
+                if geom_key in self.surf_geom_to_fort_var[surf_key]:
+                    blk, var, slicer = self.surf_geom_to_fort_var[surf_key][geom_key]
+                    
+                    if mode == "AD":
+                        blk += self.ad_suffix
+                        var += self.ad_suffix
+                        val = geom_seeds[surf_key][geom_key] * scale
+                    elif mode == "FD":
+                        val = self.get_avl_fort_arr(blk, var, slicer=slicer)
+                        val += geom_seeds[surf_key][geom_key] * scale
+                    
+                    self.set_avl_fort_arr(blk, var, val, slicer=slicer)
+                
+                elif geom_key in self.viz_aifoil_data_list:
+                    raise ValueError(f"Can not set key {geom_key}. it is only used for viz")
+                elif geom_key in self.surf_section_geom_to_fort_var[surf_key]:
+                    
+                    blk, var, sec_slicers = self.surf_section_geom_to_fort_var[surf_key][geom_key]
 
-                if mode == "AD":
-                    blk += self.ad_suffix
-                    var += self.ad_suffix
-                    val = geom_seeds[surf_key][geom_key] * scale
-                elif mode == "FD":
-                    val = self.get_avl_fort_arr(blk, var, slicer=slicer)
-                    val += geom_seeds[surf_key][geom_key] * scale
-                # print(blk, var, val, slicer)
-                self.set_avl_fort_arr(blk, var, val, slicer=slicer)
+                    if mode == "AD":
+                        blk += self.ad_suffix
+                        var += self.ad_suffix
+                
+                    for idx_slice, sec_slice in enumerate(sec_slicers):
+                        if mode == "AD":
+                            val = geom_seeds[surf_key][geom_key][idx_slice] * scale
+                        elif mode == "FD":
+                            val = self.get_avl_fort_arr(blk, var, slicer=sec_slice)
+                            val += geom_seeds[surf_key][geom_key][idx_slice] * scale
+                
+                        self.set_avl_fort_arr(blk, var, val, slicer=sec_slice)
+                    
 
     def get_mesh_ad_seeds(self) -> Dict[str, Dict[str, float]]:
         mesh_seeds = {}
@@ -3940,15 +4009,41 @@ class OVLSolver(object):
 
         mesh_size = self.get_mesh_size()
         num_control_surfs = self.get_num_control_surfs()
-
-        if con_seeds is None:
-            con_seeds = {}
-
-        if geom_seeds is None:
-            geom_seeds = {}
-
-        if mesh_seeds is None:
-            mesh_seeds = {}
+        
+        # start from zero'd con and geom seeds 
+        
+        # --- con seeds ---
+        con_seeds_full = self.get_variable_ad_seeds()
+        self.zero_seed_dict(con_seeds_full)
+        if con_seeds is not None:
+            self.deep_update(con_seeds_full, con_seeds)
+        
+        # --- geom ---
+        geom_seeds_full = self.get_geom_ad_seeds()
+        self.zero_seed_dict(geom_seeds_full)
+        if geom_seeds is not None:
+            self.deep_update(geom_seeds_full, geom_seeds)
+        
+        
+        # --- mesh ---
+        mesh_seeds_full = self.get_mesh_ad_seeds()
+        self.zero_seed_dict(mesh_seeds_full)
+        if mesh_seeds is not None:
+            self.deep_update(mesh_seeds_full, mesh_seeds)
+        
+        # --- param ---
+        param_seeds_full = self.get_parameter_ad_seeds()
+        self.zero_seed_dict(param_seeds_full)
+        if param_seeds is not None:
+            self.deep_update(param_seeds_full, param_seeds)
+        
+        # --- ref ---
+        ref_seeds_full = self.get_reference_ad_seeds()
+        self.zero_seed_dict(ref_seeds_full)
+        if ref_seeds is not None:
+            self.deep_update(ref_seeds_full, ref_seeds)
+        
+        # The arrays can be set to zero if they don't exsist
 
         if self.DVGeo is None:
             dvgeo_seeds = {}
@@ -3962,27 +4057,25 @@ class OVLSolver(object):
         if gamma_u_seeds is None:
             gamma_u_seeds = np.zeros((self.NUMAX, mesh_size))
 
-        if param_seeds is None:
-            param_seeds = {}
-
-        if ref_seeds is None:
-            ref_seeds = {}
 
         res_slice = (slice(0, mesh_size),)
         res_d_slice = (slice(0, num_control_surfs), slice(0, mesh_size))
         res_u_slice = (slice(0, self.NUMAX), slice(0, mesh_size))
-
+        
         if mode == "AD":
-            # set derivative seeds
+            # The following body seeds are in the process of being supported
+            # because they are not explicitly passed, zero them out for now
+            body_seeds = np.zeros((self.NLMAX, 3))
+            self.set_avl_fort_arr("VRTX_R_DIFF", "RL_DIFF", body_seeds)
+            
             # self.clear_ad_seeds()
-            self.set_variable_ad_seeds(con_seeds)
-            self.set_geom_ad_seeds(geom_seeds)
-            # self.set_mesh_ad_seeds(mesh_seeds)
+            self.set_variable_ad_seeds(con_seeds_full)
+            self.set_geom_ad_seeds(geom_seeds_full)
             self.set_gamma_ad_seeds(gamma_seeds)
             self.set_gamma_d_ad_seeds(gamma_d_seeds)
             self.set_gamma_u_ad_seeds(gamma_u_seeds)
-            self.set_parameter_ad_seeds(param_seeds)
-            self.set_reference_ad_seeds(ref_seeds)
+            self.set_parameter_ad_seeds(param_seeds_full)
+            self.set_reference_ad_seeds(ref_seeds_full)
 
             # Since DVGeo seeds operate entirely within the python layer we set them here
             if self.DVGeo is not None and dvgeo_seeds is not None:
@@ -3996,18 +4089,18 @@ class OVLSolver(object):
                         continue # This surface doesn't have a pointset, skip it
 
                     # If no mesh seed was provided for the surface we will need to start it at zero
-                    if surface not in mesh_seeds.keys():
+                    if surface not in mesh_seeds_full.keys():
                         nx = self.avl.SURF_GEOM_I.NVC[idx_surf] + 1
                         ny = self.avl.SURF_GEOM_I.NVS[idx_surf] + 1
-                        mesh_seeds[surface] = {}
-                        mesh_seeds[surface]["mesh"] = np.zeros((nx*ny,3))
+                        mesh_seeds_full[surface] = {}
+                        mesh_seeds_full[surface]["mesh"] = np.zeros((nx*ny,3))
 
-                    # Loop over the design variables and accumulate the sensitivity product into the mesh_seeds
-                    mesh_seeds[surface]["mesh"] += self.DVGeo.totalSensitivityProd(dvgeo_seeds[surface], point_set_name).reshape(
-                        mesh_seeds[surface]["mesh"].shape
+                    # Loop over the design variables and accumulate the sensitivity product into the mesh_seeds_full
+                    mesh_seeds_full[surface]["mesh"] += self.DVGeo.totalSensitivityProd(dvgeo_seeds[surface], point_set_name).reshape(
+                        mesh_seeds_full[surface]["mesh"].shape
                     )
 
-            self.set_mesh_ad_seeds(mesh_seeds)
+            self.set_mesh_ad_seeds(mesh_seeds_full)
 
             self.avl.update_surfaces_d()
             self.avl.get_res_d()
@@ -4023,27 +4116,29 @@ class OVLSolver(object):
             res_d_seeds = self.get_residual_d_ad_seeds()
             res_u_seeds = self.get_residual_u_ad_seeds()
 
-            self.set_variable_ad_seeds(con_seeds, scale=0.0)
-            self.set_geom_ad_seeds(geom_seeds, scale=0.0)
-            self.set_mesh_ad_seeds(mesh_seeds, scale=0.0)
+            self.set_variable_ad_seeds(con_seeds_full, scale=0.0)
+            self.set_geom_ad_seeds(geom_seeds_full, scale=0.0)
+            self.set_mesh_ad_seeds(mesh_seeds_full, scale=0.0)
             self.set_gamma_ad_seeds(gamma_seeds, scale=0.0)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, scale=0.0)
             self.set_gamma_u_ad_seeds(gamma_u_seeds, scale=0.0)
-            self.set_parameter_ad_seeds(param_seeds, scale=0.0)
-            self.set_reference_ad_seeds(ref_seeds, scale=0.0)
+            self.set_parameter_ad_seeds(param_seeds_full, scale=0.0)
+            self.set_reference_ad_seeds(ref_seeds_full, scale=0.0)
 
-            # TODO: remove??
+            # TODO: revome this line and see if any of the tests break
+            #  one should not have to zero the gam seed since they are set directly, right?
+            # also the above line should do the zeroing right, set_gamma_ad_seeds
             self.set_avl_fort_arr("VRTX_R_DIFF", "GAM_DIFF", gamma_seeds * 0.0, slicer=res_slice)
 
         if mode == "FD":
-            self.set_variable_ad_seeds(con_seeds, mode="FD", scale=step)
-            self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=step)
-            self.set_mesh_ad_seeds(mesh_seeds, mode="FD", scale=step)
+            self.set_variable_ad_seeds(con_seeds_full, mode="FD", scale=step)
+            self.set_geom_ad_seeds(geom_seeds_full, mode="FD", scale=step)
+            self.set_mesh_ad_seeds(mesh_seeds_full, mode="FD", scale=step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=step)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=step)
             self.set_gamma_u_ad_seeds(gamma_u_seeds, mode="FD", scale=step)
-            self.set_parameter_ad_seeds(param_seeds, mode="FD", scale=step)
-            self.set_reference_ad_seeds(ref_seeds, mode="FD", scale=step)
+            self.set_parameter_ad_seeds(param_seeds_full, mode="FD", scale=step)
+            self.set_reference_ad_seeds(ref_seeds_full, mode="FD", scale=step)
 
 
             # Since DVGeo operates entirely within the python layer we have have to do this
@@ -4091,14 +4186,14 @@ class OVLSolver(object):
             res_d_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_D", slicer=res_d_slice))
             res_u_peturbed = copy.deepcopy(self.get_avl_fort_arr("VRTX_R", "RES_U", slicer=res_u_slice))
 
-            self.set_variable_ad_seeds(con_seeds, mode="FD", scale=-1 * step)
-            self.set_geom_ad_seeds(geom_seeds, mode="FD", scale=-1 * step)
-            self.set_mesh_ad_seeds(mesh_seeds, mode="FD", scale=-1 * step)
+            self.set_variable_ad_seeds(con_seeds_full, mode="FD", scale=-1 * step)
+            self.set_geom_ad_seeds(geom_seeds_full, mode="FD", scale=-1 * step)
+            self.set_mesh_ad_seeds(mesh_seeds_full, mode="FD", scale=-1 * step)
             self.set_gamma_ad_seeds(gamma_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_d_ad_seeds(gamma_d_seeds, mode="FD", scale=-1 * step)
             self.set_gamma_u_ad_seeds(gamma_u_seeds, mode="FD", scale=-1 * step)
-            self.set_parameter_ad_seeds(param_seeds, mode="FD", scale=-1 * step)
-            self.set_reference_ad_seeds(ref_seeds, mode="FD", scale=-1 * step)
+            self.set_parameter_ad_seeds(param_seeds_full, mode="FD", scale=-1 * step)
+            self.set_reference_ad_seeds(ref_seeds_full, mode="FD", scale=-1 * step)
 
             # Set the mesh seeds back
             if self.DVGeo is not None and dvgeo_seeds is not None:
@@ -4334,6 +4429,187 @@ class OVLSolver(object):
 
         return con_seeds, geom_seeds, mesh_seeds, dvgeo_seeds, gamma_seeds, gamma_d_seeds, gamma_u_seeds, param_seeds, ref_seeds
 
+    def execute_run_sensitivities_direct(
+        self,
+        con_dvs: Optional[List[str]] = None,
+        geom_dvs: Optional[List[Tuple[(str, str)]]] = None,
+        param_dvs: Optional[List[str]] = None,
+        ref_dvs: Optional[List[str]] = None,
+        add_stab_derivs: Optional[bool] = False,
+        add_body_axis_derivs: Optional[bool] = False,
+        add_consurf_derivs: Optional[bool] = False,
+        print_timings: Optional[bool] = False,
+    ) -> Dict[str, Dict[str, float]]:
+        """Run the sensitivities of the input functionals in adjoint mode
+
+        Returns:
+            sens: a nested dictionary of sensitivities. The first key is the function and the next keys are for the design variables.
+        """
+        
+        sens = {}
+
+        if self.get_avl_fort_arr("CASE_L", "LTIMING"):
+            print_timings = True
+        
+
+        def make_unit_dicts(surfaces, surf_name, key):
+            """Yield dicts with each scalar element set to 1.0, others zero."""
+            val = surfaces[surf_name][key]
+
+            if np.isscalar(val):
+                yield {surf_name: {key: 1.0}}
+
+            elif isinstance(val, np.ndarray):
+                for idx in np.ndindex(val.shape):
+                    out = np.zeros_like(val, dtype=float)
+                    out[idx] = 1.0
+                    yield {surf_name: {key: out}}
+
+            elif isinstance(val, list):
+                # list of arrays (like xasec, sasec)
+                for i, arr in enumerate(val):
+                    for idx in np.ndindex(arr.shape):
+                        out = [np.zeros_like(a, dtype=float) for a in val]
+                        out[i][idx] = 1.0
+                        yield {surf_name: {key: out}}
+
+        # convenience function to get the correct seeds:
+        def get_dv_seed_list():
+            seeds = {}
+            
+            con_seed_list = []
+            if con_dvs is not None:
+                for con in con_dvs:
+                    con_seed_list.append({con:1.0})
+            seeds['con_seeds'] = con_seed_list
+  
+            geom_seed_list = []
+            if geom_dvs is not None:
+                full_geom_seeds = self.get_geom_ad_seeds()
+                for dv in geom_dvs:
+                    for dv_dict in make_unit_dicts(full_geom_seeds, dv[0], dv[1]):
+                        geom_seed_list.append(dv_dict)
+            seeds['geom_seeds'] = geom_seed_list
+            
+            param_seed_list = []
+            if param_dvs is not None:
+                for param in param_dvs:
+                    param_seed_list.append({param:1.0})
+            seeds['param_seeds'] = param_seed_list
+
+            ref_seed_list = []
+            if ref_dvs is not None:
+                for ref in ref_dvs:
+                    ref_seed_list.append({ref:1.0})
+            seeds['ref_seeds'] = ref_seed_list
+                    
+            # for dv in geom_dvs:
+            #     full_seed = full_geom_seeds[dv[0]][dv[1]]
+            #     if isinstance(full_seed, np.ndarray):
+                    
+            #         for i in range(full_seed.size):
+                    
+                
+            return seeds
+            
+            
+        
+        seeds = get_dv_seed_list()
+            
+        
+        def add_deriv_to_dict(dv_seed, sens_dict, seeds):
+            
+            def add_sub_dicts(in_dict, out_dict):
+                # recurse until we don't reach a dictionary
+                for key in in_dict:
+                    val = in_dict[key]
+            
+                    if isinstance(val, dict):
+                        if key not in out_dict:
+                            out_dict[key] = {}
+                        add_sub_dicts(val, out_dict[key])
+                    elif isinstance(val, np.ndarray):
+                      if key not in out_dict:
+                          out_dict[key] = np.zeros_like(val,dtype=float)
+                      out_dict[key] += val * seeds[func_key]
+                    elif isinstance(val, list):
+                        if key not in out_dict:
+                            out_dict[key] = [np.zeros_like(a,dtype=float) for a in val]
+                        for i, arr in enumerate(val):
+                            out_dict[key][i] += arr *seeds[func_key]
+                    else:  # scalar
+                        out_dict[key] = out_dict.get(key, 0.0) + val * seeds[func_key]
+            
+            for func_key in seeds:
+                
+                if func_key not in sens_dict:
+                    sens_dict[func_key] = {}
+                    
+                add_sub_dicts(dv_seed, sens_dict[func_key])
+
+        for dv_type in seeds:
+            for dv_seed in seeds[dv_type]:
+                
+                time_last = time.time()
+                # compute dR/dX
+                _, pRpX, _, _, _, pR_dpX, pR_upX = self._execute_jac_vec_prod_fwd(
+                    **{dv_type: dv_seed}
+                )
+                if print_timings:
+                    print(f"Time to get RHS: {time.time() - time_last}")
+                    time_last = time.time()
+
+                # now solve the direct equation
+                # the RHS is absorbing the negative of the total deriv equation
+                # DONT forget the negative
+                self.set_residual_ad_seeds(-1 * pRpX)
+                
+                if add_stab_derivs or add_body_axis_derivs:
+                    self.set_residual_u_ad_seeds(-1 * pR_upX)
+                    solve_res_u_drt = True
+                else:
+                    solve_res_u_drt = False
+                    
+                if add_consurf_derivs:
+                    self.set_residual_d_ad_seeds(-1 * pR_dpX)
+                    solve_res_d_drt = True
+                else:
+                    solve_res_d_drt = False
+
+                # solve only the state direct method
+                self.avl.solve_direct(solve_res_u_drt, solve_res_d_drt)
+                
+                if print_timings:
+                    print(f"Time to solve direct: {time.time() - time_last}")
+                    time_last = time.time()
+
+                # get the resulting adjoint vector (dU/dX) from fortran
+                dUdX = self.get_gamma_ad_seeds()
+                
+                # this is harmless even if we aren't solving for extra derivatives
+                dU_ddX = self.get_gamma_d_ad_seeds()
+                dU_udX = self.get_gamma_u_ad_seeds()
+                
+                # do the last partial derivative to comput the totals with the direct vector
+                func_seeds, _, consurf_derivs_seeds, stab_derivs_seeds, body_axis_derivs_seeds, _, _, = self._execute_jac_vec_prod_fwd(
+                        gamma_seeds=dUdX, gamma_d_seeds=dU_ddX, gamma_u_seeds=dU_udX, **{dv_type: dv_seed}
+                    )
+            
+                
+                add_deriv_to_dict(dv_seed, sens, func_seeds)
+                
+                if add_consurf_derivs:
+                    add_deriv_to_dict(dv_seed, sens, consurf_derivs_seeds)
+                
+                if add_stab_derivs:
+                    add_deriv_to_dict(dv_seed, sens, stab_derivs_seeds)
+                
+                if add_body_axis_derivs:
+                    add_deriv_to_dict(dv_seed, sens, body_axis_derivs_seeds)
+            
+        return sens
+        
+        
     def execute_run_sensitivities(
         self,
         funcs: List[str],
@@ -4362,16 +4638,14 @@ class OVLSolver(object):
         # set up and solve the adjoint for each function
         for func in funcs:
             sens[func] = {}
-            # get the RHS of the adjoint equation (pFpU)
-            # TODO: remove seeds if it doesn't effect accuracy
-            # self.clear_ad_seeds()
             time_last = time.time()
+            
+            # get the RHS of the adjoint equation (pFpU)
             _, _, _, _, pfpU, _, _, _, _ = self._execute_jac_vec_prod_rev(func_seeds={func: 1.0})
             if print_timings:
                 print(f"Time to get RHS: {time.time() - time_last}")
                 time_last = time.time()
 
-            # self.clear_ad_seeds()
             # u solver adjoint equation with RHS
             self.set_gamma_ad_seeds(-1 * pfpU)
             solve_gamma_u_adj = False

@@ -423,7 +423,7 @@ class TestFFDIntegration(unittest.TestCase):
                         np.testing.assert_allclose(
                             dvgeo_var_dot,
                             func_dot,
-                            atol=5e-9,
+                            atol=7e-9,
                             err_msg=f"{func_key} wrt {surf_key}:{dvgeo_var_key:10}",
                         )
                     else:

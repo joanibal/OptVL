@@ -39,7 +39,7 @@ class TestResidualDPartials(unittest.TestCase):
         print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
 
     def test_fwd_aero_constraint(self):
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
             res_d_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-5)[
@@ -53,7 +53,7 @@ class TestResidualDPartials(unittest.TestCase):
             )
 
     def test_rev_aero_constraint(self):
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
             num_gamma = self.ovl_solver.get_mesh_size()
@@ -197,7 +197,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
         print(f"{self.id()} Memory usage: {mb_memory:.2f} MB")
 
     def test_fwd_aero_constraint(self):
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             cs_d = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[2]
 
             cs_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-8)[2]
@@ -223,7 +223,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
 
         self.ovl_solver.clear_ad_seeds_fast()
 
-        for con_key in self.ovl_solver.con_var_to_fort_var:
+        for con_key in self.ovl_solver.con_var_list:
             cs_deriv_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[2]
 
             cs_deriv_sum = 0.0
