@@ -12,7 +12,7 @@ authors:
     corresponding: true
     affiliation: 1
   - name: Safa A. Bakhshi
-    # TODO-SB: add your orcid
+    orcid: 0009-0006-8313-0215
     affiliation: 1
   - name: Joaquim R. R. A. Martins
     orcid: 0000-0003-2143-1478
@@ -64,6 +64,10 @@ Unfortunately, as the number of design variables grows, the cost of gradient-fre
 Fortunately, gradient-based optimizers offer a much more efficient alternative that scales well with the number of design variables.
 Despite the widespread use of VLM codes, there still remains a need for an open-source VLM that is easy for the average aerospace engineer to set up with complete support for scripting and gradient-based optimization.
 
+<!-- SAB Comment>
+<!-- Pure planform optimiation with VLMs almost never have high-dimensional design spaces but when coupled in a larger MDO problem
+the adjoint implementation in OptVL becomes really powerful. I think this is why the python/openmdao interfaces in OptVL are powerful.>
+
 
 
 # State of the field
@@ -90,7 +94,8 @@ OpenAeroStruct [@Jasa2018a] is an open-source Python-based aerostructural analys
 OpenMDAO makes it possible to incorporate OpenAeroStruct into a Python script and use it in an optimization, but creates a steeper learning curve for people unfamiliar with OpenMDAO.
 It couples a vortex-lattice method with a structural beam model.
 It is fully capable of running and providing sensitivities for aero-only analysis.
- <!-- did not have all the outputs needed for a practical optimization. Stability derivatives -->
+ <!-- did not have all the outputs needed for a practical optimization. Stability derivatives 
+ SAB comment - I think MAUD/OpenMDAO's inability to deal with second derivatives and OptVL being a solution to that for stability and control w/ OpenMDAO is huge-->
 Unlike AVL or OpenVSP, models are formed through manipulation of the mesh rather than section-based geometry definition.
 Like VSPAERO, as of version 2.12.0 it does not offer sensitivities of aerodynamic stability derivatives, making it more difficult to ensure the resulting design is statically stable.
 
@@ -179,6 +184,21 @@ The constraint on the stability, quantified here as static margin, is possible w
 
 [^1]: https://github.com/joanibal/OptVL/blob/main/examples/run_opt_scipy.py
 
+<!--SAB - python input and custom mesh development with pyGeo-->
+
+To improve easy-of-use, we implemented a Python dictionary-based approach for specifying inputs to OptVL as an alternative to the traditional inputs files. 
+The Python dictionary input format facilites the new point-cloud based geometry specification feature added in OptVL that make it suitable for use in MDO.
+AVL parameterizes planforms though a section-based approach which limits geometric design variables to the set of geometric parameters defined by the AVL authors.
+When coupling OptVL with another tool to solve an MDO problem, the AVL geometry representation will likely become and obstacle and make formulating the problem difficult.
+To address this deficiency, we implement a new point-cloud based approach to specifying a planform geometry in OptVL inspired by the approach used by CFD-based aerodynamic shape optimization frameworks like MACH-Aero.
+A point-cloud based approach allows the user to choose any geometry parameterization they desire and warp the VLM mesh accordingly.
+The warped mesh can then be set into OptVL for aerodynamic function and sensitivity evaluation.
+Direct integration with the pyGeo [@Hadjik2023c] geometry parameterization package is provided to help users easily create free-form deformation(FFD) based geometry parameterizations.
+As AVL makes several assumptions about the mesh geometry to correctly evaluate the aerodyanmics, the OptVL point-cloud mesh feature applies the necessary corrections to a warped point-cloud mesh to ensure that all solver assumptions are satisfied.
+The user is informed of the changes made it their warped mesh though a built-in plotting feature that directly compares the user's input warped mesh with the corrected mesh that OptVL actually evaluates.
+
+<!-- SAB- TODO add a figure>
+
 <!-- ## CI/CD -->
 As part of the effort to make OptVL easy to use we invested time to create and test Python wheels that could be pip installed across major platforms: macOS arm64, Windows x86 and arm64, Linux x86.
 This significantly lowers the barrier to use the software since the user no longer has to know how to compile the code on their computer.
@@ -200,8 +220,8 @@ Aircraft designers have already started to use OptVL as part of their research.
 In his Master's thesis, @Heer2025 used OptVL for the analysis and design optimization of a conceptual morphing wing UAV design across a range of lift coefficient targets.
 <!-- Tiwari flying V -->
 Furthermore, other researchers have used OptVL when optimizing control surface sizes on a novel "flying V" aircraft [@Twari2025].
-<!-- TODO-SB: edit the description of your paper -->
-After adding the ability to set OptVL meshes point by point rather than through a geometric definition, @Bakhshi2026 used OptVL in the context of aerostructural optimization of a <>.
+<!-- SB: edit the description of your paper -->
+After adding the ability to set OptVL meshes point by point rather than through a geometric definition, [@Bakhshi2026] coupled OptVL with the MACH-Aero and MPhys [@Yildirim2025] frameworks to develop a mixed-fidelity coupled VLM-RANS approach for aerodyanamic shape optimization.
 
 In addition to academic use, OptVL has also been used by engineers in industry. 
 An aircraft designer at a UAV manufacturer has contributed to the code base, and an author was invited to present OptVL to engineers at an eVTOL developer evaluating new aircraft concepts.
