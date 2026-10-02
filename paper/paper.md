@@ -61,6 +61,7 @@ By integrating models of many subsystems together, engineers can quantitatively 
 Additionally, by creating a multidisciplinary model, engineers can use numerical optimization to automatically vary the design parameters for design refinement.
 Higher-level languages, like Python, offer a way to "glue" disciplinary models together, but also require an interface.
 Unfortunately, as the number of design variables grows, the cost of gradient-free optimizers grows quickly (often quadratically) [@Martins2022].
+Efficient optimization becomes even more important when VLMs are coupled with other models, such a structural model, that introduce more design variables and make the overall analysis more expensive. 
 Fortunately, gradient-based optimizers offer a much more efficient alternative that scales well with the number of design variables.
 Despite the widespread use of VLM codes, there still remains a need for an open-source VLM that is easy for the average aerospace engineer to set up with complete support for scripting and gradient-based optimization.
 
@@ -145,11 +146,20 @@ The design philosophy of OptVL is centered around keeping the code easy to use a
 <!-- We wanted to use AVL because of its status in the aerospace industry as the de facto VLM model with decades of validation. -->
 As a result, OptVL's API was constructed to be similar to that of AVL to make the user transition frictionless.
 However, unlike AVL, which uses a nested set of menus, OptVL exposes functionality through the methods of the `OVLSolver` class, which also holds the state information for the aerodynamic simulation.
-Again to keep the level of programming knowledge to a minimum, all the return types from the API are native Python types or NumPy arrays [@harris2020].
+To keep the level of programming knowledge to a minimum, all the return types from the API are native Python types or NumPy arrays [@harris2020].
 By returning the data as NumPy arrays and supplying functions for adding data to Matplotlib [@Hunter2007] frames, a user has a lot more flexibility when deciding how to visualize the results.
 An example of a Matplotlib visualization of the coefficient of pressure on the surface of the wing and tail is shown in \autoref{fig:cp}.
 
 ![Visualizing the surface pressure distribution in Python via Matplotlib.\label{fig:cp}](cp.png)
+
+To provide flexible ways to create geometry input, we implemented a Python dictionary-based approach for specifying inputs to OptVL as an alternative to the traditional inputs files. 
+The Python dictionary input format facilites a generic point-cloud based geometry specification feature in addition to AVL's section-based approach.
+This was motivated by the need to create a consistent description of the geometry while integrating OptVL with higher-fidelity solver.
+The point-cloud approach allows users to integrate custom or existing geometry parameterization tools that emit point clouds, such as pyGeo [@Hadjik2023c], with OptVL. 
+Point-clouds can optionally be corrected to meet the assumptions of the solver, and those corrections can be viewed with the built-in plotting features.
+
+
+<!-- SAB- TODO add a figure -->
 
 The Python layer, `OVLSolver`, wraps the underlying Fortran code.
 F2PY [@Peterson2009] is the backbone of the integration between the Python and Fortran layers. 
@@ -184,20 +194,6 @@ The constraint on the stability, quantified here as static margin, is possible w
 
 [^1]: https://github.com/joanibal/OptVL/blob/main/examples/run_opt_scipy.py
 
-<!--SAB - python input and custom mesh development with pyGeo-->
-
-To improve easy-of-use, we implemented a Python dictionary-based approach for specifying inputs to OptVL as an alternative to the traditional inputs files. 
-The Python dictionary input format facilites the new point-cloud based geometry specification feature added in OptVL that make it suitable for use in MDO.
-AVL parameterizes planforms though a section-based approach which limits geometric design variables to the set of geometric parameters defined by the AVL authors.
-When coupling OptVL with another tool to solve an MDO problem, the AVL geometry representation will likely become and obstacle and make formulating the problem difficult.
-To address this deficiency, we implement a new point-cloud based approach to specifying a planform geometry in OptVL inspired by the approach used by CFD-based aerodynamic shape optimization frameworks like MACH-Aero.
-A point-cloud based approach allows the user to choose any geometry parameterization they desire and warp the VLM mesh accordingly.
-The warped mesh can then be set into OptVL for aerodynamic function and sensitivity evaluation.
-Direct integration with the pyGeo [@Hadjik2023c] geometry parameterization package is provided to help users easily create free-form deformation(FFD) based geometry parameterizations.
-As AVL makes several assumptions about the mesh geometry to correctly evaluate the aerodyanmics, the OptVL point-cloud mesh feature applies the necessary corrections to a warped point-cloud mesh to ensure that all solver assumptions are satisfied.
-The user is informed of the changes made it their warped mesh though a built-in plotting feature that directly compares the user's input warped mesh with the corrected mesh that OptVL actually evaluates.
-
-<!-- SAB- TODO add a figure>
 
 <!-- ## CI/CD -->
 As part of the effort to make OptVL easy to use we invested time to create and test Python wheels that could be pip installed across major platforms: macOS arm64, Windows x86 and arm64, Linux x86.
@@ -220,7 +216,6 @@ Aircraft designers have already started to use OptVL as part of their research.
 In his Master's thesis, @Heer2025 used OptVL for the analysis and design optimization of a conceptual morphing wing UAV design across a range of lift coefficient targets.
 <!-- Tiwari flying V -->
 Furthermore, other researchers have used OptVL when optimizing control surface sizes on a novel "flying V" aircraft [@Twari2025].
-<!-- SB: edit the description of your paper -->
 After adding the ability to set OptVL meshes point by point rather than through a geometric definition, [@Bakhshi2026] coupled OptVL with the MACH-Aero and MPhys [@Yildirim2025] frameworks to develop a mixed-fidelity coupled VLM-RANS approach for aerodyanamic shape optimization.
 
 In addition to academic use, OptVL has also been used by engineers in industry. 
