@@ -155,11 +155,10 @@ An example of a Matplotlib visualization of the coefficient of pressure on the s
 To provide flexible ways to create geometry input, we implemented a Python dictionary-based approach for specifying inputs to OptVL as an alternative to the traditional inputs files. 
 The Python dictionary input format facilites a generic point-cloud based geometry specification feature in addition to AVL's section-based approach.
 This was motivated by the need to create a consistent description of the geometry while integrating OptVL with higher-fidelity solver.
-The point-cloud approach allows users to integrate custom or existing geometry parameterization tools that emit point clouds, such as pyGeo [@Hadjik2023c], with OptVL. 
+The point-cloud approach allows users to integrate custom or existing geometry parameterization tools that emit point clouds, such as pyGeo [@Hadjik2023c], as demonstrated in \autoref{fig:ffd}. 
 Point-clouds can optionally be corrected to meet the assumptions of the solver, and those corrections can be viewed with the built-in plotting features.
 
-
-<!-- SAB- TODO add a figure -->
+![A point-cloud wing mesh embedded in an FFD volume with a twist deformation applied.\label{fig:ffd}](ffd.png)
 
 The Python layer, `OVLSolver`, wraps the underlying Fortran code.
 F2PY [@Peterson2009] is the backbone of the integration between the Python and Fortran layers. 
@@ -213,7 +212,7 @@ The extra precision resolves smaller differences in outputs, allowing the optimi
 
 Aircraft designers have already started to use OptVL as part of their research.
 <!-- Simon Heer -->
-In his Master's thesis, @Heer2025 used OptVL for the analysis and design optimization of a conceptual morphing wing UAV design across a range of lift coefficient targets.
+In his Master's thesis, [@Heer2025] used OptVL for the analysis and design optimization of a conceptual morphing wing UAV design across a range of lift coefficient targets.
 <!-- Tiwari flying V -->
 Furthermore, other researchers have used OptVL when optimizing control surface sizes on a novel "flying V" aircraft [@Twari2025].
 After adding the ability to set OptVL meshes point by point rather than through a geometric definition, [@Bakhshi2026] coupled OptVL with the MACH-Aero and MPhys [@Yildirim2025] frameworks to develop a mixed-fidelity coupled VLM-RANS approach for aerodyanamic shape optimization.
