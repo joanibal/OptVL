@@ -268,6 +268,7 @@ C
       real(kind=avl_real) CMST_U_DIFF
       real(kind=avl_real) CMST_D_DIFF
       real(kind=avl_real) CF_LSTRP_DIFF
+      real(kind=avl_real) CM_LSTRP_DIFF
       real(kind=avl_real) CD_LSTRP_DIFF
       real(kind=avl_real) CL_LSTRP_DIFF
       real(kind=avl_real) CDV_LSTRP_DIFF
@@ -311,6 +312,7 @@ C
      & CMST_U_DIFF(3,NSMAX,NUMAX),
      & CMST_D_DIFF(3,NSMAX,NDMAX),
      & CF_LSTRP_DIFF(3,NSMAX),
+     & CM_LSTRP_DIFF(3,NSMAX),
      & CD_LSTRP_DIFF(NSMAX),
      & CL_LSTRP_DIFF(NSMAX),
      & CDV_LSTRP_DIFF(NSMAX),

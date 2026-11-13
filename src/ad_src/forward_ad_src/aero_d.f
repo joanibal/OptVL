@@ -14,9 +14,9 @@ C                cytot_be crtot_be cmtot_be cntot_be cdtot_rx cltot_rx
 C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
 C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
 C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
-C                rr cdstrp clstrp cfstrp cmstrp cf_lstrp cd_lstrp
-C                cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp
-C                cnc dwwake
+C                rr cdstrp clstrp cfstrp cmstrp cf_lstrp cm_lstrp
+C                cd_lstrp cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp
+C                cmle_lstrp cnc dwwake
 C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
 C                sref cref bref xyzref mach cdref rle chord rle1
 C                chord1 rle2 chord2 wstrip clcd ess ensy ensz xsref
@@ -44,11 +44,11 @@ C                cntot_rz:out xnp:out sm:out bb:out rr:out rle:in
 C                chord:in rle1:in chord1:in rle2:in chord2:in wstrip:in
 C                clcd:in ess:in ensy:in ensz:in xsref:in ysref:in
 C                zsref:in cdstrp:out clstrp:out cfstrp:out cmstrp:out
-C                cf_lstrp:out cd_lstrp:out cl_lstrp:out cdv_lstrp:out
-C                clt_lstrp:out cmc4_lstrp:out cmle_lstrp:out cnc:out
-C                dwwake:out rv1:in rv2:in rv:in rc:in gam:in gam_u:in
-C                gam_d:in src:in src_u:in vv:in vv_u:in vv_d:in
-C                wv:in wv_u:in wv_d:in
+C                cf_lstrp:out cm_lstrp:out cd_lstrp:out cl_lstrp:out
+C                cdv_lstrp:out clt_lstrp:out cmc4_lstrp:out cmle_lstrp:out
+C                cnc:out dwwake:out rv1:in rv2:in rv:in rc:in gam:in
+C                gam_u:in gam_d:in src:in src_u:in vv:in vv_u:in
+C                vv_d:in wv:in wv_u:in wv_d:in
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -339,9 +339,9 @@ C  Differentiation of sfforc in forward (tangent) mode (with options i4 dr8 r8):
 C   variations   of useful results: cdtot cytot cltot cdtot_a cltot_a
 C                cdtot_u cytot_u cltot_u cdtot_d cytot_d cltot_d
 C                cftot cftot_u cftot_d cmtot cmtot_u cmtot_d cdvtot
-C                cdstrp clstrp cfstrp cmstrp cf_lstrp cd_lstrp
-C                cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp
-C                cnc
+C                cdstrp clstrp cfstrp cmstrp cf_lstrp cm_lstrp
+C                cd_lstrp cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp
+C                cmle_lstrp cnc
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref rle chord rle1 chord1 rle2 chord2 wstrip
 C                clcd ess ensy ensz xsref ysref zsref rv1 rv2 rv
@@ -606,6 +606,11 @@ C
       DO ii1=1,NSTRIP
         DO ii2=1,3
           cf_lstrp_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,NSTRIP
+        DO ii2=1,3
+          cm_lstrp_diff(ii2, ii1) = 0.D0
         ENDDO
       ENDDO
       DO ii1=1,NSTRIP
@@ -1911,8 +1916,11 @@ C   referred to c/4 and strip area and chord
         cf_lstrp(2, j) = cfy
         cf_lstrp_diff(3, j) = cfz_diff
         cf_lstrp(3, j) = cfz
+        cm_lstrp_diff(1, j) = cmx_diff
         cm_lstrp(1, j) = cmx
+        cm_lstrp_diff(2, j) = cmy_diff
         cm_lstrp(2, j) = cmy
+        cm_lstrp_diff(3, j) = cmz_diff
         cm_lstrp(3, j) = cmz
 Ccc        write(24,*) J,cmx
 C

@@ -195,46 +195,46 @@ class OVLSolver(object):
     }
 
     case_strip_var_to_fort_var = {
-            # geometric quantities
-            "X LE": ["STRP_R", "RLE", (slice(None), 0)],  # control point leading edge coordinates
-            "Y LE": ["STRP_R", "RLE", (slice(None), 1)],  # control point leading edge coordinates
-            "Z LE": ["STRP_R", "RLE", (slice(None), 2)],  # control point leading edge coordinates
-            "chord": ["STRP_R", "CHORD"],
-            "width": ["STRP_R", "WSTRIP"],
-            "twist": ["STRP_R", "AINC"],
+        # geometric quantities
+        "X LE": ["STRP_R", "RLE", (slice(None), 0)],  # control point leading edge coordinates
+        "Y LE": ["STRP_R", "RLE", (slice(None), 1)],  # control point leading edge coordinates
+        "Z LE": ["STRP_R", "RLE", (slice(None), 2)],  # control point leading edge coordinates
+        "chord": ["STRP_R", "CHORD"],
+        "width": ["STRP_R", "WSTRIP"],
+        "twist": ["STRP_R", "AINC"],
 
-            # strip contributions to total lift and drag from strip integration
-            "CL": ["STRP_R", "CLSTRP"],
-            "CD": ["STRP_R", "CDSTRP"],
-            "CDv" : ["STRP_R","CDV_LSTRP"],  # strip viscous drag in stability axes
-            "downwash" : ["STRP_R","DWWAKE"],
-            
-            
-            # strip contributions to non-dimensionalized forces
-            "CX": ["STRP_R", "CFSTRP", (slice(None), 0)],
-            "CY": ["STRP_R", "CFSTRP", (slice(None), 1)],
-            "CZ": ["STRP_R", "CFSTRP", (slice(None), 2)],
-            
-            # strip contributions to total moments (body frame)
-            "Cl": ["STRP_R", "CMSTRP", (slice(None), 0)], # previously CR
-            "Cm": ["STRP_R", "CMSTRP", (slice(None), 1)], # previously CM
-            "Cn": ["STRP_R", "CMSTRP", (slice(None), 2)], # previously CN
-            
-            
-            # forces non-dimentionalized by strip quantities
-            "CL strip" : ["STRP_R", "CL_LSTRP"],
-            "CD strip" : ["STRP_R", "CD_LSTRP"],
-            "CF strip" : ["STRP_R", "CF_LSTRP"], # forces in 3 directions
-            "Cm strip" : ["STRP_R", "CM_LSTRP"], # moments in 3 directions
+        # strip contributions to total lift and drag from strip integration
+        "CL": ["STRP_R", "CLSTRP"],
+        "CD": ["STRP_R", "CDSTRP"],
+        "CDv" : ["STRP_R","CDV_LSTRP"],  # strip viscous drag in stability axes
+        "downwash" : ["STRP_R","DWWAKE"],
+        
+        
+        # strip contributions to non-dimensionalized forces
+        "CX": ["STRP_R", "CFSTRP", (slice(None), 0)],
+        "CY": ["STRP_R", "CFSTRP", (slice(None), 1)],
+        "CZ": ["STRP_R", "CFSTRP", (slice(None), 2)],
+        
+        # strip contributions to total moments (body frame)
+        "Cl": ["STRP_R", "CMSTRP", (slice(None), 0)], # previously CR
+        "Cm": ["STRP_R", "CMSTRP", (slice(None), 1)], # previously CM
+        "Cn": ["STRP_R", "CMSTRP", (slice(None), 2)], # previously CN
+        
+        
+        # forces non-dimentionalized by strip quantities
+        "CL strip" : ["STRP_R", "CL_LSTRP"],
+        "CD strip" : ["STRP_R", "CD_LSTRP"],
+        "CF strip" : ["STRP_R", "CF_LSTRP"], # forces in 3 directions
+        "Cm strip" : ["STRP_R", "CM_LSTRP"], # moments in 3 directions
 
-            # additional forces and moments
-            "CL perp" : ["STRP_R", "CLT_LSTRP"], # strip CL referenced to Vperp,
-            "Cm c/4" : ["STRP_R","CMC4_LSTRP"],  # strip pitching moment about c/4 and
-            "Cm LE" : ["STRP_R","CMLE_LSTRP"],  # strip pitching moment about LE vector
-            "spanloading" : ["STRP_R","CNC"],   # strip spanloading 
-            
-            # TODO: add
-            #  & CF_LSTRP(3,NSMAX),   CM_LSTRP(3,NSMAX),    ! strip forces in body axes referenced to strip area and 1/4 chord
+        # additional forces and moments
+        "CL perp" : ["STRP_R", "CLT_LSTRP"], # strip CL referenced to Vperp,
+        "Cm c/4" : ["STRP_R","CMC4_LSTRP"],  # strip pitching moment about c/4 and
+        "Cm LE" : ["STRP_R","CMLE_LSTRP"],  # strip pitching moment about LE vector
+        "spanloading" : ["STRP_R","CNC"],   # strip spanloading 
+        
+        # TODO: add
+        #  & CF_LSTRP(3,NSMAX),   CM_LSTRP(3,NSMAX),    ! strip forces in body axes referenced to strip area and 1/4 chord
     }
 
     body_geom_to_fort_var = {
@@ -3623,9 +3623,6 @@ class OVLSolver(object):
         for surf_key in self.unique_surface_names:
             geom_seeds[surf_key] = {}
             for geom_key in self.surf_geom_to_fort_var[surf_key]:
-                # not a differentiated variable despite appearing in this dict
-                if geom_key == "clcd":
-                    continue
                 blk, var, slicer = self.surf_geom_to_fort_var[surf_key][geom_key]
 
                 blk += self.ad_suffix
@@ -4548,12 +4545,13 @@ class OVLSolver(object):
         geom_dvs: Optional[List[Tuple[(str, str)]]] = None,
         param_dvs: Optional[List[str]] = None,
         ref_dvs: Optional[List[str]] = None,
+        add_strip_derivs: Optional[bool] = False,
         add_stab_derivs: Optional[bool] = False,
         add_body_axis_derivs: Optional[bool] = False,
         add_consurf_derivs: Optional[bool] = False,
         print_timings: Optional[bool] = False,
     ) -> Dict[str, Dict[str, float]]:
-        """Run the sensitivities of the input functionals in adjoint mode
+        """Run the sensitivities of the input functionals in direct mode
 
         Returns:
             sens: a nested dictionary of sensitivities. The first key is the function and the next keys are for the design variables.
@@ -4696,20 +4694,23 @@ class OVLSolver(object):
                     print(f"Time to solve direct: {time.time() - time_last}")
                     time_last = time.time()
 
-                # get the resulting adjoint vector (dU/dX) from fortran
+                # get the resulting direct vector (dU/dX) from fortran
                 dUdX = self.get_gamma_ad_seeds()
                 
                 # this is harmless even if we aren't solving for extra derivatives
                 dU_ddX = self.get_gamma_d_ad_seeds()
                 dU_udX = self.get_gamma_u_ad_seeds()
                 
-                # do the last partial derivative to comput the totals with the direct vector
-                func_seeds, _, consurf_derivs_seeds, stab_derivs_seeds, body_axis_derivs_seeds, _, _, = self._execute_jac_vec_prod_fwd(
+                # do the last partial derivative to compute the totals with the direct vector
+                func_seeds, strip_func_seeds, _, consurf_derivs_seeds, stab_derivs_seeds, body_axis_derivs_seeds, _, _, = self._execute_jac_vec_prod_fwd(
                         gamma_seeds=dUdX, gamma_d_seeds=dU_ddX, gamma_u_seeds=dU_udX, **{dv_type: dv_seed}
                     )
             
                 
                 add_deriv_to_dict(dv_seed, sens, func_seeds)
+
+                if add_strip_derivs:
+                    add_deriv_to_dict(dv_seed, sens, strip_func_seeds)
                 
                 if add_consurf_derivs:
                     add_deriv_to_dict(dv_seed, sens, consurf_derivs_seeds)

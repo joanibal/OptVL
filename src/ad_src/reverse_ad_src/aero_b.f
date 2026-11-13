@@ -14,9 +14,9 @@ C                cytot_be crtot_be cmtot_be cntot_be cdtot_rx cltot_rx
 C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
 C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
 C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
-C                rr cdstrp clstrp cfstrp cmstrp cf_lstrp cd_lstrp
-C                cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp
-C                cnc dwwake
+C                rr cdstrp clstrp cfstrp cmstrp cf_lstrp cm_lstrp
+C                cd_lstrp cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp
+C                cmle_lstrp cnc dwwake
 C   with respect to varying inputs: alfa vinf vinf_a vinf_b wrot
 C                sref cref bref xyzref mach cdref clff cyff cdff
 C                spanef cdtot cytot cltot cdtot_d cytot_d cltot_d
@@ -32,10 +32,10 @@ C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
 C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
 C                rr rle chord rle1 chord1 rle2 chord2 wstrip clcd
 C                ess ensy ensz xsref ysref zsref cdstrp clstrp
-C                cfstrp cmstrp cf_lstrp cd_lstrp cl_lstrp cdv_lstrp
-C                clt_lstrp cmc4_lstrp cmle_lstrp cnc dwwake rv1
-C                rv2 rv rc gam gam_u gam_d src src_u vv vv_u vv_d
-C                wv wv_u wv_d
+C                cfstrp cmstrp cf_lstrp cm_lstrp cd_lstrp cl_lstrp
+C                cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp cnc
+C                dwwake rv1 rv2 rv rc gam gam_u gam_d src src_u
+C                vv vv_u vv_d wv wv_u wv_d
 C   RW status of diff variables: alfa:out vinf:out vinf_a:out vinf_b:out
 C                wrot:out sref:out cref:out bref:out xyzref:out
 C                mach:out cdref:out clff:in-zero cyff:in-zero cdff:in-zero
@@ -64,12 +64,12 @@ C                rr:in-out rle:out chord:out rle1:out chord1:out
 C                rle2:out chord2:out wstrip:out clcd:out ess:out
 C                ensy:out ensz:out xsref:out ysref:out zsref:out
 C                cdstrp:in-out clstrp:in-out cfstrp:in-out cmstrp:in-out
-C                cf_lstrp:in-out cd_lstrp:in-out cl_lstrp:in-out
-C                cdv_lstrp:in-out clt_lstrp:in-out cmc4_lstrp:in-out
-C                cmle_lstrp:in-out cnc:in-out dwwake:in-out rv1:out
-C                rv2:out rv:out rc:out gam:out gam_u:out gam_d:out
-C                src:out src_u:out vv:out vv_u:out vv_d:out wv:out
-C                wv_u:out wv_d:out
+C                cf_lstrp:in-out cm_lstrp:in-out cd_lstrp:in-out
+C                cl_lstrp:in-out cdv_lstrp:in-out clt_lstrp:in-out
+C                cmc4_lstrp:in-out cmle_lstrp:in-out cnc:in-out
+C                dwwake:in-out rv1:out rv2:out rv:out rc:out gam:out
+C                gam_u:out gam_d:out src:out src_u:out vv:out vv_u:out
+C                vv_d:out wv:out wv_u:out wv_d:out
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -440,16 +440,17 @@ C   gradient     of useful results: alfa vinf wrot sref cref bref
 C                xyzref cdtot cytot cltot cdtot_a cltot_a cdtot_u
 C                cytot_u cltot_u cdtot_d cytot_d cltot_d cftot
 C                cftot_u cftot_d cmtot cmtot_u cmtot_d cdvtot chord
-C                cdstrp clstrp cfstrp cmstrp cf_lstrp cd_lstrp
-C                cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp
-C                cnc rv1 rv2 gam
+C                cdstrp clstrp cfstrp cmstrp cf_lstrp cm_lstrp
+C                cd_lstrp cl_lstrp cdv_lstrp clt_lstrp cmc4_lstrp
+C                cmle_lstrp cnc rv1 rv2 gam
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref cdtot_d cytot_d cltot_d cftot cftot_d cmtot
 C                cmtot_d rle chord rle1 chord1 rle2 chord2 wstrip
 C                clcd ess ensy ensz xsref ysref zsref cdstrp clstrp
-C                cfstrp cmstrp cf_lstrp cd_lstrp cl_lstrp cdv_lstrp
-C                clt_lstrp cmc4_lstrp cmle_lstrp cnc rv1 rv2 rv
-C                gam gam_u gam_d vv vv_u vv_d wv wv_u wv_d
+C                cfstrp cmstrp cf_lstrp cm_lstrp cd_lstrp cl_lstrp
+C                cdv_lstrp clt_lstrp cmc4_lstrp cmle_lstrp cnc
+C                rv1 rv2 rv gam gam_u gam_d vv vv_u vv_d wv wv_u
+C                wv_d
 C AERO
 C
 C
@@ -3395,6 +3396,12 @@ C$BWD-OF II-LOOP
         cfstrp_diff(3, j) = 0.D0
         cfstrp_diff(2, j) = 0.D0
         cfstrp_diff(1, j) = 0.D0
+        cmz_diff = cmz_diff + cm_lstrp_diff(3, j)
+        cm_lstrp_diff(3, j) = 0.D0
+        cmy_diff = cmy_diff + cm_lstrp_diff(2, j)
+        cm_lstrp_diff(2, j) = 0.D0
+        cmx_diff = cmx_diff + cm_lstrp_diff(1, j)
+        cm_lstrp_diff(1, j) = 0.D0
         cf_lstrp_diff(3, j) = 0.D0
         cf_lstrp_diff(2, j) = 0.D0
         cf_lstrp_diff(1, j) = 0.D0
