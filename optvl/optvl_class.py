@@ -4070,7 +4070,7 @@ class OVLSolver(object):
         gamma_u_seeds: Optional[np.ndarray] = None,
         mode: str = "AD",
         step: float = 1e-7,
-    ) -> Tuple[Dict[str, float], np.ndarray, Dict[str, float], Dict[str, float], np.ndarray, np.ndarray]:
+    ) -> Tuple[Dict[str, float], Dict[str, Dict[str, float]], np.ndarray, Dict[str, float], Dict[str, float], np.ndarray, np.ndarray]:
         """Get partial derivatives in forward mode. This routine is useful internally and when creating wrappers for things like OpenMDAO
 
         Args:
@@ -4088,6 +4088,7 @@ class OVLSolver(object):
 
         Returns:
             func_seeds: force coefficient AD seeds
+            strip_func_seeds: strip forces AD seeds
             res_seeds:  residual AD seeds
             consurf_derivs_seeds: Control surface derivatives AD seeds
             stab_derivs_seeds: Stability derivatives AD seeds

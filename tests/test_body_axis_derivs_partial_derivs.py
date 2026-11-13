@@ -40,9 +40,9 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
     def test_fwd_aero_constraint(self):
         for con_key in self.ovl_solver.con_var_list:
-            bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[4]
+            bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
-            bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-6)[4]
+            bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, mode="FD", step=1e-6)[5]
 
             for deriv_func in bd_d:
                 sens_label = f"{deriv_func} wrt {con_key}"
@@ -65,7 +65,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
         self.ovl_solver.clear_ad_seeds_fast()
 
         for con_key in self.ovl_solver.con_var_list:
-            body_axis_deriv_seeds_fwd= self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[4]
+            body_axis_deriv_seeds_fwd= self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[5]
 
             body_axis_deriv_sum = 0.0
             for deriv_func in body_axis_deriv_seeds_rev:
@@ -91,11 +91,11 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
                 geom_seeds = np.random.rand(*arr.shape)
 
-                bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[4]
+                bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[5]
 
                 bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-9
-                )[4]
+                )[5]
 
                 for deriv_func in bd_d:
                     sens_label = f"{deriv_func} wrt {surf_key}:{geom_key:5}"
@@ -137,7 +137,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
                 bd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds_fwd}}
-                )[4]
+                )[5]
 
                 for deriv_func in self.ovl_solver.case_body_derivs_to_fort_var:
                     # use dot product test as design variables maybe arrays
@@ -171,8 +171,8 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
         num_gamma = self.ovl_solver.get_mesh_size()
         gamma_u_seeds = np.random.rand(self.ovl_solver.NUMAX, num_gamma)
 
-        bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[4]
-        bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds, mode="FD", step=1e-7)[4]
+        bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds)[5]
+        bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds, mode="FD", step=1e-7)[5]
 
         for deriv_func in bd_d:
             sens_label = f"{deriv_func} wrt gamma_u"
@@ -188,7 +188,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
         num_consurf = self.ovl_solver.get_num_control_surfs()
         gamma_u_seeds_fwd = np.random.rand(num_consurf, num_gamma)
 
-        bd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[4]
+        bd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_u_seeds=gamma_u_seeds_fwd)[5]
         self.ovl_solver.clear_ad_seeds_fast()
 
 
@@ -214,9 +214,9 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
-            bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[4]
+            bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[5]
 
-            bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed}, mode="FD", step=1e-6)[4]
+            bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed}, mode="FD", step=1e-6)[5]
 
             for deriv_func in bd_d:
                 sens_label = f"{deriv_func} wrt {ref_key}"
@@ -253,7 +253,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
-            body_axis_deriv_seeds_fwd= self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[4]
+            body_axis_deriv_seeds_fwd= self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[5]
 
             body_axis_deriv_sum = 0.0
             for deriv_func in body_axis_deriv_seeds_fwd:
