@@ -267,7 +267,16 @@ C
       real(kind=avl_real) CMSTRP_DIFF
       real(kind=avl_real) CMST_U_DIFF
       real(kind=avl_real) CMST_D_DIFF
+      real(kind=avl_real) CF_LSTRP_DIFF
+      real(kind=avl_real) CM_LSTRP_DIFF
+      real(kind=avl_real) CD_LSTRP_DIFF
+      real(kind=avl_real) CL_LSTRP_DIFF
       real(kind=avl_real) CDV_LSTRP_DIFF
+      real(kind=avl_real) CLT_LSTRP_DIFF
+      real(kind=avl_real) CMC4_LSTRP_DIFF
+      real(kind=avl_real) CMLE_LSTRP_DIFF
+      real(kind=avl_real) CNC_DIFF
+      real(kind=avl_real) DWWAKE_DIFF
       COMMON /STRP_R_DIFF/
      & RLE_DIFF(3,NSMAX),
      & CHORD_DIFF(NSMAX),
@@ -302,7 +311,16 @@ C
      & CMSTRP_DIFF(3,NSMAX),
      & CMST_U_DIFF(3,NSMAX,NUMAX),
      & CMST_D_DIFF(3,NSMAX,NDMAX),
-     & CDV_LSTRP_DIFF(NSMAX)
+     & CF_LSTRP_DIFF(3,NSMAX),
+     & CM_LSTRP_DIFF(3,NSMAX),
+     & CD_LSTRP_DIFF(NSMAX),
+     & CL_LSTRP_DIFF(NSMAX),
+     & CDV_LSTRP_DIFF(NSMAX),
+     & CLT_LSTRP_DIFF(NSMAX),
+     & CMC4_LSTRP_DIFF(NSMAX),
+     & CMLE_LSTRP_DIFF(NSMAX),
+     & CNC_DIFF(NSMAX),
+     & DWWAKE_DIFF(NSMAX)
 C
       real(kind=avl_real) RV1_DIFF
       real(kind=avl_real) RV2_DIFF

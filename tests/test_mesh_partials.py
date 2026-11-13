@@ -147,11 +147,11 @@ class TestResidualPartials(unittest.TestCase):
 
                 res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds}}
-                )[1]
+                )[2]
 
                 res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds}}, mode="FD", step=1e-8
-                )[1]
+                )[2]
 
                 abs_error = np.abs(res_seeds - res_seeds_FD)
                 rel_error = (res_seeds - res_seeds_FD) / (res_seeds + 1e-15)
@@ -182,7 +182,7 @@ class TestResidualPartials(unittest.TestCase):
 
                 res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds}}
-                )[1]
+                )[2]
 
                 # do dot product
                 res_sum = np.sum(res_seeds_rev * res_seeds)
@@ -220,11 +220,11 @@ class TestResidualUPartials(unittest.TestCase):
 
                 res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds}}
-                )[6]
+                )[7]
 
                 res_u_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds}}, mode="FD", step=1e-8
-                )[6]
+                )[7]
 
                 abs_error = np.abs(res_u_seeds.flatten() - res_u_seeds_FD.flatten())
                 rel_error = np.abs((res_u_seeds.flatten() - res_u_seeds_FD.flatten()) / (res_u_seeds.flatten() + 1e-15))
@@ -258,7 +258,7 @@ class TestResidualUPartials(unittest.TestCase):
 
                 res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds}}
-                )[6]
+                )[7]
 
                 # do dot product
                 res_sum = np.sum(res_u_seeds_rev * res_u_seeds_fwd)
@@ -299,11 +299,11 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
                 arr = self.ovl_solver.get_mesh(self.ovl_solver.get_surface_index(surf_key)).reshape(-1,3)
                 mesh_seeds = np.random.rand(*arr.shape)
 
-                sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(mesh_seeds={surf_key: {mesh_key: mesh_seeds}})[3]
+                sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(mesh_seeds={surf_key: {mesh_key: mesh_seeds}})[4]
 
                 sd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     mesh_seeds={surf_key: {mesh_key: mesh_seeds}}, mode="FD", step=5e-8
-                )[3]
+                )[4]
 
                 for deriv_func in sd_d:
                     sens_label = f"{deriv_func} wrt {surf_key}:{mesh_key:5}"
@@ -345,7 +345,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
 
                 sd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds_fwd}}
-                )[3]
+                )[4]
 
                 for deriv_func in self.ovl_solver.case_stab_derivs_to_fort_var:
                     # use dot product test as design variables maybe arrays
@@ -397,11 +397,11 @@ class TestResidualDPartials(unittest.TestCase):
 
                 res_d_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds}}
-                )[5]
+                )[6]
 
                 res_d_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds}}, mode="FD", step=1e-8
-                )[5]
+                )[6]
                 abs_error = np.abs(res_d_seeds.flatten() - res_d_seeds_FD.flatten())
                 rel_error = np.abs((res_d_seeds.flatten() - res_d_seeds_FD.flatten()) / (res_d_seeds.flatten() + 1e-15))
 
@@ -436,7 +436,7 @@ class TestResidualDPartials(unittest.TestCase):
 
                 res_d_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds}}
-                )[5]
+                )[6]
 
                 # do dot product
                 res_sum = np.sum(res_d_seeds_rev * res_d_seeds_fwd)
@@ -473,11 +473,11 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                 arr = self.ovl_solver.get_mesh(self.ovl_solver.get_surface_index(surf_key)).reshape(-1,3)
                 mesh_seeds = np.random.rand(*arr.shape)
 
-                cs_d = self.ovl_solver._execute_jac_vec_prod_fwd(mesh_seeds={surf_key: {mesh_key: mesh_seeds}})[2]
+                cs_d = self.ovl_solver._execute_jac_vec_prod_fwd(mesh_seeds={surf_key: {mesh_key: mesh_seeds}})[3]
 
                 cs_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     mesh_seeds={surf_key: {mesh_key: mesh_seeds}}, mode="FD", step=1e-7
-                )[2]
+                )[3]
 
                 for deriv_func in cs_d:
                     sens_label = f"{deriv_func} wrt {surf_key}:{mesh_key:5}"
@@ -520,7 +520,7 @@ class TestConSurfDerivsPartials(unittest.TestCase):
                 arr = self.ovl_solver.get_mesh(self.ovl_solver.get_surface_index(surf_key)).reshape(-1,3)
                 mesh_seeds_fwd = np.random.rand(*arr.shape)
 
-                func_seeds_fwd, _, cs_d_fwd, _, _, _, _ = self.ovl_solver._execute_jac_vec_prod_fwd(
+                func_seeds_fwd, _, _, cs_d_fwd, _, _, _, _ = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds_fwd}}
                 )
 
@@ -575,11 +575,11 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
                 arr = self.ovl_solver.get_mesh(self.ovl_solver.get_surface_index(surf_key)).reshape(-1,3)
                 mesh_seeds = np.random.rand(*arr.shape)
 
-                bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(mesh_seeds={surf_key: {mesh_key: mesh_seeds}})[4]
+                bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(mesh_seeds={surf_key: {mesh_key: mesh_seeds}})[5]
 
                 bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     mesh_seeds={surf_key: {mesh_key: mesh_seeds}}, mode="FD", step=1e-9
-                )[4]
+                )[5]
 
                 for deriv_func in bd_d:
                     sens_label = f"{deriv_func} wrt {surf_key}:{mesh_key:5}"
@@ -621,7 +621,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
                 bd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, mesh_seeds={surf_key: {mesh_key: mesh_seeds_fwd}}
-                )[4]
+                )[5]
 
                 for deriv_func in self.ovl_solver.case_body_derivs_to_fort_var:
                     # use dot product test as design variables maybe arrays

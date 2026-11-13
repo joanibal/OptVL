@@ -356,9 +356,9 @@ class TestResidualPartials(unittest.TestCase):
         for con_key in self.ovl_solver.con_var_list:
             res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 con_seeds={con_key: 1.0}, geom_seeds={}, mode="FD", step=1e-8
-            )[1]
+            )[2]
 
-            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})[1]
+            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0}, geom_seeds={})[2]
 
             # print(f"res wrt {con_key}", np.linalg.norm(res_seeds), np.linalg.norm(res_seeds_FD))
             np.testing.assert_allclose(res_seeds, res_seeds_FD, rtol=5e-4, err_msg=f"d(res) w.r.t.{con_key}")
@@ -371,7 +371,7 @@ class TestResidualPartials(unittest.TestCase):
         self.ovl_solver.clear_ad_seeds_fast()
 
         for con_key in self.ovl_solver.con_var_list:
-            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[1]
+            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(con_seeds={con_key: 1.0})[2]
 
             # do dot product
             res_sum = np.sum(res_seeds_rev * res_seeds_fwd)
@@ -388,11 +388,11 @@ class TestResidualPartials(unittest.TestCase):
 
                 res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )[1]
+                )[2]
 
                 res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
-                )[1]
+                )[2]
 
                 abs_error = np.abs(res_seeds - res_seeds_FD)
                 rel_error = (res_seeds - res_seeds_FD) / (res_seeds + 1e-15)
@@ -423,7 +423,7 @@ class TestResidualPartials(unittest.TestCase):
 
                 res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
-                )[1]
+                )[2]
 
                 # do dot product
                 res_sum = np.sum(res_seeds_rev * res_seeds)
@@ -443,8 +443,8 @@ class TestResidualPartials(unittest.TestCase):
         np.random.seed(111)
         gamma_seeds = np.random.rand(num_gamma)
 
-        res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_seeds=gamma_seeds)[1]
-        res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_seeds=gamma_seeds, mode="FD", step=1e-7)[1]
+        res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_seeds=gamma_seeds)[2]
+        res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(gamma_seeds=gamma_seeds, mode="FD", step=1e-7)[2]
 
         np.testing.assert_allclose(
             res_seeds,
@@ -454,11 +454,11 @@ class TestResidualPartials(unittest.TestCase):
 
     def test_fwd_param(self):
         for param_key in self.ovl_solver.param_idx_dict:
-            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(param_seeds={param_key: 1.0})[1]
+            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(param_seeds={param_key: 1.0})[2]
 
             res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 param_seeds={param_key: 1.0}, mode="FD", step=1e-7
-            )[1]
+            )[2]
 
             # print(f"res wrt {param_key}", np.linalg.norm(res_seeds), np.linalg.norm(res_seeds_FD))
             np.testing.assert_allclose(res_seeds, res_seeds_FD, atol=1e-6, err_msg=f"d(res) w.r.t.{param_key}")
@@ -471,7 +471,7 @@ class TestResidualPartials(unittest.TestCase):
         self.ovl_solver.clear_ad_seeds_fast()
 
         for param_key in self.ovl_solver.param_idx_dict:
-            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(param_seeds={param_key: 1.0})[1]
+            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(param_seeds={param_key: 1.0})[2]
 
             # do dot product
             res_sum = np.sum(res_seeds_rev * res_seeds_fwd)
@@ -488,10 +488,10 @@ class TestResidualPartials(unittest.TestCase):
     def test_fwd_ref(self):
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
-            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[1]
+            res_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[2]
             res_seeds_FD = self.ovl_solver._execute_jac_vec_prod_fwd(
                 ref_seeds={ref_key: 1.0}, mode="FD", step=1e-7
-            )[1]
+            )[2]
 
             # print(f"res wrt {ref_key}", np.linalg.norm(res_seeds), np.linalg.norm(res_seeds_FD))
             np.testing.assert_allclose(res_seeds, res_seeds_FD, atol=1e-6, err_msg=f"d(res) w.r.t.{ref_key}")
@@ -505,7 +505,7 @@ class TestResidualPartials(unittest.TestCase):
 
         for ref_key in self.ovl_solver.ref_var_to_fort_var:
             ref_seed = np.ones(3) if ref_key == "XYZref" else 1.0
-            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[1]
+            res_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(ref_seeds={ref_key: ref_seed})[2]
             # do dot product
             res_sum = np.sum(res_seeds_rev * res_seeds_fwd)
             ref_sum = np.sum(ref_seeds_rev[ref_key])
