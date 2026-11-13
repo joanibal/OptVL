@@ -3623,6 +3623,9 @@ class OVLSolver(object):
         for surf_key in self.unique_surface_names:
             geom_seeds[surf_key] = {}
             for geom_key in self.surf_geom_to_fort_var[surf_key]:
+                # not a differentiated variable despite appearing in this dict
+                if geom_key == "clcd":
+                    continue
                 blk, var, slicer = self.surf_geom_to_fort_var[surf_key][geom_key]
 
                 blk += self.ad_suffix
