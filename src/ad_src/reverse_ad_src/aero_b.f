@@ -30,12 +30,12 @@ C                cytot_be crtot_be cmtot_be cntot_be cdtot_rx cltot_rx
 C                cytot_rx crtot_rx cmtot_rx cntot_rx cdtot_ry cltot_ry
 C                cytot_ry crtot_ry cmtot_ry cntot_ry cdtot_rz cltot_rz
 C                cytot_rz crtot_rz cmtot_rz cntot_rz xnp sm bb
-C                rr rle chord rle1 chord1 rle2 chord2 wstrip ess
-C                ensy ensz xsref ysref zsref cdstrp clstrp cfstrp
-C                cmstrp cf_lstrp cd_lstrp cl_lstrp cdv_lstrp clt_lstrp
-C                cmc4_lstrp cmle_lstrp cnc dwwake rv1 rv2 rv rc
-C                gam gam_u gam_d src src_u vv vv_u vv_d wv wv_u
-C                wv_d
+C                rr rle chord rle1 chord1 rle2 chord2 wstrip clcd
+C                ess ensy ensz xsref ysref zsref cdstrp clstrp
+C                cfstrp cmstrp cf_lstrp cd_lstrp cl_lstrp cdv_lstrp
+C                clt_lstrp cmc4_lstrp cmle_lstrp cnc dwwake rv1
+C                rv2 rv rc gam gam_u gam_d src src_u vv vv_u vv_d
+C                wv wv_u wv_d
 C   RW status of diff variables: alfa:out vinf:out vinf_a:out vinf_b:out
 C                wrot:out sref:out cref:out bref:out xyzref:out
 C                mach:out cdref:out clff:in-zero cyff:in-zero cdff:in-zero
@@ -61,14 +61,15 @@ C                cntot_ry:in-zero cdtot_rz:in-zero cltot_rz:in-zero
 C                cytot_rz:in-zero crtot_rz:in-zero cmtot_rz:in-zero
 C                cntot_rz:in-zero xnp:in-out sm:in-out bb:in-out
 C                rr:in-out rle:out chord:out rle1:out chord1:out
-C                rle2:out chord2:out wstrip:out ess:out ensy:out
-C                ensz:out xsref:out ysref:out zsref:out cdstrp:in-out
-C                clstrp:in-out cfstrp:in-out cmstrp:in-out cf_lstrp:in-out
-C                cd_lstrp:in-out cl_lstrp:in-out cdv_lstrp:in-out
-C                clt_lstrp:in-out cmc4_lstrp:in-out cmle_lstrp:in-out
-C                cnc:in-out dwwake:in-out rv1:out rv2:out rv:out
-C                rc:out gam:out gam_u:out gam_d:out src:out src_u:out
-C                vv:out vv_u:out vv_d:out wv:out wv_u:out wv_d:out
+C                rle2:out chord2:out wstrip:out clcd:out ess:out
+C                ensy:out ensz:out xsref:out ysref:out zsref:out
+C                cdstrp:in-out clstrp:in-out cfstrp:in-out cmstrp:in-out
+C                cf_lstrp:in-out cd_lstrp:in-out cl_lstrp:in-out
+C                cdv_lstrp:in-out clt_lstrp:in-out cmc4_lstrp:in-out
+C                cmle_lstrp:in-out cnc:in-out dwwake:in-out rv1:out
+C                rv2:out rv:out rc:out gam:out gam_u:out gam_d:out
+C                src:out src_u:out vv:out vv_u:out vv_d:out wv:out
+C                wv_u:out wv_d:out
 C***********************************************************************
 C    Module:  aero.f
 C 
@@ -445,7 +446,7 @@ C                cnc rv1 rv2 gam
 C   with respect to varying inputs: alfa vinf wrot sref cref bref
 C                xyzref cdtot_d cytot_d cltot_d cftot cftot_d cmtot
 C                cmtot_d rle chord rle1 chord1 rle2 chord2 wstrip
-C                ess ensy ensz xsref ysref zsref cdstrp clstrp
+C                clcd ess ensy ensz xsref ysref zsref cdstrp clstrp
 C                cfstrp cmstrp cf_lstrp cd_lstrp cl_lstrp cdv_lstrp
 C                clt_lstrp cmc4_lstrp cmle_lstrp cnc rv1 rv2 rv
 C                gam gam_u gam_d vv vv_u vv_d wv wv_u wv_d
@@ -2014,6 +2015,11 @@ C
       ENDDO
       DO ii1=1,NSTRIP
         chord2_diff(ii1) = 0.D0
+      ENDDO
+      DO ii1=1,NSTRIP
+        DO ii2=1,6
+          clcd_diff(ii2, ii1) = 0.D0
+        ENDDO
       ENDDO
       DO ii1=1,NSTRIP
         DO ii2=1,3

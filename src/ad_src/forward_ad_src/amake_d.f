@@ -2645,6 +2645,8 @@ C
       INCLUDE 'AVL_oml.INC'
       CHARACTER*(*) msg
       INTEGER idx_vor
+      REAL ypt
+      INTEGER nn
       INTEGER nni
       INTEGER klen
       INTRINSIC LEN
@@ -2663,8 +2665,6 @@ C
       INTEGER iii
       INTEGER ii
       REAL rsgn
-      INTEGER nn
-      REAL ypt
 C
 C     
       nni = nn + 1
