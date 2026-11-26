@@ -504,8 +504,8 @@ class OVLSolver(object):
             "zles": ["SURF_GEOM_R", "XYZLES", slice_surf_secs_z],
             "chords": ["SURF_GEOM_R", "CHORDS", slice_surf_secs],
             "aincs": ["SURF_GEOM_R", "AINCS", slice_surf_secs],
-            "clcdsec": ["SURF_GEOM_R", "CLCDSEC", slice_surf_secs_all],
-            "clcd": ["SURF_GEOM_R", "CLCDSRF", slice_surf_all],  # NEW
+            "cdclsec": ["SURF_GEOM_R", "CLCDSEC", slice_surf_secs_all],
+            "cdcl": ["SURF_GEOM_R", "CLCDSRF", slice_surf_all],
             "claf": ["SURF_GEOM_R", "CLAF", slice_surf_secs],
         }
         self.surf_pannel_to_fort_var[surf_name] = {
@@ -823,6 +823,13 @@ class OVLSolver(object):
             for surf_name in input_dict["surfaces"]:
                 surf_dict = input_dict["surfaces"][surf_name]
 
+                for old_key, new_key in (("clcd", "cdcl"), ("clcdsec", "cdclsec")):
+                    if old_key in surf_dict:
+                        raise ValueError(
+                            f"Surface '{surf_name}': key '{old_key}' has been renamed to '{new_key}' for "
+                            "consistency with the CDCL keyword in AVL input files. Please rename it."
+                        )
+
                 # For meshes set the number of "sections" to the number of strips in the mesh so that the slice maps are setup correctly.
                 # This is automatically done by the pre-check routine
                 num_secs = surf_dict["num_sections"]
@@ -865,10 +872,10 @@ class OVLSolver(object):
                     "wake":                   True,
                     "albe":                   True,
                     "load":                   True,
-                    "clcd":                   np.zeros(6, dtype=np.float64),
+                    "cdcl":                   np.zeros(6, dtype=np.float64),
                     "nspans":                 np.zeros(num_secs, dtype=np.int32),
                     "sspaces":                np.zeros(num_secs, dtype=np.float64),
-                    "clcdsec":                np.zeros((num_secs,6)),
+                    "cdclsec":                np.zeros((num_secs,6)),
                     "claf":                   np.ones(num_secs),
                 }
 
@@ -899,11 +906,11 @@ class OVLSolver(object):
                     self.set_avl_fort_arr("SURF_GEOM_L", "LDUPL", False, slicer=idx_surf)
 
                 self.set_avl_fort_arr(
-                    "SURF_GEOM_L", "LSECPOLAR", "clcdsec" in surf_dict, slicer=(idx_surf, slice(None))
+                    "SURF_GEOM_L", "LSECPOLAR", "cdclsec" in surf_dict, slicer=(idx_surf, slice(None))
                 )
 
-                if "clcd" in surf_dict or "clcdsec" in surf_dict:
-                    # if any of the surfaces use clcd then turn on viscous loads
+                if "cdcl" in surf_dict or "cdclsec" in surf_dict:
+                    # if any of the surfaces use cdcl then turn on viscous loads
                     self.set_avl_fort_arr("CASE_L", "LVISC", True)
 
                 # lhinge = False Appears in AVL but does nothing
@@ -2526,7 +2533,7 @@ class OVLSolver(object):
         """Get all the surface level parameters for each surface
 
         Args:
-            include_geom: flag to include geometry data in the output. The data is ["scale", "translate", "angle", "xles", "yles", "zles", "chords", "aincs", "clcdsec", "claf"]
+            include_geom: flag to include geometry data in the output. The data is ["scale", "translate", "angle", "xles", "yles", "zles", "chords", "aincs", "cdclsec", "claf"]
             include_section_geom: flag to include section geometry data in the output. The data is ["xasec", "sasec", "tasec", xuasec, xlasec, zlasec, zuasec, casec, nasec]
             include_paneling:  flag to include paneling information in the output. The data ["nchordwise", "cspace","nspan", "sspace","sspaces","nspans","yduplicate", "wake", "able", "load", "use surface spacing", "component"]
             include_con_surf:  flag to include control surface and design variable data in the output. This is data like the hinge vector and gain.
@@ -3024,15 +3031,15 @@ class OVLSolver(object):
         fid.write("ANGLE\n")
         _write_data(["angle"])
 
-        if (data["clcd"] != 0.0).any():
+        if (data["cdcl"] != 0.0).any():
             fid.write(" CDCL\n")
             fid.write(
-                f" {data['clcd'][0]:.6f} "
-                f" {data['clcd'][1]:.6f} "
-                f" {data['clcd'][2]:.6f} "
-                f" {data['clcd'][3]:.6f} "
-                f" {data['clcd'][4]:.6f} "
-                f" {data['clcd'][5]:.6f}\n"
+                f" {data['cdcl'][0]:.6f} "
+                f" {data['cdcl'][1]:.6f} "
+                f" {data['cdcl'][2]:.6f} "
+                f" {data['cdcl'][3]:.6f} "
+                f" {data['cdcl'][4]:.6f} "
+                f" {data['cdcl'][5]:.6f}\n"
             )
 
         fid.write("#---------------------------------------\n")
@@ -3083,20 +3090,20 @@ class OVLSolver(object):
                 fid.write(f" AFILE {data['xfminmax'][idx_sec][0]}  {data['xfminmax'][idx_sec][1]} \n")
                 fid.write(f" {afile}\n")
 
-            # output claf and  clcd if not default
+            # output claf and cdclsec if not default
             if data["claf"][idx_sec] != 1.0:
                 fid.write(" CLAF\n")
                 fid.write(f" {data['claf'][idx_sec]}\n")
 
-            if (data["clcdsec"][idx_sec] != 0.0).any():
+            if (data["cdclsec"][idx_sec] != 0.0).any():
                 fid.write(" CDCL\n")
                 fid.write(
-                    f" {data['clcdsec'][idx_sec, 0]:.6f} "
-                    f" {data['clcdsec'][idx_sec, 1]:.6f} "
-                    f" {data['clcdsec'][idx_sec, 2]:.6f} "
-                    f" {data['clcdsec'][idx_sec, 3]:.6f} "
-                    f" {data['clcdsec'][idx_sec, 4]:.6f} "
-                    f" {data['clcdsec'][idx_sec, 5]:.6f}\n"
+                    f" {data['cdclsec'][idx_sec, 0]:.6f} "
+                    f" {data['cdclsec'][idx_sec, 1]:.6f} "
+                    f" {data['cdclsec'][idx_sec, 2]:.6f} "
+                    f" {data['cdclsec'][idx_sec, 3]:.6f} "
+                    f" {data['cdclsec'][idx_sec, 4]:.6f} "
+                    f" {data['cdclsec'][idx_sec, 5]:.6f}\n"
                 )
 
             # check for control surfaces

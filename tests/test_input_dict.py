@@ -39,12 +39,12 @@ wing = {
     "load": np.int32(
         1
     ),  # specifies that the force and moment on this surface is to NOT be included in the overall forces and moments of the configuration
-    "clcdsec": np.array(
+    "cdclsec": np.array(
         [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
     ),  # profile-drag CD(CL) function for each section in this surface
     "cdcl": np.array(
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    ),  # profile-drag CD(CL) function for all sections in this surface, overrides Tahnks.
+    ),  # profile-drag CD(CL) function for all sections in this surface, overridden by cdclsec.
     "claf": np.array([1.0, 1.0]),  # CL alpha (dCL/da) scaling factor per section
     # Geometry
     "scale": np.array(

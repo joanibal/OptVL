@@ -21,12 +21,12 @@ surf = {
         "load": np.int32(
             1
         ),  # specifies that the force and moment on this surface is to be included in the overall forces and moments of the configuration (default true)
-        "clcdsec": np.array(
+        "cdclsec": np.array(
             [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
         ),  # profile-drag CD(CL) function for each section in this surface (default 0.0)
         "cdcl": np.array(
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        ),  # profile-drag CD(CL) function for all sections in this surface, overrides clcdsec. (default 0.0)
+        ),  # profile-drag CD(CL) function for all sections in this surface, overrides cdclsec. (default 0.0)
         "claf": np.array([1.0, 1.0]),  # CL alpha (dCL/da) scaling factor for each section in order (default 1.0)
         # Geometry
         "scale": np.array(
