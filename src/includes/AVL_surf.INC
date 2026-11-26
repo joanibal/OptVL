@@ -33,9 +33,11 @@ c
 c
       LOGICAL LDUPL
       LOGICAL LSURFSPACING
+      LOGICAL LSECPOLAR
       COMMON /SURF_GEOM_L/
      & LDUPL(NFMAX),      ! T if surface is a duplicated
-     & LSURFSPACING(NFMAX)   ! surface spacing set under the surface heeading
+     & LSURFSPACING(NFMAX),   ! surface spacing set under the surface heeading
+     & LSECPOLAR(NSECMAX, NFMAX) ! T if section has its own CDCL, else use CLCDSRF
 
       COMMON /SURF_GEOM_I/
      & NSEC(NFMAX),  ! number of sections in surface

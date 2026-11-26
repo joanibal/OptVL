@@ -29,6 +29,7 @@ C--------------------------------------------------------------
 C
 C
       REAL XYZLEL(3), XYZLER(3)
+      REAL CLCDL, CLCDR
 C
       PARAMETER (KCMAX=50,
      &           KSMAX=500)
@@ -481,8 +482,17 @@ C
 C
 C--- Interpolate CD-CL polar defining data from input sections to strips
           DO L = 1, 6
-            CLCD(L,idx_strip) = (1.0-FC)*CLCDSEC(L,ISEC  ,ISURF) 
-     &                      +     FC *CLCDSEC(L,ISEC+1,ISURF)
+            IF(LSECPOLAR(ISEC,ISURF)) THEN
+              CLCDL = CLCDSEC(L,ISEC,ISURF)
+            ELSE
+              CLCDL = CLCDSRF(L,ISURF)
+            ENDIF
+            IF(LSECPOLAR(ISEC+1,ISURF)) THEN
+              CLCDR = CLCDSEC(L,ISEC+1,ISURF)
+            ELSE
+              CLCDR = CLCDSRF(L,ISURF)
+            ENDIF
+            CLCD(L,idx_strip) = (1.0-FC)*CLCDL + FC*CLCDR
           END DO
 C--- If the min drag is zero flag the strip as no-viscous data
           LVISCSTRP(idx_strip) = (CLCD(4,idx_strip).NE.0.0)
@@ -684,7 +694,7 @@ c--------------------------------------------------------------
      &           KSMAX=500)
       REAL CHSIN, CHCOS, CHSINL, CHSINR, CHCOSL, CHCOSR, AINCL, AINCR, 
      &     CHORDL, CHORDR, CLAFL, CLAFR, SLOPEL, SLOPER, DXDX, ZU_L, 
-     &     ZL_L, ZU_R, ZL_R, ZL, ZR, SUM, WTOT, ASTRP
+     &     ZL_L, ZU_R, ZL_R, ZL, ZR, SUM, WTOT, ASTRP, CLCDL, CLCDR
       REAL CHSINL_G(NGMAX),CHCOSL_G(NGMAX),
      &     CHSINR_G(NGMAX),CHCOSR_G(NGMAX),
      &     XLED(NDMAX), XTED(NDMAX), GAINDA(NDMAX)
@@ -1071,9 +1081,17 @@ c--------------------------------------------------------------
 
         ! Interpolate CD-CL polar defining data from input to strips
         DO idx_coef = 1, 6
-          CLCD(idx_coef,idx_strip) = (1.0-fc)* 
-     &     CLCDSEC(idx_coef,iptl,isurf) + 
-     &     fc*CLCDSEC(idx_coef,iptr,isurf)
+          IF(LSECPOLAR(iptl,isurf)) THEN
+            CLCDL = CLCDSEC(idx_coef,iptl,isurf)
+          ELSE
+            CLCDL = CLCDSRF(idx_coef,isurf)
+          ENDIF
+          IF(LSECPOLAR(iptr,isurf)) THEN
+            CLCDR = CLCDSEC(idx_coef,iptr,isurf)
+          ELSE
+            CLCDR = CLCDSRF(idx_coef,isurf)
+          ENDIF
+          CLCD(idx_coef,idx_strip) = (1.0-fc)*CLCDL + fc*CLCDR
         END DO
         ! If the min drag is zero flag the strip as no-viscous data
         LVISCSTRP(idx_strip) = (CLCD(4,idx_strip).NE.0.0)  

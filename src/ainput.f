@@ -616,9 +616,10 @@ C
         CASEC(2,ISEC,ISURF) = 0
         CASEC(2,ISEC,ISURF) = 0
 cc#endif
-C    ...copy polar data from surface polar (if specified)
+        ! use surface polar unless section CDCL is given
+        LSECPOLAR(ISEC,ISURF) = .FALSE.
         DO L=1, 6
-          CLCDSEC(L,ISEC,ISURF) = CLCDSRF(L,ISURF)
+          CLCDSEC(L,ISEC,ISURF) = 0.0
         END DO
 C    ...no control
         NSCON(ISEC, ISURF) = 0
@@ -1090,7 +1091,10 @@ C
          END DO
 C
          IF(ISEC.GT.1) THEN
-          IF(CLCDSEC(4,ISEC-1,ISURF).LE.0.0) THEN
+          IF(      LSECPOLAR(ISEC-1,ISURF)
+     &       .AND. CLCDSEC(4,ISEC-1,ISURF).LE.0.0
+     &   .OR. .NOT.LSECPOLAR(ISEC-1,ISURF)
+     &       .AND. CLCDSRF(4,ISURF).LE.0.0) THEN
            WRITE(*,*) '* AINPUT: previous section defined with no polar'
           ENDIF
          ENDIF
@@ -1103,6 +1107,7 @@ C------ Trick: sum must be 6 so we can get the "other" index
         CLCDSEC(4,ISEC,ISURF) = CDX(LMID)
         CLCDSEC(5,ISEC,ISURF) = CLX(LMAX)
         CLCDSEC(6,ISEC,ISURF) = CDX(LMAX)
+        LSECPOLAR(ISEC,ISURF) = .TRUE.
         
         if (LVERBOSE) then
                 WRITE(*,1701) CLX(LMIN),CDX(LMIN),

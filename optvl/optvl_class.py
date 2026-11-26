@@ -655,6 +655,7 @@ class OVLSolver(object):
         self.avl.CASE_R.DCL_U0 = 0.0
         self.avl.CASE_R.DCM_U0 = 0.0
         self.set_avl_fort_arr("SURF_GEOM_R", "CLCDSRF", 0.0, slicer=(slice(None, 6), slice(None, self.NFMAX)))
+        self.set_avl_fort_arr("SURF_GEOM_L", "LSECPOLAR", False, slicer=(slice(None, self.NFMAX), slice(None)))
         self.avl.CASE_L.LVISC = False
         self.set_avl_fort_arr("SURF_L", "LRANGE", True, slicer=slice(None, self.NFMAX))
 
@@ -896,6 +897,10 @@ class OVLSolver(object):
                     self.set_avl_fort_arr("SURF_GEOM_L", "LDUPL", True, slicer=idx_surf)
                 else:
                     self.set_avl_fort_arr("SURF_GEOM_L", "LDUPL", False, slicer=idx_surf)
+
+                self.set_avl_fort_arr(
+                    "SURF_GEOM_L", "LSECPOLAR", "clcdsec" in surf_dict, slicer=(idx_surf, slice(None))
+                )
 
                 if "clcd" in surf_dict or "clcdsec" in surf_dict:
                     # if any of the surfaces use clcd then turn on viscous loads
