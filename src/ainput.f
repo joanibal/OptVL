@@ -703,7 +703,7 @@ C
 cc#ifdef USE_CPOML
 c...      lower/upper coordinates (for oml)
           IF(XF .LT. P) THEN
-            ZF = C * (2*P*XF - 1)*XF / P**2
+            ZF = C * (2*P*XF - XF**2) / P**2
           ELSEIF(XF .GT. P) THEN
             ZF = C * ((1 - 2*P) + (2*P - XF)*XF) / (1-P)**2
           ELSE

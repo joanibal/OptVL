@@ -37,6 +37,7 @@ C
       CDITOT = 0.
 C
       CDTOT_A = 0.
+      CYTOT_A = 0.
       CLTOT_A = 0.
 C
       DO L = 1, NCONTROL
@@ -107,6 +108,7 @@ C
         CDVTOT  = 2.0 * CDVTOT
 C
         CDTOT_A = 2.0 * CDTOT_A
+        CYTOT_A = 0.0
         CLTOT_A = 2.0 * CLTOT_A
 C
         DO N=1, NUMAX
@@ -938,17 +940,21 @@ C$AD II-LOOP
         END DO
 C
 C$AD II-LOOP
+c        JLA fix 2026: ULIFT_D was undeclared but should be zero so 
+C          the partial terms from ULIFT_D were removed
          DO N = 1, NCONTROL
-           CLV_D(N) = ULIFT(1)*CFX_D(N) + ULIFT_D(1,N)*CFX
-     &              + ULIFT(2)*CFY_D(N) + ULIFT_D(2,N)*CFY
-     &              + ULIFT(3)*CFZ_D(N) + ULIFT_D(3,N)*CFZ
+           CLV_D(N) = ULIFT(1)*CFX_D(N)
+     &              + ULIFT(2)*CFY_D(N)
+     &              + ULIFT(3)*CFZ_D(N)
          END DO
 C
 C$AD II-LOOP
+c        JLA fix 2026: ULIFT_G was undeclared but should be zero so 
+C          the partial terms from ULIFT_G were removed
          DO N = 1, NDESIGN
-           CLV_G(N) = ULIFT(1)*CFX_G(N) + ULIFT_G(1,N)*CFX
-     &              + ULIFT(2)*CFY_G(N) + ULIFT_G(2,N)*CFY
-     &              + ULIFT(3)*CFZ_G(N) + ULIFT_G(3,N)*CFZ
+           CLV_G(N) = ULIFT(1)*CFX_G(N)
+     &              + ULIFT(2)*CFY_G(N)
+     &              + ULIFT(3)*CFZ_G(N)
          END DO
 C
 C--- Get CD from CLCD function using strip CL as parameter

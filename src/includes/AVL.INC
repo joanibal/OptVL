@@ -157,7 +157,7 @@ C
       real(kind=avl_real) SPANEF_D  
       real(kind=avl_real) SPANEF_G  
       real(kind=avl_real) CDTOT, CYTOT, CLTOT    
-      real(kind=avl_real) CDTOT_A, CLTOT_A      
+      real(kind=avl_real) CDTOT_A, CLTOT_A, CYTOT_A
       real(kind=avl_real) CDTOT_U,CYTOT_U,CLTOT_U
       real(kind=avl_real) CDTOT_D,CYTOT_D,CLTOT_D
       real(kind=avl_real) CDTOT_G,CYTOT_G,CLTOT_G
@@ -238,7 +238,7 @@ C
 C
 C  Total forces referred to SREF, moments to SREF,CREF,BREF about XYZref
      & CDTOT, CYTOT, CLTOT,         ! total CD,CY,CL in stability axes 
-     & CDTOT_A, CLTOT_A,            ! sensitivities wrt alpha (part of total?!? you probably want *_AL)          
+     & CDTOT_A, CLTOT_A, CYTOT_A,            ! sensitivities wrt alpha (part of total?!? you probably want *_AL)          
      & CDTOT_U(NUMAX),CYTOT_U(NUMAX),CLTOT_U(NUMAX),     !sens wrt u,v,w,rot
      & CDTOT_D(NDMAX),CYTOT_D(NDMAX),CLTOT_D(NDMAX),     !sens wrt control
      & CDTOT_G(NGMAX),CYTOT_G(NGMAX),CLTOT_G(NGMAX),     !sens wrt design 

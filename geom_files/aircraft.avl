@@ -88,6 +88,8 @@ NACA
 0012
 CLAF
 1.1078
+CDCL
+-0.4 0.030 0.4 0.010 1.2 0.030
 
 CONTROL
 #surface gain xhinge hvec SgnDup
@@ -100,6 +102,8 @@ NACA
 0012
 CLAF
 1.1078
+CDCL
+-0.4 0.030 0.4 0.010 1.2 0.030
 
 CONTROL
 #surface gain xhinge hvec SgnDup
@@ -132,6 +136,8 @@ NACA
 0012
 CLAF
 1.1078
+CDCL
+-0.4 0.030 0.4 0.010 1.2 0.030
 
 CONTROL
 #surface gain xhinge hvec SgnDup
@@ -141,9 +147,11 @@ SECTION
 #Xle  Yle  Zle  |  Chord   Ainc   Nspan   Sspace
 1.60247523857 0 0.296  0.325     0.0       
 NACA
-0012
+0112
 CLAF
 1.1078
+CDCL
+-0.4 0.030 0.4 0.010 1.2 0.030
 
 CONTROL
 #surface gain xhinge hvec SgnDup

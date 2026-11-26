@@ -1066,7 +1066,7 @@ class OVLSolver(object):
                 if "mesh" in surf_dict.keys():
                     if "flatten mesh" not in surf_dict.keys():
                          surf_dict["flatten mesh"] = True
-                    self.set_mesh(idx_surf, surf_dict["mesh"],flatten=surf_dict["flatten mesh"],update_nvs=True,update_nvc=True) # set_mesh handles the Fortran indexing and ordering
+                    self.set_mesh(idx_surf, surf_dict["mesh"],flatten=surf_dict["flatten mesh"],update_size=True) # set_mesh handles the Fortran indexing and ordering
                     self.avl.makesurf_mesh(idx_surf + 1) #+1 for Fortran indexing
                     self.point_sets[idx_surf] = "optvl_%s_coords" % surf_name # store the pointset name for DVGeo later
                 else:
@@ -1183,24 +1183,26 @@ class OVLSolver(object):
         # Tell AVL that geometry exists now and is ready for analysis
         self.avl.CASE_L.LGEO = True
 
-    def set_mesh(self, idx_surf: int, mesh: np.ndarray, flatten:bool=True, update_nvs: bool=False, update_nvc: bool=False):
+    def set_mesh(self, idx_surf: int, mesh: np.ndarray, flatten:bool=True, update_size: bool=False, update_nvc: bool=False):
         """Sets a mesh directly into OptVL.
 
         Args:
             idx_surf (int): the surface to apply the mesh to
             mesh (np.ndarray): XYZ mesh array (nx,ny,3)
             flatten (bool): Should OptVL flatten the mesh when placing vortices and control points
-            update_nvs (bool): Should OptVL update the number of spanwise elements for the given mesh
-            update_nvc (bool): Should OptVL update the number of chordwise elements for the given mesh
+            update_size (bool): Should OptVL update the number of nodes, spanwise and chordwise elements for the given mesh?
         """
-        nx = copy.deepcopy(mesh.shape[0])
-        ny = copy.deepcopy(mesh.shape[1])
 
-        if update_nvs:
+        if update_size:
+            nx = copy.deepcopy(mesh.shape[0])
+            ny = copy.deepcopy(mesh.shape[1])
+
             self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1
-
-        if update_nvc:
             self.avl.SURF_GEOM_I.NVC[idx_surf] = nx-1
+            self.set_avl_fort_arr("SURF_GEOM_I", "NSEC", mesh.shape[1], slicer=idx_surf)
+            self.set_avl_fort_arr("SURF_GEOM_I", "NVC", mesh.shape[0]-1, slicer=idx_surf)
+            self.set_avl_fort_arr("SURF_GEOM_I", "NVS", mesh.shape[1]-1, slicer=idx_surf)
+            
 
         if flatten:
             self.avl.SURF_MESH_L.LMESHFLAT[idx_surf] = True
@@ -1294,7 +1296,7 @@ class OVLSolver(object):
             10.0 * thick * (0.29690 * np.sqrt(xf) - 0.12600 * xf - 0.35160 * xf**2 + 0.28430 * xf**3 - 0.10150 * xf**4)
         )
         zf = np.zeros_like(xf)
-        zf[xf < pos] = cam * (2.0 * pos * xf[xf < pos] - 1.0) * xf[xf < pos] / (pos**2)
+        zf[xf < pos] = cam * (2.0 * pos * xf[xf < pos] - xf[xf < pos]**2)  / (pos**2)
         zf[xf > pos] = cam * ((1 - 2.0 * pos) + (2.0 * pos - xf[xf > pos]) * xf[xf > pos]) / (1 - pos) ** 2
         theta = np.arctan(slopes)
 
@@ -1371,52 +1373,6 @@ class OVLSolver(object):
         #     raise RuntimeError(f"section {isec} in surface {isurf} does not exist!")
 
         self.avl.set_body_coordinates(ibod + 1, x, y, nasec, storecoords)
-
-    # MOVED TO FORTRAN...amake.f
-    # def set_section_coordinates(self,isec: int, isurf: int, nasec: int, x: np.ndarray, y: np.ndarray, xfminmax: np.ndarray):
-    #     """Sets the airfoil oml points for the specified surface and section. Computes the camber line and interpolates it
-    #     with AVL's 1D Akima Spline implementation.
-
-    #     Args:
-    #         isec: section number to set the airfoil mesh
-    #         isurf: surface number to set the airfoil mesh
-    #         nasec: number of points to evaluate the interpolated camber line and thickness curves at
-    #         x: airfoil x-coordinate array
-    #         y: airfoil y-coodinate array
-    #         xfminmax: length 2 array with the min and max x/c to slice the airfoil
-    #     """
-
-    #     if ((len(x) > self.IBX) or (len(y) > self.IBX)):
-    #         raise RuntimeError(f"Airfoil array overflow! Increase IBX to {len(x) if len(x)>len(y) else len(y)}")
-    #     if len(x) != len(y):
-    #         raise RuntimeError(f"x and y array lengths do not match! len x: {len(x)}, len y: {len(y)}")
-
-    #     xf = xfminmax[0] + np.diff(xfminmax)*np.arange(nasec)/(nasec-1)
-
-    #     xin,yin,tin,nasec = self.avl.getcam(x,y,len(x),nasec,True)
-
-    #     xasec = xin[0] + xf*(xin[-1] -xin[0])
-
-    #     zc = np.zeros(nasec)
-    #     slopes = np.zeros(nasec)
-    #     thickness = np.zeros(nasec)
-
-    #     # Use the original AVL akima, not vectorized
-    #     for i in range(nasec):
-    #         zc[i], slopes[i] = self.avl.akima(xin, yin, nasec, xasec) # USE_CPOML always on in OptVL
-    #         thickness[i], _ = self.avl.akima(xin, tin, nasec, xasec)
-
-    #     # Set airfoil section
-    #     self.set_avl_fort_arr("SURF_GEOM_I","NASEC", nasec, slicer=(isurf,isec))
-    #     self.set_avl_fort_arr("SURF_GEOM_R","XASEC", (xasec-xasec[0])/(xasec[-1]-xasec[0]), slicer=(isurf,isec,slice(0,nasec)))
-    #     self.set_avl_fort_arr("SURF_GEOM_R","SASEC", slopes, slicer=(isurf,isec,slice(0,nasec)))
-    #     self.set_avl_fort_arr("SURF_GEOM_R","TASEC", thickness, slicer=(isurf,isec,slice(0,nasec)))
-
-    #     self.set_avl_fort_arr("SURF_GEOM_R","XLASEC", xasec, slicer=(isurf,isec,slice(0,nasec)))
-    #     self.set_avl_fort_arr("SURF_GEOM_R","XUASEC", xasec, slicer=(isurf,isec,slice(0,nasec)))
-    #     self.set_avl_fort_arr("SURF_GEOM_R","ZLASEC", zc - 0.5*thickness, slicer=(isurf,isec,slice(0,nasec)))
-    #     self.set_avl_fort_arr("SURF_GEOM_R","ZUASEC", zc + 0.5*thickness, slicer=(isurf,isec,slice(0,nasec)))
-    #     self.set_avl_fort_arr("SURF_GEOM_R","CASEC", zc, slicer=(isurf,isec,slice(0,nasec)))
 
     def post_check_input(self, inputDict: dict):
         """This routine verifies that a few critical values in the Fortran layer have been set correctly with
