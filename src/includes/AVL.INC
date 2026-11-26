@@ -368,7 +368,7 @@ cc#endif
       REAL(kind=avl_real) CDVSURF, CDISURF
       REAL(kind=avl_real) SSURF, CAVESURF
       REAL(kind=avl_real) CF_LSRF, CM_LSRF
-      REAL(kind=avl_real) CL_LSRF, CD_LSRF, CMLE_LSRF
+      REAL(kind=avl_real) CL_LSRF, CD_LSRF, CMLE_LSRF, CDV_LSRF
       COMMON /SURF_R/
 C   Surface forces and moments referenced to SREF,CREF,BREF about XREF,YREF,ZREF
      & CDSURF(NFMAX),CYSURF(NFMAX),CLSURF(NFMAX),                ! surface CD,CY,CL in stability axes
@@ -393,7 +393,8 @@ C
      & SSURF(NFMAX), CAVESURF(NFMAX), ! surface area and average chord
 C
      & CF_LSRF(3,NFMAX), CM_LSRF(3,NFMAX),
-     & CL_LSRF(NFMAX), CD_LSRF(NFMAX), CMLE_LSRF(NFMAX)
+     & CL_LSRF(NFMAX), CD_LSRF(NFMAX), CMLE_LSRF(NFMAX),
+     & CDV_LSRF(NFMAX)                 ! surface viscous CD referred to SSURF
 
       COMMON /STRP_I/
      & LSSURF(NSMAX),    ! index of surface which contains this strip

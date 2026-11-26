@@ -117,6 +117,7 @@ C
       cdvtot = 0.
 C
       cdtot_a = 0.
+      cytot_a = 0.
       cltot_a = 0.
 C
       DO l=1,ncontrol
@@ -499,13 +500,13 @@ C---- indices for forming cross-products
       REAL xte2_diff
       INTEGER k
       INTEGER n
-      REAL DOT
       INTRINSIC SQRT
       INTEGER ic
       INTEGER jc
       INTEGER ii
       INTEGER i
       REAL fnv
+      REAL DOT
       REAL fnv_u
       REAL fnv_d
       REAL fnv_g
@@ -578,9 +579,7 @@ C---- indices for forming cross-products
       INTEGER jj
       REAL dcm
       REAL enmag
-      REAL cytot_a
       REAL result1
-      REAL result1_diff
       REAL result2
       REAL temp_diff
       INTEGER ii1
@@ -662,8 +661,7 @@ C     HHY 02272024 Changed, used to be stability axis
         ENDDO
 C--- Lift direction is vector product of "stream" and spanwise vector
         CALL CROSS(udrag, spn, ulift)
-        result1 = DOT(ulift, ulift)
-        ulmag = SQRT(result1)
+        ulmag = SQRT(ulift(1)**2 + ulift(2)**2 + ulift(3)**2)
 Cc        write(6,*) 'ULIFT0 ',ULIFT,' ULMAG0 ',ULMAG
         IF (ulmag .EQ. 0.) THEN
 C
@@ -686,8 +684,7 @@ C
      +          spn(ic)
             ENDDO
           ENDDO
-          result1 = DOT(ulift, ulift)
-          ulmag = SQRT(result1)
+          ulmag = SQRT(ulift(1)**2 + ulift(2)**2 + ulift(3)**2)
 C
           DO n=1,numax
             ulmag_u(n) = (ulift(1)*ulift_u(1, n)+ulift(2)*ulift_u(2, n)+
@@ -1275,16 +1272,18 @@ Cc         write(6,*) '***** CLV CFX CFY CFZ ', CLV, CFX,CFY,CFZ
      +        (3, n)*cfz
           ENDDO
 C
+C        JLA fix 2026: ULIFT_D was undeclared but should be zero so 
+C          the partial terms from ULIFT_D were removed
           DO n=1,ncontrol
-            clv_d(n) = ulift(1)*cfx_d(n) + ulift_d(1, n)*cfx + ulift(2)*
-     +        cfy_d(n) + ulift_d(2, n)*cfy + ulift(3)*cfz_d(n) + ulift_d
-     +        (3, n)*cfz
+            clv_d(n) = ulift(1)*cfx_d(n) + ulift(2)*cfy_d(n) + ulift(3)*
+     +        cfz_d(n)
           ENDDO
 C
+C        JLA fix 2026: ULIFT_G was undeclared but should be zero so 
+C          the partial terms from ULIFT_G were removed
           DO n=1,ndesign
-            clv_g(n) = ulift(1)*cfx_g(n) + ulift_g(1, n)*cfx + ulift(2)*
-     +        cfy_g(n) + ulift_g(2, n)*cfy + ulift(3)*cfz_g(n) + ulift_g
-     +        (3, n)*cfz
+            clv_g(n) = ulift(1)*cfx_g(n) + ulift(2)*cfy_g(n) + ulift(3)*
+     +        cfz_g(n)
           ENDDO
 C
 C--- Get CD from CLCD function using strip CL as parameter
@@ -2256,8 +2255,7 @@ C     HHY 02272024 Changed, used to be stability axis
         ENDDO
 C--- Lift direction is vector product of "stream" and spanwise vector
         CALL CROSS(udrag, spn, ulift)
-        result1 = DOT(ulift, ulift)
-        ulmag = SQRT(result1)
+        ulmag = SQRT(ulift(1)**2 + ulift(2)**2 + ulift(3)**2)
 Cc        write(6,*) 'ULIFT0 ',ULIFT,' ULMAG0 ',ULMAG
         IF (ulmag .EQ. 0.) THEN
 C
@@ -2283,8 +2281,7 @@ C
      +          spn(ic)
             ENDDO
           ENDDO
-          result1 = DOT(ulift, ulift)
-          ulmag = SQRT(result1)
+          ulmag = SQRT(ulift(1)**2 + ulift(2)**2 + ulift(3)**2)
 C
           DO n=1,numax
             ulmag_u(n) = (ulift(1)*ulift_u(1, n)+ulift(2)*ulift_u(2, n)+
@@ -2332,7 +2329,6 @@ C
         CALL PUSHREAL8ARRAY(vrot_u, 3)
         CALL PUSHREAL8ARRAY(veff, 3)
         CALL PUSHREAL8ARRAY(f_d, 3*ndmax)
-        CALL PUSHREAL8(result1)
         CALL PUSHREAL8ARRAY(fgam, 3)
         CALL PUSHREAL8ARRAY(f_u, 3*6)
         CALL PUSHREAL8ARRAY(rrot, 3)
@@ -2914,10 +2910,11 @@ Cc         write(6,*) '***** CLV CFX CFY CFZ ', CLV, CFX,CFY,CFZ
           CALL PUSHREAL8ARRAY(cfy_d, ndmax)
 C$FWD-OF II-LOOP 
 C
+C        JLA fix 2026: ULIFT_D was undeclared but should be zero so 
+C          the partial terms from ULIFT_D were removed
           DO n=1,ncontrol
-            clv_d(n) = ulift(1)*cfx_d(n) + ulift_d(1, n)*cfx + ulift(2)*
-     +        cfy_d(n) + ulift_d(2, n)*cfy + ulift(3)*cfz_d(n) + ulift_d
-     +        (3, n)*cfz
+            clv_d(n) = ulift(1)*cfx_d(n) + ulift(2)*cfy_d(n) + ulift(3)*
+     +        cfz_d(n)
           ENDDO
 C
 C--- Get CD from CLCD function using strip CL as parameter
@@ -3310,13 +3307,10 @@ C$BWD-OF II-LOOP
           DO n=1,ncontrol
             ulift_diff(1) = ulift_diff(1) + cfx_d(n)*clv_d_diff(n)
             cfx_d_diff(n) = cfx_d_diff(n) + ulift(1)*clv_d_diff(n)
-            cfx_diff = cfx_diff + ulift_d(1, n)*clv_d_diff(n)
             ulift_diff(2) = ulift_diff(2) + cfy_d(n)*clv_d_diff(n)
             cfy_d_diff(n) = cfy_d_diff(n) + ulift(2)*clv_d_diff(n)
-            cfy_diff = cfy_diff + ulift_d(2, n)*clv_d_diff(n)
             ulift_diff(3) = ulift_diff(3) + cfz_d(n)*clv_d_diff(n)
             cfz_d_diff(n) = cfz_d_diff(n) + ulift(3)*clv_d_diff(n)
-            cfz_diff = cfz_diff + ulift_d(3, n)*clv_d_diff(n)
             clv_d_diff(n) = 0.D0
           ENDDO
           CALL POPREAL8ARRAY(cfz_u, numax)
@@ -3875,7 +3869,6 @@ C$BWD-OF II-LOOP
         CALL POPREAL8ARRAY(rrot, 3)
         CALL POPREAL8ARRAY(f_u, 3*6)
         CALL POPREAL8ARRAY(fgam, 3)
-        CALL POPREAL8(result1)
         CALL POPREAL8ARRAY(f_d, 3*ndmax)
         CALL POPREAL8ARRAY(veff, 3)
         CALL POPREAL8ARRAY(vrot_u, 3)
@@ -4376,12 +4369,15 @@ C$BWD-OF II-LOOP
             ulmag_diff = ulmag_diff - (ulift(1)*ulift_u(1, n)+ulift(2)*
      +        ulift_u(2, n)+ulift(3)*ulift_u(3, n))*temp_diff/ulmag
           ENDDO
-          IF (result1 .EQ. 0.D0) THEN
-            result1_diff = 0.D0
+          IF (ulift(1)**2 + ulift(2)**2 + ulift(3)**2 .EQ. 0.D0) THEN
+            temp_diff = 0.D0
           ELSE
-            result1_diff = ulmag_diff/(2.0*SQRT(result1))
+            temp_diff = ulmag_diff/(2.0*SQRT(ulift(1)**2+ulift(2)**2+
+     +        ulift(3)**2))
           END IF
-          CALL DOT_B(ulift, ulift_diff, ulift, ulift_diff, result1_diff)
+          ulift_diff(1) = ulift_diff(1) + 2*ulift(1)*temp_diff
+          ulift_diff(2) = ulift_diff(2) + 2*ulift(2)*temp_diff
+          ulift_diff(3) = ulift_diff(3) + 2*ulift(3)*temp_diff
           DO k=3,1,-1
             DO n=numax,1,-1
               spn_diff(jc) = spn_diff(jc) + udrag_u(ic, n)*ulift_u_diff(

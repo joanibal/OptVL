@@ -9,7 +9,7 @@ C   with respect to varying inputs: rle chord rle1 chord1 rle2
 C                chord2 wstrip clcd ess ensy ensz xsref ysref zsref
 C                rv1 rv2 rv rc rs dxv chordv enc env enc_d xyzscal
 C                xyztran addinc xyzles chords aincs xasec sasec
-C                clcdsec claf mshblk
+C                clcdsec clcdsrf claf mshblk
 C   RW status of diff variables: rle:in-out chord:in-out rle1:in-out
 C                chord1:in-out rle2:in-out chord2:in-out wstrip:in-out
 C                clcd:in-out ess:in-out ensy:in-out ensz:in-out
@@ -18,7 +18,7 @@ C                rv2:in-out rv:in-out rc:in-out rs:in-out dxv:in-out
 C                chordv:in-out enc:in-out env:in-out enc_d:in-out
 C                xyzscal:out xyztran:out addinc:out xyzles:out
 C                chords:out aincs:out xasec:out sasec:out clcdsec:out
-C                claf:out mshblk:out
+C                clcdsrf:out claf:out mshblk:out
       SUBROUTINE UPDATE_SURFACES_B()
       use avl_heap_inc
       use avl_heap_diff_inc
@@ -160,6 +160,11 @@ C     up the size information as we make each surface
         ENDDO
       ENDDO
       DO ii1=1,NSURF
+        DO ii2=1,6
+          clcdsrf_diff(ii2, ii1) = 0.D0
+        ENDDO
+      ENDDO
+      DO ii1=1,NSURF
         DO ii2=1,NSEC(ii1)
           claf_diff(ii2, ii1) = 0.D0
         ENDDO
@@ -229,12 +234,12 @@ C   gradient     of useful results: rle chord rle1 chord1 rle2
 C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
 C                dxv chordv slopev slopec dcontrol vhinge xyzscal
 C                xyztran addinc xyzles chords aincs xasec sasec
-C                clcdsec claf
+C                clcdsec clcdsrf claf
 C   with respect to varying inputs: rle chord rle1 chord1 rle2
 C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
 C                dxv chordv slopev slopec dcontrol vhinge xyzscal
 C                xyztran addinc xyzles chords aincs xasec sasec
-C                clcdsec claf
+C                clcdsec clcdsrf claf
 C***********************************************************************
 C    Module:  amake.f
 C 
@@ -265,6 +270,8 @@ C
 C
       REAL xyzlel(3), xyzler(3)
       REAL xyzlel_diff(3), xyzler_diff(3)
+      REAL clcdl, clcdr
+      REAL clcdl_diff, clcdr_diff
       INTEGER kcmax
       INTEGER ksmax
       PARAMETER (kcmax=50, ksmax=500)
@@ -921,6 +928,29 @@ C
                   CALL PUSHCONTROL1B(0)
                 END IF
               ENDDO
+C
+C
+C--- Interpolate CD-CL polar defining data from input sections to strips
+              DO l=1,6
+                IF (lsecpolar(isec, isurf)) THEN
+                  CALL PUSHREAL8(clcdl)
+                  clcdl = clcdsec(l, isec, isurf)
+                  CALL PUSHCONTROL1B(0)
+                ELSE
+                  CALL PUSHREAL8(clcdl)
+                  clcdl = clcdsrf(l, isurf)
+                  CALL PUSHCONTROL1B(1)
+                END IF
+                IF (lsecpolar(isec+1, isurf)) THEN
+                  CALL PUSHREAL8(clcdr)
+                  clcdr = clcdsec(l, isec+1, isurf)
+                  CALL PUSHCONTROL1B(0)
+                ELSE
+                  CALL PUSHREAL8(clcdr)
+                  clcdr = clcdsrf(l, isurf)
+                  CALL PUSHCONTROL1B(1)
+                END IF
+              ENDDO
 C--- If the min drag is zero flag the strip as no-viscous data
 C     IJFRST(idx_strip) = NVOR + 1
 C
@@ -1237,13 +1267,31 @@ C
               chord_diff(idx_strip) = chord_diff(idx_strip) + 
      +          chordc_diff
               DO l=6,1,-1
-                fc_diff = fc_diff + (clcdsec(l, isec+1, isurf)-clcdsec(l
-     +            , isec, isurf))*clcd_diff(l, idx_strip)
-                clcdsec_diff(l, isec, isurf) = clcdsec_diff(l, isec, 
-     +            isurf) + (1.0-fc)*clcd_diff(l, idx_strip)
-                clcdsec_diff(l, isec+1, isurf) = clcdsec_diff(l, isec+1
-     +            , isurf) + fc*clcd_diff(l, idx_strip)
+                fc_diff = fc_diff + (clcdr-clcdl)*clcd_diff(l, idx_strip
+     +            )
+                clcdl_diff = (1.0-fc)*clcd_diff(l, idx_strip)
+                clcdr_diff = fc*clcd_diff(l, idx_strip)
                 clcd_diff(l, idx_strip) = 0.D0
+                CALL POPCONTROL1B(branch)
+                IF (branch .EQ. 0) THEN
+                  CALL POPREAL8(clcdr)
+                  clcdsec_diff(l, isec+1, isurf) = clcdsec_diff(l, isec+
+     +              1, isurf) + clcdr_diff
+                ELSE
+                  CALL POPREAL8(clcdr)
+                  clcdsrf_diff(l, isurf) = clcdsrf_diff(l, isurf) + 
+     +              clcdr_diff
+                END IF
+                CALL POPCONTROL1B(branch)
+                IF (branch .EQ. 0) THEN
+                  CALL POPREAL8(clcdl)
+                  clcdsec_diff(l, isec, isurf) = clcdsec_diff(l, isec, 
+     +              isurf) + clcdl_diff
+                ELSE
+                  CALL POPREAL8(clcdl)
+                  clcdsrf_diff(l, isurf) = clcdsrf_diff(l, isurf) + 
+     +              clcdl_diff
+                END IF
               ENDDO
               DO n=ncontrol,1,-1
                 CALL POPCONTROL1B(branch)
@@ -1664,6 +1712,7 @@ C
                   xasec_diff = 0.D0
                   sasec_diff = 0.D0
                   clcdsec_diff = 0.D0
+                  clcdsrf_diff = 0.D0
                   claf_diff = 0.D0
                   ycp_diff = 0.D0
                   ypt_diff = 0.D0
@@ -1730,6 +1779,7 @@ C
                   xasec_diff = 0.D0
                   sasec_diff = 0.D0
                   clcdsec_diff = 0.D0
+                  clcdsrf_diff = 0.D0
                   claf_diff = 0.D0
                   ycp_diff = 0.D0
                   ypt_diff = 0.D0
@@ -1766,6 +1816,7 @@ C
                   xasec_diff = 0.D0
                   sasec_diff = 0.D0
                   clcdsec_diff = 0.D0
+                  clcdsrf_diff = 0.D0
                   claf_diff = 0.D0
                   ycp_diff = 0.D0
                   ypt_diff = 0.D0
@@ -1898,13 +1949,13 @@ C  Differentiation of makesurf_mesh in reverse (adjoint) mode (with options i4 d
 C   gradient     of useful results: rle chord rle1 chord1 rle2
 C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
 C                dxv chordv slopev slopec dcontrol vhinge xyzscal
-C                xyztran addinc aincs xasec sasec clcdsec claf
-C                mshblk rv1msh rv2msh rvmsh rcmsh
+C                xyztran addinc aincs xasec sasec clcdsec clcdsrf
+C                claf mshblk rv1msh rv2msh rvmsh rcmsh
 C   with respect to varying inputs: rle chord rle1 chord1 rle2
 C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
 C                dxv chordv slopev slopec dcontrol vhinge xyzscal
-C                xyztran addinc aincs xasec sasec clcdsec claf
-C                mshblk rv1msh rv2msh rvmsh rcmsh
+C                xyztran addinc aincs xasec sasec clcdsec clcdsrf
+C                claf mshblk rv1msh rv2msh rvmsh rcmsh
 C
       SUBROUTINE MAKESURF_MESH_B(isurf)
       INCLUDE 'AVL.INC'
@@ -1919,10 +1970,11 @@ C working variables (AVL original)
       PARAMETER (kcmax=50, ksmax=500)
       REAL chsin, chcos, chsinl, chsinr, chcosl, chcosr, aincl, aincr, 
      +     chordl, chordr, clafl, clafr, slopel, sloper, dxdx, zu_l, 
-     +     zl_l, zu_r, zl_r, zl, zr, sum, wtot, astrp
+     +     zl_l, zu_r, zl_r, zl, zr, sum, wtot, astrp, clcdl, clcdr
       REAL chsin_diff, chcos_diff, chsinl_diff, chsinr_diff, chcosl_diff
      +     , chcosr_diff, aincl_diff, aincr_diff, chordl_diff, 
      +     chordr_diff, clafl_diff, clafr_diff, slopel_diff, sloper_diff
+     +     , clcdl_diff, clcdr_diff
       REAL chsinl_g(ngmax), chcosl_g(ngmax), chsinr_g(ngmax), chcosr_g(
      +     ngmax), xled(ndmax), xted(ndmax), gainda(ndmax)
       REAL chsinl_g_diff(ngmax), chcosl_g_diff(ngmax), chsinr_g_diff(
@@ -2387,6 +2439,20 @@ C
 C
 C
               CALL PUSHCONTROL1B(0)
+            END IF
+          ENDDO
+C Interpolate CD-CL polar defining data from input to strips
+C
+          DO idx_coef=1,6
+            IF (lsecpolar(iptl, isurf)) THEN
+              CALL PUSHCONTROL1B(0)
+            ELSE
+              CALL PUSHCONTROL1B(1)
+            END IF
+            IF (lsecpolar(iptr, isurf)) THEN
+              CALL PUSHCONTROL1B(0)
+            ELSE
+              CALL PUSHCONTROL1B(1)
             END IF
           ENDDO
 C If the min drag is zero flag the strip as no-viscous data
@@ -3253,11 +3319,25 @@ C End vortex loop
           chordl_diff = chordl_diff + clafl*temp_diff2
           clafl_diff = chordl*temp_diff2
           DO idx_coef=6,1,-1
-            clcdsec_diff(idx_coef, iptl, isurf) = clcdsec_diff(idx_coef
-     +        , iptl, isurf) + (1.0-fc)*clcd_diff(idx_coef, idx_strip)
-            clcdsec_diff(idx_coef, iptr, isurf) = clcdsec_diff(idx_coef
-     +        , iptr, isurf) + fc*clcd_diff(idx_coef, idx_strip)
+            clcdl_diff = (1.0-fc)*clcd_diff(idx_coef, idx_strip)
+            clcdr_diff = fc*clcd_diff(idx_coef, idx_strip)
             clcd_diff(idx_coef, idx_strip) = 0.D0
+            CALL POPCONTROL1B(branch)
+            IF (branch .EQ. 0) THEN
+              clcdsec_diff(idx_coef, iptr, isurf) = clcdsec_diff(
+     +          idx_coef, iptr, isurf) + clcdr_diff
+            ELSE
+              clcdsrf_diff(idx_coef, isurf) = clcdsrf_diff(idx_coef, 
+     +          isurf) + clcdr_diff
+            END IF
+            CALL POPCONTROL1B(branch)
+            IF (branch .EQ. 0) THEN
+              clcdsec_diff(idx_coef, iptl, isurf) = clcdsec_diff(
+     +          idx_coef, iptl, isurf) + clcdl_diff
+            ELSE
+              clcdsrf_diff(idx_coef, isurf) = clcdsrf_diff(idx_coef, 
+     +          isurf) + clcdl_diff
+            END IF
           ENDDO
           DO n=ncontrol,1,-1
             CALL POPCONTROL1B(branch)
@@ -3643,6 +3723,8 @@ C
       INCLUDE 'AVL_oml.INC'
       CHARACTER*(*) msg
       INTEGER idx_vor
+      REAL ypt
+      INTEGER nn
       INTEGER nni
       INTEGER klen
       INTRINSIC LEN
@@ -3737,8 +3819,6 @@ C
       INTEGER ii2
       INTEGER ii1
       INTEGER ii3
-      INTEGER nn
-      REAL ypt
 C
 C     
       nni = nn + 1

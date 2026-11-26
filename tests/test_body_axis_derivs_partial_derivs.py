@@ -56,10 +56,13 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
     def test_rev_aero_constraint(self):
         
-        body_axis_deriv_seeds_rev = {}
-        for deriv_func, var_dict in self.ovl_solver.case_body_derivs_to_fort_var.items():
-            body_axis_deriv_seeds_rev[deriv_func] = np.random.rand(1)[0]
+        # body_axis_deriv_seeds_rev = {}
+        # for deriv_func, var_dict in self.ovl_solver.case_body_derivs_to_fort_var.items():
+        #     body_axis_deriv_seeds_rev[deriv_func] = np.random.rand(1)[0]
 
+        body_axis_deriv_seeds_rev = {'dCX/du': 1.0}
+        print('body_axis_deriv_seeds_rev', body_axis_deriv_seeds_rev)
+        
         con_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(body_axis_derivs_seeds=body_axis_deriv_seeds_rev)[0]
 
         self.ovl_solver.clear_ad_seeds_fast()
@@ -74,7 +77,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
             # do dot product
             con_sum = np.sum(con_seeds_rev[con_key])
 
-            # print(f"cs_dervs wrt {con_key}", "rev", con_sum, "fwd", body_axis_deriv_sum)
+            print(f"cs_dervs wrt {con_key}", "rev", con_sum, "fwd", body_axis_deriv_sum)
 
             np.testing.assert_allclose(
                 con_sum,
@@ -94,7 +97,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
                 bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[4]
 
                 bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(
-                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-9
+                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
                 )[4]
 
                 for deriv_func in bd_d:

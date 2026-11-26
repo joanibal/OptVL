@@ -80,7 +80,7 @@ class TestConstrained(unittest.TestCase):
             timing=False,
             debug=False,
         )
-        with open(f"avl_analysis_references/unconstrained_{case}.json") as f:
+        with open(f"avl_analysis_references/constrained_{case}.json") as f:
             ref_data_cases = json.load(f)
             run_comparison(ovl, ref_data_cases, rtol=avl_match_rtol, atol=avl_match_atol)
 
@@ -92,7 +92,7 @@ class TestConstrained(unittest.TestCase):
             timing=False,
             debug=False,
         )
-        with open(f"avl_analysis_references/unconstrained_{case}.json") as f:
+        with open(f"avl_analysis_references/constrained_{case}.json") as f:
             ref_data_cases = json.load(f)
             run_comparison(ovl, ref_data_cases, rtol=avl_match_rtol, atol=avl_match_atol)
 

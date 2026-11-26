@@ -6,14 +6,15 @@ C   variations   of useful results: rle chord rle1 chord1 rle2
 C                chord2 wstrip clcd ess ensy ensz xsref ysref zsref
 C                rv1 rv2 rv rc rs dxv chordv enc env enc_d
 C   with respect to varying inputs: xyzscal xyztran addinc xyzles
-C                chords aincs xasec sasec clcdsec claf mshblk
+C                chords aincs xasec sasec clcdsec clcdsrf claf
+C                mshblk
 C   RW status of diff variables: rle:out chord:out rle1:out chord1:out
 C                rle2:out chord2:out wstrip:out clcd:out ess:out
 C                ensy:out ensz:out xsref:out ysref:out zsref:out
 C                rv1:out rv2:out rv:out rc:out rs:out dxv:out chordv:out
 C                enc:out env:out enc_d:out xyzscal:in xyztran:in
 C                addinc:in xyzles:in chords:in aincs:in xasec:in
-C                sasec:in clcdsec:in claf:in mshblk:in
+C                sasec:in clcdsec:in clcdsrf:in claf:in mshblk:in
       SUBROUTINE UPDATE_SURFACES_D()
       use avl_heap_inc
       use avl_heap_diff_inc
@@ -186,7 +187,7 @@ C   with respect to varying inputs: rle chord rle1 chord1 rle2
 C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
 C                dxv chordv slopev slopec dcontrol vhinge xyzscal
 C                xyztran addinc xyzles chords aincs xasec sasec
-C                clcdsec claf
+C                clcdsec clcdsrf claf
 C***********************************************************************
 C    Module:  amake.f
 C 
@@ -217,6 +218,8 @@ C
 C
       REAL xyzlel(3), xyzler(3)
       REAL xyzlel_diff(3), xyzler_diff(3)
+      REAL clcdl, clcdr
+      REAL clcdl_diff, clcdr_diff
       INTEGER kcmax
       INTEGER ksmax
       PARAMETER (kcmax=50, ksmax=500)
@@ -1054,11 +1057,23 @@ C
 C
 C--- Interpolate CD-CL polar defining data from input sections to strips
               DO l=1,6
-                clcd_diff(l, idx_strip) = (1.0-fc)*clcdsec_diff(l, isec
-     +            , isurf) - (clcdsec(l, isec, isurf)-clcdsec(l, isec+1
-     +            , isurf))*fc_diff + fc*clcdsec_diff(l, isec+1, isurf)
-                clcd(l, idx_strip) = (1.0-fc)*clcdsec(l, isec, isurf) + 
-     +            fc*clcdsec(l, isec+1, isurf)
+                IF (lsecpolar(isec, isurf)) THEN
+                  clcdl_diff = clcdsec_diff(l, isec, isurf)
+                  clcdl = clcdsec(l, isec, isurf)
+                ELSE
+                  clcdl_diff = clcdsrf_diff(l, isurf)
+                  clcdl = clcdsrf(l, isurf)
+                END IF
+                IF (lsecpolar(isec+1, isurf)) THEN
+                  clcdr_diff = clcdsec_diff(l, isec+1, isurf)
+                  clcdr = clcdsec(l, isec+1, isurf)
+                ELSE
+                  clcdr_diff = clcdsrf_diff(l, isurf)
+                  clcdr = clcdsrf(l, isurf)
+                END IF
+                clcd_diff(l, idx_strip) = (1.0-fc)*clcdl_diff - (clcdl-
+     +            clcdr)*fc_diff + fc*clcdr_diff
+                clcd(l, idx_strip) = (1.0-fc)*clcdl + fc*clcdr
               ENDDO
 C--- If the min drag is zero flag the strip as no-viscous data
 C     IJFRST(idx_strip) = NVOR + 1
@@ -1333,8 +1348,8 @@ C                rv2msh rvmsh rcmsh
 C   with respect to varying inputs: rle chord rle1 chord1 rle2
 C                chord2 wstrip clcd ainc ainc_g rv1 rv2 rv rc rs
 C                dxv chordv slopev slopec dcontrol vhinge xyzscal
-C                xyztran addinc aincs xasec sasec clcdsec claf
-C                mshblk rv1msh rv2msh rvmsh rcmsh
+C                xyztran addinc aincs xasec sasec clcdsec clcdsrf
+C                claf mshblk rv1msh rv2msh rvmsh rcmsh
 C
       SUBROUTINE MAKESURF_MESH_D(isurf)
       INCLUDE 'AVL.INC'
@@ -1349,10 +1364,11 @@ C working variables (AVL original)
       PARAMETER (kcmax=50, ksmax=500)
       REAL chsin, chcos, chsinl, chsinr, chcosl, chcosr, aincl, aincr, 
      +     chordl, chordr, clafl, clafr, slopel, sloper, dxdx, zu_l, 
-     +     zl_l, zu_r, zl_r, zl, zr, sum, wtot, astrp
+     +     zl_l, zu_r, zl_r, zl, zr, sum, wtot, astrp, clcdl, clcdr
       REAL chsin_diff, chcos_diff, chsinl_diff, chsinr_diff, chcosl_diff
      +     , chcosr_diff, aincl_diff, aincr_diff, chordl_diff, 
      +     chordr_diff, clafl_diff, clafr_diff, slopel_diff, sloper_diff
+     +     , clcdl_diff, clcdr_diff
       REAL chsinl_g(ngmax), chcosl_g(ngmax), chsinr_g(ngmax), chcosr_g(
      +     ngmax), xled(ndmax), xted(ndmax), gainda(ndmax)
       REAL chsinl_g_diff(ngmax), chcosl_g_diff(ngmax), chsinr_g_diff(
@@ -1986,11 +2002,23 @@ C
 C Interpolate CD-CL polar defining data from input to strips
 C
           DO idx_coef=1,6
-            clcd_diff(idx_coef, idx_strip) = (1.0-fc)*clcdsec_diff(
-     +        idx_coef, iptl, isurf) + fc*clcdsec_diff(idx_coef, iptr, 
-     +        isurf)
-            clcd(idx_coef, idx_strip) = (1.0-fc)*clcdsec(idx_coef, iptl
-     +        , isurf) + fc*clcdsec(idx_coef, iptr, isurf)
+            IF (lsecpolar(iptl, isurf)) THEN
+              clcdl_diff = clcdsec_diff(idx_coef, iptl, isurf)
+              clcdl = clcdsec(idx_coef, iptl, isurf)
+            ELSE
+              clcdl_diff = clcdsrf_diff(idx_coef, isurf)
+              clcdl = clcdsrf(idx_coef, isurf)
+            END IF
+            IF (lsecpolar(iptr, isurf)) THEN
+              clcdr_diff = clcdsec_diff(idx_coef, iptr, isurf)
+              clcdr = clcdsec(idx_coef, iptr, isurf)
+            ELSE
+              clcdr_diff = clcdsrf_diff(idx_coef, isurf)
+              clcdr = clcdsrf(idx_coef, isurf)
+            END IF
+            clcd_diff(idx_coef, idx_strip) = (1.0-fc)*clcdl_diff + fc*
+     +        clcdr_diff
+            clcd(idx_coef, idx_strip) = (1.0-fc)*clcdl + fc*clcdr
           ENDDO
 C If the min drag is zero flag the strip as no-viscous data
 C Set the panel (vortex) geometry data
@@ -2645,6 +2673,8 @@ C
       INCLUDE 'AVL_oml.INC'
       CHARACTER*(*) msg
       INTEGER idx_vor
+      REAL ypt
+      INTEGER nn
       INTEGER nni
       INTEGER klen
       INTRINSIC LEN
@@ -2663,8 +2693,6 @@ C
       INTEGER iii
       INTEGER ii
       REAL rsgn
-      INTEGER nn
-      REAL ypt
 C
 C     
       nni = nn + 1

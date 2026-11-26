@@ -188,7 +188,7 @@ class OVLSolver(object):
         # uses surface area instead of sref and takes moments about leading edge
         "CL surf" : ["SURF_R", "CL_LSRF"],
         "CD surf" : ["SURF_R", "CD_LSRF"],
-        "CDv surf" : ["SURF_R", "CDVSURF"],
+        "CDv surf" : ["SURF_R", "CDV_LSRF"],
         "CMLE_LSTRP surf" : ["SURF_R", "CMLE_LSRF"],
         
         #TODO: add CF_LSRF(3,NFMAX), CM_LSRF(3,NFMAX)
@@ -1204,10 +1204,10 @@ class OVLSolver(object):
             flatten (bool): Should OptVL flatten the mesh when placing vortices and control points
             update_size (bool): Should OptVL update the number of nodes, spanwise and chordwise elements for the given mesh?
         """
+        nx = copy.deepcopy(mesh.shape[0])
+        ny = copy.deepcopy(mesh.shape[1])
 
         if update_size:
-            nx = copy.deepcopy(mesh.shape[0])
-            ny = copy.deepcopy(mesh.shape[1])
 
             self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1
             self.avl.SURF_GEOM_I.NVC[idx_surf] = nx-1
@@ -2492,6 +2492,12 @@ class OVLSolver(object):
             # Set basic surface geometry variables
             fort_var = self.surf_geom_to_fort_var[surf_name][param]
             self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
+
+            if param == "cdclsec":
+                # sections given a CDCL use their own polar instead of the surface polar 
+                idx_surf = self.surface_names.index(surf_name)
+                self.set_avl_fort_arr("SURF_GEOM_L", "LSECPOLAR", True, slicer=(idx_surf, slice(None)))
+                THINGS are different because LVISC is not set like in the Fortran layer
 
         elif param in self.surf_pannel_to_fort_var[surf_name].keys():
             # Set surface panelling variables

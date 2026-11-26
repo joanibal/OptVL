@@ -307,7 +307,7 @@ C     HHY 02272024 Changed, used to be stability axis
         ENDDO          
 C--- Lift direction is vector product of "stream" and spanwise vector
         CALL CROSS(UDRAG,SPN,ULIFT)
-        ULMAG = SQRT(DOT(ULIFT,ULIFT))
+        ULMAG = SQRT(ULIFT(1)**2 + ULIFT(2)**2 + ULIFT(3)**2)
 cc        write(6,*) 'ULIFT0 ',ULIFT,' ULMAG0 ',ULMAG
         IF(ULMAG.EQ.0.) THEN
 
@@ -330,7 +330,7 @@ cc        write(6,*) 'ULIFT0 ',ULIFT,' ULMAG0 ',ULMAG
             ULIFT_U(K,N) = UDRAG_U(IC,N)*SPN(JC) - UDRAG_U(JC,N)*SPN(IC)
            ENDDO
           ENDDO
-          ULMAG = SQRT(DOT(ULIFT,ULIFT))
+          ULMAG = SQRT(ULIFT(1)**2 + ULIFT(2)**2 + ULIFT(3)**2)
 
           DO N = 1, NUMAX
              ULMAG_U(N) = ( ULIFT(1)*ULIFT_U(1,N)
@@ -1407,6 +1407,7 @@ C--- Lift direction is vector product of "stream" and spanwise vector
         ENDIF
         CL_LSRF(IS) = DOT(ULIFT,CF_LSRF(1,IS))
         CD_LSRF(IS) = DOT(UDRAG,CF_LSRF(1,IS))
+        CDV_LSRF(IS) = CDVSURF(IS)*SREF/SSURF(IS)
         CDISURF(IS) = CDSURF(IS) - CDVSURF(IS)
 C
 C---  Surface hinge moments defined by surface LE moment about hinge vector 
