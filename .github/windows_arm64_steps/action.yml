@@ -19,7 +19,6 @@ runs:
     - name: Install pkgconf via vcpkg
       shell: pwsh
       run: |
-        & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" arm64
         $env:VCPKG_ROOT = "C:\vcpkg"
         Set-Location $env:VCPKG_ROOT
         ./vcpkg install pkgconf:arm64-windows
