@@ -1206,6 +1206,9 @@ class OVLSolver(object):
         nx = copy.deepcopy(mesh.shape[0])
         ny = copy.deepcopy(mesh.shape[1])
 
+        if  update_nvc:
+            raise DeprecationWarning("update_nvc is deprecated pass update_size to set_mesh instead")
+
         if update_size:
 
             self.avl.SURF_GEOM_I.NVS[idx_surf] = ny-1
