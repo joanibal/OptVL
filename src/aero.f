@@ -37,6 +37,7 @@ C
       CDITOT = 0.
 C
       CDTOT_A = 0.
+      CYTOT_A = 0.
       CLTOT_A = 0.
 C
       DO L = 1, NCONTROL
@@ -107,6 +108,7 @@ C
         CDVTOT  = 2.0 * CDVTOT
 C
         CDTOT_A = 2.0 * CDTOT_A
+        CYTOT_A = 0.0
         CLTOT_A = 2.0 * CLTOT_A
 C
         DO N=1, NUMAX
@@ -305,7 +307,7 @@ C     HHY 02272024 Changed, used to be stability axis
         ENDDO          
 C--- Lift direction is vector product of "stream" and spanwise vector
         CALL CROSS(UDRAG,SPN,ULIFT)
-        ULMAG = SQRT(DOT(ULIFT,ULIFT))
+        ULMAG = SQRT(ULIFT(1)**2 + ULIFT(2)**2 + ULIFT(3)**2)
 cc        write(6,*) 'ULIFT0 ',ULIFT,' ULMAG0 ',ULMAG
         IF(ULMAG.EQ.0.) THEN
 
@@ -328,7 +330,7 @@ cc        write(6,*) 'ULIFT0 ',ULIFT,' ULMAG0 ',ULMAG
             ULIFT_U(K,N) = UDRAG_U(IC,N)*SPN(JC) - UDRAG_U(JC,N)*SPN(IC)
            ENDDO
           ENDDO
-          ULMAG = SQRT(DOT(ULIFT,ULIFT))
+          ULMAG = SQRT(ULIFT(1)**2 + ULIFT(2)**2 + ULIFT(3)**2)
 
           DO N = 1, NUMAX
              ULMAG_U(N) = ( ULIFT(1)*ULIFT_U(1,N)
@@ -938,17 +940,21 @@ C$AD II-LOOP
         END DO
 C
 C$AD II-LOOP
+c        JLA fix 2026: ULIFT_D was undeclared but should be zero so 
+C          the partial terms from ULIFT_D were removed
          DO N = 1, NCONTROL
-           CLV_D(N) = ULIFT(1)*CFX_D(N) + ULIFT_D(1,N)*CFX
-     &              + ULIFT(2)*CFY_D(N) + ULIFT_D(2,N)*CFY
-     &              + ULIFT(3)*CFZ_D(N) + ULIFT_D(3,N)*CFZ
+           CLV_D(N) = ULIFT(1)*CFX_D(N)
+     &              + ULIFT(2)*CFY_D(N)
+     &              + ULIFT(3)*CFZ_D(N)
          END DO
 C
 C$AD II-LOOP
+c        JLA fix 2026: ULIFT_G was undeclared but should be zero so 
+C          the partial terms from ULIFT_G were removed
          DO N = 1, NDESIGN
-           CLV_G(N) = ULIFT(1)*CFX_G(N) + ULIFT_G(1,N)*CFX
-     &              + ULIFT(2)*CFY_G(N) + ULIFT_G(2,N)*CFY
-     &              + ULIFT(3)*CFZ_G(N) + ULIFT_G(3,N)*CFZ
+           CLV_G(N) = ULIFT(1)*CFX_G(N)
+     &              + ULIFT(2)*CFY_G(N)
+     &              + ULIFT(3)*CFZ_G(N)
          END DO
 C
 C--- Get CD from CLCD function using strip CL as parameter
@@ -1401,6 +1407,7 @@ C--- Lift direction is vector product of "stream" and spanwise vector
         ENDIF
         CL_LSRF(IS) = DOT(ULIFT,CF_LSRF(1,IS))
         CD_LSRF(IS) = DOT(UDRAG,CF_LSRF(1,IS))
+        CDV_LSRF(IS) = CDVSURF(IS)*SREF/SSURF(IS)
         CDISURF(IS) = CDSURF(IS) - CDVSURF(IS)
 C
 C---  Surface hinge moments defined by surface LE moment about hinge vector 

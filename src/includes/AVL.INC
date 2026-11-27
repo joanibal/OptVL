@@ -157,7 +157,7 @@ C
       real(kind=avl_real) SPANEF_D  
       real(kind=avl_real) SPANEF_G  
       real(kind=avl_real) CDTOT, CYTOT, CLTOT    
-      real(kind=avl_real) CDTOT_A, CLTOT_A      
+      real(kind=avl_real) CDTOT_A, CLTOT_A, CYTOT_A
       real(kind=avl_real) CDTOT_U,CYTOT_U,CLTOT_U
       real(kind=avl_real) CDTOT_D,CYTOT_D,CLTOT_D
       real(kind=avl_real) CDTOT_G,CYTOT_G,CLTOT_G
@@ -238,7 +238,7 @@ C
 C
 C  Total forces referred to SREF, moments to SREF,CREF,BREF about XYZref
      & CDTOT, CYTOT, CLTOT,         ! total CD,CY,CL in stability axes 
-     & CDTOT_A, CLTOT_A,            ! sensitivities wrt alpha (part of total?!? you probably want *_AL)          
+     & CDTOT_A, CLTOT_A, CYTOT_A,            ! sensitivities wrt alpha (part of total?!? you probably want *_AL)          
      & CDTOT_U(NUMAX),CYTOT_U(NUMAX),CLTOT_U(NUMAX),     !sens wrt u,v,w,rot
      & CDTOT_D(NDMAX),CYTOT_D(NDMAX),CLTOT_D(NDMAX),     !sens wrt control
      & CDTOT_G(NGMAX),CYTOT_G(NGMAX),CLTOT_G(NGMAX),     !sens wrt design 
@@ -368,7 +368,7 @@ cc#endif
       REAL(kind=avl_real) CDVSURF, CDISURF
       REAL(kind=avl_real) SSURF, CAVESURF
       REAL(kind=avl_real) CF_LSRF, CM_LSRF
-      REAL(kind=avl_real) CL_LSRF, CD_LSRF, CMLE_LSRF
+      REAL(kind=avl_real) CL_LSRF, CD_LSRF, CMLE_LSRF, CDV_LSRF
       COMMON /SURF_R/
 C   Surface forces and moments referenced to SREF,CREF,BREF about XREF,YREF,ZREF
      & CDSURF(NFMAX),CYSURF(NFMAX),CLSURF(NFMAX),                ! surface CD,CY,CL in stability axes
@@ -393,7 +393,8 @@ C
      & SSURF(NFMAX), CAVESURF(NFMAX), ! surface area and average chord
 C
      & CF_LSRF(3,NFMAX), CM_LSRF(3,NFMAX),
-     & CL_LSRF(NFMAX), CD_LSRF(NFMAX), CMLE_LSRF(NFMAX)
+     & CL_LSRF(NFMAX), CD_LSRF(NFMAX), CMLE_LSRF(NFMAX),
+     & CDV_LSRF(NFMAX)                 ! surface viscous CD referred to SSURF
 
       COMMON /STRP_I/
      & LSSURF(NSMAX),    ! index of surface which contains this strip

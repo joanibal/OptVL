@@ -2,6 +2,7 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver, OVLGroup
+from geom_seed_utils import rand_geom_seeds
 
 
 # =============================================================================
@@ -77,7 +78,7 @@ class TestOMWrapper(unittest.TestCase):
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                arr += np.random.rand(*arr.shape) * 0.1
+                arr += rand_geom_seeds(arr, geom_key) * 0.1
                 # print(f'setting {surf_key}:{geom_key} to {arr}')
                 # #set surface data
                 self.ovl_solver.set_surface_param(surf_key, geom_key, arr)

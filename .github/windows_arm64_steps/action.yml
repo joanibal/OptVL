@@ -19,10 +19,22 @@ runs:
     - name: Install pkgconf via vcpkg
       shell: pwsh
       run: |
-        & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" arm64
         $env:VCPKG_ROOT = "C:\vcpkg"
         Set-Location $env:VCPKG_ROOT
         ./vcpkg install pkgconf:arm64-windows
         $pkgconfPath = "$env:VCPKG_ROOT\installed\arm64-windows\tools\pkgconf"
         Copy-Item "$pkgconfPath\pkgconf.exe" "$pkgconfPath\pkg-config.exe" -Force
         echo "$pkgconfPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    # flang's runtime (FortranDecimal) needs __udivti3 and other compiler-rt
+    # builtins, which the flang driver does not link on windows-msvc targets.
+    - name: Link compiler-rt builtins for flang
+      shell: pwsh
+      run: |
+        $rt = (& "C:\Program Files\LLVM\bin\clang.exe" --target=aarch64-pc-windows-msvc -print-libgcc-file-name).Trim()
+        if (-not (Test-Path $rt)) {
+            Write-Error "compiler-rt builtins library not found at $rt"
+            exit 1
+        }
+        Write-Host "Using compiler-rt builtins: $rt"
+        echo "LDFLAGS=`"$rt`"" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append

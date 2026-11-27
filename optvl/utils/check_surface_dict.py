@@ -52,7 +52,7 @@ def pre_check_input_dict(input_dict: dict):
 
     List non-checked redundancies:
     1. nspan and sspace override nspans and sspaces only if 'use surface spacing' is True
-    2. 'cdcl' overrides 'cdclsec'
+    2. 'cdclsec' overrides 'cdcl' (same as section vs surface CDCL in an .avl file)
 
 
     Args:
@@ -91,8 +91,8 @@ def pre_check_input_dict(input_dict: dict):
         "wake",  # specifies that this surface is to NOT shed a wake, so that its strips will not have their Kutta conditions imposed
         "albe",  # specifies that this surface is unaffected by freestream direction changes specified by the alpha,beta angles and p,q,r rotation rates
         "load",  # specifies that the force and moment on this surface is to NOT be included in the overall forces and moments of the configuration
-        "clcdsec",  # profile-drag CD(CL) function for each section in this surface
-        "cdcl",  # profile-drag CD(CL) function for all sections in this surface, overrides clcdsec.
+        "cdclsec",  # profile-drag CD(CL) function for each section in this surface
+        "cdcl",  # profile-drag CD(CL) function for all sections in this surface, overridden by cdclsec.
         "claf",  # CL alpha (dCL/da) scaling factor per section
         # Geometry
         "scale",  # scaling factors applied to all x,y,z coordinates (chords arealso scaled by Xscale)
@@ -157,7 +157,7 @@ def pre_check_input_dict(input_dict: dict):
     multi_section_keys = [
         "nspans",  # number of spanwise elements vector, overriden by nspans
         "sspaces",  # spanwise spacing vector (for each section), overriden by sspace
-        "clcdsec",  # profile-drag CD(CL) function for each section in this surface
+        "cdclsec",  # profile-drag CD(CL) function for each section in this surface
         "claf",  # CL alpha (dCL/da) scaling factor per section
         # Geometry
         "xles",  # leading edge cordinate vector(x component)
@@ -199,7 +199,7 @@ def pre_check_input_dict(input_dict: dict):
 
 
     dim_2_keys = [
-        "clcdsec",
+        "cdclsec",
         "xfminmax",
         "xasec",
         "casec",

@@ -100,6 +100,7 @@ C
       cditot = 0.
 C
       cdtot_a = 0.
+      cytot_a = 0.
       cltot_a = 0.
 C
       DO l=1,ncontrol
@@ -180,6 +181,7 @@ C
 C
         cdtot_a_diff = 2.0*cdtot_a_diff
         cdtot_a = 2.0*cdtot_a
+        cytot_a = 0.0
         cltot_a_diff = 2.0*cltot_a_diff
         cltot_a = 2.0*cltot_a
 C
@@ -400,14 +402,14 @@ C---- indices for forming cross-products
       REAL xte2_diff
       INTEGER k
       INTEGER n
-      REAL DOT
-      REAL DOT_D
       INTRINSIC SQRT
       INTEGER ic
       INTEGER jc
       INTEGER ii
       INTEGER i
       REAL fnv
+      REAL DOT
+      REAL DOT_D
       REAL fnv_u
       REAL fnv_d
       REAL fnv_g
@@ -480,12 +482,10 @@ C---- indices for forming cross-products
       INTEGER jj
       REAL dcm
       REAL enmag
-      REAL cytot_a
-      REAL result1
-      REAL result1_diff
-      REAL result2
       REAL arg1
       REAL arg1_diff
+      REAL result1
+      REAL result2
       REAL temp
       INTEGER ii1
       REAL temp0
@@ -748,8 +748,8 @@ C     HHY 02272024 Changed, used to be stability axis
 C--- Lift direction is vector product of "stream" and spanwise vector
         CALL CROSS_D(udrag, udrag_diff, spn, spn_diff, ulift, ulift_diff
      +              )
-        result1 = DOT(ulift, ulift)
-        ulmag = SQRT(result1)
+        arg1 = ulift(1)**2 + ulift(2)**2 + ulift(3)**2
+        ulmag = SQRT(arg1)
 Cc        write(6,*) 'ULIFT0 ',ULIFT,' ULMAG0 ',ULMAG
         IF (ulmag .EQ. 0.) THEN
 C
@@ -782,13 +782,14 @@ C
      +          spn(ic)
             ENDDO
           ENDDO
-          result1_diff = DOT_D(ulift, ulift_diff, ulift, ulift_diff, 
-     +      result1)
-          temp = SQRT(result1)
-          IF (result1 .EQ. 0.D0) THEN
+          arg1_diff = 2*ulift(1)*ulift_diff(1) + 2*ulift(2)*ulift_diff(2
+     +      ) + 2*ulift(3)*ulift_diff(3)
+          arg1 = ulift(1)**2 + ulift(2)**2 + ulift(3)**2
+          temp = SQRT(arg1)
+          IF (arg1 .EQ. 0.D0) THEN
             ulmag_diff = 0.D0
           ELSE
-            ulmag_diff = result1_diff/(2.0*temp)
+            ulmag_diff = arg1_diff/(2.0*temp)
           END IF
           ulmag = temp
 C
@@ -1693,21 +1694,21 @@ Cc         write(6,*) '***** CLV CFX CFY CFZ ', CLV, CFX,CFY,CFZ
      +        (3, n)*cfz
           ENDDO
 C
+C        JLA fix 2026: ULIFT_D was undeclared but should be zero so 
+C          the partial terms from ULIFT_D were removed
           DO n=1,ncontrol
             clv_d_diff(n) = cfx_d(n)*ulift_diff(1) + ulift(1)*cfx_d_diff
-     +        (n) + ulift_d(1, n)*cfx_diff + cfy_d(n)*ulift_diff(2) + 
-     +        ulift(2)*cfy_d_diff(n) + ulift_d(2, n)*cfy_diff + cfz_d(n)
-     +        *ulift_diff(3) + ulift(3)*cfz_d_diff(n) + ulift_d(3, n)*
-     +        cfz_diff
-            clv_d(n) = ulift(1)*cfx_d(n) + ulift_d(1, n)*cfx + ulift(2)*
-     +        cfy_d(n) + ulift_d(2, n)*cfy + ulift(3)*cfz_d(n) + ulift_d
-     +        (3, n)*cfz
+     +        (n) + cfy_d(n)*ulift_diff(2) + ulift(2)*cfy_d_diff(n) + 
+     +        cfz_d(n)*ulift_diff(3) + ulift(3)*cfz_d_diff(n)
+            clv_d(n) = ulift(1)*cfx_d(n) + ulift(2)*cfy_d(n) + ulift(3)*
+     +        cfz_d(n)
           ENDDO
 C
+C        JLA fix 2026: ULIFT_G was undeclared but should be zero so 
+C          the partial terms from ULIFT_G were removed
           DO n=1,ndesign
-            clv_g(n) = ulift(1)*cfx_g(n) + ulift_g(1, n)*cfx + ulift(2)*
-     +        cfy_g(n) + ulift_g(2, n)*cfy + ulift(3)*cfz_g(n) + ulift_g
-     +        (3, n)*cfz
+            clv_g(n) = ulift(1)*cfx_g(n) + ulift(2)*cfy_g(n) + ulift(3)*
+     +        cfz_g(n)
           ENDDO
 C
 C--- Get CD from CLCD function using strip CL as parameter
@@ -2521,6 +2522,7 @@ C--- Lift direction is vector product of "stream" and spanwise vector
         END IF
         cl_lsrf(is) = DOT(ulift, cf_lsrf(1, is))
         cd_lsrf(is) = DOT(udrag, cf_lsrf(1, is))
+        cdv_lsrf(is) = cdvsurf(is)*sref/ssurf(is)
         cdisurf(is) = cdsurf(is) - cdvsurf(is)
 C
 C---  Surface hinge moments defined by surface LE moment about hinge vector 

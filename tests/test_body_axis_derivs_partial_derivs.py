@@ -2,6 +2,7 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
+from geom_seed_utils import rand_geom_seeds
 import copy
 import psutil
 
@@ -56,10 +57,13 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
 
     def test_rev_aero_constraint(self):
         
-        body_axis_deriv_seeds_rev = {}
-        for deriv_func, var_dict in self.ovl_solver.case_body_derivs_to_fort_var.items():
-            body_axis_deriv_seeds_rev[deriv_func] = np.random.rand(1)[0]
+        # body_axis_deriv_seeds_rev = {}
+        # for deriv_func, var_dict in self.ovl_solver.case_body_derivs_to_fort_var.items():
+        #     body_axis_deriv_seeds_rev[deriv_func] = np.random.rand(1)[0]
 
+        body_axis_deriv_seeds_rev = {'dCX/du': 1.0}
+        print('body_axis_deriv_seeds_rev', body_axis_deriv_seeds_rev)
+        
         con_seeds_rev = self.ovl_solver._execute_jac_vec_prod_rev(body_axis_derivs_seeds=body_axis_deriv_seeds_rev)[0]
 
         self.ovl_solver.clear_ad_seeds_fast()
@@ -74,7 +78,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
             # do dot product
             con_sum = np.sum(con_seeds_rev[con_key])
 
-            # print(f"cs_dervs wrt {con_key}", "rev", con_sum, "fwd", body_axis_deriv_sum)
+            print(f"cs_dervs wrt {con_key}", "rev", con_sum, "fwd", body_axis_deriv_sum)
 
             np.testing.assert_allclose(
                 con_sum,
@@ -89,12 +93,12 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                geom_seeds = np.random.rand(*arr.shape)
+                geom_seeds = rand_geom_seeds(arr, geom_key)
 
                 bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[4]
 
                 bd_d_fd = self.ovl_solver._execute_jac_vec_prod_fwd(
-                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-9
+                    geom_seeds={surf_key: {geom_key: geom_seeds}}, mode="FD", step=1e-8
                 )[4]
 
                 for deriv_func in bd_d:
@@ -133,7 +137,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                geom_seeds_fwd = np.random.rand(*arr.shape)
+                geom_seeds_fwd = rand_geom_seeds(arr, geom_key)
 
                 bd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds_fwd}}

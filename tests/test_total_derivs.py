@@ -2,6 +2,7 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
+from geom_seed_utils import rand_geom_seeds
 
 # =============================================================================
 # Standard Python Modules
@@ -236,7 +237,10 @@ class TestTotals(unittest.TestCase):
             for geom_key in geom_vars:
                 arr = self.ovl.get_surface_param(surf_key, geom_key)
                 np.random.seed(arr.size)
-                rand_arr = np.random.rand(*arr.shape)
+                rand_arr = rand_geom_seeds(arr, geom_key)
+                if not np.any(rand_arr):
+                    # CDCL polars are unset so there may be nothing to check
+                    continue
                 rand_arr /= np.linalg.norm(rand_arr)
 
                 func_seeds, consurf_deriv_seeds, stab_derivs_seeds, body_axis_derivs_seeds = self.finite_dif(

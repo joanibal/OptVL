@@ -40,7 +40,7 @@ surf = {
         # "load": np.int32(
         #     1
         # ),  # specifies that the force and moment on this surface is to NOT be included in the overall forces and moments of the configuration
-        # "clcdsec": np.array(
+        # "cdclsec": np.array(
         #     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         # ),  # profile-drag CD(CL) function for each section in this surface (provide a single entry and OptVL applies to all strips, otherwise provide a vector corresponding to each strip)
         # "cdcl": np.array(
@@ -112,7 +112,7 @@ surf_avl = {
         # "load": np.int32(
         #     1
         # ),  # specifies that the force and moment on this surface is to NOT be included in the overall forces and moments of the configuration
-        # "clcdsec": np.array(
+        # "cdclsec": np.array(
         #     [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
         # ),  # profile-drag CD(CL) function for each section in this surface
         # "cdcl": np.array(
