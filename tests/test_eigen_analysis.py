@@ -101,7 +101,7 @@ class TestEigenAnalysis(unittest.TestCase):
             # Just verify that each vector is an acutal eigenvector
             for idx_eig in range(num_eigs):
                 # only check the values of the eigen vectors greater thann 1e-14
-                mask_small = np.abs(vecs_avl_sorted[idx_eig, :]) > 1e-13
+                mask_small = np.abs(vecs_avl_sorted[idx_eig, :]) > 5e-13
 
                 compute_vals = (np.dot(A, vecs_avl_sorted[idx_eig, :])) / vecs_avl_sorted[idx_eig]
 

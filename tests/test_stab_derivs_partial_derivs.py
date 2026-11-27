@@ -2,6 +2,7 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
+from geom_seed_utils import rand_geom_seeds
 import psutil
 
 # =============================================================================
@@ -82,7 +83,7 @@ class TestResidualUPartials(unittest.TestCase):
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                geom_seeds = np.random.rand(*arr.shape)
+                geom_seeds = rand_geom_seeds(arr, geom_key)
 
                 res_u_seeds = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
@@ -120,7 +121,7 @@ class TestResidualUPartials(unittest.TestCase):
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                geom_seeds = np.random.rand(*arr.shape)
+                geom_seeds = rand_geom_seeds(arr, geom_key)
 
                 res_u_seeds_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds}}
@@ -274,7 +275,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                geom_seeds = np.random.rand(*arr.shape)
+                geom_seeds = rand_geom_seeds(arr, geom_key)
 
                 sd_d = self.ovl_solver._execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[3]
 
@@ -318,7 +319,7 @@ class TestStabDerivDerivsPartials(unittest.TestCase):
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                geom_seeds_fwd = np.random.rand(*arr.shape)
+                geom_seeds_fwd = rand_geom_seeds(arr, geom_key)
 
                 sd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds_fwd}}

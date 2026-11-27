@@ -107,7 +107,9 @@ C---- clear surface polar data
         END DO
       END DO 
 C
-      LVISC  = .FALSE.
+C---- LVISC is left as set by DEFINI; strips without LVISCSTRP are already skipped
+c     This makes it easier to change the CDCL from off to on
+C     LVISC  = .FALSE.
 C
 C---- initialize counters and active-entity indicators
       ISURF = 0

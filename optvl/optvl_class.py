@@ -656,7 +656,6 @@ class OVLSolver(object):
         self.avl.CASE_R.DCM_U0 = 0.0
         self.set_avl_fort_arr("SURF_GEOM_R", "CLCDSRF", 0.0, slicer=(slice(None, 6), slice(None, self.NFMAX)))
         self.set_avl_fort_arr("SURF_GEOM_L", "LSECPOLAR", False, slicer=(slice(None, self.NFMAX), slice(None)))
-        self.avl.CASE_L.LVISC = False
         self.set_avl_fort_arr("SURF_L", "LRANGE", True, slicer=slice(None, self.NFMAX))
 
         # Perform pre-check of user's input dictionary before loading into AVL
@@ -2472,7 +2471,7 @@ class OVLSolver(object):
             )
 
         # check that param is in self.surf_geom_to_fort_var
-        if param in self.surf_section_geom_to_fort_var[surf_name].keys():
+        if param in self.surf_section_geom_to_fort_var[surf_name]:
             # TODO-JLA: handle section parameters differently
             # return the data for each section
             # Set surface cross section geometry variables (not recommended)
@@ -2488,7 +2487,7 @@ class OVLSolver(object):
             for idx_sec, slicer in enumerate(fort_vars[2]):
                 self.set_avl_fort_arr(fort_vars[0], fort_vars[1], val[idx_sec], slicer=slicer)
 
-        elif param in self.surf_geom_to_fort_var[surf_name].keys():
+        elif param in self.surf_geom_to_fort_var[surf_name]:
             # Set basic surface geometry variables
             fort_var = self.surf_geom_to_fort_var[surf_name][param]
             self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
@@ -2497,9 +2496,8 @@ class OVLSolver(object):
                 # sections given a CDCL use their own polar instead of the surface polar 
                 idx_surf = self.surface_names.index(surf_name)
                 self.set_avl_fort_arr("SURF_GEOM_L", "LSECPOLAR", True, slicer=(idx_surf, slice(None)))
-                THINGS are different because LVISC is not set like in the Fortran layer
 
-        elif param in self.surf_pannel_to_fort_var[surf_name].keys():
+        elif param in self.surf_pannel_to_fort_var[surf_name]:
             # Set surface panelling variables
             fort_var = self.surf_pannel_to_fort_var[surf_name][param]
             self.set_avl_fort_arr(fort_var[0], fort_var[1], val, slicer=fort_var[2])
@@ -2511,7 +2509,7 @@ class OVLSolver(object):
                 stacklevel=2,
             )
             pass
-        elif param in self.con_surf_to_fort_var[surf_name].keys():
+        elif param in self.con_surf_to_fort_var[surf_name]:
             # the control surface and design variables need to be handeled differently because the number at each section is variable
             warnings.warn(
                 "OptVL WARNING - Updating control surface and design variables is not supported with this function.\n"

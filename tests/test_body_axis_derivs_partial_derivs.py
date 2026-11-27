@@ -2,6 +2,7 @@
 # Extension modules
 # =============================================================================
 from optvl import OVLSolver
+from geom_seed_utils import rand_geom_seeds
 import copy
 import psutil
 
@@ -92,7 +93,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                geom_seeds = np.random.rand(*arr.shape)
+                geom_seeds = rand_geom_seeds(arr, geom_key)
 
                 bd_d = self.ovl_solver._execute_jac_vec_prod_fwd(geom_seeds={surf_key: {geom_key: geom_seeds}})[4]
 
@@ -136,7 +137,7 @@ class TestBodyAxisDerivDerivsPartials(unittest.TestCase):
         for surf_key in self.ovl_solver.surf_geom_to_fort_var:
             for geom_key in self.ovl_solver.surf_geom_to_fort_var[surf_key]:
                 arr = self.ovl_solver.get_surface_param(surf_key, geom_key)
-                geom_seeds_fwd = np.random.rand(*arr.shape)
+                geom_seeds_fwd = rand_geom_seeds(arr, geom_key)
 
                 bd_d_fwd = self.ovl_solver._execute_jac_vec_prod_fwd(
                     con_seeds={}, geom_seeds={surf_key: {geom_key: geom_seeds_fwd}}

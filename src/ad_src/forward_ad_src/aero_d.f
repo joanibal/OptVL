@@ -2522,6 +2522,7 @@ C--- Lift direction is vector product of "stream" and spanwise vector
         END IF
         cl_lsrf(is) = DOT(ulift, cf_lsrf(1, is))
         cd_lsrf(is) = DOT(udrag, cf_lsrf(1, is))
+        cdv_lsrf(is) = cdvsurf(is)*sref/ssurf(is)
         cdisurf(is) = cdsurf(is) - cdvsurf(is)
 C
 C---  Surface hinge moments defined by surface LE moment about hinge vector 
