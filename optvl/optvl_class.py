@@ -1208,6 +1208,7 @@ class OVLSolver(object):
 
         if  update_nvc:
             raise DeprecationWarning("update_nvc is deprecated pass update_size to set_mesh instead")
+            update_size = update_nvc
 
         if update_size:
 
